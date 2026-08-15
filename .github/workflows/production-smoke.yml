@@ -43,7 +43,7 @@ jobs:
           echo 'Timed out waiting for Vercel Production deployment'
           exit 1
 
-      - name: Verify public homepage system routes and enhancement assets
+      - name: Verify public homepage system routes and premium enhancement assets
         run: |
           set -euo pipefail
           code=$(curl -sS -L -D /tmp/home.headers -o /tmp/home.html -w '%{http_code}' "$BASE_URL/")
@@ -53,6 +53,9 @@ jobs:
           grep -qi 'Australian Product Guide' /tmp/home.html
           grep -q 'rel="canonical" href="https://au-product-guide.vercel.app/"' /tmp/home.html
           grep -q 'SearchAction' /tmp/home.html
+          grep -q 'data-mega-trigger' /tmp/home.html
+          grep -q 'data-mobile-toggle' /tmp/home.html
+          grep -q 'Smarter product decisions' /tmp/home.html
           if grep -qiE 'authentication required|vercel authentication|log in to vercel|sign in to vercel|Login – Vercel' /tmp/home.html; then exit 1; fi
           for asset in /assets/site.css /assets/app.js /assets/search-index.json /assets/logo.svg /assets/social.svg; do
             code=$(curl -sS -L -o /tmp/asset -w '%{http_code}' "$BASE_URL$asset")
@@ -61,8 +64,12 @@ jobs:
           done
           curl -fsSL "$BASE_URL/assets/app.js" -o /tmp/apg-app.js
           node --check /tmp/apg-app.js
+          grep -q 'apgSaved' /tmp/apg-app.js
+          grep -q 'apgRecentSearches' /tmp/apg-app.js
           curl -fsSL "$BASE_URL/assets/site.css" -o /tmp/site.css
-          grep -q '@media(max-width:720px)' /tmp/site.css
+          grep -q '@media(max-width:760px)' /tmp/site.css
+          grep -q 'focus-visible' /tmp/site.css
+          grep -q 'prefers-reduced-motion' /tmp/site.css
           grep -q 'name="viewport"' /tmp/home.html
           curl -fsSL "$BASE_URL/assets/search-index.json" -o /tmp/search-index.json
           test "$(jq 'length' /tmp/search-index.json)" -gt 45
@@ -96,7 +103,7 @@ jobs:
           for u in urls:
               if not u.startswith(base+'/') and u!=base+'/': raise SystemExit('Non-Production sitemap hostname: '+u)
               p=urllib.parse.urlsplit(u).path
-              req=urllib.request.Request(base+p,headers={'User-Agent':'APG-Growth-Full-Crawl/1.0'})
+              req=urllib.request.Request(base+p,headers={'User-Agent':'APG-Premium-Full-Crawl/1.0'})
               with urllib.request.urlopen(req,timeout=20) as r:
                   if r.status!=200: raise SystemExit(f'{p} returned {r.status}')
                   text=r.read().decode('utf-8','replace')
@@ -112,7 +119,7 @@ jobs:
           print('TRADIE_CONTAMINATION=ABSENT_ALL_INDEXABLE_ROUTES')
           PY
 
-      - name: Verify search comparison finders trust and mobile journeys
+      - name: Verify search comparison finders trust and responsive journeys
         run: |
           set -euo pipefail
           check_search(){
@@ -144,7 +151,7 @@ jobs:
           code=$(curl -sS -L -o /tmp/category.html -w '%{http_code}' "$BASE_URL/categories/coffee-machines/?priority=value&sort=price")
           test "$code" = "200"
           grep -qi 'Product catalogue' /tmp/category.html
-          grep -qi 'Add to compare' /tmp/category.html
+          grep -q 'data-compare-product' /tmp/category.html
 
           for path in /about/ /methodology/ /editorial-standards/ /sources/ /corrections-policy/ /affiliate-disclosure/ /privacy/ /terms/ /contact/ /coverage/ /updates/; do
             code=$(curl -sS -L -o /tmp/trust.html -w '%{http_code}' "$BASE_URL$path")
@@ -153,9 +160,13 @@ jobs:
           done
           curl -fsSL "$BASE_URL/privacy/" -o /tmp/privacy.html
           grep -qi 'local storage' /tmp/privacy.html
-          grep -qi 'Legal review note' /tmp/privacy.html
+          grep -qi 'Professional review flag' /tmp/privacy.html
+          grep -qi 'first-party behavioural analytics' /tmp/privacy.html
           curl -fsSL "$BASE_URL/terms/" -o /tmp/terms.html
-          grep -qi 'Legal review note' /tmp/terms.html
+          grep -qi 'Professional review flag' /tmp/terms.html
+          grep -qi 'Australian Consumer Law' /tmp/terms.html
+          curl -fsSL "$BASE_URL/sources/" -o /tmp/sources.html
+          grep -qi 'Image provenance' /tmp/sources.html
           echo 'SEARCH_COMPARE_FINDERS_TRUST=PASS'
 
       - name: Verify seven coffee matcher regression profiles
@@ -179,7 +190,7 @@ jobs:
           check_profile QA007 'workflow=one-touch&drink=mixed&learning=almost&budget=1500&speed=high&space=normal&beans=often' 'Rivelia Auto Milk'
           echo 'COFFEE_MATCHER_QA=7/7_PASS'
 
-      - name: Verify all product evidence retailer affiliate and schema controls
+      - name: Verify all product evidence retailer affiliate image and schema controls
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -189,9 +200,9 @@ jobs:
           urls=re.findall(r'<loc>(.*?)</loc>',xml,re.I)
           products=[urllib.parse.urlsplit(u).path for u in urls if '/products/' in u]
           if len(products)!=37: raise SystemExit(f'Expected 37 product routes, found {len(products)}')
-          direct=fallback=0
+          direct=fallback=illustrated=0
           for p in products:
-              req=urllib.request.Request(base+p,headers={'User-Agent':'APG-Growth-Retailer-QA/1.0'})
+              req=urllib.request.Request(base+p,headers={'User-Agent':'APG-Premium-Retailer-QA/1.0'})
               text=urllib.request.urlopen(req,timeout=20).read().decode('utf-8','replace')
               checks={
                 'tag':'auproductguid-22',
@@ -201,17 +212,21 @@ jobs:
                 'breadcrumb_schema':'"@type":"BreadcrumbList"',
                 'testing':'Desk-researched / specification-based',
                 'reviewed':'15 August 2026',
-                'commercial':'Commercial score'
+                'commercial':'Commercial score',
+                'image_provenance':'APG-authored SVG/CSS decision visual'
               }
               for name,needle in checks.items():
                   if needle not in text: raise SystemExit(f'Missing {name} control: {p}')
+              if 'APG-owned decision illustration' in text: illustrated+=1
               if 'Exact product page verified' in text: direct+=1
               if 'Model-specific search fallback' in text: fallback+=1
           print(f'AMAZON_DIRECT_PRODUCT_PAGES={direct}')
           print(f'AMAZON_FALLBACK_SEARCH_PAGES={fallback}')
+          print(f'APG_OWNED_PRODUCT_VISUALS={illustrated}')
           if direct!=2: raise SystemExit(f'Expected 2 direct Amazon pages, found {direct}')
           if fallback!=35: raise SystemExit(f'Expected 35 fallback pages, found {fallback}')
-          print('PRODUCT_RETAILER_EVIDENCE_SCHEMA=37/37_PASS')
+          if illustrated!=37: raise SystemExit(f'Expected 37 APG visual provenance labels, found {illustrated}')
+          print('PRODUCT_RETAILER_EVIDENCE_IMAGE_SCHEMA=37/37_PASS')
           PY
           curl -fsSL "$BASE_URL/products/bose-quietcomfort-ultra-headphones/" -o /tmp/bose.html
           grep -q 'B0CCZ1HQ39' /tmp/bose.html
