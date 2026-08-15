@@ -13,27 +13,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Locate compressed corruption offsets
+      - name: Rank splice candidates
         run: |
           set -euo pipefail
           node <<'NODE'
           const z=require('zlib');
-          const sets={C:['c0','c1','c2','c3','c4','c5'].map(n=>require('./bundle/'+n)).join(''),S:['s0','s1','s2','g1','g2','g3'].map(n=>require('./bundle/'+n)).join('')};
-          async function locate(name,b64){
-            const buf=Buffer.from(b64,'base64');
-            const d=z.createBrotliDecompress();
-            let out=0, pos=0, failed=false, errCode='';
-            d.on('data',x=>out+=x.length);
-            d.on('error',e=>{failed=true;errCode=e.code});
-            for(pos=0;pos<buf.length;pos+=32){
-              if(failed) break;
-              const chunk=buf.subarray(pos,Math.min(pos+32,buf.length));
-              await new Promise(resolve=>d.write(chunk,()=>setImmediate(resolve)));
-            }
-            if(!failed){d.end();await new Promise(r=>setTimeout(r,100));}
-            console.log(`${name}_COMPRESSED_BYTES=${buf.length}`);
-            console.log(`${name}_FAIL_AFTER_INPUT_BYTE=${Math.min(pos,buf.length)} OUTPUT_BYTES=${out} ERROR=${errCode||'none'}`);
-            console.log(`${name}_BASE64_APPROX_OFFSET=${Math.floor(Math.min(pos,buf.length)*4/3)}`);
-          }
-          (async()=>{await locate('C',sets.C);await locate('S',sets.S)})().catch(e=>{console.error(e);process.exit(1)});
+          const C=['c0','c1','c2','c3','c4','c5'].map(n=>require('./bundle/'+n)).join('');
+          const S=['s0','s1','s2','g1','g2','g3'].map(n=>require('./bundle/'+n)).join('');
+          const common=[C.slice(0,9984),C.slice(10009,29990),C.slice(49880,53864),C.slice(61867,69848),C.slice(69871,71852),C.slice(81587,91584)];
+          const dc=[C.slice(9984,10009),C.slice(29990,49880),C.slice(53864,61867),C.slice(69848,69871),C.slice(71852,81587)];
+          const ds=[S.slice(9984,20003),S.slice(39984,62004),S.slice(65988,66011),S.slice(73992,84010),S.slice(85991,86014)];
+          function candidate(mask){let B=common[0], choices='';for(let i=0;i<5;i++){const useS=!!(mask&(1<<i));B+=(useS?ds[i]:dc[i])+common[i+1];choices+=useS?'S':'C';}return {B,choices};}
+          function recover(b64){return new Promise(resolve=>{const d=z.createBrotliDecompress(),out=[];let done=false;const finish=(ok,e)=>{if(done)return;done=true;resolve({chars:Buffer.concat(out).toString('utf8').length,ok,error:e||''});};d.on('data',x=>out.push(x));d.on('error',e=>finish(false,e.code));d.on('end',()=>finish(true,''));d.end(Buffer.from(b64,'base64'));});}
+          (async()=>{const results=[];for(let mask=0;mask<32;mask++){const {B,choices}=candidate(mask);const r=await recover(B);results.push({choices,len:B.length,...r});}results.sort((a,b)=>b.chars-a.chars);results.forEach((r,i)=>console.log(`RANK=${i+1} CHOICES=${r.choices} OUTPUT=${r.chars} B64=${r.len} OK=${r.ok} ERROR=${r.error}`));})().catch(e=>{console.error(e);process.exit(1)});
           NODE
