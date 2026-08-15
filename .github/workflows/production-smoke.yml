@@ -1,0 +1,122 @@
+name: APG Production Smoke Test
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Wait for Vercel Production deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 60); do
+            deployments=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments?sha=$SHA")
+            deployment_id=$(echo "$deployments" | jq -r '.[0].id // empty')
+            if [ -n "$deployment_id" ]; then
+              statuses=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments/$deployment_id/statuses")
+              state=$(echo "$statuses" | jq -r '.[0].state // empty')
+              url=$(echo "$statuses" | jq -r '.[0].environment_url // .[0].target_url // empty')
+              echo "Vercel state: ${state:-pending}"
+              if [ "$state" = "failure" ] || [ "$state" = "error" ]; then
+                echo "Vercel deployment failed"
+                exit 1
+              fi
+              if [ "$state" = "success" ] && [ -n "$url" ]; then
+                echo "BASE_URL=${url%/}" >> "$GITHUB_ENV"
+                echo "Production URL: $url"
+                exit 0
+              fi
+            fi
+            sleep 5
+          done
+          echo "Timed out waiting for Vercel Production deployment"
+          exit 1
+
+      - name: Verify anonymous homepage and system routes
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -L -o /tmp/home.html -w '%{http_code}' "$BASE_URL/")
+          echo "Homepage HTTP: $code"
+          test "$code" = "200"
+          grep -qi 'Australian Product Guide' /tmp/home.html
+
+          code=$(curl -sS -L -o /tmp/sitemap.xml -w '%{http_code}' "$BASE_URL/sitemap.xml")
+          echo "Sitemap HTTP: $code"
+          test "$code" = "200"
+          grep -qi '<urlset' /tmp/sitemap.xml
+
+          code=$(curl -sS -L -o /tmp/robots.txt -w '%{http_code}' "$BASE_URL/robots.txt")
+          echo "Robots HTTP: $code"
+          test "$code" = "200"
+          grep -qi 'sitemap' /tmp/robots.txt
+
+          for path in /about/ /methodology/ /privacy/ /terms/; do
+            code=$(curl -sS -L -o /tmp/page.html -w '%{http_code}' "$BASE_URL$path")
+            echo "$path HTTP: $code"
+            test "$code" = "200"
+          done
+
+          code=$(curl -sS -L -o /tmp/notfound.html -w '%{http_code}' "$BASE_URL/__apg-p0-genuine-404-test__")
+          echo "404 test HTTP: $code"
+          test "$code" = "404"
+
+      - name: Verify sitemap journeys and Production hygiene
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, re, sys, urllib.parse, urllib.request
+          base=os.environ['BASE_URL']
+          xml=open('/tmp/sitemap.xml',encoding='utf-8').read()
+          urls=re.findall(r'<loc>(.*?)</loc>',xml,re.I)
+          print('SITEMAP_URL_COUNT='+str(len(urls)))
+          if not urls:
+              raise SystemExit('No sitemap URLs')
+          tests={
+              'category': next((u for u in urls if '/categories/' in u), None),
+              'product': next((u for u in urls if '/products/' in u), None),
+              'comparison': next((u for u in urls if '/compare/' in u), None),
+              'guide': next((u for u in urls if '/guides/' in u), None),
+              'finder': next((u for u in urls if '/finder/' in u or 'help-me-choose' in u.lower()), None),
+          }
+          for name,u in tests.items():
+              if not u:
+                  raise SystemExit(f'Missing {name} route in sitemap')
+              parsed=urllib.parse.urlsplit(u)
+              target=base+parsed.path+(('?'+parsed.query) if parsed.query else '')
+              req=urllib.request.Request(target,headers={'User-Agent':'APG-P0-Smoke/1.0'})
+              with urllib.request.urlopen(req,timeout=20) as r:
+                  print(f'{name.upper()}_HTTP={r.status} PATH={parsed.path}')
+                  if r.status != 200: raise SystemExit(f'{name} not 200')
+          text=(open('/tmp/home.html',encoding='utf-8',errors='ignore').read()+xml+open('/tmp/robots.txt',encoding='utf-8',errors='ignore').read()).lower()
+          if 'australian-tradie-software-matcher' in text or 'australian tradie software matcher' in text:
+              raise SystemExit('Legacy Australian Tradie contamination detected')
+          print('TRADIE_CONTAMINATION=ABSENT_IN_CORE_OUTPUTS')
+          PY
+
+      - name: Verify affiliate tag appears in a maintained product journey
+        run: |
+          set -euo pipefail
+          product_path=$(python3 - <<'PY'
+          import re,urllib.parse
+          xml=open('/tmp/sitemap.xml',encoding='utf-8').read()
+          urls=re.findall(r'<loc>(.*?)</loc>',xml,re.I)
+          u=next((u for u in urls if '/products/' in u), '')
+          print(urllib.parse.urlsplit(u).path)
+          PY
+          )
+          test -n "$product_path"
+          curl -fsSL "$BASE_URL$product_path" -o /tmp/product.html
+          grep -q 'auproductguid-22' /tmp/product.html
+          echo 'AFFILIATE_TAG=auproductguid-22'
