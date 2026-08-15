@@ -31,6 +31,7 @@ jobs:
           require('./lib/ui');
           require('./lib/pages');
           require('./lib/coffee-finder');
+          require('./data/image-provenance');
           require('fs').writeFileSync('/tmp/apg-client.js',clientJs);
           console.log('MODULE_LOAD=PASS');
           console.log('PRODUCTS='+data.products.length);
@@ -67,6 +68,32 @@ jobs:
           console.log('CATALOGUE_INVARIANTS=PASS');
           console.log('AMAZON_DIRECT=2');
           console.log('AMAZON_FALLBACK=35');
+          NODE
+
+      - name: Verify premium UX trust accessibility and imagery controls
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const {products}=require('./data');
+          const {imageStatus}=require('./data/image-provenance');
+          const {clientJs}=require('./lib/client');
+          const {css,logoSvg,socialSvg}=require('./lib/ui');
+          const content=require('./lib/content');
+          const images=products.map(imageStatus);
+          if(images.length!==37) throw new Error('image provenance missing maintained products');
+          if(images.some(x=>x.productPhotography||x.amazonProgramContent)) throw new Error('unverified third-party product imagery activated');
+          if(!logoSvg.includes('Australian Product Guide')) throw new Error('logo accessible title missing');
+          if(!socialSvg.includes('Australian Product Guide')) throw new Error('social brand missing');
+          for(const token of ['mega-menu','mobile-section','search-suggestions','save-button','focus-visible','prefers-reduced-motion']) if(!css.includes(token)) throw new Error(`CSS control missing ${token}`);
+          for(const token of ['data-mega-trigger','apgSaved','apgRecentSearches','aria-controls']) if(!clientJs.includes(token)) throw new Error(`client control missing ${token}`);
+          for(const slug of ['about','privacy','terms','affiliate-disclosure','methodology','editorial-standards','sources','corrections-policy','coverage','updates']) if(!content[slug]?.body) throw new Error(`trust content missing ${slug}`);
+          if(!content.privacy.body.includes('local storage')) throw new Error('privacy local-storage disclosure missing');
+          if(!content.privacy.body.includes('first-party behavioural analytics')) throw new Error('privacy analytics status missing');
+          if(!content.terms.body.includes('Australian Consumer Law')) throw new Error('ACL savings language missing');
+          if(!content['affiliate-disclosure'].body.includes('auproductguid-22')) throw new Error('Amazon tag disclosure missing');
+          console.log('PREMIUM_UX_CONTROLS=PASS');
+          console.log('PRODUCT_VISUAL_PROVENANCE=37/37_APG_OWNED');
+          console.log('THIRD_PARTY_PRODUCT_PHOTOGRAPHY=0/37');
           NODE
 
       - name: Verify representative intent search behaviour
