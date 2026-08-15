@@ -13,25 +13,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Map corruption blocks between bundle copies
+      - name: Map surviving bundle windows
         run: |
           set -euo pipefail
-          node - <<'NODE' > /tmp/bundles.json
-          const c=['c0','c1','c2','c3','c4','c5'].map(n=>require('./bundle/'+n)).join('');
-          const s=['s0','s1','s2','g1','g2','g3'].map(n=>require('./bundle/'+n)).join('');
-          process.stdout.write(JSON.stringify({c,s}));
+          node <<'NODE'
+          const cn=['c0','c1','c2','c3','c4','c5'], sn=['s0','s1','s2','g1','g2','g3'];
+          const cp=cn.map(n=>require('./bundle/'+n)), sp=sn.map(n=>require('./bundle/'+n));
+          const C=cp.join(''), S=sp.join('');
+          console.log('C_LEN='+C.length+' S_LEN='+S.length);
+          function map(parts,names,hay,hayName){
+            for(let k=0;k<parts.length;k++){
+              const p=parts[k];
+              let last=null;
+              for(let off=0;off+500<=p.length;off+=500){
+                const pos=hay.indexOf(p.slice(off,off+500));
+                const key=pos>=0 ? `${hayName}:${pos-off}` : 'MISS';
+                if(key!==last){console.log(`${names[k]} off=${off} -> ${key}`);last=key;}
+              }
+              const off=Math.max(0,p.length-500), pos=hay.indexOf(p.slice(off));
+              console.log(`${names[k]} tail off=${off} -> ${pos>=0?hayName+':'+(pos-off):'MISS'}`);
+            }
+          }
+          console.log('--- C chunks mapped into S ---'); map(cp,cn,S,'S');
+          console.log('--- S chunks mapped into C ---'); map(sp,sn,C,'C');
           NODE
-          python3 - <<'PY'
-          import json,difflib
-          d=json.load(open('/tmp/bundles.json'))
-          C,S=d['c'],d['s']
-          sm=difflib.SequenceMatcher(None,C,S,autojunk=False)
-          blocks=[b for b in sm.get_matching_blocks() if b.size>=40]
-          print('C_LEN',len(C),'S_LEN',len(S),'BLOCKS',len(blocks))
-          for b in blocks:
-              print(f'BLOCK C[{b.a}:{b.a+b.size}] S[{b.b}:{b.b+b.size}] LEN={b.size} DELTA={b.b-b.a}')
-          print('OPCODES')
-          for tag,a0,a1,b0,b1 in sm.get_opcodes():
-              if tag!='equal' or a1-a0>=40:
-                  print(tag,a0,a1,b0,b1,'alen',a1-a0,'blen',b1-b0)
-          PY
