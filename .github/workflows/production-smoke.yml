@@ -13,6 +13,8 @@ jobs:
   smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      BASE_URL: https://au-product-guide.vercel.app
     steps:
       - name: Wait for Vercel Production deployment
         env:
@@ -30,9 +32,9 @@ jobs:
               url=$(echo "$statuses" | jq -r '.[0].environment_url // .[0].target_url // empty')
               echo "Vercel state: ${state:-pending}"
               if [ "$state" = "failure" ] || [ "$state" = "error" ]; then exit 1; fi
-              if [ "$state" = "success" ] && [ -n "$url" ]; then
-                echo "BASE_URL=${url%/}" >> "$GITHUB_ENV"
-                echo "Production URL: $url"
+              if [ "$state" = "success" ]; then
+                echo "Immutable deployment URL: ${url:-unknown}"
+                echo "Clean Production alias: $BASE_URL"
                 exit 0
               fi
             fi
@@ -56,8 +58,8 @@ jobs:
           print('SAMPLE='+re.sub(r'\s+',' ',text[:1400]).strip())
           PY
           test "$code" = "200"
-          if grep -qiE 'authentication required|vercel authentication|log in to vercel|sign in to vercel' /tmp/home.html; then
-            echo 'Vercel authentication/protection page detected'
+          if grep -qiE 'authentication required|vercel authentication|log in to vercel|sign in to vercel|Login – Vercel' /tmp/home.html; then
+            echo 'Vercel authentication/protection page detected on Production alias'
             exit 1
           fi
           grep -qi 'Australian' /tmp/home.html
