@@ -1,0 +1,36 @@
+name: APG Bundle Integrity
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate exact Production bundle
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const z=require('zlib');
+          const names=['s0','s1','s2','g1','g2','g3'];
+          const parts=names.map(n=>require('./bundle/'+n));
+          parts.forEach((p,i)=>console.log(names[i]+'_chars='+p.length));
+          const B=parts.join('');
+          console.log('bundle_chars='+B.length);
+          const raw=z.brotliDecompressSync(Buffer.from(B,'base64')).toString('utf8');
+          console.log('decompressed_chars='+raw.length);
+          const files=JSON.parse(raw);
+          const keys=Object.keys(files);
+          console.log('file_count='+keys.length);
+          console.log('has_home='+(!!files['index.html']));
+          console.log('has_404='+(!!files['404.html']));
+          console.log('has_sitemap='+(!!files['sitemap.xml']));
+          console.log('has_robots='+(!!files['robots.txt']));
+          if(!files['index.html']||!files['404.html']||!files['sitemap.xml']||!files['robots.txt']) process.exit(2);
+          NODE
