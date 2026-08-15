@@ -1,6 +1,1 @@
-{
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": null,
-  "cleanUrls": false,
-  "trailingSlash": true
-}
+{"version":2,"rewrites":[{"source":"/(.*)","destination":"/api"}]}
