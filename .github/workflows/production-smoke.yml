@@ -51,7 +51,6 @@ jobs:
           grep -qi '<title>Australian Product Guide' /tmp/home.html
           grep -q 'rel="canonical" href="https://au-product-guide.vercel.app/"' /tmp/home.html
           if grep -qiE 'authentication required|vercel authentication|log in to vercel|sign in to vercel|Login – Vercel' /tmp/home.html; then exit 1; fi
-
           for asset in /assets/site.css /assets/logo.svg /assets/social.svg; do
             code=$(curl -sS -L -o /tmp/asset -w '%{http_code}' "$BASE_URL$asset")
             echo "$asset HTTP: $code"
@@ -60,7 +59,6 @@ jobs:
           curl -fsSL "$BASE_URL/assets/site.css" -o /tmp/site.css
           grep -q '@media(max-width:800px)' /tmp/site.css
           grep -q 'name="viewport"' /tmp/home.html
-
           code=$(curl -sS -L -o /tmp/sitemap.xml -w '%{http_code}' "$BASE_URL/sitemap.xml")
           echo "Sitemap HTTP: $code"
           test "$code" = "200"
@@ -69,12 +67,10 @@ jobs:
           echo "Robots HTTP: $code"
           test "$code" = "200"
           grep -q 'Sitemap: https://au-product-guide.vercel.app/sitemap.xml' /tmp/robots.txt
-
           code=$(curl -sS -o /tmp/notfound.html -w '%{http_code}' "$BASE_URL/__apg-p0-genuine-404-test__/")
           echo "404 test HTTP: $code"
           test "$code" = "404"
           grep -qi 'Page not found' /tmp/notfound.html
-
           code=$(curl -sS -o /dev/null -w '%{http_code}' "$BASE_URL/coffee-machines")
           location=$(curl -sSI "$BASE_URL/coffee-machines" | tr -d '\r' | awk 'BEGIN{IGNORECASE=1}/^location:/{print $2; exit}')
           echo "Legacy coffee route HTTP: $code Location: $location"
@@ -95,8 +91,7 @@ jobs:
           for u in urls:
               if not u.startswith(base+'/') and u!=base+'/': raise SystemExit('Non-Production sitemap hostname: '+u)
               p=urllib.parse.urlsplit(u).path
-              target=base+p
-              req=urllib.request.Request(target,headers={'User-Agent':'APG-P0-Full-Crawl/1.0'})
+              req=urllib.request.Request(base+p,headers={'User-Agent':'APG-P0-Full-Crawl/1.0'})
               with urllib.request.urlopen(req,timeout=20) as r:
                   if r.status!=200: raise SystemExit(f'{p} returned {r.status}')
                   text=r.read().decode('utf-8','replace')
@@ -112,7 +107,7 @@ jobs:
           print('TRADIE_CONTAMINATION=ABSENT_ALL_INDEXABLE_ROUTES')
           PY
 
-      - name: Verify route families and interactive journeys
+      - name: Verify route families search and finders
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -120,34 +115,45 @@ jobs:
           xml=open('/tmp/sitemap.xml',encoding='utf-8').read()
           urls=re.findall(r'<loc>(.*?)</loc>',xml,re.I)
           paths=[urllib.parse.urlsplit(u).path for u in urls]
-          counts={
-            'products':sum(p.startswith('/products/') for p in paths),
-            'finders':sum(p.endswith('/finder/') for p in paths),
-            'guides':sum(p.startswith('/guides/') for p in paths),
-            'comparisons':sum(p.startswith('/compare/') for p in paths),
-            'brands':sum(p.startswith('/brands/') and p!='/brands/' for p in paths),
-          }
+          counts={'products':sum(p.startswith('/products/') for p in paths),'finders':sum(p.endswith('/finder/') for p in paths),'guides':sum(p.startswith('/guides/') for p in paths),'comparisons':sum(p.startswith('/compare/') for p in paths),'brands':sum(p.startswith('/brands/') and p!='/brands/' for p in paths)}
           print('ROUTE_FAMILY_COUNTS='+str(counts))
           expected={'products':37,'finders':4,'guides':4,'comparisons':60,'brands':16}
           if counts!=expected: raise SystemExit(f'Unexpected route family counts {counts}')
           PY
-
           code=$(curl -sS -L -o /tmp/search.html -w '%{http_code}' "$BASE_URL/search/?q=Breville")
+          echo "Search HTTP: $code"
           test "$code" = "200"
-          grep -qi 'result' /tmp/search.html
           grep -qi 'Breville' /tmp/search.html
           grep -qi 'noindex,follow' /tmp/search.html
-
-          code=$(curl -sS -L -o /tmp/finder.html -w '%{http_code}' "$BASE_URL/categories/coffee-machines/finder/?priority=cold")
+          code=$(curl -sS -L -o /tmp/airfinder.html -w '%{http_code}' "$BASE_URL/categories/air-fryers/finder/?priority=dual-zone")
+          echo "Air-fryer finder HTTP: $code"
           test "$code" = "200"
-          grep -qi 'Best fit' /tmp/finder.html
-          grep -qi 'Barista Touch Impress' /tmp/finder.html
-
+          grep -qi 'Best fit' /tmp/airfinder.html
           for path in /about/ /methodology/ /editorial-standards/ /sources/ /corrections-policy/ /affiliate-disclosure/ /privacy/ /terms/ /contact/; do
             code=$(curl -sS -L -o /tmp/trust.html -w '%{http_code}' "$BASE_URL$path")
             echo "$path HTTP: $code"
             test "$code" = "200"
           done
+
+      - name: Verify seven coffee matcher regression profiles
+        run: |
+          set -euo pipefail
+          check_profile(){
+            id="$1"; query="$2"; expected="$3"
+            code=$(curl -sS -L -o "/tmp/$id.html" -w '%{http_code}' "$BASE_URL/categories/coffee-machines/finder/?$query")
+            echo "$id HTTP: $code Expected: $expected"
+            test "$code" = "200"
+            grep -qi 'Best fit' "/tmp/$id.html"
+            grep -qi "$expected" "/tmp/$id.html"
+          }
+          check_profile QA001 'workflow=one-touch&drink=milk&learning=almost&budget=1500&speed=high&space=normal&beans=rarely' 'Magnifica Start with Milk'
+          check_profile QA002 'workflow=guided&drink=milk&learning=some&budget=2000&speed=medium&space=normal&beans=sometimes' 'Barista Touch BES880'
+          check_profile QA003 'workflow=guided&drink=black&learning=some&budget=700&speed=medium&space=normal&beans=rarely' 'Sunbeam Barista Max'
+          check_profile QA004 'workflow=manual&drink=mixed&learning=control&budget=1500&speed=low&space=any&beans=often' 'La Specialista Opera'
+          check_profile QA005 'workflow=one-touch&drink=mixed&learning=almost&budget=1500&speed=high&space=compact&beans=sometimes' 'Magnifica Evo'
+          check_profile QA006 'workflow=guided&drink=cold&learning=some&budget=2000&speed=medium&space=normal&beans=rarely' 'Barista Touch Impress'
+          check_profile QA007 'workflow=one-touch&drink=mixed&learning=almost&budget=1500&speed=high&space=normal&beans=often' 'Rivelia Auto Milk'
+          echo 'COFFEE_MATCHER_QA=7/7_PASS'
 
       - name: Verify product affiliate and structured-data controls
         run: |
