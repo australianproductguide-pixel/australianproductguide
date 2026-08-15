@@ -148,7 +148,7 @@ jobs:
           }
           check_profile QA001 'workflow=one-touch&drink=milk&learning=almost&budget=1500&speed=high&space=normal&beans=rarely' 'Magnifica Start with Milk'
           check_profile QA002 'workflow=guided&drink=milk&learning=some&budget=2000&speed=medium&space=normal&beans=sometimes' 'Barista Touch BES880'
-          check_profile QA003 'workflow=guided&drink=black&learning=some&budget=700&speed=medium&space=normal&beans=rarely' 'Sunbeam Barista Max'
+          check_profile QA003 'workflow=guided&drink=black&learning=some&budget=700&speed=medium&space=normal&beans=rarely' 'Barista Max EM5300S'
           check_profile QA004 'workflow=manual&drink=mixed&learning=control&budget=1500&speed=low&space=any&beans=often' 'La Specialista Opera'
           check_profile QA005 'workflow=one-touch&drink=mixed&learning=almost&budget=1500&speed=high&space=compact&beans=sometimes' 'Magnifica Evo'
           check_profile QA006 'workflow=guided&drink=cold&learning=some&budget=2000&speed=medium&space=normal&beans=rarely' 'Barista Touch Impress'
