@@ -1,5 +1,6 @@
 const z=require('zlib');
-const B=require('./s0')+require('./s1')+require('./s2')+require('./g1')+require('./g2')+require('./g3');
+// Bundle data must live outside /api so Vercel deploys only this single Function.
+const B=require('../bundle/s0')+require('../bundle/s1')+require('../bundle/s2')+require('../bundle/g1')+require('../bundle/g2')+require('../bundle/g3');
 let F;
 function files(){if(!F)F=JSON.parse(z.brotliDecompressSync(Buffer.from(B,'base64')).toString('utf8'));return F;}
 const BUILD_ORIGIN='https://apg-test.example';
