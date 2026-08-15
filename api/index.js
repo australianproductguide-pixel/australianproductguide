@@ -1,11 +1,1 @@
-const z=require('zlib');
-// Bundle data must live outside /api so Vercel deploys only this single Function.
-const B=require('../bundle/s0')+require('../bundle/s1')+require('../bundle/s2')+require('../bundle/g1')+require('../bundle/g2')+require('../bundle/g3');
-let F;
-function files(){if(!F)F=JSON.parse(z.brotliDecompressSync(Buffer.from(B,'base64')).toString('utf8'));return F;}
-const BUILD_ORIGIN='https://apg-test.example';
-const REDIRECTS={'/coffee-machines':'/categories/coffee-machines/','/coffee-machines/finder':'/categories/coffee-machines/finder/','/coffee-machines/compare':'/compare/coffee-machines/','/coffee-machines/manual-vs-automatic':'/guides/manual-vs-automatic-coffee-machines/','/coffee-machines/best-for-beginners':'/best/coffee-machines-australia/','/coffee-machines/best-for-milk-drinks':'/best/coffee-machines-australia/'};
-function origin(req){const host=(process.env.VERCEL_PROJECT_PRODUCTION_URL||req.headers['x-forwarded-host']||req.headers.host||'').replace(/^https?:\/\//,'');return host?'https://'+host:'';}
-function rewrite(text,req){const o=origin(req);return o?text.split(BUILD_ORIGIN).join(o):text;}
-function headers(res){res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');res.setHeader('Permissions-Policy','camera=(), microphone=(), geolocation=()');res.setHeader('X-Frame-Options','SAMEORIGIN');res.setHeader('Strict-Transport-Security','max-age=31536000; includeSubDomains');}
-module.exports=(req,res)=>{headers(res);const u=new URL(req.url,'https://example.invalid');let path=decodeURIComponent(u.pathname);const bare=path.length>1&&path.endsWith('/')?path.slice(0,-1):path;if(REDIRECTS[bare]){res.statusCode=308;res.setHeader('Location',REDIRECTS[bare]);return res.end();}let rel=path.replace(/^\/+/, '');if(!rel||path.endsWith('/'))rel+='index.html';const fs=files();if(!fs[rel]&&!path.endsWith('/')){const alt=rel+'/index.html';if(fs[alt]){res.statusCode=308;res.setHeader('Location',path+'/');return res.end();}}const hit=fs[rel];if(!hit){const nf=fs['404.html'];res.statusCode=404;res.setHeader('Content-Type',nf[0]);res.setHeader('X-Robots-Tag','noindex,follow');return res.end(nf[1]==='t'?rewrite(nf[2],req):Buffer.from(nf[2],'base64'));}res.statusCode=200;res.setHeader('Content-Type',hit[0]);if(rel==='search/index.html')res.setHeader('X-Robots-Tag','noindex,follow');return res.end(hit[1]==='t'?rewrite(hit[2],req):Buffer.from(hit[2],'base64'));};
+module.exports=require('../lib/app');
