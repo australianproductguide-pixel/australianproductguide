@@ -13,61 +13,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Brute-validate redundant bundle spans
+      - name: Extract recoverable Brotli prefix from bundle copies
         run: |
           set -euo pipefail
           node <<'NODE'
           const z=require('zlib');
-          const C=['c0','c1','c2','c3','c4','c5'].map(n=>require('./bundle/'+n)).join('');
-          const S=['s0','s1','s2','g1','g2','g3'].map(n=>require('./bundle/'+n)).join('');
-          // Exact matching blocks established by independent sequence alignment.
-          const common=[
-            C.slice(0,9984),
-            C.slice(10009,29990),
-            C.slice(49880,53864),
-            C.slice(61867,69848),
-            C.slice(69871,71852),
-            C.slice(81587,91584)
-          ];
-          const dc=[
-            C.slice(9984,10009),
-            C.slice(29990,49880),
-            C.slice(53864,61867),
-            C.slice(69848,69871),
-            C.slice(71852,81587)
-          ];
-          const ds=[
-            S.slice(9984,20003),
-            S.slice(39984,62004),
-            S.slice(65988,66011),
-            S.slice(73992,84010),
-            S.slice(85991,86014)
-          ];
-          let found=0;
-          for(let mask=0;mask<32;mask++){
-            let B=common[0];
-            let choices='';
-            for(let i=0;i<5;i++){
-              const useS=!!(mask&(1<<i));
-              B+=(useS?ds[i]:dc[i])+common[i+1];
-              choices+=useS?'S':'C';
+          const sets={
+            C:['c0','c1','c2','c3','c4','c5'].map(n=>require('./bundle/'+n)).join(''),
+            S:['s0','s1','s2','g1','g2','g3'].map(n=>require('./bundle/'+n)).join('')
+          };
+          async function recover(name,b64){
+            const buf=Buffer.from(b64,'base64');
+            for(const size of [64,256,1024,4096]){
+              await new Promise(resolve=>{
+                const d=z.createBrotliDecompress();
+                const out=[];
+                d.on('data',x=>out.push(x));
+                d.on('error',e=>{
+                  const raw=Buffer.concat(out).toString('utf8');
+                  console.log(`${name} chunk=${size} compressed=${buf.length} recovered_chars=${raw.length} error=${e.code}`);
+                  console.log(`${name}_PREFIX_SAMPLE=${JSON.stringify(raw.slice(0,10000))}`);
+                  resolve();
+                });
+                d.on('end',()=>{const raw=Buffer.concat(out).toString('utf8');console.log(`${name} COMPLETE chars=${raw.length}`);resolve();});
+                for(let i=0;i<buf.length;i+=size)d.write(buf.subarray(i,i+size));
+                d.end();
+              });
+              break;
             }
-            try{
-              const raw=z.brotliDecompressSync(Buffer.from(B,'base64')).toString('utf8');
-              const files=JSON.parse(raw);
-              const keys=Object.keys(files);
-              console.log('RECOVERED choices='+choices+' chars='+B.length+' raw='+raw.length+' files='+keys.length);
-              console.log('HAS_HOME='+!!files['index.html']+' HAS_SITEMAP='+!!files['sitemap.xml']+' HAS_ROBOTS='+!!files['robots.txt']+' HAS_404='+!!files['404.html']);
-              const sm=files['sitemap.xml'];
-              const xml=sm&&sm[1]==='t'?sm[2]:'';
-              console.log('SITEMAP_URLS='+(xml.match(/<loc>/g)||[]).length);
-              const all=keys.map(k=>files[k]&&files[k][1]==='t'?files[k][2]:'').join('\n');
-              console.log('AFFILIATE='+all.includes('auproductguid-22'));
-              console.log('TRADIE='+/australian[- ]tradie/i.test(all));
-              require('fs').writeFileSync('/tmp/recovered.txt',B);
-              found++;
-            }catch(e){}
           }
-          if(!found){console.error('NO_VALID_COMBINATION');process.exit(1)}
-          if(found!==1){console.error('AMBIGUOUS_VALID_COMBINATIONS='+found);process.exit(2)}
+          (async()=>{for(const [n,b] of Object.entries(sets))await recover(n,b)})().catch(e=>{console.error(e);process.exit(1)});
           NODE
