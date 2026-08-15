@@ -13,32 +13,35 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate coherent c0-c5 Production bundle
+      - name: Analyse surviving bundle overlap
         run: |
           set -euo pipefail
           node <<'NODE'
-          const z=require('zlib');
-          const names=['c0','c1','c2','c3','c4','c5'];
-          const parts=names.map(n=>require('./bundle/'+n));
-          parts.forEach((p,i)=>console.log(names[i]+'_chars='+p.length));
-          const B=parts.join('');
-          console.log('bundle_chars='+B.length);
-          const raw=z.brotliDecompressSync(Buffer.from(B,'base64')).toString('utf8');
-          console.log('decompressed_chars='+raw.length);
-          const files=JSON.parse(raw);
-          const keys=Object.keys(files);
-          console.log('file_count='+keys.length);
-          for(const k of ['index.html','404.html','sitemap.xml','robots.txt']) console.log('has_'+k.replace(/\W/g,'_')+'='+(!!files[k]));
-          if(!files['index.html']||!files['404.html']||!files['sitemap.xml']||!files['robots.txt']) process.exit(2);
-          const text=v=>v && v[1]==='t' ? v[2] : '';
-          const sitemap=text(files['sitemap.xml']);
-          const locs=[...sitemap.matchAll(/<loc>(.*?)<\/loc>/gi)].map(m=>m[1]);
-          console.log('sitemap_url_count='+locs.length);
-          console.log('product_route_count='+locs.filter(u=>u.includes('/products/')).length);
-          console.log('category_route_count='+locs.filter(u=>u.includes('/categories/')).length);
-          console.log('comparison_route_count='+locs.filter(u=>u.includes('/compare/')).length);
-          console.log('guide_route_count='+locs.filter(u=>u.includes('/guides/')).length);
-          const allText=keys.map(k=>text(files[k])).join('\n');
-          console.log('affiliate_tag_present='+allText.includes('auproductguid-22'));
-          console.log('tradie_contamination='+(allText.toLowerCase().includes('australian-tradie-software-matcher')||allText.toLowerCase().includes('australian tradie software matcher')));
+          const sets={
+            c:['c0','c1','c2','c3','c4','c5'].map(n=>require('./bundle/'+n)),
+            sg:['s0','s1','s2','g1','g2','g3'].map(n=>require('./bundle/'+n))
+          };
+          for(const [name,parts] of Object.entries(sets)){
+            const full=parts.join('');
+            console.log(name+'_total='+full.length);
+            console.log(name+'_prefix='+JSON.stringify(full.slice(0,80)));
+            console.log(name+'_suffix='+JSON.stringify(full.slice(-80)));
+          }
+          const C=sets.c.join(''), S=sets.sg.join('');
+          console.log('same_prefix_chars='+(()=>{let i=0;while(i<C.length&&i<S.length&&C[i]===S[i])i++;return i})());
+          function bestMatch(needle,hay){
+            for(const len of [12000,10000,8000,6000,4000,2000,1000,500,200,100,50]){
+              for(let off=0;off+len<=needle.length;off+=Math.max(1,Math.floor(len/2))){
+                const sub=needle.slice(off,off+len), p=hay.indexOf(sub);
+                if(p>=0)return {len,off,p};
+              }
+            }
+            return null;
+          }
+          sets.c.forEach((p,i)=>console.log('c'+i+'_in_sg='+JSON.stringify(bestMatch(p,S))));
+          sets.sg.forEach((p,i)=>console.log(['s0','s1','s2','g1','g2','g3'][i]+'_in_c='+JSON.stringify(bestMatch(p,C))));
+          // Find exact overlap across every chunk boundary by suffix/prefix.
+          function overlap(a,b,max=25000){for(let n=Math.min(a.length,b.length,max);n>=20;n--)if(a.slice(-n)===b.slice(0,n))return n;return 0}
+          const all=[...sets.c.map((v,i)=>['c'+i,v]),...sets.sg.map((v,i)=>[['s0','s1','s2','g1','g2','g3'][i],v])];
+          for(const [na,a] of all) for(const [nb,b] of all) if(na!==nb){const n=overlap(a,b);if(n>=20)console.log('overlap '+na+' -> '+nb+' = '+n);}
           NODE
