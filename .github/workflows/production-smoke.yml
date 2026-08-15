@@ -42,92 +42,135 @@ jobs:
           done
           exit 1
 
-      - name: Verify anonymous homepage and system routes
+      - name: Verify public homepage system routes and assets
         run: |
           set -euo pipefail
           code=$(curl -sS -L -D /tmp/home.headers -o /tmp/home.html -w '%{http_code}' "$BASE_URL/")
           echo "Homepage HTTP: $code"
-          echo '--- Response headers ---'
-          sed -n '1,30p' /tmp/home.headers
-          echo '--- HTML title/sample ---'
-          python3 - <<'PY'
-          import re
-          text=open('/tmp/home.html',encoding='utf-8',errors='replace').read()
-          m=re.search(r'<title[^>]*>(.*?)</title>',text,re.I|re.S)
-          print('TITLE='+(re.sub(r'\s+',' ',m.group(1)).strip() if m else '(none)'))
-          print('SAMPLE='+re.sub(r'\s+',' ',text[:1400]).strip())
-          PY
           test "$code" = "200"
-          if grep -qiE 'authentication required|vercel authentication|log in to vercel|sign in to vercel|Login – Vercel' /tmp/home.html; then
-            echo 'Vercel authentication/protection page detected on Production alias'
-            exit 1
-          fi
-          grep -qi 'Australian' /tmp/home.html
-          grep -qi 'Product Guide' /tmp/home.html
+          grep -qi '<title>Australian Product Guide' /tmp/home.html
+          grep -q 'rel="canonical" href="https://au-product-guide.vercel.app/"' /tmp/home.html
+          if grep -qiE 'authentication required|vercel authentication|log in to vercel|sign in to vercel|Login – Vercel' /tmp/home.html; then exit 1; fi
+
+          for asset in /assets/site.css /assets/logo.svg /assets/social.svg; do
+            code=$(curl -sS -L -o /tmp/asset -w '%{http_code}' "$BASE_URL$asset")
+            echo "$asset HTTP: $code"
+            test "$code" = "200"
+          done
+          curl -fsSL "$BASE_URL/assets/site.css" -o /tmp/site.css
+          grep -q '@media(max-width:800px)' /tmp/site.css
+          grep -q 'name="viewport"' /tmp/home.html
 
           code=$(curl -sS -L -o /tmp/sitemap.xml -w '%{http_code}' "$BASE_URL/sitemap.xml")
           echo "Sitemap HTTP: $code"
           test "$code" = "200"
           grep -qi '<urlset' /tmp/sitemap.xml
-
           code=$(curl -sS -L -o /tmp/robots.txt -w '%{http_code}' "$BASE_URL/robots.txt")
           echo "Robots HTTP: $code"
           test "$code" = "200"
-          grep -qi 'sitemap' /tmp/robots.txt
+          grep -q 'Sitemap: https://au-product-guide.vercel.app/sitemap.xml' /tmp/robots.txt
 
-          for path in /about/ /methodology/ /privacy/ /terms/; do
-            code=$(curl -sS -L -o /tmp/page.html -w '%{http_code}' "$BASE_URL$path")
-            echo "$path HTTP: $code"
-            test "$code" = "200"
-          done
-
-          code=$(curl -sS -L -o /tmp/notfound.html -w '%{http_code}' "$BASE_URL/__apg-p0-genuine-404-test__")
+          code=$(curl -sS -o /tmp/notfound.html -w '%{http_code}' "$BASE_URL/__apg-p0-genuine-404-test__/")
           echo "404 test HTTP: $code"
           test "$code" = "404"
+          grep -qi 'Page not found' /tmp/notfound.html
 
-      - name: Verify sitemap journeys and Production hygiene
+          code=$(curl -sS -o /dev/null -w '%{http_code}' "$BASE_URL/coffee-machines")
+          location=$(curl -sSI "$BASE_URL/coffee-machines" | tr -d '\r' | awk 'BEGIN{IGNORECASE=1}/^location:/{print $2; exit}')
+          echo "Legacy coffee route HTTP: $code Location: $location"
+          test "$code" = "308"
+          test "$location" = "/categories/coffee-machines/"
+
+      - name: Crawl every canonical indexable route
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import os, re, urllib.parse, urllib.request
+          import os,re,urllib.parse,urllib.request
           base=os.environ['BASE_URL']
           xml=open('/tmp/sitemap.xml',encoding='utf-8').read()
           urls=re.findall(r'<loc>(.*?)</loc>',xml,re.I)
           print('SITEMAP_URL_COUNT='+str(len(urls)))
-          if not urls: raise SystemExit('No sitemap URLs')
-          tests={
-              'category': next((u for u in urls if '/categories/' in u), None),
-              'product': next((u for u in urls if '/products/' in u), None),
-              'comparison': next((u for u in urls if '/compare/' in u), None),
-              'guide': next((u for u in urls if '/guides/' in u), None),
-              'finder': next((u for u in urls if '/finder/' in u or 'help-me-choose' in u.lower()), None),
-          }
-          for name,u in tests.items():
-              if not u: raise SystemExit(f'Missing {name} route in sitemap')
-              parsed=urllib.parse.urlsplit(u)
-              target=base+parsed.path+(('?'+parsed.query) if parsed.query else '')
-              req=urllib.request.Request(target,headers={'User-Agent':'APG-P0-Smoke/1.0'})
+          if len(urls)!=137: raise SystemExit(f'Expected 137 sitemap URLs, found {len(urls)}')
+          if len(set(urls))!=137: raise SystemExit('Duplicate sitemap URLs')
+          for u in urls:
+              if not u.startswith(base+'/') and u!=base+'/': raise SystemExit('Non-Production sitemap hostname: '+u)
+              p=urllib.parse.urlsplit(u).path
+              target=base+p
+              req=urllib.request.Request(target,headers={'User-Agent':'APG-P0-Full-Crawl/1.0'})
               with urllib.request.urlopen(req,timeout=20) as r:
-                  print(f'{name.upper()}_HTTP={r.status} PATH={parsed.path}')
-                  if r.status != 200: raise SystemExit(f'{name} not 200')
-          text=(open('/tmp/home.html',encoding='utf-8',errors='ignore').read()+xml+open('/tmp/robots.txt',encoding='utf-8',errors='ignore').read()).lower()
-          if 'australian-tradie-software-matcher' in text or 'australian tradie software matcher' in text:
-              raise SystemExit('Legacy Australian Tradie contamination detected')
-          print('TRADIE_CONTAMINATION=ABSENT_IN_CORE_OUTPUTS')
+                  if r.status!=200: raise SystemExit(f'{p} returned {r.status}')
+                  text=r.read().decode('utf-8','replace')
+              expected=base+p
+              m=re.search(r'<link rel="canonical" href="([^"]+)"',text,re.I)
+              if not m or m.group(1)!=expected: raise SystemExit(f'Bad canonical {p}: {m.group(1) if m else "missing"}')
+              if re.search(r'<meta name="robots" content="noindex',text,re.I): raise SystemExit('Indexable route is noindex: '+p)
+              if 'australian-tradie-software-matcher' in text.lower() or 'australian tradie software matcher' in text.lower(): raise SystemExit('Tradie contamination: '+p)
+              if '<title>' not in text.lower(): raise SystemExit('Missing title: '+p)
+          print('FULL_INDEXABLE_CRAWL=137/137_HTTP_200')
+          print('CANONICALS=137/137_PRODUCTION_HOST')
+          print('INDEXABLE_NOINDEX_ERRORS=0')
+          print('TRADIE_CONTAMINATION=ABSENT_ALL_INDEXABLE_ROUTES')
           PY
 
-      - name: Verify affiliate tag appears in a maintained product journey
+      - name: Verify route families and interactive journeys
         run: |
           set -euo pipefail
-          product_path=$(python3 - <<'PY'
+          python3 - <<'PY'
           import re,urllib.parse
           xml=open('/tmp/sitemap.xml',encoding='utf-8').read()
           urls=re.findall(r'<loc>(.*?)</loc>',xml,re.I)
-          u=next((u for u in urls if '/products/' in u), '')
-          print(urllib.parse.urlsplit(u).path)
+          paths=[urllib.parse.urlsplit(u).path for u in urls]
+          counts={
+            'products':sum(p.startswith('/products/') for p in paths),
+            'finders':sum(p.endswith('/finder/') for p in paths),
+            'guides':sum(p.startswith('/guides/') for p in paths),
+            'comparisons':sum(p.startswith('/compare/') for p in paths),
+            'brands':sum(p.startswith('/brands/') and p!='/brands/' for p in paths),
+          }
+          print('ROUTE_FAMILY_COUNTS='+str(counts))
+          expected={'products':37,'finders':4,'guides':4,'comparisons':60,'brands':16}
+          if counts!=expected: raise SystemExit(f'Unexpected route family counts {counts}')
           PY
-          )
-          test -n "$product_path"
-          curl -fsSL "$BASE_URL$product_path" -o /tmp/product.html
-          grep -q 'auproductguid-22' /tmp/product.html
-          echo 'AFFILIATE_TAG=auproductguid-22'
+
+          code=$(curl -sS -L -o /tmp/search.html -w '%{http_code}' "$BASE_URL/search/?q=Breville")
+          test "$code" = "200"
+          grep -qi 'result' /tmp/search.html
+          grep -qi 'Breville' /tmp/search.html
+          grep -qi 'noindex,follow' /tmp/search.html
+
+          code=$(curl -sS -L -o /tmp/finder.html -w '%{http_code}' "$BASE_URL/categories/coffee-machines/finder/?priority=cold")
+          test "$code" = "200"
+          grep -qi 'Best fit' /tmp/finder.html
+          grep -qi 'Barista Touch Impress' /tmp/finder.html
+
+          for path in /about/ /methodology/ /editorial-standards/ /sources/ /corrections-policy/ /affiliate-disclosure/ /privacy/ /terms/ /contact/; do
+            code=$(curl -sS -L -o /tmp/trust.html -w '%{http_code}' "$BASE_URL$path")
+            echo "$path HTTP: $code"
+            test "$code" = "200"
+          done
+
+      - name: Verify product affiliate and structured-data controls
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,re,urllib.parse,urllib.request
+          base=os.environ['BASE_URL']
+          xml=open('/tmp/sitemap.xml',encoding='utf-8').read()
+          urls=re.findall(r'<loc>(.*?)</loc>',xml,re.I)
+          products=[urllib.parse.urlsplit(u).path for u in urls if '/products/' in u]
+          if len(products)!=37: raise SystemExit('Expected 37 product routes')
+          for p in products:
+              req=urllib.request.Request(base+p,headers={'User-Agent':'APG-P0-Affiliate-QA/1.0'})
+              text=urllib.request.urlopen(req,timeout=20).read().decode('utf-8','replace')
+              if 'auproductguid-22' not in text: raise SystemExit('Missing affiliate tag: '+p)
+              if 'rel="sponsored nofollow noopener"' not in text: raise SystemExit('Missing sponsored rel: '+p)
+              if 'Paid link.' not in text: raise SystemExit('Missing paid-link label: '+p)
+              if '"@type":"Product"' not in text: raise SystemExit('Missing Product schema: '+p)
+              if '"@type":"BreadcrumbList"' not in text: raise SystemExit('Missing Breadcrumb schema: '+p)
+          print('PRODUCT_AFFILIATE_CONTROLS=37/37_PASS')
+          print('PRODUCT_SCHEMA=37/37_PASS')
+          PY
+          curl -fsSL "$BASE_URL/affiliate-disclosure/" -o /tmp/disclosure.html
+          grep -q 'As an Amazon Associate' /tmp/disclosure.html
+          grep -q 'auproductguid-22' /tmp/disclosure.html
+          echo 'AFFILIATE_DISCLOSURE=PASS'
