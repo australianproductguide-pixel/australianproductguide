@@ -25,15 +25,15 @@ jobs:
           set -euo pipefail
           for attempt in $(seq 1 72); do
             deployments=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments?sha=$SHA")
-            deployment_id=$(echo "$deployments" | jq -r '.[0].id // empty')
+            deployment_id=$(echo "$deployments" | jq -r '[.[] | select(.environment=="Production" or .original_environment=="Production")][0].id // empty')
             if [ -n "$deployment_id" ]; then
               statuses=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments/$deployment_id/statuses")
               state=$(echo "$statuses" | jq -r '.[0].state // empty')
               url=$(echo "$statuses" | jq -r '.[0].environment_url // .[0].target_url // empty')
-              echo "Vercel state: ${state:-pending}"
+              echo "Vercel Production state: ${state:-pending}"
               if [ "$state" = "failure" ] || [ "$state" = "error" ]; then exit 1; fi
               if [ "$state" = "success" ]; then
-                echo "Immutable deployment URL: ${url:-unknown}"
+                echo "Immutable Production deployment URL: ${url:-unknown}"
                 echo "Clean Production alias: $BASE_URL"
                 exit 0
               fi
