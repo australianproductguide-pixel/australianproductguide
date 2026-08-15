@@ -13,27 +13,61 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Map surviving bundle windows
+      - name: Brute-validate redundant bundle spans
         run: |
           set -euo pipefail
           node <<'NODE'
-          const cn=['c0','c1','c2','c3','c4','c5'], sn=['s0','s1','s2','g1','g2','g3'];
-          const cp=cn.map(n=>require('./bundle/'+n)), sp=sn.map(n=>require('./bundle/'+n));
-          const C=cp.join(''), S=sp.join('');
-          console.log('C_LEN='+C.length+' S_LEN='+S.length);
-          function map(parts,names,hay,hayName){
-            for(let k=0;k<parts.length;k++){
-              const p=parts[k];
-              let last=null;
-              for(let off=0;off+500<=p.length;off+=500){
-                const pos=hay.indexOf(p.slice(off,off+500));
-                const key=pos>=0 ? `${hayName}:${pos-off}` : 'MISS';
-                if(key!==last){console.log(`${names[k]} off=${off} -> ${key}`);last=key;}
-              }
-              const off=Math.max(0,p.length-500), pos=hay.indexOf(p.slice(off));
-              console.log(`${names[k]} tail off=${off} -> ${pos>=0?hayName+':'+(pos-off):'MISS'}`);
+          const z=require('zlib');
+          const C=['c0','c1','c2','c3','c4','c5'].map(n=>require('./bundle/'+n)).join('');
+          const S=['s0','s1','s2','g1','g2','g3'].map(n=>require('./bundle/'+n)).join('');
+          // Exact matching blocks established by independent sequence alignment.
+          const common=[
+            C.slice(0,9984),
+            C.slice(10009,29990),
+            C.slice(49880,53864),
+            C.slice(61867,69848),
+            C.slice(69871,71852),
+            C.slice(81587,91584)
+          ];
+          const dc=[
+            C.slice(9984,10009),
+            C.slice(29990,49880),
+            C.slice(53864,61867),
+            C.slice(69848,69871),
+            C.slice(71852,81587)
+          ];
+          const ds=[
+            S.slice(9984,20003),
+            S.slice(39984,62004),
+            S.slice(65988,66011),
+            S.slice(73992,84010),
+            S.slice(85991,86014)
+          ];
+          let found=0;
+          for(let mask=0;mask<32;mask++){
+            let B=common[0];
+            let choices='';
+            for(let i=0;i<5;i++){
+              const useS=!!(mask&(1<<i));
+              B+=(useS?ds[i]:dc[i])+common[i+1];
+              choices+=useS?'S':'C';
             }
+            try{
+              const raw=z.brotliDecompressSync(Buffer.from(B,'base64')).toString('utf8');
+              const files=JSON.parse(raw);
+              const keys=Object.keys(files);
+              console.log('RECOVERED choices='+choices+' chars='+B.length+' raw='+raw.length+' files='+keys.length);
+              console.log('HAS_HOME='+!!files['index.html']+' HAS_SITEMAP='+!!files['sitemap.xml']+' HAS_ROBOTS='+!!files['robots.txt']+' HAS_404='+!!files['404.html']);
+              const sm=files['sitemap.xml'];
+              const xml=sm&&sm[1]==='t'?sm[2]:'';
+              console.log('SITEMAP_URLS='+(xml.match(/<loc>/g)||[]).length);
+              const all=keys.map(k=>files[k]&&files[k][1]==='t'?files[k][2]:'').join('\n');
+              console.log('AFFILIATE='+all.includes('auproductguid-22'));
+              console.log('TRADIE='+/australian[- ]tradie/i.test(all));
+              require('fs').writeFileSync('/tmp/recovered.txt',B);
+              found++;
+            }catch(e){}
           }
-          console.log('--- C chunks mapped into S ---'); map(cp,cn,S,'S');
-          console.log('--- S chunks mapped into C ---'); map(sp,sn,C,'C');
+          if(!found){console.error('NO_VALID_COMBINATION');process.exit(1)}
+          if(found!==1){console.error('AMBIGUOUS_VALID_COMBINATIONS='+found);process.exit(2)}
           NODE
