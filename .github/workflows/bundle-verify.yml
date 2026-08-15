@@ -13,34 +13,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Extract recoverable Brotli prefix from bundle copies
+      - name: Inventory recoverable site prefix
         run: |
           set -euo pipefail
           node <<'NODE'
           const z=require('zlib');
-          const sets={
-            C:['c0','c1','c2','c3','c4','c5'].map(n=>require('./bundle/'+n)).join(''),
-            S:['s0','s1','s2','g1','g2','g3'].map(n=>require('./bundle/'+n)).join('')
-          };
-          async function recover(name,b64){
-            const buf=Buffer.from(b64,'base64');
-            for(const size of [64,256,1024,4096]){
-              await new Promise(resolve=>{
-                const d=z.createBrotliDecompress();
-                const out=[];
-                d.on('data',x=>out.push(x));
-                d.on('error',e=>{
-                  const raw=Buffer.concat(out).toString('utf8');
-                  console.log(`${name} chunk=${size} compressed=${buf.length} recovered_chars=${raw.length} error=${e.code}`);
-                  console.log(`${name}_PREFIX_SAMPLE=${JSON.stringify(raw.slice(0,10000))}`);
-                  resolve();
-                });
-                d.on('end',()=>{const raw=Buffer.concat(out).toString('utf8');console.log(`${name} COMPLETE chars=${raw.length}`);resolve();});
-                for(let i=0;i<buf.length;i+=size)d.write(buf.subarray(i,i+size));
-                d.end();
-              });
-              break;
-            }
-          }
-          (async()=>{for(const [n,b] of Object.entries(sets))await recover(n,b)})().catch(e=>{console.error(e);process.exit(1)});
+          const B=['s0','s1','s2','g1','g2','g3'].map(n=>require('./bundle/'+n)).join('');
+          const buf=Buffer.from(B,'base64');
+          const d=z.createBrotliDecompress();
+          const out=[];
+          d.on('data',x=>out.push(x));
+          d.on('error',e=>{
+            const raw=Buffer.concat(out).toString('utf8');
+            console.log('RECOVERED_CHARS='+raw.length+' ERROR='+e.code);
+            const keys=[...raw.matchAll(/(?:^|,)\"([^\"]+)\":\[/g)].map(m=>m[1]);
+            console.log('RECOVERED_TOP_LEVEL_KEYS='+keys.length);
+            keys.forEach((k,i)=>console.log('KEY '+i+' '+k));
+            const productPaths=[...new Set([...raw.matchAll(/\\?\"(\/products\/[a-z0-9-]+\/)\\?\"/gi)].map(m=>m[1]))];
+            console.log('PRODUCT_PATHS='+productPaths.length);
+            productPaths.forEach(x=>console.log('PRODUCT '+x));
+            const categoryPaths=[...new Set([...raw.matchAll(/\\?\"(\/categories\/[a-z0-9-]+\/)\\?\"/gi)].map(m=>m[1]))];
+            console.log('CATEGORY_PATHS='+categoryPaths.length);
+            categoryPaths.forEach(x=>console.log('CATEGORY '+x));
+            console.log('TAIL='+JSON.stringify(raw.slice(-12000)));
+          });
+          for(let i=0;i<buf.length;i+=64)d.write(buf.subarray(i,i+64));
+          d.end();
           NODE
