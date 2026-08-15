@@ -13,12 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate exact Production bundle
+      - name: Validate coherent c0-c5 Production bundle
         run: |
           set -euo pipefail
           node <<'NODE'
           const z=require('zlib');
-          const names=['s0','s1','s2','g1','g2','g3'];
+          const names=['c0','c1','c2','c3','c4','c5'];
           const parts=names.map(n=>require('./bundle/'+n));
           parts.forEach((p,i)=>console.log(names[i]+'_chars='+p.length));
           const B=parts.join('');
@@ -28,9 +28,17 @@ jobs:
           const files=JSON.parse(raw);
           const keys=Object.keys(files);
           console.log('file_count='+keys.length);
-          console.log('has_home='+(!!files['index.html']));
-          console.log('has_404='+(!!files['404.html']));
-          console.log('has_sitemap='+(!!files['sitemap.xml']));
-          console.log('has_robots='+(!!files['robots.txt']));
+          for(const k of ['index.html','404.html','sitemap.xml','robots.txt']) console.log('has_'+k.replace(/\W/g,'_')+'='+(!!files[k]));
           if(!files['index.html']||!files['404.html']||!files['sitemap.xml']||!files['robots.txt']) process.exit(2);
+          const text=v=>v && v[1]==='t' ? v[2] : '';
+          const sitemap=text(files['sitemap.xml']);
+          const locs=[...sitemap.matchAll(/<loc>(.*?)<\/loc>/gi)].map(m=>m[1]);
+          console.log('sitemap_url_count='+locs.length);
+          console.log('product_route_count='+locs.filter(u=>u.includes('/products/')).length);
+          console.log('category_route_count='+locs.filter(u=>u.includes('/categories/')).length);
+          console.log('comparison_route_count='+locs.filter(u=>u.includes('/compare/')).length);
+          console.log('guide_route_count='+locs.filter(u=>u.includes('/guides/')).length);
+          const allText=keys.map(k=>text(files[k])).join('\n');
+          console.log('affiliate_tag_present='+allText.includes('auproductguid-22'));
+          console.log('tradie_contamination='+(allText.toLowerCase().includes('australian-tradie-software-matcher')||allText.toLowerCase().includes('australian tradie software matcher')));
           NODE
