@@ -1,5 +1,5 @@
 const z=require('zlib');
-const B=require('./c0')+require('./c1')+require('./c2')+require('./c3')+require('./c4')+require('./c5');
+const B=require('./s0')+require('./s1')+require('./s2')+require('./g1')+require('./g2')+require('./g3');
 let F;
 function files(){if(!F)F=JSON.parse(z.brotliDecompressSync(Buffer.from(B,'base64')).toString('utf8'));return F;}
 const BUILD_ORIGIN='https://apg-test.example';
