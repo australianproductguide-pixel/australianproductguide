@@ -1,0 +1,89 @@
+name: APG Source QA
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax and module load
+        run: |
+          set -euo pipefail
+          for f in api/*.js data/*.js lib/*.js scripts/*.js; do node --check "$f"; done
+          node - <<'NODE'
+          const fs=require('fs'); require('./lib/app');
+          const {clientJs}=require('./lib/client'); const {decisionClientJs}=require('./lib/decision-client'); const {platformV3ClientJs}=require('./lib/platform-v3-client');
+          fs.writeFileSync('/tmp/apg-client.js',clientJs+decisionClientJs+platformV3ClientJs);
+          console.log('MODULE_LOAD=PASS');
+          NODE
+          node --check /tmp/apg-client.js
+
+      - name: Catalogue, freshness, Amazon and export invariants
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const {products,pathways,categories}=require('./data'); const {brands,pairPages,indexableRoutes}=require('./lib/routes');
+          const {direct,CREATORS_API}=require('./data/retailers'); const {catalogueCsv,catalogueJson,headers}=require('./lib/catalogue-export'); const {imageStatus}=require('./data/image-provenance');
+          const expect=(ok,msg)=>{if(!ok)throw new Error(msg)};
+          expect(products.length===257,'257 products'); expect(Object.keys(categories).length===48,'48 categories'); expect(pathways.length===48&&!pathways.some(x=>!x.maintained),'zero empty pathways');
+          expect(brands.length===112,'112 canonical brand pages'); expect(pairPages.length===144,'144 maintained pair pages'); expect(indexableRoutes.length===722,'722 indexable routes');
+          const deep=products.filter(x=>x.evidenceTier==='deep'),starter=products.filter(x=>x.evidenceTier==='starter'); expect(deep.length===37&&starter.length===220,'37 deep / 220 starter');
+          for(const p of products){
+            for(const k of ['firstResearched','lastSourceVerification','lastRetailerCheck','lastImageVerification','nextReviewDue','freshnessStatus','evidenceTier'])expect(p[k]!=null,`${p.slug} missing ${k}`);
+            if(p.evidenceTier==='starter'){expect(p.lastSubstantiveReview===null,`${p.slug} fake substantive review`);expect(p.price===null,`${p.slug} fake price`);}
+            const r=p.retailers?.[0]; expect(r&&r.retailer==='Amazon Australia',`${p.slug} retailer missing`); const u=r.affiliateUrl||r.url;
+            expect(u.includes('amazon.com.au'),`${p.slug} non-Amazon URL`); expect(u.includes('tag=auproductguid-22'),`${p.slug} affiliate tag missing`);
+            if(r.kind==='affiliate-direct')expect(r.asin&&r.exactUrl&&r.productIdentifier,`${p.slug} direct metadata incomplete`);
+            expect(!r.imageUrl&&!r.imageVerified,`${p.slug} unapproved third-party image active`);
+          }
+          expect(Object.keys(direct).length===14,'14 exact Amazon links'); expect(products.filter(p=>p.retailers[0].kind==='affiliate-search').length===243,'243 Amazon fallbacks');
+          expect(CREATORS_API.status==='credentials-required','Creators API must remain inactive');
+          const images=products.map(imageStatus); expect(images.length===257&&!images.some(x=>x.productPhotography||x.amazonProgramContent||x.displayUrl),'image provenance gate');
+          const json=catalogueJson(),csv=catalogueCsv(); expect(headers.length===32,'32 export columns'); expect(json.products.length===257&&json.categoryCount===48&&json.commercialRecommendationWeight===0,'JSON export'); expect(csv.trimEnd().split('\n').length===258,'CSV export');
+          console.log('CATALOGUE=257'); console.log('CATEGORIES=48'); console.log('AMAZON_DIRECT=14'); console.log('AMAZON_FALLBACK=243'); console.log('CATALOGUE_EXPORT=PASS');
+          NODE
+
+      - name: Search, decision and trust invariants
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const {searchSite,searchIndex}=require('./lib/search'); const {rankDecision,publicDecision}=require('./lib/decision-engine'); const runtime=require('./lib/platform-v3-runtime'); const content=require('./lib/content');
+          const tests=[['best coffee machine under $800','coffee-machines'],['robot vacuum for pet hair','robot-vacuums'],['quiet headphones for long flights','wireless-headphones'],['mesh wifi for a large home','mesh-wifi-systems'],['ergonomic office chair with lumbar support','office-chairs'],['power bank for a laptop','power-banks'],['portable air conditioner for a bedroom','portable-air-conditioners']];
+          for(const [q,cat] of tests){const r=searchSite(q);if(!r.products.some(p=>p.category===cat))throw new Error(`search ${q}`);const d=rankDecision(q);if(d.intent.categorySlug!==cat&&cat!=='coffee-machines')throw new Error(`decision category ${q}`);}
+          if(searchIndex().length<350)throw new Error('search index too small'); if(!searchSite('Breville vs DeLonghi').directCompare)throw new Error('comparison detection');
+          const pub=publicDecision('mesh wifi for a large home with ethernet'); if(pub.version!=='decision-engine-v3'||pub.commercialRecommendationWeight!==0||pub.results.some(x=>'score' in x))throw new Error('public decision contract');
+          const safe=runtime.safeSharePath('/decision-lab/',new URL('https://x/decision-lab/?q=robot+vacuum&category=robot-vacuums&_vercel_share=SECRET&utm_source=qa')); if(/_vercel_share|utm_source|SECRET/.test(safe))throw new Error('share sanitisation');
+          for(const slug of ['about','privacy','terms','affiliate-disclosure','methodology','editorial-standards','sources','corrections-policy','coverage','updates','contact'])if(!content[slug]?.body)throw new Error(`trust page ${slug}`);
+          console.log('SEARCH_DECISION_TRUST=PASS');
+          NODE
+
+      - name: Coffee regression profiles
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const {categories}=require('./data'); const {score}=require('./lib/coffee-finder'); const coffee=categories['coffee-machines'];
+          const profiles=[
+            [{workflow:'one-touch',drink:'milk',learning:'almost',budget:'1500',speed:'high',space:'normal',beans:'rarely'},'delonghi-magnifica-start-with-milk-ecam22063b'],
+            [{workflow:'guided',drink:'milk',learning:'some',budget:'2000',speed:'medium',space:'normal',beans:'sometimes'},'breville-barista-touch-bes880'],
+            [{workflow:'guided',drink:'black',learning:'some',budget:'700',speed:'medium',space:'normal',beans:'rarely'},'sunbeam-barista-max-em5300s'],
+            [{workflow:'manual',drink:'mixed',learning:'control',budget:'1500',speed:'low',space:'any',beans:'often'},'delonghi-la-specialista-opera-ec9555m'],
+            [{workflow:'one-touch',drink:'mixed',learning:'almost',budget:'1500',speed:'high',space:'compact',beans:'sometimes'},'delonghi-magnifica-evo-ecam29083tb'],
+            [{workflow:'guided',drink:'cold',learning:'some',budget:'2000',speed:'medium',space:'normal',beans:'rarely'},'breville-barista-touch-impress-bes881'],
+            [{workflow:'one-touch',drink:'mixed',learning:'almost',budget:'1500',speed:'high',space:'normal',beans:'often'},'delonghi-rivelia-auto-milk-exam44055b']];
+          for(const [q,want] of profiles){const got=coffee.products.map(p=>score(p,q)).filter(x=>x.eligible).sort((a,b)=>b.score-a.score||a.price-b.price)[0]?.slug;if(got!==want)throw new Error(`${want} got ${got}`)} console.log('COFFEE_REGRESSIONS=7/7_PASS');
+          NODE
+
+      - name: Venture separation
+        run: |
+          set -euo pipefail
+          if grep -RniE 'Australian Tradie Software Matcher|tradie-software|tradie matcher' api data lib scripts; then exit 1; fi
+          echo 'VENTURE_SEPARATION=PASS'
