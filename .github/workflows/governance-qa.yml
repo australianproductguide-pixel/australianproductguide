@@ -1,0 +1,39 @@
+name: APG Governance QA
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  governance-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify APG infrastructure and governance invariants
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('fs');
+          const config=JSON.parse(fs.readFileSync('vercel.json','utf8'));
+          if(config.$schema!=='https://openapi.vercel.sh/vercel.json') throw new Error('Vercel schema declaration missing');
+          if(JSON.stringify(config.regions)!==JSON.stringify(['syd1'])) throw new Error(`Expected Sydney function region, got ${JSON.stringify(config.regions)}`);
+          if(!Array.isArray(config.rewrites)||config.rewrites.length!==1||config.rewrites[0].source!=='/(.*)'||config.rewrites[0].destination!=='/api') throw new Error('Unexpected Vercel rewrite contract');
+          for(const path of ['.github/CODEOWNERS','.github/PULL_REQUEST_TEMPLATE.md','docs/APG-OPERATIONS.md','.github/workflows/source-qa.yml','.github/workflows/production-smoke.yml']) {
+            if(!fs.existsSync(path)) throw new Error(`Required governance file missing: ${path}`);
+          }
+          const owners=fs.readFileSync('.github/CODEOWNERS','utf8');
+          if(!owners.includes('@australianproductguide-pixel')) throw new Error('APG code owner missing');
+          const pr=fs.readFileSync('.github/PULL_REQUEST_TEMPLATE.md','utf8');
+          for(const token of ['APG Source QA','Vercel Preview','Production deployment SHA matches GitHub `main`','Australian Tradie Software Matcher']) if(!pr.includes(token)) throw new Error(`PR release control missing: ${token}`);
+          const ops=fs.readFileSync('docs/APG-OPERATIONS.md','utf8');
+          for(const token of ['Source-of-truth hierarchy','Affiliate relationships, retailer availability and commission contribute **zero recommendation points**','07 – QA, Releases & Production Evidence','Australian Tradie Software Matcher']) if(!ops.includes(token)) throw new Error(`Operating control missing: ${token}`);
+          console.log('APG_GOVERNANCE_QA=PASS');
+          console.log('VERCEL_PRIMARY_REGION=syd1');
+          NODE
