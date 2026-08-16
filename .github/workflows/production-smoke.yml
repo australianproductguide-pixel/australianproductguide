@@ -47,7 +47,7 @@ jobs:
           if(x.join(',')!=='257,48,0,112,144,722,20')throw new Error(x.join(',')); console.log('SOURCE_METRICS=257/48/0/112/144/722/20');
           NODE
           curl -fsSL "$BASE_URL/" -o /tmp/home.html
-          for t in 'Australian Product Guide' 'data-platform-v5="true"' 'data-platform-v3="true"' 'Decision Lab' 'Buying guides' 'My APG' 'How APG works' 'data-share-surface' 'href="/sitemap/"'; do grep -qi "$t" /tmp/home.html; done
+          for t in 'Australian Product Guide' 'data-platform-v5="true"' 'data-platform-v3="true"' 'Decision Lab' 'Buying guides' 'My Australian Product Guide' 'How recommendations work' 'data-share-surface' 'href="/sitemap/"'; do grep -qi "$t" /tmp/home.html; done
           test "$(grep -o 'data-platform-v5="true"' /tmp/home.html | wc -l)" = 1
           for p in /categories/ /compare/ /guides/ /retailers/ /brands/ /decision-lab/ /my-apg/ /sitemap/; do test "$(curl -sSL -o /tmp/x -w '%{http_code}' "$BASE_URL$p")" = 200; done
           curl -fsSL "$BASE_URL/assets/app.js" -o /tmp/app.js; node --check /tmp/app.js
