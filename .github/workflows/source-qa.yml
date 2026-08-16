@@ -33,7 +33,7 @@ jobs:
           set -euo pipefail
           node - <<'NODE'
           const {products,pathways,categories}=require('./data'); const {brands,pairPages,indexableRoutes}=require('./lib/routes');
-          const {direct,CREATORS_API}=require('./data/retailers'); const {catalogueCsv,catalogueJson,headers}=require('./lib/catalogue-export'); const {imageStatus}=require('./data/image-provenance');
+          const {direct,CREATORS_API}=require('./data/retailers-v6'); const {catalogueCsv,catalogueJson,headers}=require('./lib/catalogue-export'); const {imageStatus}=require('./data/image-provenance');
           const expect=(ok,msg)=>{if(!ok)throw new Error(msg)};
           expect(products.length===257,'257 products'); expect(Object.keys(categories).length===48,'48 categories'); expect(pathways.length===48&&!pathways.some(x=>!x.maintained),'zero empty pathways');
           expect(brands.length===112,'112 canonical brand pages'); expect(pairPages.length===144,'144 maintained pair pages'); expect(indexableRoutes.length===722,'722 indexable routes');
@@ -46,11 +46,11 @@ jobs:
             if(r.kind==='affiliate-direct')expect(r.asin&&r.exactUrl&&r.productIdentifier,`${p.slug} direct metadata incomplete`);
             expect(!r.imageUrl&&!r.imageVerified,`${p.slug} unapproved third-party image active`);
           }
-          expect(Object.keys(direct).length===17,'17 exact Amazon links'); expect(products.filter(p=>p.retailers[0].kind==='affiliate-search').length===240,'240 Amazon fallbacks');
+          expect(Object.keys(direct).length===18,'18 exact Amazon links'); expect(products.filter(p=>p.retailers[0].kind==='affiliate-search').length===239,'239 Amazon fallbacks');
           expect(CREATORS_API.status==='credentials-required','Creators API must remain inactive until authorised credentials are configured');
           const images=products.map(imageStatus); expect(images.length===257&&!images.some(x=>x.productPhotography||x.amazonProgramContent||x.displayUrl),'image provenance gate');
-          const json=catalogueJson(),csv=catalogueCsv(); expect(headers.length===32,'32 export columns'); expect(json.products.length===257&&json.categoryCount===48&&json.commercialRecommendationWeight===0,'JSON export'); expect(csv.trimEnd().split('\n').length===258,'CSV export');
-          console.log('CATALOGUE=257'); console.log('CATEGORIES=48'); console.log('AMAZON_DIRECT=17'); console.log('AMAZON_FALLBACK=240'); console.log('CATALOGUE_EXPORT=PASS');
+          const json=catalogueJson(),csv=catalogueCsv(); expect(headers.length===35,'35 export columns'); expect(json.products.length===257&&json.categoryCount===48&&json.commercialRecommendationWeight===0,'JSON export'); expect(json.amazon.exactVerified===18&&json.amazon.confirmedUnavailable===0&&json.amazon.furtherVerificationRequired===239,'Amazon verification taxonomy'); expect(csv.trimEnd().split('\n').length===258,'CSV export');
+          console.log('CATALOGUE=257'); console.log('CATEGORIES=48'); console.log('AMAZON_DIRECT=18'); console.log('AMAZON_FALLBACK=239'); console.log('CATALOGUE_EXPORT=PASS');
           NODE
 
       - name: Search, decision and trust invariants

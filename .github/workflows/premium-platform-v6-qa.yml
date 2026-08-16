@@ -1,0 +1,50 @@
+name: APG Premium Platform v6 QA
+
+on:
+  push:
+    branches:
+      - apg-premium-platform-v6-2026-08-16
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  premium-v6-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax check runtime bundles
+        run: |
+          node --check lib/app.js
+          node --check lib/platform-v5-runtime.js
+          node --check lib/platform-v6-css.js
+          node --check lib/search.js
+      - name: Verify premium v6 decision controls
+        run: |
+          grep -q "APG Difference Engine" lib/platform-v5-runtime.js
+          grep -q "Choose .* if" lib/platform-v5-runtime.js
+          grep -q "Neither is ideal if" lib/platform-v5-runtime.js
+          grep -q "Verify before buying" lib/platform-v5-runtime.js
+          grep -q "v6-search-prompts" lib/platform-v5-runtime.js
+          grep -q "platformV6Css" lib/app.js
+          grep -q "apg-premium-platform-v6-2026-08-16.*false" <(tr -d '\n' < vercel.json)
+      - name: Preserve catalogue and evidence invariants
+        run: |
+          node - <<'NODE'
+          const {products,categories}=require('./data');
+          if(products.length!==257) throw new Error(`Expected 257 products, got ${products.length}`);
+          if(Object.keys(categories).length!==48) throw new Error(`Expected 48 categories, got ${Object.keys(categories).length}`);
+          const deep=products.filter(p=>p.evidenceTier!=='starter').length;
+          const starter=products.filter(p=>p.evidenceTier==='starter').length;
+          if(deep!==37||starter!==220) throw new Error(`Evidence invariant changed: ${deep}/${starter}`);
+          NODE
+      - name: Protect commerce neutrality and privacy boundaries
+        run: |
+          ! grep -R "service_role\|service-role" lib data --exclude='*.md'
+          ! grep -R "affiliate.*score\|commission.*score" lib data --exclude='*.md'
+          grep -q "Disallow: /my-apg/" lib/app.js
+          grep -q "Disallow: /compare/custom/" lib/app.js
