@@ -38,23 +38,56 @@ jobs:
           done
           exit 1
 
-      - name: Source metrics and public shell
+      - name: Verify source metrics and recommendation neutrality
         run: |
           set -euo pipefail
           node - <<'NODE'
-          const {products,categories,pathways}=require('./data'); const {brands,pairPages,indexableRoutes}=require('./lib/routes'); const {direct}=require('./data/retailers-v6');
+          const fs=require('fs');
+          const {products,categories,pathways}=require('./data');
+          const {brands,pairPages,indexableRoutes}=require('./lib/routes');
+          const {direct}=require('./data/retailers-v6');
+          const {publicDecision}=require('./lib/decision-engine');
           const x=[products.length,Object.keys(categories).length,pathways.filter(p=>!p.maintained).length,brands.length,pairPages.length,indexableRoutes.length,Object.keys(direct).length];
-          if(x.join(',')!=='257,48,0,112,144,722,20')throw new Error(x.join(',')); console.log('SOURCE_METRICS=257/48/0/112/144/722/20');
+          if(x.join(',')!=='257,48,0,112,144,722,20')throw new Error(`source metrics ${x.join(',')}`);
+          const decision=publicDecision('mesh wifi for a large home with ethernet');
+          if(decision.commercialRecommendationWeight!==0)throw new Error('commercial recommendation weight must remain zero');
+          const source=fs.readFileSync('./lib/decision-engine.js','utf8');
+          const score=source.slice(source.indexOf('function scoreProduct'),source.indexOf('function labelFor')).toLowerCase();
+          for(const banned of ['retailer','affiliate','commission','asin'])if(score.includes(banned))throw new Error(`commercial field leaked into decision scoring: ${banned}`);
+          console.log('SOURCE_METRICS=257/48/0/112/144/722/20');
+          console.log('COMMERCIAL_RECOMMENDATION_WEIGHT=0');
           NODE
+
+      - name: Verify public shell and core routes
+        run: |
+          set -euo pipefail
           curl -fsSL "$BASE_URL/" -o /tmp/home.html
-          for t in 'Australian Product Guide' 'data-platform-v5="true"' 'data-platform-v3="true"' 'Decision Lab' 'Buying guides' 'My Australian Product Guide' 'How recommendations work' 'data-share-surface' 'href="/sitemap/"'; do grep -qi "$t" /tmp/home.html; done
+          for t in 'Australian Product Guide' 'data-platform-v5="true"' 'data-platform-v3="true"' 'Decision Lab' 'Buying guides' 'My Australian Product Guide' 'How recommendations work' 'data-share-surface' 'href="/sitemap/"'; do grep -qi "$t" /tmp/home.html || { echo "Missing homepage contract: $t"; exit 1; }; done
           test "$(grep -o 'data-platform-v5="true"' /tmp/home.html | wc -l)" = 1
-          for p in /categories/ /compare/ /guides/ /retailers/ /brands/ /decision-lab/ /my-apg/ /sitemap/; do test "$(curl -sSL -o /tmp/x -w '%{http_code}' "$BASE_URL$p")" = 200; done
-          curl -fsSL "$BASE_URL/assets/app.js" -o /tmp/app.js; node --check /tmp/app.js
-          curl -fsSL "$BASE_URL/assets/search-index.json" | jq -e 'length >= 350' >/dev/null
-          curl -fsSL "$BASE_URL/api/catalogue.json" | jq -e '.version=="platform-v6" and .productCount==257 and .categoryCount==48 and .commercialRecommendationWeight==0 and .amazon.exactVerified==20 and .amazon.furtherVerificationRequired==237' >/dev/null
-          test "$(curl -fsSL "$BASE_URL/api/catalogue.csv" | wc -l)" = 258
-          echo 'PUBLIC_SHELL_EXPORTS=PASS'
+          for p in /categories/ /compare/ /guides/ /retailers/ /brands/ /decision-lab/ /my-apg/ /sitemap/; do code=$(curl -sSL -o /tmp/x -w '%{http_code}' "$BASE_URL$p"); test "$code" = 200 || { echo "$p returned $code"; exit 1; }; done
+          echo 'PUBLIC_SHELL=PASS'
+
+      - name: Verify public assets and catalogue export contract
+        run: |
+          set -euo pipefail
+          curl -fsSL "$BASE_URL/assets/app.js" -o /tmp/app.js
+          node --check /tmp/app.js
+          count=$(curl -fsSL "$BASE_URL/assets/search-index.json" | jq 'length'); test "$count" -ge 350 || { echo "search index too small: $count"; exit 1; }
+          curl -fsSL "$BASE_URL/api/catalogue.json" -o /tmp/catalogue.json
+          jq -e '
+            .version=="platform-v7-amazon-associates" and
+            .market=="Australia" and
+            .currency=="AUD" and
+            .counts.products==257 and
+            .counts.categories==48 and
+            .counts.brands==112 and
+            .affiliate.amazonAustralia.associateId=="auproductguid-22" and
+            ([.products[].retailer.type]|map(select(.=="affiliate-direct"))|length)==20 and
+            ([.products[].retailer.type]|map(select(.=="amazon-search"))|length)==237
+          ' /tmp/catalogue.json >/dev/null || { echo 'Catalogue JSON contract mismatch'; jq '{version,market,currency,counts,affiliate,retailerTypes:([.products[].retailer.type]|group_by(.)|map({type:.[0],count:length}))}' /tmp/catalogue.json; exit 1; }
+          csv_lines=$(curl -fsSL "$BASE_URL/api/catalogue.csv" | wc -l); test "$csv_lines" = 258 || { echo "catalogue csv lines=$csv_lines"; exit 1; }
+          curl -fsSI "$BASE_URL/api/catalogue.json" | tr -d '\r' | grep -qi '^cache-control:.*no-store' || { echo 'catalogue JSON must not be release-stale cached'; exit 1; }
+          echo 'PUBLIC_ASSETS_EXPORTS=PASS'
 
       - name: Crawl all 722 indexable routes
         run: |
@@ -62,7 +95,9 @@ jobs:
           curl -fsSL "$BASE_URL/sitemap.xml" -o /tmp/sitemap.xml
           BASE_URL="$BASE_URL" node - <<'NODE'
           const fs=require('fs'); const {indexableRoutes}=require('./lib/routes'); const base=process.env.BASE_URL;
-          const urls=[...fs.readFileSync('/tmp/sitemap.xml','utf8').matchAll(/<loc>(.*?)<\/loc>/g)].map(x=>x[1]); if(urls.length!==722||new Set(urls).size!==722)throw new Error(`sitemap ${urls.length}`);
+          const xml=fs.readFileSync('/tmp/sitemap.xml','utf8');
+          if(/<lastmod>/i.test(xml))throw new Error('sitemap contains blanket/synthetic lastmod; wait for per-page substantive-change provenance');
+          const urls=[...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map(x=>x[1]); if(urls.length!==722||new Set(urls).size!==722)throw new Error(`sitemap ${urls.length}`);
           const expected=new Set(indexableRoutes.map(p=>base+p)); for(const u of urls)if(!expected.has(u))throw new Error(`unexpected ${u}`);
           let next=0,done=0;const bad=[];async function worker(){while(next<urls.length){const u=urls[next++],path=new URL(u).pathname;try{const r=await fetch(u);const t=await r.text();if(r.status!==200)throw new Error(`HTTP ${r.status}`);if(!t.includes(`<link rel="canonical" href="${base+path}"`))throw new Error('canonical');if(/noindex/i.test((t.match(/<meta name="robots"[^>]*>/i)||[''])[0]))throw new Error('noindex');if(!t.includes('data-platform-v5="true"'))throw new Error('v5 marker');}catch(e){bad.push(`${path}: ${e.message}`)}done++;}}
           Promise.all(Array.from({length:12},worker)).then(()=>{if(bad.length){console.error(bad.slice(0,30).join('\n'));process.exit(1)}console.log(`CANONICAL_CRAWL=${done}/722_PASS`)});
@@ -80,7 +115,7 @@ jobs:
       - name: Representative journeys, Difference Engine, noindex and privacy boundaries
         run: |
           set -euo pipefail
-          check(){ code=$(curl -sSL -o /tmp/page -w '%{http_code}' "$BASE_URL$1"); test "$code" = 200; grep -qi "$2" /tmp/page; }
+          check(){ code=$(curl -sSL -o /tmp/page -w '%{http_code}' "$BASE_URL$1"); test "$code" = 200 || { echo "$1 returned $code"; exit 1; }; grep -qi "$2" /tmp/page || { echo "$1 missing $2"; exit 1; }; }
           check '/categories/coffee-machines/' 'Deep evidence'; check '/categories/home-security-cameras/' 'Starter evidence'; check '/categories/office-chairs/' 'Office chairs'; check '/categories/smartwatches/' 'Smartwatches'; check '/categories/blenders/' 'Blenders'; check '/products/tp-link-tapo-c500/' 'Evidence freshness'; check '/products/logitech-signature-k855/' 'B0BN6WJ1QZ'; check '/products/amazon-kindle-2024/' 'B0CP31QS6R'; check '/categories/office-chairs/finder/?priority=ergonomic&secondary=lumbar' 'Best match'; check '/guides/office-chairs-buying-guide/' 'Starter evidence'; check '/search/?q=ergonomic+office+chair+with+lumbar+support' 'Office'; check '/decision-lab/?q=mesh+wifi+for+a+large+home+with+ethernet' 'Decision Engine v3'; check '/my-apg/' 'Optional cross-device My APG sync is active'; check '/sitemap/' 'APG Sitemap'
           curl -fsSL "$BASE_URL/search/?q=laptop+for+uni" -o /tmp/laptop-search
           grep -qi 'Coverage gap' /tmp/laptop-search; grep -qi 'laptops are not yet a maintained category' /tmp/laptop-search
@@ -106,6 +141,6 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: apg-platform-v6-visual-qa-${{ github.run_id }}
+          name: apg-national-grade-visual-qa-${{ github.run_id }}
           path: visual-qa
           retention-days: 30
