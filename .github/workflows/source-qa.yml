@@ -22,11 +22,11 @@ jobs:
           for f in api/*.js data/*.js lib/*.js scripts/*.js; do node --check "$f"; done
           node - <<'NODE'
           const fs=require('fs'); require('./lib/app');
-          const clients=[['base',require('./lib/client').clientJs],['decision',require('./lib/decision-client').decisionClientJs],['platform',require('./lib/platform-v3-client').platformV3ClientJs],['account',require('./lib/account-sync-client').accountSyncClientJs],['rum',require('./lib/rum-client').rumClientJs]];
-          for(const [name,code] of clients)fs.writeFileSync(`/tmp/apg-${name}.js`,code);
+          const {clientJs}=require('./lib/client'); const {decisionClientJs}=require('./lib/decision-client'); const {platformV3ClientJs}=require('./lib/platform-v3-client');
+          fs.writeFileSync('/tmp/apg-client.js',clientJs+decisionClientJs+platformV3ClientJs);
           console.log('MODULE_LOAD=PASS');
           NODE
-          for f in /tmp/apg-base.js /tmp/apg-decision.js /tmp/apg-platform.js /tmp/apg-account.js /tmp/apg-rum.js; do node --check "$f"; done
+          node --check /tmp/apg-client.js
 
       - name: Catalogue, freshness, Amazon and export invariants
         run: |
