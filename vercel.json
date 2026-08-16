@@ -1,12 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "regions": ["syd1"],
-  "git": {
-    "deploymentEnabled": {
-      "apg-premium-platform-v6-2026-08-16": false,
-      "apg-visual-identity-v7-2026-08-16": false
-    }
-  },
   "rewrites": [
     {
       "source": "/(.*)",
