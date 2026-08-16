@@ -58,6 +58,7 @@ jobs:
         run: |
           set -euo pipefail
           node - <<'NODE'
+          const fs=require('fs');
           const {publicDecision}=require('./lib/decision-engine');
           const out=publicDecision('mesh wifi for a large home with ethernet');
           if(out.version!=='decision-engine-v3') throw new Error(`wrong engine version ${out.version}`);
@@ -66,7 +67,11 @@ jobs:
           if(!Array.isArray(out.interpretation.decisionFactors)||!out.interpretation.decisionFactors.length) throw new Error('category decision factors missing');
           for(const r of out.results){if('score' in r) throw new Error('opaque numeric score leaked');if(!r.match||!r.tradeoff||!r.evidenceTier||!Array.isArray(r.reasons)||!Array.isArray(r.gaps)||!Array.isArray(r.conflicts)) throw new Error(`contract incomplete ${r.slug}`);}
           if(!out.note.includes('not product performance ratings')||!out.note.includes('Starter-evidence')) throw new Error('evidence/performance boundary missing');
+          const source=fs.readFileSync('./lib/decision-engine.js','utf8');
+          const score=source.slice(source.indexOf('function scoreProduct'),source.indexOf('function labelFor')).toLowerCase();
+          for(const banned of ['retailer','affiliate','commission','asin'])if(score.includes(banned))throw new Error(`commercial field leaked into recommendation scoring: ${banned}`);
           console.log('DECISION_PUBLIC_CONTRACT_V3=PASS');
+          console.log('COMMERCIAL_SCORING_ISOLATION=PASS');
           NODE
 
       - name: Verify Decision Lab share privacy and My APG boundaries
