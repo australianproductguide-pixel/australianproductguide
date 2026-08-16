@@ -2,7 +2,7 @@
 
 Authoritative source repository for **Australian Product Guide (APG)** — an Australian consumer product-comparison, decision-support and shopping-discovery platform.
 
-**Production:** https://au-product-guide.vercel.app
+**Production:** https://australianproductguide.au
 
 ## Source-of-truth and deployment chain
 
