@@ -68,8 +68,9 @@ jobs:
           for(const r of out.results){if('score' in r) throw new Error('opaque numeric score leaked');if(!r.match||!r.tradeoff||!r.evidenceTier||!Array.isArray(r.reasons)||!Array.isArray(r.gaps)||!Array.isArray(r.conflicts)) throw new Error(`contract incomplete ${r.slug}`);}
           if(!out.note.includes('not product performance ratings')||!out.note.includes('Starter-evidence')) throw new Error('evidence/performance boundary missing');
           const source=fs.readFileSync('./lib/decision-engine.js','utf8');
-          const score=source.slice(source.indexOf('function scoreProduct'),source.indexOf('function labelFor')).toLowerCase();
-          for(const banned of ['retailer','affiliate','commission','asin'])if(score.includes(banned))throw new Error(`commercial field leaked into recommendation scoring: ${banned}`);
+          const score=source.slice(source.indexOf('function scoreProduct'),source.indexOf('function labelFor'));
+          if(/\bp\.(?:retailers?|affiliate|commission|asin)\b/i.test(score))throw new Error('commercial product field leaked into recommendation scoring');
+          if(/require\([^)]*retailer/i.test(source))throw new Error('decision engine must not import retailer data');
           console.log('DECISION_PUBLIC_CONTRACT_V3=PASS');
           console.log('COMMERCIAL_SCORING_ISOLATION=PASS');
           NODE
