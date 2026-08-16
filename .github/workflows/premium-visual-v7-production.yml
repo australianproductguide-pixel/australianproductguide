@@ -83,7 +83,7 @@ jobs:
             return null;
           }
           async function openNavigation(page){
-            const mega=await visible(page,'[data-mega-trigger]');
+            const mega=await visible(page,'[data-discovery-trigger], [data-mega-trigger]');
             if(mega){await mega.evaluate(el=>el.click());await new Promise(r=>setTimeout(r,180));return 'mega';}
             const mobile=await visible(page,'[data-mobile-toggle]');
             if(mobile){await mobile.evaluate(el=>el.click());await new Promise(r=>setTimeout(r,180));return 'mobile';}
@@ -117,7 +117,7 @@ jobs:
                   const input=await visibleSearch(p);if(!input)throw new Error('Missing visible site search input');
                   await input.evaluate(el=>el.focus());await input.type('robot vacuum for pets');await new Promise(r=>setTimeout(r,550));
                 }
-                const m=await p.evaluate(()=>{const mega=document.querySelector('[data-mega-menu]'),mobile=document.querySelector('#mobileNav');return {sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,megaOpen:!!(mega&&!mega.hidden),mobileOpen:!!(mobile&&!mobile.hidden),suggestions:[...document.querySelectorAll('[data-search-suggestions]')].some(x=>!x.hidden)}});
+                const m=await p.evaluate(()=>{const mega=document.querySelector('[data-discovery-menu], [data-mega-menu]'),mobile=document.querySelector('#mobileNav');return {sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,megaOpen:!!(mega&&!mega.hidden),mobileOpen:!!(mobile&&!mobile.hidden),suggestions:[...document.querySelectorAll('[data-search-suggestions]')].some(x=>!x.hidden)}});
                 await p.screenshot({path:`visual-v7/${vp}-state-${state}.png`,fullPage:false});
                 if(m.sw>m.cw+2||errors.length)bad.push(`${vp}/${state}: ${JSON.stringify(m)} ${errors.join('|')}`);
                 if(state==='navigation'&&!m.megaOpen&&!m.mobileOpen)bad.push(`${vp}/${state}: expected visible navigation state open`);
