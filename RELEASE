@@ -1,7 +1,9 @@
-Australian Product Guide — Premium Visual Identity v7
+Australian Product Guide — Premium Visual Identity v7 + Amazon Associates compliance uplift
 Release date: 2026-08-16
 Production source: GitHub main via Vercel
-Release scope: guided-choice APG brand system; 48-category semantic illustration coverage; premium homepage, navigation, search, category, product, comparison, Decision Lab, My APG, brand, guide, trust and footer presentation; privacy-aware Google Analytics 4 and Search Console verification layer; exact-SHA Production visual QA.
+Canonical production domain: https://australianproductguide.au
+Release scope: guided-choice APG brand system; 48-category semantic illustration coverage; premium homepage, navigation, search, category, product, comparison, Decision Lab, My APG, brand, guide, trust and footer presentation; privacy-aware Google Analytics 4 and Search Console verification layer; Amazon Associates site-wide disclosure, link labelling, click measurement and Special Link export controls; exact-SHA Production QA.
 Catalogue truth at release: 257 products; 48 populated categories; 112 brands; 37 deep-evidence products; 220 starter-evidence products; 18 verified exact Amazon Australia product destinations; 239 further-verification-required/fallback cases; 0/257 authorised exact external product photographs.
+Amazon Associates controls: tag auproductguid-22 required on all Amazon retailer destinations; exact detail links require verified ASIN/product identity; unverified exact listings retain model-specific search fallbacks; public catalogue exports exclude monetised Amazon URLs; Amazon Product Advertising Content remains gated until authorised API access and exact identifier matching are available.
 Recommendation neutrality: retailer/affiliate commercial relationships contribute zero suitability points.
 Architecture: lightweight SSR-first Node application with progressive enhancement; GitHub main remains authoritative and deploys through Vercel.
