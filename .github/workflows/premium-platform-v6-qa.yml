@@ -23,7 +23,7 @@ jobs:
           node --check lib/platform-v5-runtime.js
           node --check lib/platform-v6-css.js
           node --check lib/search.js
-      - name: Verify premium v6 decision controls
+      - name: Verify premium v6 decision controls retained under v7
         run: |
           grep -q "APG Difference Engine" lib/platform-v5-runtime.js
           grep -q "Choose .* if" lib/platform-v5-runtime.js
@@ -31,7 +31,8 @@ jobs:
           grep -q "Verify before buying" lib/platform-v5-runtime.js
           grep -q "v6-search-prompts" lib/platform-v5-runtime.js
           grep -q "platformV6Css" lib/app.js
-          grep -q "apg-premium-platform-v6-2026-08-16.*false" <(tr -d '\n' < vercel.json)
+          # The temporary v6 branch deployment throttle was intentionally removed before v7 merge.
+          # Current QA validates retained v6 decision/runtime behaviour, not superseded Vercel branch policy.
       - name: Preserve catalogue and evidence invariants
         run: |
           node - <<'NODE'
