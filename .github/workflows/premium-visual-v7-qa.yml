@@ -1,0 +1,59 @@
+name: APG Premium Visual v7 QA
+
+on:
+  push:
+    branches: [main, apg-visual-identity-v7-2026-08-16]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  visual-source-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax check visual platform
+        run: |
+          node --check lib/brand-v7.js
+          node --check lib/platform-v7-runtime.js
+          node --check lib/platform-v7-css.js
+          node --check lib/app.js
+      - name: Verify brand and 48-category visual coverage
+        run: |
+          node <<'NODE'
+          const brand=require('./lib/brand-v7');
+          const {categories}=require('./data');
+          const slugs=Object.keys(categories);
+          const missing=slugs.filter(x=>!brand.categoryMeta[x]);
+          if(slugs.length!==48) throw new Error(`Expected 48 categories, got ${slugs.length}`);
+          if(Object.keys(brand.categoryMeta).length!==48) throw new Error(`Expected 48 v7 category visuals, got ${Object.keys(brand.categoryMeta).length}`);
+          if(missing.length) throw new Error(`Missing category visuals: ${missing.join(', ')}`);
+          if(!brand.logoSvg.includes('f4b45f')||!brand.logoSvg.includes('0b3044')) throw new Error('v7 logo tokens missing');
+          if(/kangaroo|australia-map|shopping-cart|price-tag/i.test(brand.logoSvg)) throw new Error('Disallowed cliché found in logo');
+          if(!brand.socialSvg.includes('Compare smarter. Choose with confidence.')) throw new Error('Social identity proposition missing');
+          console.log(`PASS: ${slugs.length}/48 categories have semantic v7 visuals.`);
+          NODE
+      - name: Verify server render integration
+        run: |
+          grep -q "enhancePlatformV7" lib/app.js
+          grep -q "platformV7Css" lib/app.js
+          grep -q "logoDarkSvg" lib/app.js
+          grep -q "data-platform-v7" lib/platform-v7-runtime.js
+          grep -q "apg-platform-v7-catalogue.csv" lib/app.js
+      - name: Preserve evidence and retailer invariants
+        run: |
+          node <<'NODE'
+          const {products,categories}=require('./data');
+          const exact=products.filter(p=>(p.retailers||[]).some(r=>r.kind==='affiliate-direct')).length;
+          const deep=products.filter(p=>p.evidenceTier==='deep'||p.evidenceLevel==='deep').length;
+          if(products.length!==257) throw new Error(`Product count drift: ${products.length}`);
+          if(Object.keys(categories).length!==48) throw new Error('Category count drift');
+          if(exact!==18) throw new Error(`Exact Amazon count drift: ${exact}`);
+          console.log(`PASS: 257 products, 48 categories, ${exact} products with exact affiliate-direct destination.`);
+          NODE
