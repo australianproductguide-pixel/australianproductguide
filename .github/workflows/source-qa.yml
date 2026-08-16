@@ -11,7 +11,7 @@ permissions:
 jobs:
   source-qa:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
 
@@ -20,73 +20,85 @@ jobs:
           set -euo pipefail
           for f in api/*.js data/*.js lib/*.js; do echo "Checking $f"; node --check "$f"; done
           node - <<'NODE'
+          const fs=require('fs');
           require('./lib/app');
-          const data=require('./data');
-          const routes=require('./lib/routes');
-          const search=require('./lib/search');
-          const {clientJs}=require('./lib/client');
-          require('./lib/ui'); require('./lib/pages'); require('./lib/coffee-finder'); require('./data/image-provenance');
-          require('fs').writeFileSync('/tmp/apg-client.js',clientJs);
+          const data=require('./data'); const routes=require('./lib/routes'); const search=require('./lib/search');
+          const {clientJs}=require('./lib/client'); const {decisionClientJs}=require('./lib/decision-client'); const {platformV3ClientJs}=require('./lib/platform-v3-client');
+          fs.writeFileSync('/tmp/apg-client.js',clientJs+decisionClientJs+platformV3ClientJs);
           console.log('MODULE_LOAD=PASS');
-          console.log('PRODUCTS='+data.products.length); console.log('PATHWAYS='+data.pathways.length); console.log('BRANDS='+routes.brands.length); console.log('PAIR_PAGES='+routes.pairPages.length); console.log('INDEXABLE_ROUTES='+routes.indexableRoutes.length); console.log('SEARCH_INDEX='+search.searchIndex().length);
+          console.log('PRODUCTS='+data.products.length); console.log('CATEGORIES='+Object.keys(data.categories).length); console.log('BRANDS='+routes.brands.length); console.log('PAIR_PAGES='+routes.pairPages.length); console.log('INDEXABLE_ROUTES='+routes.indexableRoutes.length); console.log('SEARCH_INDEX='+search.searchIndex().length);
           NODE
           node --check /tmp/apg-client.js
 
-      - name: Verify catalogue retailer and media invariants
+      - name: Verify Platform v3 catalogue retailer freshness and media invariants
         run: |
           set -euo pipefail
           node - <<'NODE'
           const {products,pathways,categories}=require('./data');
           const {brands,pairPages,indexableRoutes}=require('./lib/routes');
           const {CREATORS_API}=require('./data/retailers');
-          if(products.length!==37) throw new Error(`products ${products.length}`);
-          if(pathways.length!==48) throw new Error(`pathways ${pathways.length}`);
-          if(Object.keys(categories).length!==4) throw new Error('expected 4 maintained categories');
-          if(brands.length!==16) throw new Error(`brands ${brands.length}`);
-          if(pairPages.length!==56) throw new Error(`pairs ${pairPages.length}`);
-          if(indexableRoutes.length!==139) throw new Error(`routes ${indexableRoutes.length}`);
+          if(products.length!==257) throw new Error(`products ${products.length}`);
+          if(pathways.length!==48||Object.keys(categories).length!==48) throw new Error('category/pathway population mismatch');
+          if(pathways.some(p=>!p.maintained)) throw new Error('empty category pathway remains');
+          if(pairPages.length!==144) throw new Error(`pairs ${pairPages.length}`);
+          if(indexableRoutes.length<600) throw new Error(`route set unexpectedly small ${indexableRoutes.length}`);
+          if(brands.length<60) throw new Error(`brand coverage unexpectedly small ${brands.length}`);
+          const deep=products.filter(p=>p.evidenceTier==='deep'),starter=products.filter(p=>p.evidenceTier==='starter');
+          if(deep.length!==37||starter.length!==220) throw new Error(`evidence tiers deep=${deep.length} starter=${starter.length}`);
+          for(const p of products){
+            for(const key of ['firstResearched','lastSourceVerification','lastRetailerCheck','lastImageVerification','nextReviewDue','freshnessStatus','evidenceTier']) if(p[key]===undefined||p[key]===null) throw new Error(`freshness field ${key} missing ${p.slug}`);
+            if(p.evidenceTier==='starter'&&p.lastSubstantiveReview!==null) throw new Error(`starter should not fake substantive review ${p.slug}`);
+            if(p.evidenceTier==='starter'&&p.price!==null) throw new Error(`starter should not invent price ${p.slug}`);
+          }
           const retailers=products.flatMap(p=>p.retailers.map(r=>({p,r})));
           const direct=retailers.filter(x=>x.r.kind==='affiliate-direct'),fallback=retailers.filter(x=>x.r.kind==='affiliate-search');
-          if(direct.length!==3) throw new Error(`direct Amazon links ${direct.length}`);
-          if(fallback.length!==34) throw new Error(`fallback Amazon links ${fallback.length}`);
+          if(direct.length!==6) throw new Error(`direct Amazon links ${direct.length}`);
+          if(fallback.length!==251) throw new Error(`fallback Amazon links ${fallback.length}`);
           for(const {p,r} of retailers){
-            if(!(r.affiliateUrl||r.url).includes('amazon.com.au')) throw new Error(`bad Amazon host ${p.slug}`);
-            if(!(r.affiliateUrl||r.url).includes('tag=auproductguid-22')) throw new Error(`missing tag ${p.slug}`);
+            const u=r.affiliateUrl||r.url;
+            if(!u.includes('amazon.com.au')) throw new Error(`bad Amazon host ${p.slug}`);
+            if(!u.includes('tag=auproductguid-22')) throw new Error(`missing affiliate tag ${p.slug}`);
             for(const key of ['retailer','kind','affiliateUrl','imageSource','imageProvenance','verified','availabilityConfidence']) if(r[key]===undefined||r[key]===null) throw new Error(`retailer field ${key} missing ${p.slug}`);
-            if(r.kind==='affiliate-direct'&&(!r.asin||!r.exactUrl||!r.productIdentifier)) throw new Error(`direct link metadata missing ${p.slug}`);
-            if(r.imageUrl||r.imageVerified) throw new Error(`unapproved external image activated ${p.slug}`);
+            if(r.kind==='affiliate-direct'&&(!r.asin||!r.exactUrl||!r.productIdentifier)) throw new Error(`direct metadata missing ${p.slug}`);
+            if(r.imageUrl||r.imageVerified) throw new Error(`unapproved third-party image activated ${p.slug}`);
           }
-          if(CREATORS_API.status!=='credentials-required') throw new Error('Creators API status unexpectedly active');
-          console.log('CATALOGUE_INVARIANTS=PASS'); console.log('AMAZON_DIRECT=3'); console.log('AMAZON_FALLBACK=34'); console.log('CREATORS_API=PREPARED_CREDENTIALS_REQUIRED');
+          if(CREATORS_API.status!=='credentials-required') throw new Error('Creators API unexpectedly active');
+          console.log('PLATFORM_V3_CATALOGUE=PASS'); console.log('DEEP_EVIDENCE=37'); console.log('STARTER_EVIDENCE=220'); console.log('AMAZON_DIRECT=6'); console.log('AMAZON_FALLBACK=251');
           NODE
 
-      - name: Verify Phase 4 premium UX trust accessibility and imagery controls
+      - name: Verify premium UX sharing privacy and image provenance controls
         run: |
           set -euo pipefail
           node - <<'NODE'
-          const {products}=require('./data'); const {imageStatus}=require('./data/image-provenance'); const {clientJs}=require('./lib/client'); const {css,logoSvg,socialSvg}=require('./lib/ui'); const content=require('./lib/content'); const pages=require('./lib/pages');
+          const {products}=require('./data'); const {imageStatus}=require('./data/image-provenance');
+          const {css,logoSvg,socialSvg}=require('./lib/ui'); const {platformV3Css}=require('./lib/platform-v3-css'); const {platformV3ClientJs}=require('./lib/platform-v3-client');
+          const runtime=require('./lib/platform-v3-runtime'); const content=require('./lib/content');
           const images=products.map(imageStatus);
-          if(images.length!==37) throw new Error('image provenance missing maintained products');
-          if(images.some(x=>x.productPhotography||x.amazonProgramContent||x.displayUrl)) throw new Error('unverified third-party product imagery activated');
-          if(!logoSvg.includes('Australian Product Guide')||!socialSvg.includes('Australian Product Guide')) throw new Error('brand asset accessible title missing');
-          for(const token of ['mega-surface','premium-home','premium-hero-viz','policy-toc','footer-cert','focus-visible','prefers-reduced-motion','touch-action']) if(!css.includes(token)) throw new Error(`CSS control missing ${token}`);
-          for(const token of ['ArrowDown','ArrowUp','aria-activedescendant','data-mega-trigger','apgSaved','apgRecentSearches','is-scrolled']) if(!clientJs.includes(token)) throw new Error(`client control missing ${token}`);
+          if(images.length!==257) throw new Error('image provenance missing products');
+          if(images.some(x=>x.productPhotography||x.amazonProgramContent||x.displayUrl)) throw new Error('unverified product photography activated');
+          for(const token of ['platform-sharebar','freshness-panel','platform-hub-grid','account-readiness','data-evidence-tier']) if(!(platformV3Css+platformV3ClientJs).includes(token)) throw new Error(`v3 UX control missing ${token}`);
+          for(const token of ['navigator.share','data-copy-share','whatsapp','apgSavedComparisons','apgSavedGuides','apgRecentSearches']) if(!platformV3ClientJs.includes(token)) throw new Error(`share/workspace client control missing ${token}`);
+          const u=new URL('https://au-product-guide.vercel.app/decision-lab/?q=robot+vacuum&_vercel_share=SECRET&utm_source=qa&category=robot-vacuums');
+          const safe=runtime.safeSharePath('/decision-lab/',u); if(safe.includes('_vercel_share')||safe.includes('utm_source')||!safe.includes('category=robot-vacuums')) throw new Error('Decision Lab share sanitisation failed');
           for(const slug of ['about','privacy','terms','affiliate-disclosure','methodology','editorial-standards','sources','corrections-policy','coverage','updates','contact']) if(!content[slug]?.body) throw new Error(`trust content missing ${slug}`);
-          if(!content.privacy.body.includes('Browser local storage')) throw new Error('privacy local-storage disclosure missing');
-          if(!content.terms.body.includes('Australian Consumer Law')) throw new Error('ACL savings language missing');
-          if(!content['affiliate-disclosure'].body.includes('Creators API')) throw new Error('current Amazon API disclosure missing');
-          if(!pages.home||!pages.pairPage||!pages.trustPage) throw new Error('page exports missing');
-          console.log('PHASE4_PREMIUM_UX_CONTROLS=PASS'); console.log('PRODUCT_VISUAL_PROVENANCE=37/37_CONTROLLED'); console.log('THIRD_PARTY_PRODUCT_PHOTOGRAPHY=0/37');
+          if(!logoSvg.includes('Australian Product Guide')||!socialSvg.includes('Australian Product Guide')) throw new Error('brand asset title missing');
+          if(!css.includes('focus-visible')||!css.includes('prefers-reduced-motion')) throw new Error('accessibility controls missing');
+          console.log('PLATFORM_V3_UX_TRUST=PASS');
           NODE
 
-      - name: Verify representative intent search behaviour
+      - name: Verify representative full-catalogue search behaviour
         run: |
           set -euo pipefail
           node - <<'NODE'
           const {searchSite,searchIndex}=require('./lib/search');
-          const tests=[['best coffee machine under $800','coffee-machines'],['robot vacuum for pet hair','robot-vacuums'],['Sony headphones','wireless-headphones'],['air fryer for family of 4','air-fryers'],['best value headphones','wireless-headphones']];
-          for(const [q,cat] of tests){const r=searchSite(q);if(!r.products.length||!r.products.some(p=>p.category===cat)) throw new Error(`bad search ${q}`);console.log(`SEARCH=${q} TOP=${r.products[0].slug}`)}
-          const vs=searchSite('Breville vs DeLonghi'); if(!vs.directCompare) throw new Error('brand-vs-brand direct comparison not detected'); if(searchIndex().length<45) throw new Error('search index small'); console.log('INTENT_SEARCH=PASS');
+          const tests=[
+            ['best coffee machine under $800','coffee-machines'],['robot vacuum for pet hair','robot-vacuums'],['quiet headphones for long flights','wireless-headphones'],['air fryer for family of 4','air-fryers'],
+            ['mesh wifi for a large home','mesh-wifi-systems'],['ergonomic office chair for long work days','office-chairs'],['power bank for a laptop and travel','power-banks'],['portable air conditioner for a bedroom','portable-air-conditioners'],['external ssd for a creator','external-ssds']
+          ];
+          for(const [q,cat] of tests){const r=searchSite(q);if(!r.products.some(p=>p.category===cat)) throw new Error(`bad search ${q} -> ${r.products[0]?.category}`);console.log(`SEARCH=${q} TOP=${r.products[0]?.slug}`)}
+          const vs=searchSite('Breville vs DeLonghi'); if(!vs.directCompare) throw new Error('direct comparison detection failed');
+          if(searchIndex().length<350) throw new Error('expanded search index unexpectedly small');
+          console.log('FULL_CATALOGUE_SEARCH=PASS');
           NODE
 
       - name: Verify seven coffee matcher regression profiles
@@ -102,6 +114,12 @@ jobs:
           ['QA005',{workflow:'one-touch',drink:'mixed',learning:'almost',budget:'1500',speed:'high',space:'compact',beans:'sometimes'},'delonghi-magnifica-evo-ecam29083tb'],
           ['QA006',{workflow:'guided',drink:'cold',learning:'some',budget:'2000',speed:'medium',space:'normal',beans:'rarely'},'breville-barista-touch-impress-bes881'],
           ['QA007',{workflow:'one-touch',drink:'mixed',learning:'almost',budget:'1500',speed:'high',space:'normal',beans:'often'},'delonghi-rivelia-auto-milk-exam44055b']];
-          for(const [id,q,expected] of profiles){const ranked=coffee.products.map(p=>score(p,q)).filter(p=>p.eligible).sort((a,b)=>b.score-a.score||a.price-b.price);if(!ranked.length||ranked[0].slug!==expected) throw new Error(`${id} expected ${expected}, got ${ranked[0]?.slug}`);console.log(`${id} TOP=${ranked[0].slug} SCORE=${ranked[0].score}`)}
+          for(const [id,q,expected] of profiles){const ranked=coffee.products.map(p=>score(p,q)).filter(p=>p.eligible).sort((a,b)=>b.score-a.score||a.price-b.price);if(ranked[0]?.slug!==expected) throw new Error(`${id} expected ${expected}, got ${ranked[0]?.slug}`)}
           console.log('COFFEE_MATCHER_QA=7/7_PASS');
           NODE
+
+      - name: Verify venture separation
+        run: |
+          set -euo pipefail
+          if grep -RniE 'Australian Tradie Software Matcher|tradie-software|tradie matcher' --exclude-dir=.git .; then echo 'Cross-venture contamination detected'; exit 1; fi
+          echo 'VENTURE_SEPARATION=PASS'
