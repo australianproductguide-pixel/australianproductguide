@@ -68,8 +68,9 @@ jobs:
         run: |
           set -euo pipefail
           code=$(curl -sS -L -o /tmp/workspace.html -w '%{http_code}' "$BASE_URL/my-apg/"); test "$code" = "200"
-          for token in 'My APG' 'Browser-local storage' 'No account required' 'Optional account sync' 'Optional cross-device My APG sync is active' 'noindex,follow' 'Recent searches' 'Saved comparisons' 'Saved guides'; do grep -q "$token" /tmp/workspace.html || { echo "Missing My APG token: $token"; exit 1; }; done
+          for token in 'My APG' 'Browser-local storage' 'No account required' 'Optional cross-device My APG sync is active' 'noindex,follow' 'Recent searches' 'Saved comparisons' 'Saved guides'; do grep -q "$token" /tmp/workspace.html || { echo "Missing My APG token: $token"; exit 1; }; done
           curl -fsSL "$BASE_URL/assets/app.js" -o /tmp/app.js; node --check /tmp/app.js
+          grep -q 'Optional account sync' /tmp/app.js
           for token in apgDecisionHistory apgSavedComparisons apgSavedGuides apgRecentSearches navigator.share data-copy-share whatsapp apgAccountSession gozovvhofdsshjuixcys.supabase.co data-delete-account; do grep -q "$token" /tmp/app.js || { echo "Missing app token: $token"; exit 1; }; done
           if grep -qiE 'service_role|SUPABASE_SERVICE_ROLE|firebaseio|clerk\.com' /tmp/app.js /tmp/workspace.html; then echo 'Unsafe account credential or unapproved provider appears active'; exit 1; fi
           echo 'MY_APG_OPTIONAL_SYNC_PRODUCTION=PASS'
