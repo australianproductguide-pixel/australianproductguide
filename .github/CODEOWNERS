@@ -1,0 +1,10 @@
+# Australian Product Guide code ownership
+# Keep review ownership explicit as the repository grows.
+* @australianproductguide-pixel
+
+# Higher-risk operating surfaces
+/.github/ @australianproductguide-pixel
+/api/ @australianproductguide-pixel
+/data/ @australianproductguide-pixel
+/lib/ @australianproductguide-pixel
+/vercel.json @australianproductguide-pixel
