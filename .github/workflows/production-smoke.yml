@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      BASE_URL: https://au-product-guide.vercel.app
+      BASE_URL: https://australianproductguide.au
     steps:
       - uses: actions/checkout@v4
 
