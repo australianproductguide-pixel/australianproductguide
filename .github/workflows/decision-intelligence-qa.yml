@@ -1,0 +1,93 @@
+name: APG Decision Intelligence QA
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decision-intelligence-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify decision modules and browser enhancement syntax
+        run: |
+          set -euo pipefail
+          node --check lib/decision-engine.js
+          node --check lib/decision-page.js
+          node --check lib/decision-css.js
+          node --check lib/decision-client.js
+          node - <<'NODE'
+          const fs=require('fs');
+          const {decisionClientJs}=require('./lib/decision-client');
+          const {decisionCss}=require('./lib/decision-css');
+          const decisionPages=require('./lib/decision-page');
+          const engine=require('./lib/decision-engine');
+          fs.writeFileSync('/tmp/apg-decision-client.js',decisionClientJs);
+          if(!decisionCss.includes('.decision-hero')||!decisionCss.includes('.workspace-grid')) throw new Error('decision CSS controls missing');
+          if(typeof decisionPages.decisionLab!=='function'||typeof decisionPages.workspace!=='function') throw new Error('decision page exports missing');
+          if(typeof engine.rankDecision!=='function'||typeof engine.publicDecision!=='function') throw new Error('decision engine exports missing');
+          console.log('DECISION_MODULES=PASS');
+          NODE
+          node --check /tmp/apg-decision-client.js
+
+      - name: Verify realistic shopper decision profiles
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const {rankDecision,publicDecision}=require('./lib/decision-engine');
+          const profiles=[
+            ['Coffee automation + bean switching','Easy automatic coffee machine under $1300 for milk drinks and switching beans','delonghi-rivelia-auto-milk-exam44055b'],
+            ['Robot vacuum value + pets + no premium','Best value robot vacuum for pet hair and mopping, avoid premium','eufy-robot-vacuum-omni-c28'],
+            ['Travel headphones value + ANC + battery','Value quiet headphones for long flights with strong battery life','sennheiser-momentum-4-wireless'],
+            ['Compact quiet air fryer','Compact quiet air fryer under $400 for a small apartment','tefal-easy-fry-silence-essential-ey551h']
+          ];
+          for(const [label,q,expected] of profiles){
+            const {ranked,intent}=rankDecision(q);
+            if(!ranked.length) throw new Error(`${label}: no results`);
+            if(ranked[0].p.slug!==expected) throw new Error(`${label}: expected ${expected}, got ${ranked[0].p.slug}`);
+            if(!intent.signalCount) throw new Error(`${label}: no decision signals interpreted`);
+            console.log(`${label}: TOP=${ranked[0].p.slug} MATCH=${ranked[0].matchLabel}`);
+          }
+          const robot=rankDecision('Best value robot vacuum for pet hair and mopping, avoid premium');
+          if(!robot.intent.excludedTags.includes('premium')) throw new Error('negative premium preference not interpreted');
+          if(robot.ranked[0].p.tags.includes('premium')) throw new Error('premium conflict incorrectly ranked first');
+          console.log('DECISION_PROFILES=4/4_PASS');
+          NODE
+
+      - name: Verify explainability neutrality and public response contract
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const {publicDecision}=require('./lib/decision-engine');
+          const out=publicDecision('Easy automatic coffee machine under $1300 for milk drinks and switching beans');
+          if(out.version!=='decision-engine-v2') throw new Error('wrong engine version');
+          if(out.commercialRecommendationWeight!==0) throw new Error('commercial recommendation weight must be zero');
+          if(!Array.isArray(out.results)||out.results.length<3) throw new Error('insufficient public results');
+          for(const r of out.results){
+            if('score' in r) throw new Error('opaque numeric score leaked to public result');
+            if(!r.match||!r.tradeoff||!Array.isArray(r.reasons)||!Array.isArray(r.gaps)||!Array.isArray(r.conflicts)) throw new Error(`explainability contract incomplete for ${r.slug}`);
+          }
+          if(!out.note.includes('not product performance ratings')) throw new Error('performance-rating boundary missing');
+          console.log('DECISION_PUBLIC_CONTRACT=PASS');
+          NODE
+
+      - name: Verify server-rendered Decision Lab and My APG privacy boundaries
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const pages=require('./lib/decision-page');
+          const req={headers:{host:'au-product-guide.vercel.app'}};
+          const decisionUrl=new URL('https://au-product-guide.vercel.app/decision-lab/?q=Best+value+robot+vacuum+for+pet+hair+and+mopping%2C+avoid+premium');
+          const lab=pages.decisionLab(req,decisionUrl);
+          const workspace=pages.workspace(req);
+          for(const token of ['APG Decision Lab','Decision Engine v2','0 commercial scoring points','noindex,follow','Explainable shortlist']) if(!lab.includes(token)) throw new Error(`Decision Lab token missing: ${token}`);
+          for(const token of ['My APG','Browser-local storage','No account required','noindex,follow']) if(!workspace.includes(token)) throw new Error(`My APG token missing: ${token}`);
+          if(lab.includes('performance score')) throw new Error('Decision Lab should not claim a performance score');
+          console.log('DECISION_RENDER_PRIVACY=PASS');
+          NODE
