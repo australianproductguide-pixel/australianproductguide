@@ -58,6 +58,6 @@ jobs:
           const deep=products.filter(p=>p.evidenceTier==='deep'||p.evidenceLevel==='deep').length;
           if(products.length!==257) throw new Error(`Product count drift: ${products.length}`);
           if(Object.keys(categories).length!==48) throw new Error('Category count drift');
-          if(exact!==18) throw new Error(`Exact Amazon count drift: ${exact}`);
+          if(exact!==20) throw new Error(`Exact Amazon count drift: ${exact}`);
           console.log(`PASS: 257 products, 48 categories, ${exact} products with exact affiliate-direct destination; deep evidence=${deep}.`);
           NODE
