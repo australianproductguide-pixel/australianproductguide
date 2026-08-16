@@ -3,6 +3,7 @@ name: APG Source QA
 on:
   push:
     branches: ['**']
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -21,8 +22,8 @@ jobs:
           for f in api/*.js data/*.js lib/*.js scripts/*.js; do node --check "$f"; done
           node - <<'NODE'
           const fs=require('fs'); require('./lib/app');
-          const {clientJs}=require('./lib/client'); const {decisionClientJs}=require('./lib/decision-client'); const {platformV3ClientJs}=require('./lib/platform-v3-client');
-          fs.writeFileSync('/tmp/apg-client.js',clientJs+decisionClientJs+platformV3ClientJs);
+          const {clientJs}=require('./lib/client'); const {decisionClientJs}=require('./lib/decision-client'); const {platformV3ClientJs}=require('./lib/platform-v3-client'); const {accountSyncClientJs}=require('./lib/account-sync-client'); const {rumClientJs}=require('./lib/rum-client');
+          fs.writeFileSync('/tmp/apg-client.js',clientJs+decisionClientJs+platformV3ClientJs+accountSyncClientJs+rumClientJs);
           console.log('MODULE_LOAD=PASS');
           NODE
           node --check /tmp/apg-client.js
@@ -45,11 +46,11 @@ jobs:
             if(r.kind==='affiliate-direct')expect(r.asin&&r.exactUrl&&r.productIdentifier,`${p.slug} direct metadata incomplete`);
             expect(!r.imageUrl&&!r.imageVerified,`${p.slug} unapproved third-party image active`);
           }
-          expect(Object.keys(direct).length===14,'14 exact Amazon links'); expect(products.filter(p=>p.retailers[0].kind==='affiliate-search').length===243,'243 Amazon fallbacks');
-          expect(CREATORS_API.status==='credentials-required','Creators API must remain inactive');
+          expect(Object.keys(direct).length===17,'17 exact Amazon links'); expect(products.filter(p=>p.retailers[0].kind==='affiliate-search').length===240,'240 Amazon fallbacks');
+          expect(CREATORS_API.status==='credentials-required','Creators API must remain inactive until authorised credentials are configured');
           const images=products.map(imageStatus); expect(images.length===257&&!images.some(x=>x.productPhotography||x.amazonProgramContent||x.displayUrl),'image provenance gate');
           const json=catalogueJson(),csv=catalogueCsv(); expect(headers.length===32,'32 export columns'); expect(json.products.length===257&&json.categoryCount===48&&json.commercialRecommendationWeight===0,'JSON export'); expect(csv.trimEnd().split('\n').length===258,'CSV export');
-          console.log('CATALOGUE=257'); console.log('CATEGORIES=48'); console.log('AMAZON_DIRECT=14'); console.log('AMAZON_FALLBACK=243'); console.log('CATALOGUE_EXPORT=PASS');
+          console.log('CATALOGUE=257'); console.log('CATEGORIES=48'); console.log('AMAZON_DIRECT=17'); console.log('AMAZON_FALLBACK=240'); console.log('CATALOGUE_EXPORT=PASS');
           NODE
 
       - name: Search, decision and trust invariants
