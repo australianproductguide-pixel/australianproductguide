@@ -23,6 +23,21 @@ const direct={
     url:`https://www.amazon.com.au/Philips-Technology-Versatile-NA551-00/dp/B0DHS253VZ?tag=${TAG}`,
     asin:'B0DHS253VZ',verified:'2026-08-16',variant:'NA551/00 black/silver 9L Dual Basket + Steam',confidence:'high',
     note:'Exact Philips 5000 Series Dual Basket Airfryer NA551/00 Amazon Australia individual listing independently verified.'
+  },
+  'amazon-eero-max-7':{
+    url:`https://www.amazon.com.au/eero-Ethernet-Coverage-Connect-devices/dp/B0CPKX85TD?tag=${TAG}`,
+    asin:'B0CPKX85TD',verified:'2026-08-16',variant:'eero Max 7 one-pack',confidence:'high',
+    note:'Exact eero Max 7 one-pack individual Amazon Australia listing independently verified.'
+  },
+  'anker-737-power-bank-24000mah-140w':{
+    url:`https://www.amazon.com.au/Anker-PowerCore-Portable-Charger-Compatible/dp/B09VPHVT2Z?tag=${TAG}`,
+    asin:'B09VPHVT2Z',verified:'2026-08-16',variant:'Anker 737 Power Bank / PowerCore 24K, model A1289',confidence:'high',
+    note:'Exact Anker 737 Power Bank 24,000mAh 140W individual Amazon Australia listing independently verified.'
+  },
+  'amazon-kindle-paperwhite-signature-edition-32gb':{
+    url:`https://www.amazon.com.au/All-new-Amazon-Kindle-Paperwhite-Signature/dp/B0CFPHSTDD?tag=${TAG}`,
+    asin:'B0CFPHSTDD',verified:'2026-08-16',variant:'Kindle Paperwhite Signature Edition 32GB, 12th generation / 2024 release',confidence:'high',
+    note:'Exact Kindle Paperwhite Signature Edition 32GB individual Amazon Australia listing independently verified.'
   }
 };
 
