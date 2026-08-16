@@ -71,6 +71,11 @@ jobs:
             ['brand','/brands/logitech/'],['guide','/guides/office-chairs-buying-guide/'],['about','/about/'],
             ['privacy','/privacy/'],['sitemap','/sitemap/'],['not-found','/__visual-v7-404__/']
           ];
+          async function visible(page,selector){
+            const nodes=await page.$$(selector);
+            for(const node of nodes){const box=await node.boundingBox();if(box&&box.width>0&&box.height>0)return node;}
+            return null;
+          }
           (async()=>{
             const browser=await puppeteer.launch({headless:true,executablePath:process.env.CHROME,args:['--no-sandbox']});
             const bad=[],report=[];
@@ -88,11 +93,11 @@ jobs:
                 await p.goto(base+'/',{waitUntil:'networkidle0',timeout:30000});
                 if(state==='navigation'){
                   const selector=w>820?'[data-mega-trigger]':'[data-mobile-toggle]';
-                  const control=await p.$(selector);if(!control)throw new Error(`Missing ${selector}`);await control.click();await new Promise(r=>setTimeout(r,180));
+                  const control=await visible(p,selector);if(!control)throw new Error(`Missing visible ${selector}`);await control.click();await new Promise(r=>setTimeout(r,180));
                 }else{
-                  if(w<=820){const toggle=await p.$('[data-mobile-toggle]');if(toggle){await toggle.click();await new Promise(r=>setTimeout(r,120));}}
+                  if(w<=820){const toggle=await visible(p,'[data-mobile-toggle]');if(toggle){await toggle.click();await new Promise(r=>setTimeout(r,120));}}
                   const selector=w>820?'.header-search [data-site-search]':'#mobileNav [data-site-search]';
-                  const input=await p.$(selector)||await p.$('[data-site-search]');if(!input)throw new Error(`Missing search input ${selector}`);await input.click();await input.type('robot vacuum for pets');await new Promise(r=>setTimeout(r,550));
+                  const input=await visible(p,selector)||await visible(p,'[data-site-search]');if(!input)throw new Error(`Missing visible search input ${selector}`);await input.click();await input.type('robot vacuum for pets');await new Promise(r=>setTimeout(r,550));
                 }
                 const m=await p.evaluate(width=>{const mega=document.querySelector('[data-mega-menu]'),mobile=document.querySelector('#mobileNav');return {sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,navOpen:width>820?!!(mega&&!mega.hidden):!!(mobile&&!mobile.hidden),suggestions:[...document.querySelectorAll('[data-search-suggestions]')].some(x=>!x.hidden)}},w);
                 await p.screenshot({path:`visual-v7/${vp}-state-${state}.png`,fullPage:false});
