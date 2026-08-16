@@ -1,0 +1,112 @@
+name: APG Premium Visual v7 Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: read
+
+jobs:
+  visual-production:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      BASE_URL: https://au-product-guide.vercel.app
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for exact Production SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 72); do
+            d=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments?sha=$SHA")
+            id=$(echo "$d"|jq -r '[.[]|select(.environment=="Production" or .original_environment=="Production")][0].id//empty')
+            if [ -n "$id" ]; then
+              s=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments/$id/statuses")
+              state=$(echo "$s"|jq -r '.[0].state//empty')
+              [ "$state" = failure ] || [ "$state" = error ] && exit 1
+              [ "$state" = success ] && exit 0
+            fi
+            sleep 5
+          done
+          echo 'Exact Production deployment not observed' >&2; exit 1
+      - name: Verify v7 public identity and visual contract
+        run: |
+          set -euo pipefail
+          curl -fsSL "$BASE_URL/" -o /tmp/home
+          grep -q 'data-platform-v7="true"' /tmp/home
+          grep -q 'Compare smarter. Choose with confidence.' /tmp/home
+          curl -fsSL "$BASE_URL/assets/logo.svg" | grep -q 'f4b45f'
+          curl -fsSL "$BASE_URL/assets/logo-dark.svg" | grep -q '0b3044'
+          curl -fsSL "$BASE_URL/assets/social.svg" | grep -q 'Compare smarter. Choose with confidence.'
+          curl -fsSL "$BASE_URL/categories/" -o /tmp/categories
+          test "$(grep -o 'class="category-card v7-category-card"' /tmp/categories | wc -l)" = 48
+          grep -q 'data-v7-category="home-security-cameras"' /tmp/categories
+          grep -q 'data-v7-category="luggage"' /tmp/categories
+          grep -q 'data-v7-category="blenders"' /tmp/categories
+          echo 'PUBLIC_V7_IDENTITY=PASS'
+      - name: Multi-viewport screenshot and interaction QA
+        run: |
+          set -euo pipefail
+          CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser)
+          npm install --no-save --package-lock=false puppeteer-core@24.16.0 >/dev/null 2>&1
+          mkdir -p visual-v7
+          CHROME="$CHROME" BASE_URL="$BASE_URL" node <<'NODE'
+          const puppeteer=require('puppeteer-core'),fs=require('fs');
+          const base=process.env.BASE_URL;
+          const viewports=[['wide',1600,1000],['laptop',1280,900],['tablet',900,1100],['mobile',390,844]];
+          const pages=[
+            ['home','/'],['categories','/categories/'],['starter-category','/categories/home-security-cameras/'],
+            ['deep-category','/categories/coffee-machines/'],['product','/products/logitech-signature-k855/'],
+            ['starter-product','/products/tp-link-tapo-c500/'],['compare','/compare/'],
+            ['difference','/compare/custom/?products=sony-wh-1000xm6,bose-quietcomfort-ultra-headphones'],
+            ['decision','/decision-lab/?q=robot+vacuum+for+pet+hair'],['workspace','/my-apg/'],
+            ['brand','/brands/logitech/'],['guide','/guides/office-chairs-buying-guide/'],['about','/about/'],
+            ['privacy','/privacy/'],['sitemap','/sitemap/'],['not-found','/__visual-v7-404__/']
+          ];
+          (async()=>{
+            const browser=await puppeteer.launch({headless:true,executablePath:process.env.CHROME,args:['--no-sandbox']});
+            const bad=[],report=[];
+            for(const [vp,w,h] of viewports){
+              for(const [name,path] of pages){
+                const p=await browser.newPage();await p.setViewport({width:w,height:h});const errors=[];p.on('pageerror',e=>errors.push(e.message));
+                const r=await p.goto(base+path,{waitUntil:'networkidle0',timeout:30000});
+                const m=await p.evaluate(()=>({sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,marker:document.body.dataset.platformV7||'',text:document.body.innerText.length,tiny:[...document.querySelectorAll('a,button,input,summary')].filter(el=>{const q=el.getBoundingClientRect();return q.width>0&&q.height>0&&q.width<24&&q.height<24}).length}));
+                await p.screenshot({path:`visual-v7/${vp}-${name}.png`,fullPage:true});
+                if(m.sw>m.cw+2||m.marker!=='true'||m.text<90||errors.length)bad.push(`${vp}/${name}: ${JSON.stringify(m)} ${errors.join('|')}`);
+                report.push({vp,name,status:r?.status(),...m});await p.close();
+              }
+              for(const state of ['navigation','search']){
+                const p=await browser.newPage();await p.setViewport({width:w,height:h});const errors=[];p.on('pageerror',e=>errors.push(e.message));
+                await p.goto(base+'/',{waitUntil:'networkidle0',timeout:30000});
+                if(state==='navigation'){
+                  const selector=w>820?'[data-mega-trigger]':'[data-mobile-toggle]';
+                  const control=await p.$(selector);if(!control)throw new Error(`Missing ${selector}`);await control.click();await new Promise(r=>setTimeout(r,180));
+                }else{
+                  if(w<=820){const toggle=await p.$('[data-mobile-toggle]');if(toggle){await toggle.click();await new Promise(r=>setTimeout(r,120));}}
+                  const selector=w>820?'.header-search [data-site-search]':'#mobileNav [data-site-search]';
+                  const input=await p.$(selector)||await p.$('[data-site-search]');if(!input)throw new Error(`Missing search input ${selector}`);await input.click();await input.type('robot vacuum for pets');await new Promise(r=>setTimeout(r,550));
+                }
+                const m=await p.evaluate(width=>{const mega=document.querySelector('[data-mega-menu]'),mobile=document.querySelector('#mobileNav');return {sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,navOpen:width>820?!!(mega&&!mega.hidden):!!(mobile&&!mobile.hidden),suggestions:[...document.querySelectorAll('[data-search-suggestions]')].some(x=>!x.hidden)}},w);
+                await p.screenshot({path:`visual-v7/${vp}-state-${state}.png`,fullPage:false});
+                if(m.sw>m.cw+2||errors.length)bad.push(`${vp}/${state}: ${JSON.stringify(m)} ${errors.join('|')}`);
+                if(state==='navigation'&&!m.navOpen)bad.push(`${vp}/${state}: expected navigation open`);
+                if(state==='search'&&!m.suggestions)bad.push(`${vp}/${state}: expected suggestions visible`);
+                report.push({vp,name:`state-${state}`,...m});await p.close();
+              }
+            }
+            await browser.close();fs.writeFileSync('visual-v7/report.json',JSON.stringify(report,null,2));
+            if(bad.length){console.error(bad.join('\n'));process.exit(1)}console.log(`V7_VISUAL_CAPTURE=${report.length}_STATES_PASS`);
+          })();
+          NODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apg-premium-v7-visual-${{ github.run_id }}
+          path: visual-v7
+          retention-days: 30
