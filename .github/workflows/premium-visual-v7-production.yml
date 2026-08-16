@@ -48,20 +48,23 @@ jobs:
       - name: Verify current public identity and visual contract
         run: |
           set -euo pipefail
-          probe(){ echo "Checking $1"; curl -fsSL "$BASE_URL$1"; }
-          probe / > /tmp/home
+          curl -fsSL "$BASE_URL/" > /tmp/home
           grep -q 'data-platform-v7="true"' /tmp/home
           if grep -q 'data-institutional-v9="true"' /tmp/home; then
             grep -q 'Make a better product decision.' /tmp/home
-            probe /assets/institutional-v9.css | grep -q 'Institutional Design System v9'
+            curl -fsSL "$BASE_URL/assets/institutional-v9.css" > /tmp/institutional.css
+            grep -q 'Institutional Design System v9' /tmp/institutional.css
           else
             grep -q 'Compare smarter. Choose with confidence.' /tmp/home
             grep -q 'v7-semantic-product-visual' /tmp/home
           fi
-          probe /assets/logo.svg | grep -q 'f4b45f'
-          probe /assets/logo-dark.svg | grep -q '0b3044'
-          probe /assets/social.svg | grep -q 'Compare smarter. Choose with confidence.'
-          probe /categories/ > /tmp/categories
+          curl -fsSL "$BASE_URL/assets/logo.svg" > /tmp/logo.svg
+          curl -fsSL "$BASE_URL/assets/logo-dark.svg" > /tmp/logo-dark.svg
+          curl -fsSL "$BASE_URL/assets/social.svg" > /tmp/social.svg
+          grep -q 'f4b45f' /tmp/logo.svg
+          grep -q '0b3044' /tmp/logo-dark.svg
+          grep -q 'Compare smarter. Choose with confidence.' /tmp/social.svg
+          curl -fsSL "$BASE_URL/categories/" > /tmp/categories
           test "$(grep -o 'class="category-card v7-category-card"' /tmp/categories | wc -l)" = 48
           grep -q 'data-v7-category="home-security-cameras"' /tmp/categories
           grep -q 'data-v7-category="luggage"' /tmp/categories
