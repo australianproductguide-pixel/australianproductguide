@@ -1,2 +1,2 @@
-// APG production entry point: canonical domain, Google platform and shopping assistant.
-module.exports=require('../lib/assistant-platform');
+// Australian Product Guide production entry point: canonical domain, Google platform, shopping assistant and brand polish.
+module.exports=require('../lib/brand-polish');
