@@ -18,7 +18,7 @@ jobs:
       - name: Verify JavaScript syntax and module loading
         run: |
           set -euo pipefail
-          for f in api/*.js data/*.js lib/*.js; do echo "Checking $f"; node --check "$f"; done
+          for f in api/*.js data/*.js lib/*.js scripts/*.js; do echo "Checking $f"; node --check "$f"; done
           node - <<'NODE'
           const fs=require('fs');
           require('./lib/app');
@@ -30,19 +30,20 @@ jobs:
           NODE
           node --check /tmp/apg-client.js
 
-      - name: Verify Platform v3 catalogue retailer freshness and media invariants
+      - name: Verify Platform v3 catalogue retailer freshness and export invariants
         run: |
           set -euo pipefail
           node - <<'NODE'
           const {products,pathways,categories}=require('./data');
           const {brands,pairPages,indexableRoutes}=require('./lib/routes');
           const {CREATORS_API}=require('./data/retailers');
+          const {catalogueCsv,catalogueJson,headers}=require('./lib/catalogue-export');
           if(products.length!==257) throw new Error(`products ${products.length}`);
           if(pathways.length!==48||Object.keys(categories).length!==48) throw new Error('category/pathway population mismatch');
           if(pathways.some(p=>!p.maintained)) throw new Error('empty category pathway remains');
           if(pairPages.length!==144) throw new Error(`pairs ${pairPages.length}`);
-          if(indexableRoutes.length<600) throw new Error(`route set unexpectedly small ${indexableRoutes.length}`);
-          if(brands.length<60) throw new Error(`brand coverage unexpectedly small ${brands.length}`);
+          if(indexableRoutes.length!==722) throw new Error(`routes ${indexableRoutes.length}`);
+          if(brands.length!==112) throw new Error(`brands ${brands.length}`);
           const deep=products.filter(p=>p.evidenceTier==='deep'),starter=products.filter(p=>p.evidenceTier==='starter');
           if(deep.length!==37||starter.length!==220) throw new Error(`evidence tiers deep=${deep.length} starter=${starter.length}`);
           for(const p of products){
@@ -63,7 +64,11 @@ jobs:
             if(r.imageUrl||r.imageVerified) throw new Error(`unapproved third-party image activated ${p.slug}`);
           }
           if(CREATORS_API.status!=='credentials-required') throw new Error('Creators API unexpectedly active');
-          console.log('PLATFORM_V3_CATALOGUE=PASS'); console.log('DEEP_EVIDENCE=37'); console.log('STARTER_EVIDENCE=220'); console.log('AMAZON_DIRECT=6'); console.log('AMAZON_FALLBACK=251');
+          const json=catalogueJson(),csv=catalogueCsv();
+          if(json.productCount!==257||json.categoryCount!==48||json.products.length!==257||json.commercialRecommendationWeight!==0) throw new Error('catalogue JSON export mismatch');
+          if(headers.length!==32||csv.trimEnd().split('\n').length!==258) throw new Error('catalogue CSV export mismatch');
+          if(json.products.some(p=>p['Commercial Recommendation Weight']!=='0')) throw new Error('commercial neutrality missing from export');
+          console.log('PLATFORM_V3_CATALOGUE=PASS'); console.log('DEEP_EVIDENCE=37'); console.log('STARTER_EVIDENCE=220'); console.log('AMAZON_DIRECT=6'); console.log('AMAZON_FALLBACK=251'); console.log('CATALOGUE_EXPORT=257_PASS');
           NODE
 
       - name: Verify premium UX sharing privacy and image provenance controls
@@ -118,8 +123,8 @@ jobs:
           console.log('COFFEE_MATCHER_QA=7/7_PASS');
           NODE
 
-      - name: Verify venture separation
+      - name: Verify venture separation in runtime source and data
         run: |
           set -euo pipefail
-          if grep -RniE 'Australian Tradie Software Matcher|tradie-software|tradie matcher' --exclude-dir=.git .; then echo 'Cross-venture contamination detected'; exit 1; fi
+          if grep -RniE 'Australian Tradie Software Matcher|tradie-software|tradie matcher' api data lib scripts; then echo 'Cross-venture contamination detected'; exit 1; fi
           echo 'VENTURE_SEPARATION=PASS'
