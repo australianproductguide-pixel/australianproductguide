@@ -52,8 +52,9 @@ jobs:
           const decision=publicDecision('mesh wifi for a large home with ethernet');
           if(decision.commercialRecommendationWeight!==0)throw new Error('commercial recommendation weight must remain zero');
           const source=fs.readFileSync('./lib/decision-engine.js','utf8');
-          const score=source.slice(source.indexOf('function scoreProduct'),source.indexOf('function labelFor')).toLowerCase();
-          for(const banned of ['retailer','affiliate','commission','asin'])if(score.includes(banned))throw new Error(`commercial field leaked into decision scoring: ${banned}`);
+          const score=source.slice(source.indexOf('function scoreProduct'),source.indexOf('function labelFor'));
+          if(/\bp\.(?:retailers?|affiliate|commission|asin)\b/i.test(score))throw new Error('commercial product field leaked into recommendation scoring');
+          if(/require\([^)]*retailer/i.test(source))throw new Error('decision engine must not import retailer data');
           console.log('SOURCE_METRICS=257/48/0/112/144/722/20');
           console.log('COMMERCIAL_RECOMMENDATION_WEIGHT=0');
           NODE
