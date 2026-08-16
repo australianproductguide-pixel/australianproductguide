@@ -1,0 +1,105 @@
+name: APG Production Smoke Test
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BASE_URL: https://au-product-guide.vercel.app
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for exact Vercel Production deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 72); do
+            d=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments?sha=$SHA")
+            id=$(echo "$d"|jq -r '[.[]|select(.environment=="Production" or .original_environment=="Production")][0].id//empty')
+            if [ -n "$id" ]; then
+              s=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments/$id/statuses")
+              state=$(echo "$s"|jq -r '.[0].state//empty'); echo "Production state=${state:-pending}"
+              [ "$state" = failure ] || [ "$state" = error ] && exit 1
+              [ "$state" = success ] && exit 0
+            fi
+            sleep 5
+          done
+          exit 1
+
+      - name: Source metrics and public shell
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const {products,categories,pathways}=require('./data'); const {brands,pairPages,indexableRoutes}=require('./lib/routes'); const {direct}=require('./data/retailers');
+          const x=[products.length,Object.keys(categories).length,pathways.filter(p=>!p.maintained).length,brands.length,pairPages.length,indexableRoutes.length,Object.keys(direct).length];
+          if(x.join(',')!=='257,48,0,112,144,722,14')throw new Error(x.join(',')); console.log('SOURCE_METRICS=257/48/0/112/144/722/14');
+          NODE
+          curl -fsSL "$BASE_URL/" -o /tmp/home.html
+          for t in 'Australian Product Guide' 'data-platform-v3="true"' 'Decision Lab' 'Buying guides' 'My APG' 'data-share-surface'; do grep -qi "$t" /tmp/home.html; done
+          for p in /categories/ /compare/ /guides/ /retailers/ /brands/ /decision-lab/ /my-apg/; do test "$(curl -sSL -o /tmp/x -w '%{http_code}' "$BASE_URL$p")" = 200; done
+          curl -fsSL "$BASE_URL/assets/app.js" -o /tmp/app.js; node --check /tmp/app.js
+          curl -fsSL "$BASE_URL/assets/search-index.json" | jq -e 'length >= 350' >/dev/null
+          curl -fsSL "$BASE_URL/api/catalogue.json" | jq -e '.productCount==257 and .categoryCount==48 and .commercialRecommendationWeight==0' >/dev/null
+          test "$(curl -fsSL "$BASE_URL/api/catalogue.csv" | wc -l)" = 258
+          echo 'PUBLIC_SHELL_EXPORTS=PASS'
+
+      - name: Crawl all 722 indexable routes
+        run: |
+          set -euo pipefail
+          curl -fsSL "$BASE_URL/sitemap.xml" -o /tmp/sitemap.xml
+          BASE_URL="$BASE_URL" node - <<'NODE'
+          const fs=require('fs'); const {indexableRoutes}=require('./lib/routes'); const base=process.env.BASE_URL;
+          const urls=[...fs.readFileSync('/tmp/sitemap.xml','utf8').matchAll(/<loc>(.*?)<\/loc>/g)].map(x=>x[1]); if(urls.length!==722||new Set(urls).size!==722)throw new Error(`sitemap ${urls.length}`);
+          const expected=new Set(indexableRoutes.map(p=>base+p)); for(const u of urls)if(!expected.has(u))throw new Error(`unexpected ${u}`);
+          let next=0,done=0;const bad=[];async function worker(){while(next<urls.length){const u=urls[next++],path=new URL(u).pathname;try{const r=await fetch(u);const t=await r.text();if(r.status!==200)throw new Error(`HTTP ${r.status}`);if(!t.includes(`<link rel="canonical" href="${base+path}"`))throw new Error('canonical');if(/noindex/i.test((t.match(/<meta name="robots"[^>]*>/i)||[''])[0]))throw new Error('noindex');}catch(e){bad.push(`${path}: ${e.message}`)}done++;}}
+          Promise.all(Array.from({length:12},worker)).then(()=>{if(bad.length){console.error(bad.slice(0,30).join('\n'));process.exit(1)}console.log(`CANONICAL_CRAWL=${done}/722_PASS`)});
+          NODE
+
+      - name: Verify every product route, Amazon attribution and freshness
+        run: |
+          set -euo pipefail
+          BASE_URL="$BASE_URL" node - <<'NODE'
+          const {products}=require('./data'); const {direct}=require('./data/retailers'); const base=process.env.BASE_URL; let next=0,d=0,f=0;const bad=[];
+          async function worker(){while(next<products.length){const p=products[next++];try{const r=await fetch(`${base}/products/${p.slug}/`);const t=await r.text();if(r.status!==200)throw new Error(`HTTP ${r.status}`);for(const needle of ['auproductguid-22','rel="sponsored nofollow noopener"','"@type":"Product"','"@type":"BreadcrumbList"','Evidence freshness','Commercial score'])if(!t.includes(needle))throw new Error(`missing ${needle}`);const rr=p.retailers[0];if(rr.kind==='affiliate-direct'){d++;if(!t.includes(rr.asin))throw new Error(`ASIN ${rr.asin}`)}else f++;if(p.evidenceTier==='starter'&&!t.includes('Starter evidence'))throw new Error('starter disclosure');}catch(e){bad.push(`${p.slug}: ${e.message}`)}}}
+          Promise.all(Array.from({length:10},worker)).then(()=>{if(bad.length){console.error(bad.slice(0,30).join('\n'));process.exit(1)}if(d!==14||f!==243)throw new Error(`retailer ${d}/${f}`);if(Object.keys(direct).length!==14)throw new Error('direct registry');console.log('PRODUCT_ROUTES=257/257_PASS');console.log('AMAZON_DIRECT=14');console.log('AMAZON_FALLBACK=243');});
+          NODE
+
+      - name: Representative journeys, noindex and privacy boundaries
+        run: |
+          set -euo pipefail
+          check(){ code=$(curl -sSL -o /tmp/page -w '%{http_code}' "$BASE_URL$1"); test "$code" = 200; grep -qi "$2" /tmp/page; }
+          check '/categories/coffee-machines/' 'Deep evidence'; check '/categories/home-security-cameras/' 'Starter evidence'; check '/categories/office-chairs/' 'Office chairs'; check '/categories/smartwatches/' 'Smartwatches'; check '/categories/blenders/' 'Blenders'; check '/products/tp-link-tapo-c500/' 'Evidence freshness'; check '/categories/office-chairs/finder/?priority=ergonomic&secondary=lumbar' 'Best match'; check '/guides/office-chairs-buying-guide/' 'Starter evidence'; check '/search/?q=ergonomic+office+chair+with+lumbar+support' 'Office'; check '/decision-lab/?q=mesh+wifi+for+a+large+home+with+ethernet' 'Decision Engine v3'; check '/my-apg/' 'Optional account sync'
+          for p in /privacy/ /terms/ /methodology/ /editorial-standards/ /sources/ /corrections-policy/ /affiliate-disclosure/ /coverage/ /updates/ /contact/; do test "$(curl -sSL -o /tmp/t -w '%{http_code}' "$BASE_URL$p")" = 200; done
+          curl -fsSL "$BASE_URL/decision-lab/?q=robot+vacuum&category=robot-vacuums&_vercel_share=SECRET&utm_source=smoke" -o /tmp/lab
+          grep -qi 'noindex,follow' /tmp/lab; grep -q 'data-share-surface' /tmp/lab; ! grep -qE '_vercel_share|utm_source|SECRET' /tmp/lab
+          curl -fsSL "$BASE_URL/compare/custom/?products=sony-wh-1000xm6,bose-quietcomfort-ultra-headphones,INVALID&_vercel_share=SECRET" -o /tmp/cmp
+          grep -qi 'noindex,follow' /tmp/cmp; grep -q 'data-share-surface' /tmp/cmp; ! grep -qE 'INVALID|_vercel_share|SECRET' /tmp/cmp
+          ! curl -fsSL "$BASE_URL/my-apg/" | grep -qiE 'supabase\.co|firebaseio|clerk\.com'
+          echo 'JOURNEYS_PRIVACY=PASS'
+
+      - name: Desktop tablet and mobile visual QA
+        run: |
+          set -euo pipefail
+          CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser); npm install --no-save --package-lock=false puppeteer-core@24.16.0 >/dev/null 2>&1; mkdir -p visual-qa
+          CHROME="$CHROME" BASE_URL="$BASE_URL" node - <<'NODE'
+          const puppeteer=require('puppeteer-core'),fs=require('fs');const base=process.env.BASE_URL;const v=[['desktop',1440,1000],['tablet',900,1100],['mobile',390,844]];const pages=[['home','/'],['categories','/categories/'],['category','/categories/office-chairs/'],['product','/products/tp-link-tapo-c500/'],['compare','/compare/'],['custom','/compare/custom/?products=sony-wh-1000xm6,bose-quietcomfort-ultra-headphones'],['decision','/decision-lab/?q=mesh+wifi+for+a+large+home+with+ethernet'],['workspace','/my-apg/'],['guide','/guides/office-chairs-buying-guide/'],['privacy','/privacy/'],['404','/__apg-v3-visual-404__/']];
+          (async()=>{const b=await puppeteer.launch({headless:true,executablePath:process.env.CHROME,args:['--no-sandbox']});const bad=[],report=[];for(const [vp,w,h] of v)for(const [name,path] of pages){const p=await b.newPage();await p.setViewport({width:w,height:h});const errs=[];p.on('pageerror',e=>errs.push(e.message));const r=await p.goto(base+path,{waitUntil:'networkidle0',timeout:30000});const m=await p.evaluate(()=>({sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,text:document.body.innerText.length,platform:document.body.dataset.platformV3||'',bytes:performance.getEntriesByType('resource').reduce((n,x)=>n+(x.transferSize||0),0)}));await p.screenshot({path:`visual-qa/${vp}-${name}.png`,fullPage:true});if(m.sw>m.cw+2||m.text<100||errs.length||m.bytes>2500000)bad.push(`${vp}/${name} ${JSON.stringify(m)} ${errs.join('|')}`);report.push({vp,name,status:r?.status(),...m});await p.close()}await b.close();fs.writeFileSync('visual-qa/report.json',JSON.stringify(report,null,2));if(bad.length){console.error(bad.join('\n'));process.exit(1)}console.log('VISUAL_QA=33/33_PASS')})();
+          NODE
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apg-platform-v3-visual-qa-${{ github.run_id }}
+          path: visual-qa
+          retention-days: 30
