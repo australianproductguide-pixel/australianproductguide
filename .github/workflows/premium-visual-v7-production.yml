@@ -36,16 +36,28 @@ jobs:
             sleep 5
           done
           echo 'Exact Production deployment not observed' >&2; exit 1
-      - name: Verify v7 public identity and visual contract
+      - name: Assert certification still targets main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          current=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/commits/main" | jq -r '.sha')
+          test "$current" = "$SHA" || { echo "main advanced to $current before certification" >&2; exit 1; }
+      - name: Verify current public identity and visual contract
         run: |
           set -euo pipefail
           probe(){ echo "Checking $1"; curl -fsSL "$BASE_URL$1"; }
           probe / > /tmp/home
           grep -q 'data-platform-v7="true"' /tmp/home
-          grep -q 'Compare smarter. Choose with confidence.' /tmp/home
-          grep -q 'v7-semantic-product-visual' /tmp/home
-          grep -q 'data-v7-category="home-security-cameras"' /tmp/home
-          grep -q 'data-v7-category="stick-vacuums"' /tmp/home
+          if grep -q 'data-institutional-v9="true"' /tmp/home; then
+            grep -q 'Make a better product decision.' /tmp/home
+            probe /assets/institutional-v9.css | grep -q 'Institutional Design System v9'
+          else
+            grep -q 'Compare smarter. Choose with confidence.' /tmp/home
+            grep -q 'v7-semantic-product-visual' /tmp/home
+          fi
           probe /assets/logo.svg | grep -q 'f4b45f'
           probe /assets/logo-dark.svg | grep -q '0b3044'
           probe /assets/social.svg | grep -q 'Compare smarter. Choose with confidence.'
@@ -54,7 +66,7 @@ jobs:
           grep -q 'data-v7-category="home-security-cameras"' /tmp/categories
           grep -q 'data-v7-category="luggage"' /tmp/categories
           grep -q 'data-v7-category="blenders"' /tmp/categories
-          echo 'PUBLIC_V7_IDENTITY=PASS'
+          echo 'PUBLIC_VISUAL_IDENTITY=PASS'
       - name: Multi-viewport screenshot and interaction QA
         run: |
           set -euo pipefail
@@ -117,13 +129,25 @@ jobs:
                   const input=await visibleSearch(p);if(!input)throw new Error('Missing visible site search input');
                   await input.evaluate(el=>el.focus());await input.type('robot vacuum for pets');await new Promise(r=>setTimeout(r,550));
                 }
-                const m=await p.evaluate(()=>{const mega=document.querySelector('[data-discovery-menu], [data-mega-menu]'),mobile=document.querySelector('#mobileNav');return {sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,megaOpen:!!(mega&&!mega.hidden),mobileOpen:!!(mobile&&!mobile.hidden),suggestions:[...document.querySelectorAll('[data-search-suggestions]')].some(x=>!x.hidden)}});
+                const m=await p.evaluate(()=>{
+                  const isVisible=el=>{if(!el)return false;const s=getComputedStyle(el),r=el.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&s.opacity!=='0'&&r.width>0&&r.height>0};
+                  const mega=document.querySelector('[data-discovery-menu], [data-mega-menu]'),mobile=document.querySelector('#mobileNav');
+                  const suggestion=[...document.querySelectorAll('[data-search-suggestions]')].find(isVisible)||null;
+                  const share=document.querySelector('.platform-sharebar');
+                  let shareOverlap=false;
+                  if(suggestion&&isVisible(share)){
+                    const a=suggestion.getBoundingClientRect(),b=share.getBoundingClientRect();
+                    shareOverlap=a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
+                  }
+                  return {sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,megaOpen:!!(mega&&!mega.hidden),mobileOpen:!!(mobile&&!mobile.hidden),suggestions:!!suggestion,shareVisible:isVisible(share),shareOverlap};
+                });
                 await p.screenshot({path:`visual-v7/${vp}-state-${state}.png`,fullPage:false});
                 if(m.sw>m.cw+2||errors.length)bad.push(`${vp}/${state}: ${JSON.stringify(m)} ${errors.join('|')}`);
                 if(state==='navigation'&&!m.megaOpen&&!m.mobileOpen)bad.push(`${vp}/${state}: expected visible navigation state open`);
                 if(state==='navigation'&&navMode==='mega'&&!m.megaOpen)bad.push(`${vp}/${state}: mega trigger did not open mega menu`);
                 if(state==='navigation'&&navMode==='mobile'&&!m.mobileOpen)bad.push(`${vp}/${state}: mobile trigger did not open mobile nav`);
                 if(state==='search'&&!m.suggestions)bad.push(`${vp}/${state}: expected suggestions visible`);
+                if(state==='search'&&m.shareOverlap)bad.push(`${vp}/${state}: share bar overlaps search suggestions`);
                 report.push({vp,name:`state-${state}`,navMode,...m});await p.close();
               }
             }
@@ -131,6 +155,15 @@ jobs:
             if(bad.length){console.error(bad.join('\n'));process.exit(1)}console.log(`V7_VISUAL_CAPTURE=${report.length}_STATES_PASS`);
           })();
           NODE
+      - name: Assert main did not advance during certification
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          current=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/commits/main" | jq -r '.sha')
+          test "$current" = "$SHA" || { echo "main advanced to $current during certification" >&2; exit 1; }
       - uses: actions/upload-artifact@v4
         with:
           name: apg-premium-v7-visual-${{ github.run_id }}
