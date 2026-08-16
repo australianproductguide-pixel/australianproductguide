@@ -1,0 +1,38 @@
+name: APG Catalogue Freshness QA
+
+on:
+  push:
+    branches: ['**']
+  schedule:
+    - cron: '20 20 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  freshness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate freshness and stale-data queue
+        run: |
+          set -euo pipefail
+          node scripts/freshness-report.js /tmp/apg-freshness.json
+          cat /tmp/apg-freshness.md >> "$GITHUB_STEP_SUMMARY"
+          node - <<'NODE'
+          const r=require('/tmp/apg-freshness.json');
+          if(r.products!==257||r.categories!==48) throw new Error(`catalogue mismatch ${r.products}/${r.categories}`);
+          if(r.actionable!==0) throw new Error(`freshness queue has ${r.actionable} actionable stale/missing controls`);
+          for(const expected of ['price-unmaintained','deep-research-pending','exact-amazon-link-pending','genuine-image-pending']) if(!(expected in r.byType)) throw new Error(`maturity queue missing ${expected}`);
+          console.log('CATALOGUE_FRESHNESS_CONTROLS=PASS');
+          NODE
+      - name: Upload freshness queue
+        uses: actions/upload-artifact@v4
+        with:
+          name: apg-catalogue-freshness-${{ github.run_id }}
+          path: |
+            /tmp/apg-freshness.json
+            /tmp/apg-freshness.md
+          retention-days: 30

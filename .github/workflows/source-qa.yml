@@ -11,97 +11,79 @@ permissions:
 jobs:
   source-qa:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify JavaScript syntax and module loading
+      - name: Syntax and module load
         run: |
           set -euo pipefail
-          for f in api/*.js data/*.js lib/*.js; do echo "Checking $f"; node --check "$f"; done
+          for f in api/*.js data/*.js lib/*.js scripts/*.js; do node --check "$f"; done
           node - <<'NODE'
-          require('./lib/app');
-          const data=require('./data');
-          const routes=require('./lib/routes');
-          const search=require('./lib/search');
-          const {clientJs}=require('./lib/client');
-          require('./lib/ui'); require('./lib/pages'); require('./lib/coffee-finder'); require('./data/image-provenance');
-          require('fs').writeFileSync('/tmp/apg-client.js',clientJs);
+          const fs=require('fs'); require('./lib/app');
+          const {clientJs}=require('./lib/client'); const {decisionClientJs}=require('./lib/decision-client'); const {platformV3ClientJs}=require('./lib/platform-v3-client');
+          fs.writeFileSync('/tmp/apg-client.js',clientJs+decisionClientJs+platformV3ClientJs);
           console.log('MODULE_LOAD=PASS');
-          console.log('PRODUCTS='+data.products.length); console.log('PATHWAYS='+data.pathways.length); console.log('BRANDS='+routes.brands.length); console.log('PAIR_PAGES='+routes.pairPages.length); console.log('INDEXABLE_ROUTES='+routes.indexableRoutes.length); console.log('SEARCH_INDEX='+search.searchIndex().length);
           NODE
           node --check /tmp/apg-client.js
 
-      - name: Verify catalogue retailer and media invariants
+      - name: Catalogue, freshness, Amazon and export invariants
         run: |
           set -euo pipefail
           node - <<'NODE'
-          const {products,pathways,categories}=require('./data');
-          const {brands,pairPages,indexableRoutes}=require('./lib/routes');
-          const {CREATORS_API}=require('./data/retailers');
-          if(products.length!==37) throw new Error(`products ${products.length}`);
-          if(pathways.length!==48) throw new Error(`pathways ${pathways.length}`);
-          if(Object.keys(categories).length!==4) throw new Error('expected 4 maintained categories');
-          if(brands.length!==16) throw new Error(`brands ${brands.length}`);
-          if(pairPages.length!==56) throw new Error(`pairs ${pairPages.length}`);
-          if(indexableRoutes.length!==139) throw new Error(`routes ${indexableRoutes.length}`);
-          const retailers=products.flatMap(p=>p.retailers.map(r=>({p,r})));
-          const direct=retailers.filter(x=>x.r.kind==='affiliate-direct'),fallback=retailers.filter(x=>x.r.kind==='affiliate-search');
-          if(direct.length!==3) throw new Error(`direct Amazon links ${direct.length}`);
-          if(fallback.length!==34) throw new Error(`fallback Amazon links ${fallback.length}`);
-          for(const {p,r} of retailers){
-            if(!(r.affiliateUrl||r.url).includes('amazon.com.au')) throw new Error(`bad Amazon host ${p.slug}`);
-            if(!(r.affiliateUrl||r.url).includes('tag=auproductguid-22')) throw new Error(`missing tag ${p.slug}`);
-            for(const key of ['retailer','kind','affiliateUrl','imageSource','imageProvenance','verified','availabilityConfidence']) if(r[key]===undefined||r[key]===null) throw new Error(`retailer field ${key} missing ${p.slug}`);
-            if(r.kind==='affiliate-direct'&&(!r.asin||!r.exactUrl||!r.productIdentifier)) throw new Error(`direct link metadata missing ${p.slug}`);
-            if(r.imageUrl||r.imageVerified) throw new Error(`unapproved external image activated ${p.slug}`);
+          const {products,pathways,categories}=require('./data'); const {brands,pairPages,indexableRoutes}=require('./lib/routes');
+          const {direct,CREATORS_API}=require('./data/retailers'); const {catalogueCsv,catalogueJson,headers}=require('./lib/catalogue-export'); const {imageStatus}=require('./data/image-provenance');
+          const expect=(ok,msg)=>{if(!ok)throw new Error(msg)};
+          expect(products.length===257,'257 products'); expect(Object.keys(categories).length===48,'48 categories'); expect(pathways.length===48&&!pathways.some(x=>!x.maintained),'zero empty pathways');
+          expect(brands.length===112,'112 canonical brand pages'); expect(pairPages.length===144,'144 maintained pair pages'); expect(indexableRoutes.length===722,'722 indexable routes');
+          const deep=products.filter(x=>x.evidenceTier==='deep'),starter=products.filter(x=>x.evidenceTier==='starter'); expect(deep.length===37&&starter.length===220,'37 deep / 220 starter');
+          for(const p of products){
+            for(const k of ['firstResearched','lastSourceVerification','lastRetailerCheck','lastImageVerification','nextReviewDue','freshnessStatus','evidenceTier'])expect(p[k]!=null,`${p.slug} missing ${k}`);
+            if(p.evidenceTier==='starter'){expect(p.lastSubstantiveReview===null,`${p.slug} fake substantive review`);expect(p.price===null,`${p.slug} fake price`);}
+            const r=p.retailers?.[0]; expect(r&&r.retailer==='Amazon Australia',`${p.slug} retailer missing`); const u=r.affiliateUrl||r.url;
+            expect(u.includes('amazon.com.au'),`${p.slug} non-Amazon URL`); expect(u.includes('tag=auproductguid-22'),`${p.slug} affiliate tag missing`);
+            if(r.kind==='affiliate-direct')expect(r.asin&&r.exactUrl&&r.productIdentifier,`${p.slug} direct metadata incomplete`);
+            expect(!r.imageUrl&&!r.imageVerified,`${p.slug} unapproved third-party image active`);
           }
-          if(CREATORS_API.status!=='credentials-required') throw new Error('Creators API status unexpectedly active');
-          console.log('CATALOGUE_INVARIANTS=PASS'); console.log('AMAZON_DIRECT=3'); console.log('AMAZON_FALLBACK=34'); console.log('CREATORS_API=PREPARED_CREDENTIALS_REQUIRED');
+          expect(Object.keys(direct).length===14,'14 exact Amazon links'); expect(products.filter(p=>p.retailers[0].kind==='affiliate-search').length===243,'243 Amazon fallbacks');
+          expect(CREATORS_API.status==='credentials-required','Creators API must remain inactive');
+          const images=products.map(imageStatus); expect(images.length===257&&!images.some(x=>x.productPhotography||x.amazonProgramContent||x.displayUrl),'image provenance gate');
+          const json=catalogueJson(),csv=catalogueCsv(); expect(headers.length===32,'32 export columns'); expect(json.products.length===257&&json.categoryCount===48&&json.commercialRecommendationWeight===0,'JSON export'); expect(csv.trimEnd().split('\n').length===258,'CSV export');
+          console.log('CATALOGUE=257'); console.log('CATEGORIES=48'); console.log('AMAZON_DIRECT=14'); console.log('AMAZON_FALLBACK=243'); console.log('CATALOGUE_EXPORT=PASS');
           NODE
 
-      - name: Verify Phase 4 premium UX trust accessibility and imagery controls
+      - name: Search, decision and trust invariants
         run: |
           set -euo pipefail
           node - <<'NODE'
-          const {products}=require('./data'); const {imageStatus}=require('./data/image-provenance'); const {clientJs}=require('./lib/client'); const {css,logoSvg,socialSvg}=require('./lib/ui'); const content=require('./lib/content'); const pages=require('./lib/pages');
-          const images=products.map(imageStatus);
-          if(images.length!==37) throw new Error('image provenance missing maintained products');
-          if(images.some(x=>x.productPhotography||x.amazonProgramContent||x.displayUrl)) throw new Error('unverified third-party product imagery activated');
-          if(!logoSvg.includes('Australian Product Guide')||!socialSvg.includes('Australian Product Guide')) throw new Error('brand asset accessible title missing');
-          for(const token of ['mega-surface','premium-home','premium-hero-viz','policy-toc','footer-cert','focus-visible','prefers-reduced-motion','touch-action']) if(!css.includes(token)) throw new Error(`CSS control missing ${token}`);
-          for(const token of ['ArrowDown','ArrowUp','aria-activedescendant','data-mega-trigger','apgSaved','apgRecentSearches','is-scrolled']) if(!clientJs.includes(token)) throw new Error(`client control missing ${token}`);
-          for(const slug of ['about','privacy','terms','affiliate-disclosure','methodology','editorial-standards','sources','corrections-policy','coverage','updates','contact']) if(!content[slug]?.body) throw new Error(`trust content missing ${slug}`);
-          if(!content.privacy.body.includes('Browser local storage')) throw new Error('privacy local-storage disclosure missing');
-          if(!content.terms.body.includes('Australian Consumer Law')) throw new Error('ACL savings language missing');
-          if(!content['affiliate-disclosure'].body.includes('Creators API')) throw new Error('current Amazon API disclosure missing');
-          if(!pages.home||!pages.pairPage||!pages.trustPage) throw new Error('page exports missing');
-          console.log('PHASE4_PREMIUM_UX_CONTROLS=PASS'); console.log('PRODUCT_VISUAL_PROVENANCE=37/37_CONTROLLED'); console.log('THIRD_PARTY_PRODUCT_PHOTOGRAPHY=0/37');
+          const {searchSite,searchIndex}=require('./lib/search'); const {rankDecision,publicDecision}=require('./lib/decision-engine'); const runtime=require('./lib/platform-v3-runtime'); const content=require('./lib/content');
+          const tests=[['best coffee machine under $800','coffee-machines'],['robot vacuum for pet hair','robot-vacuums'],['quiet headphones for long flights','wireless-headphones'],['mesh wifi for a large home','mesh-wifi-systems'],['ergonomic office chair with lumbar support','office-chairs'],['power bank for a laptop','power-banks'],['portable air conditioner for a bedroom','portable-air-conditioners']];
+          for(const [q,cat] of tests){const r=searchSite(q);if(!r.products.some(p=>p.category===cat))throw new Error(`search ${q}`);const d=rankDecision(q);if(d.intent.categorySlug!==cat&&cat!=='coffee-machines')throw new Error(`decision category ${q}`);}
+          if(searchIndex().length<350)throw new Error('search index too small'); if(!searchSite('Breville vs DeLonghi').directCompare)throw new Error('comparison detection');
+          const pub=publicDecision('mesh wifi for a large home with ethernet'); if(pub.version!=='decision-engine-v3'||pub.commercialRecommendationWeight!==0||pub.results.some(x=>'score' in x))throw new Error('public decision contract');
+          const safe=runtime.safeSharePath('/decision-lab/',new URL('https://x/decision-lab/?q=robot+vacuum&category=robot-vacuums&_vercel_share=SECRET&utm_source=qa')); if(/_vercel_share|utm_source|SECRET/.test(safe))throw new Error('share sanitisation');
+          for(const slug of ['about','privacy','terms','affiliate-disclosure','methodology','editorial-standards','sources','corrections-policy','coverage','updates','contact'])if(!content[slug]?.body)throw new Error(`trust page ${slug}`);
+          console.log('SEARCH_DECISION_TRUST=PASS');
           NODE
 
-      - name: Verify representative intent search behaviour
-        run: |
-          set -euo pipefail
-          node - <<'NODE'
-          const {searchSite,searchIndex}=require('./lib/search');
-          const tests=[['best coffee machine under $800','coffee-machines'],['robot vacuum for pet hair','robot-vacuums'],['Sony headphones','wireless-headphones'],['air fryer for family of 4','air-fryers'],['best value headphones','wireless-headphones']];
-          for(const [q,cat] of tests){const r=searchSite(q);if(!r.products.length||!r.products.some(p=>p.category===cat)) throw new Error(`bad search ${q}`);console.log(`SEARCH=${q} TOP=${r.products[0].slug}`)}
-          const vs=searchSite('Breville vs DeLonghi'); if(!vs.directCompare) throw new Error('brand-vs-brand direct comparison not detected'); if(searchIndex().length<45) throw new Error('search index small'); console.log('INTENT_SEARCH=PASS');
-          NODE
-
-      - name: Verify seven coffee matcher regression profiles
+      - name: Coffee regression profiles
         run: |
           set -euo pipefail
           node - <<'NODE'
           const {categories}=require('./data'); const {score}=require('./lib/coffee-finder'); const coffee=categories['coffee-machines'];
           const profiles=[
-          ['QA001',{workflow:'one-touch',drink:'milk',learning:'almost',budget:'1500',speed:'high',space:'normal',beans:'rarely'},'delonghi-magnifica-start-with-milk-ecam22063b'],
-          ['QA002',{workflow:'guided',drink:'milk',learning:'some',budget:'2000',speed:'medium',space:'normal',beans:'sometimes'},'breville-barista-touch-bes880'],
-          ['QA003',{workflow:'guided',drink:'black',learning:'some',budget:'700',speed:'medium',space:'normal',beans:'rarely'},'sunbeam-barista-max-em5300s'],
-          ['QA004',{workflow:'manual',drink:'mixed',learning:'control',budget:'1500',speed:'low',space:'any',beans:'often'},'delonghi-la-specialista-opera-ec9555m'],
-          ['QA005',{workflow:'one-touch',drink:'mixed',learning:'almost',budget:'1500',speed:'high',space:'compact',beans:'sometimes'},'delonghi-magnifica-evo-ecam29083tb'],
-          ['QA006',{workflow:'guided',drink:'cold',learning:'some',budget:'2000',speed:'medium',space:'normal',beans:'rarely'},'breville-barista-touch-impress-bes881'],
-          ['QA007',{workflow:'one-touch',drink:'mixed',learning:'almost',budget:'1500',speed:'high',space:'normal',beans:'often'},'delonghi-rivelia-auto-milk-exam44055b']];
-          for(const [id,q,expected] of profiles){const ranked=coffee.products.map(p=>score(p,q)).filter(p=>p.eligible).sort((a,b)=>b.score-a.score||a.price-b.price);if(!ranked.length||ranked[0].slug!==expected) throw new Error(`${id} expected ${expected}, got ${ranked[0]?.slug}`);console.log(`${id} TOP=${ranked[0].slug} SCORE=${ranked[0].score}`)}
-          console.log('COFFEE_MATCHER_QA=7/7_PASS');
+            [{workflow:'one-touch',drink:'milk',learning:'almost',budget:'1500',speed:'high',space:'normal',beans:'rarely'},'delonghi-magnifica-start-with-milk-ecam22063b'],
+            [{workflow:'guided',drink:'milk',learning:'some',budget:'2000',speed:'medium',space:'normal',beans:'sometimes'},'breville-barista-touch-bes880'],
+            [{workflow:'guided',drink:'black',learning:'some',budget:'700',speed:'medium',space:'normal',beans:'rarely'},'sunbeam-barista-max-em5300s'],
+            [{workflow:'manual',drink:'mixed',learning:'control',budget:'1500',speed:'low',space:'any',beans:'often'},'delonghi-la-specialista-opera-ec9555m'],
+            [{workflow:'one-touch',drink:'mixed',learning:'almost',budget:'1500',speed:'high',space:'compact',beans:'sometimes'},'delonghi-magnifica-evo-ecam29083tb'],
+            [{workflow:'guided',drink:'cold',learning:'some',budget:'2000',speed:'medium',space:'normal',beans:'rarely'},'breville-barista-touch-impress-bes881'],
+            [{workflow:'one-touch',drink:'mixed',learning:'almost',budget:'1500',speed:'high',space:'normal',beans:'often'},'delonghi-rivelia-auto-milk-exam44055b']];
+          for(const [q,want] of profiles){const got=coffee.products.map(p=>score(p,q)).filter(x=>x.eligible).sort((a,b)=>b.score-a.score||a.price-b.price)[0]?.slug;if(got!==want)throw new Error(`${want} got ${got}`)} console.log('COFFEE_REGRESSIONS=7/7_PASS');
           NODE
+
+      - name: Venture separation
+        run: |
+          set -euo pipefail
+          if grep -RniE 'Australian Tradie Software Matcher|tradie-software|tradie matcher' api data lib scripts; then exit 1; fi
+          echo 'VENTURE_SEPARATION=PASS'

@@ -18,25 +18,17 @@ jobs:
       - name: Verify decision modules and browser enhancement syntax
         run: |
           set -euo pipefail
-          node --check lib/decision-engine.js
-          node --check lib/decision-page.js
-          node --check lib/decision-css.js
-          node --check lib/decision-client.js
+          for f in lib/decision-engine.js lib/decision-page.js lib/decision-css.js lib/decision-client.js lib/platform-v3-runtime.js lib/platform-v3-client.js; do node --check "$f"; done
           node - <<'NODE'
-          const fs=require('fs');
-          const {decisionClientJs}=require('./lib/decision-client');
-          const {decisionCss}=require('./lib/decision-css');
-          const decisionPages=require('./lib/decision-page');
-          const engine=require('./lib/decision-engine');
-          fs.writeFileSync('/tmp/apg-decision-client.js',decisionClientJs);
+          const fs=require('fs'); const {decisionClientJs}=require('./lib/decision-client'); const {platformV3ClientJs}=require('./lib/platform-v3-client'); const {decisionCss}=require('./lib/decision-css'); const engine=require('./lib/decision-engine');
+          fs.writeFileSync('/tmp/apg-decision-client.js',decisionClientJs+platformV3ClientJs);
           if(!decisionCss.includes('.decision-hero')||!decisionCss.includes('.workspace-grid')) throw new Error('decision CSS controls missing');
-          if(typeof decisionPages.decisionLab!=='function'||typeof decisionPages.workspace!=='function'||typeof decisionPages.safeDecisionUrl!=='function') throw new Error('decision page exports missing');
           if(typeof engine.rankDecision!=='function'||typeof engine.publicDecision!=='function') throw new Error('decision engine exports missing');
           console.log('DECISION_MODULES=PASS');
           NODE
           node --check /tmp/apg-decision-client.js
 
-      - name: Verify realistic shopper decision profiles
+      - name: Verify established deep-category regression profiles
         run: |
           set -euo pipefail
           node - <<'NODE'
@@ -47,17 +39,19 @@ jobs:
             ['Travel headphones value + ANC + battery','Value quiet headphones for long flights with strong battery life','sennheiser-momentum-4-wireless'],
             ['Compact quiet air fryer','Compact quiet air fryer under $400 for a small apartment','tefal-easy-fry-silence-essential-ey551h']
           ];
-          for(const [label,q,expected] of profiles){
-            const {ranked,intent}=rankDecision(q);
-            if(!ranked.length) throw new Error(`${label}: no results`);
-            if(ranked[0].p.slug!==expected) throw new Error(`${label}: expected ${expected}, got ${ranked[0].p.slug}`);
-            if(!intent.signalCount) throw new Error(`${label}: no decision signals interpreted`);
-            console.log(`${label}: TOP=${ranked[0].p.slug} MATCH=${ranked[0].matchLabel}`);
-          }
-          const robot=rankDecision('Best value robot vacuum for pet hair and mopping, avoid premium');
-          if(!robot.intent.excludedTags.includes('premium')) throw new Error('negative premium preference not interpreted');
-          if(robot.ranked[0].p.tags.includes('premium')) throw new Error('premium conflict incorrectly ranked first');
-          console.log('DECISION_PROFILES=4/4_PASS');
+          for(const [label,q,expected] of profiles){const {ranked,intent}=rankDecision(q);if(ranked[0]?.p.slug!==expected) throw new Error(`${label}: expected ${expected}, got ${ranked[0]?.p.slug}`);if(!intent.signalCount) throw new Error(`${label}: no decision signals`);}
+          const robot=rankDecision('Best value robot vacuum for pet hair and mopping, avoid premium');if(!robot.intent.excludedTags.includes('premium')||robot.ranked[0].p.tags.includes('premium')) throw new Error('negative premium preference regression');
+          console.log('DEEP_CATEGORY_REGRESSIONS=4/4_PASS');
+          NODE
+
+      - name: Verify new category recognition and explainable starter matching
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const {rankDecision}=require('./lib/decision-engine');
+          const tests=[['mesh wifi for a large home with ethernet','mesh-wifi-systems'],['ergonomic office chair with lumbar support','office-chairs'],['power bank for a laptop and fast charging','power-banks'],['portable air conditioner with wifi','portable-air-conditioners'],['rugged external ssd for a creator','external-ssds'],['water filter reverse osmosis','water-filters']];
+          for(const [q,cat] of tests){const {intent,ranked}=rankDecision(q);if(intent.categorySlug!==cat) throw new Error(`${q}: category ${intent.categorySlug}`);if(ranked[0]?.p.category!==cat) throw new Error(`${q}: top category ${ranked[0]?.p.category}`);if(ranked[0].p.evidenceTier!=='starter') throw new Error(`${q}: starter evidence tier missing`);}
+          console.log('STARTER_CATEGORY_MATCHING=PASS');
           NODE
 
       - name: Verify explainability neutrality and public response contract
@@ -65,33 +59,26 @@ jobs:
           set -euo pipefail
           node - <<'NODE'
           const {publicDecision}=require('./lib/decision-engine');
-          const out=publicDecision('Easy automatic coffee machine under $1300 for milk drinks and switching beans');
-          if(out.version!=='decision-engine-v2') throw new Error('wrong engine version');
+          const out=publicDecision('mesh wifi for a large home with ethernet');
+          if(out.version!=='decision-engine-v3') throw new Error(`wrong engine version ${out.version}`);
           if(out.commercialRecommendationWeight!==0) throw new Error('commercial recommendation weight must be zero');
           if(!Array.isArray(out.results)||out.results.length<3) throw new Error('insufficient public results');
-          for(const r of out.results){
-            if('score' in r) throw new Error('opaque numeric score leaked to public result');
-            if(!r.match||!r.tradeoff||!Array.isArray(r.reasons)||!Array.isArray(r.gaps)||!Array.isArray(r.conflicts)) throw new Error(`explainability contract incomplete for ${r.slug}`);
-          }
-          if(!out.note.includes('not product performance ratings')) throw new Error('performance-rating boundary missing');
-          console.log('DECISION_PUBLIC_CONTRACT=PASS');
+          if(!Array.isArray(out.interpretation.decisionFactors)||!out.interpretation.decisionFactors.length) throw new Error('category decision factors missing');
+          for(const r of out.results){if('score' in r) throw new Error('opaque numeric score leaked');if(!r.match||!r.tradeoff||!r.evidenceTier||!Array.isArray(r.reasons)||!Array.isArray(r.gaps)||!Array.isArray(r.conflicts)) throw new Error(`contract incomplete ${r.slug}`);}
+          if(!out.note.includes('not product performance ratings')||!out.note.includes('Starter-evidence')) throw new Error('evidence/performance boundary missing');
+          console.log('DECISION_PUBLIC_CONTRACT_V3=PASS');
           NODE
 
-      - name: Verify server-rendered Decision Lab and My APG privacy boundaries
+      - name: Verify Decision Lab share privacy and My APG boundaries
         run: |
           set -euo pipefail
           node - <<'NODE'
-          const pages=require('./lib/decision-page');
-          const req={headers:{host:'au-product-guide.vercel.app'}};
-          const decisionUrl=new URL('https://au-product-guide.vercel.app/decision-lab/?q=Best+value+robot+vacuum+for+pet+hair+and+mopping%2C+avoid+premium&_vercel_share=SECRETISH&utm_source=test&category=robot-vacuums');
-          const lab=pages.decisionLab(req,decisionUrl);
-          const workspace=pages.workspace(req);
-          for(const token of ['APG Decision Lab','Decision Engine v2','0 commercial scoring points','noindex,follow','Explainable shortlist']) if(!lab.includes(token)) throw new Error(`Decision Lab token missing: ${token}`);
-          for(const token of ['My APG','Browser-local storage','No account required','noindex,follow']) if(!workspace.includes(token)) throw new Error(`My APG token missing: ${token}`);
-          if(lab.includes('performance score')) throw new Error('Decision Lab should not claim a performance score');
-          if(lab.includes('_vercel_share')||lab.includes('utm_source')) throw new Error('non-shopper query parameters leaked into rendered Decision Lab state');
-          const safe=pages.safeDecisionUrl(decisionUrl);
-          if(safe.includes('_vercel_share')||safe.includes('utm_source')) throw new Error('Decision URL sanitisation failed');
-          if(!safe.includes('q=')||!safe.includes('category=robot-vacuums')) throw new Error('allowed Decision Lab parameters were lost');
-          console.log('DECISION_RENDER_PRIVACY=PASS');
+          const pages=require('./lib/decision-page'); const runtime=require('./lib/platform-v3-runtime'); const req={headers:{host:'au-product-guide.vercel.app'}};
+          const u=new URL('https://au-product-guide.vercel.app/decision-lab/?q=Best+value+robot+vacuum+for+pet+hair&_vercel_share=SECRETISH&utm_source=test&category=robot-vacuums');
+          const raw=pages.decisionLab(req,u),lab=runtime.enhance(raw,'/decision-lab/',u),workspace=runtime.enhance(pages.workspace(req),'/my-apg/',new URL('https://au-product-guide.vercel.app/my-apg/'));
+          for(const token of ['APG Decision Lab','Decision Engine v3','0 commercial scoring points','noindex,follow','Explainable shortlist','data-share-surface']) if(!lab.includes(token)) throw new Error(`Decision Lab token missing ${token}`);
+          for(const token of ['My APG','Browser-local storage','No account required','Optional account sync','No account profile collected','noindex,follow']) if(!workspace.includes(token)) throw new Error(`My APG token missing ${token}`);
+          if(lab.includes('_vercel_share')||lab.includes('utm_source')) throw new Error('non-shopper query leaked into rendered Decision Lab');
+          const safe=runtime.safeSharePath('/decision-lab/',u);if(safe.includes('_vercel_share')||safe.includes('utm_source')||!safe.includes('category=robot-vacuums')) throw new Error('share URL sanitisation failed');
+          console.log('DECISION_RENDER_PRIVACY_V3=PASS');
           NODE

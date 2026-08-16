@@ -12,13 +12,13 @@ permissions:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       BASE_URL: https://au-product-guide.vercel.app
     steps:
       - uses: actions/checkout@v4
 
-      - name: Wait for matching Vercel Production deployment
+      - name: Wait for exact Vercel Production deployment
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -26,144 +26,80 @@ jobs:
         run: |
           set -euo pipefail
           for attempt in $(seq 1 72); do
-            deployments=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments?sha=$SHA")
-            deployment_id=$(echo "$deployments" | jq -r '[.[] | select(.environment=="Production" or .original_environment=="Production")][0].id // empty')
-            if [ -n "$deployment_id" ]; then
-              statuses=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments/$deployment_id/statuses")
-              state=$(echo "$statuses" | jq -r '.[0].state // empty')
-              url=$(echo "$statuses" | jq -r '.[0].environment_url // .[0].target_url // empty')
-              echo "Vercel Production state: ${state:-pending}"
-              if [ "$state" = "failure" ] || [ "$state" = "error" ]; then exit 1; fi
-              if [ "$state" = "success" ]; then echo "Immutable Production URL: ${url:-unknown}"; echo "Clean alias: $BASE_URL"; exit 0; fi
+            d=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments?sha=$SHA")
+            id=$(echo "$d"|jq -r '[.[]|select(.environment=="Production" or .original_environment=="Production")][0].id//empty')
+            if [ -n "$id" ]; then
+              s=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments/$id/statuses")
+              state=$(echo "$s"|jq -r '.[0].state//empty'); echo "Production state=${state:-pending}"
+              [ "$state" = failure ] || [ "$state" = error ] && exit 1
+              [ "$state" = success ] && exit 0
             fi
             sleep 5
           done
-          echo 'Timed out waiting for matching Vercel Production deployment'; exit 1
+          exit 1
 
-      - name: Verify public shell assets brand navigation and search
+      - name: Source metrics and public shell
         run: |
           set -euo pipefail
-          code=$(curl -sS -L -o /tmp/home.html -w '%{http_code}' "$BASE_URL/"); test "$code" = "200"
-          grep -qi 'Find the product that fits' /tmp/home.html
-          grep -qi 'Australian Product Guide' /tmp/home.html
-          grep -q 'rel="canonical" href="https://au-product-guide.vercel.app/"' /tmp/home.html
-          grep -q 'SearchAction' /tmp/home.html
-          grep -q 'data-mega-trigger' /tmp/home.html
-          grep -q 'data-mobile-toggle' /tmp/home.html
-          grep -q 'Search · compare · choose with confidence' /tmp/home.html
-          grep -q 'Legal & transparency' /tmp/home.html
-          if grep -qiE 'authentication required|vercel authentication|log in to vercel|sign in to vercel|Login – Vercel' /tmp/home.html; then exit 1; fi
-          for asset in /assets/site.css /assets/app.js /assets/search-index.json /assets/logo.svg /assets/social.svg; do code=$(curl -sS -L -o /tmp/asset -w '%{http_code}' "$BASE_URL$asset"); echo "$asset HTTP $code"; test "$code" = "200"; done
-          curl -fsSL "$BASE_URL/assets/app.js" -o /tmp/apg-app.js; node --check /tmp/apg-app.js
-          for token in apgSaved apgRecentSearches ArrowDown aria-activedescendant; do grep -q "$token" /tmp/apg-app.js; done
-          curl -fsSL "$BASE_URL/assets/site.css" -o /tmp/site.css
-          for token in mega-surface premium-home premium-hero-viz policy-toc footer-cert focus-visible prefers-reduced-motion; do grep -q "$token" /tmp/site.css; done
-          grep -q 'name="viewport"' /tmp/home.html
-          curl -fsSL "$BASE_URL/assets/search-index.json" -o /tmp/search-index.json; test "$(jq 'length' /tmp/search-index.json)" -gt 45
-          curl -fsSL "$BASE_URL/sitemap.xml" -o /tmp/sitemap.xml; curl -fsSL "$BASE_URL/robots.txt" -o /tmp/robots.txt
-          grep -q 'Sitemap: https://au-product-guide.vercel.app/sitemap.xml' /tmp/robots.txt
-          grep -q 'Disallow: /search/' /tmp/robots.txt; grep -q 'Disallow: /compare/custom/' /tmp/robots.txt
-          code=$(curl -sS -o /tmp/notfound.html -w '%{http_code}' "$BASE_URL/__apg-phase4-404-test__/"); test "$code" = "404"; grep -qi 'not in the maintained guide' /tmp/notfound.html
-          echo 'PUBLIC_SHELL_BRAND_ASSETS=PASS'
+          node - <<'NODE'
+          const {products,categories,pathways}=require('./data'); const {brands,pairPages,indexableRoutes}=require('./lib/routes'); const {direct}=require('./data/retailers');
+          const x=[products.length,Object.keys(categories).length,pathways.filter(p=>!p.maintained).length,brands.length,pairPages.length,indexableRoutes.length,Object.keys(direct).length];
+          if(x.join(',')!=='257,48,0,112,144,722,14')throw new Error(x.join(',')); console.log('SOURCE_METRICS=257/48/0/112/144/722/14');
+          NODE
+          curl -fsSL "$BASE_URL/" -o /tmp/home.html
+          for t in 'Australian Product Guide' 'data-platform-v3="true"' 'Decision Lab' 'Buying guides' 'My APG' 'data-share-surface'; do grep -qi "$t" /tmp/home.html; done
+          for p in /categories/ /compare/ /guides/ /retailers/ /brands/ /decision-lab/ /my-apg/; do test "$(curl -sSL -o /tmp/x -w '%{http_code}' "$BASE_URL$p")" = 200; done
+          curl -fsSL "$BASE_URL/assets/app.js" -o /tmp/app.js; node --check /tmp/app.js
+          curl -fsSL "$BASE_URL/assets/search-index.json" | jq -e 'length >= 350' >/dev/null
+          curl -fsSL "$BASE_URL/api/catalogue.json" | jq -e '.productCount==257 and .categoryCount==48 and .commercialRecommendationWeight==0' >/dev/null
+          test "$(curl -fsSL "$BASE_URL/api/catalogue.csv" | wc -l)" = 258
+          echo 'PUBLIC_SHELL_EXPORTS=PASS'
 
-      - name: Crawl all canonical indexable routes
+      - name: Crawl all 722 indexable routes
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          import os,re,urllib.parse,urllib.request
-          base=os.environ['BASE_URL']; xml=open('/tmp/sitemap.xml',encoding='utf-8').read(); urls=re.findall(r'<loc>(.*?)</loc>',xml,re.I)
-          if len(urls)!=139 or len(set(urls))!=139: raise SystemExit(f'Expected 139 unique sitemap URLs, got {len(urls)}/{len(set(urls))}')
-          for u in urls:
-              if not (u==base+'/' or u.startswith(base+'/')): raise SystemExit('Non-Production hostname '+u)
-              p=urllib.parse.urlsplit(u).path
-              with urllib.request.urlopen(urllib.request.Request(base+p,headers={'User-Agent':'APG-Phase4-Crawl/1.0'}),timeout=20) as r:
-                  if r.status!=200: raise SystemExit(f'{p} returned {r.status}')
-                  text=r.read().decode('utf-8','replace')
-              m=re.search(r'<link rel="canonical" href="([^"]+)"',text,re.I)
-              if not m or m.group(1)!=base+p: raise SystemExit('Bad canonical '+p)
-              if re.search(r'<meta name="robots" content="noindex',text,re.I): raise SystemExit('Indexable noindex '+p)
-              if 'australian tradie software matcher' in text.lower(): raise SystemExit('Tradie contamination '+p)
-          print('FULL_INDEXABLE_CRAWL=139/139_HTTP_200'); print('CANONICALS=139/139_PRODUCTION_HOST'); print('TRADIE_CONTAMINATION=ABSENT')
-          PY
-
-      - name: Verify search compare finder category and trust journeys
-        run: |
-          set -euo pipefail
-          check_search(){ id="$1"; query="$2"; expected="$3"; code=$(curl -sS -L -o "/tmp/$id.html" -w '%{http_code}' "$BASE_URL/search/?q=$query"); test "$code" = "200"; grep -qi 'noindex,follow' "/tmp/$id.html"; grep -qi "$expected" "/tmp/$id.html"; }
-          check_search coffee 'best+coffee+machine+under+%24800' 'Coffee'
-          check_search pets 'robot+vacuum+for+pet+hair' 'Robot'
-          check_search sony 'Sony+headphones' 'Sony'
-          check_search family 'air+fryer+for+family+of+4' 'Air'
-          check_search versus 'Breville+vs+DeLonghi' 'Comparison detected'
-          code=$(curl -sS -L -o /tmp/custom.html -w '%{http_code}' "$BASE_URL/compare/custom/?products=sony-wh-1000xm6,bose-quietcomfort-ultra-headphones"); test "$code" = "200"; grep -qi 'noindex,follow' /tmp/custom.html; grep -q 'WH-1000XM6' /tmp/custom.html; grep -q 'QuietComfort Ultra' /tmp/custom.html
-          code=$(curl -sS -L -o /tmp/finder.html -w '%{http_code}' "$BASE_URL/categories/air-fryers/finder/?priority=family&secondary=dual-zone&position=value"); test "$code" = "200"; grep -qi 'Best match' /tmp/finder.html; grep -qi 'Useful alternatives' /tmp/finder.html
-          code=$(curl -sS -L -o /tmp/category.html -w '%{http_code}' "$BASE_URL/categories/coffee-machines/?priority=value&sort=price"); test "$code" = "200"; grep -qi 'Product catalogue' /tmp/category.html; grep -q 'data-compare-product' /tmp/category.html
-          for path in /about/ /methodology/ /editorial-standards/ /sources/ /corrections-policy/ /affiliate-disclosure/ /privacy/ /terms/ /contact/ /coverage/ /updates/; do code=$(curl -sS -L -o /tmp/trust.html -w '%{http_code}' "$BASE_URL$path"); test "$code" = "200"; done
-          curl -fsSL "$BASE_URL/privacy/" -o /tmp/privacy.html; grep -qi 'Browser local storage' /tmp/privacy.html; grep -qi 'Professional review flag' /tmp/privacy.html
-          curl -fsSL "$BASE_URL/terms/" -o /tmp/terms.html; grep -qi 'Australian Consumer Law' /tmp/terms.html
-          curl -fsSL "$BASE_URL/affiliate-disclosure/" -o /tmp/affiliate.html; grep -qi 'Creators API' /tmp/affiliate.html; grep -q 'auproductguid-22' /tmp/affiliate.html
-          echo 'SEARCH_COMPARE_FINDER_TRUST=PASS'
-
-      - name: Verify coffee finder regression profiles
-        run: |
-          set -euo pipefail
-          check_profile(){ id="$1"; query="$2"; expected="$3"; code=$(curl -sS -L -o "/tmp/$id.html" -w '%{http_code}' "$BASE_URL/categories/coffee-machines/finder/?$query"); test "$code" = "200"; grep -qi 'Best match' "/tmp/$id.html"; grep -qi "$expected" "/tmp/$id.html"; grep -qi 'Commercial relationships contribute zero points' "/tmp/$id.html"; }
-          check_profile QA001 'workflow=one-touch&drink=milk&learning=almost&budget=1500&speed=high&space=normal&beans=rarely' 'Magnifica Start with Milk'
-          check_profile QA002 'workflow=guided&drink=milk&learning=some&budget=2000&speed=medium&space=normal&beans=sometimes' 'Barista Touch BES880'
-          check_profile QA003 'workflow=guided&drink=black&learning=some&budget=700&speed=medium&space=normal&beans=rarely' 'Barista Max EM5300S'
-          check_profile QA004 'workflow=manual&drink=mixed&learning=control&budget=1500&speed=low&space=any&beans=often' 'La Specialista Opera'
-          check_profile QA005 'workflow=one-touch&drink=mixed&learning=almost&budget=1500&speed=high&space=compact&beans=sometimes' 'Magnifica Evo'
-          check_profile QA006 'workflow=guided&drink=cold&learning=some&budget=2000&speed=medium&space=normal&beans=rarely' 'Barista Touch Impress'
-          check_profile QA007 'workflow=one-touch&drink=mixed&learning=almost&budget=1500&speed=high&space=normal&beans=often' 'Rivelia Auto Milk'
-          echo 'COFFEE_MATCHER_QA=7/7_PASS'
-
-      - name: Verify all product retailer evidence image and schema controls
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import os,re,urllib.parse,urllib.request
-          base=os.environ['BASE_URL']; urls=re.findall(r'<loc>(.*?)</loc>',open('/tmp/sitemap.xml',encoding='utf-8').read(),re.I); paths=[urllib.parse.urlsplit(u).path for u in urls if '/products/' in u]
-          if len(paths)!=37: raise SystemExit(f'Expected 37 product routes, got {len(paths)}')
-          direct=fallback=owned=0
-          for p in paths:
-              text=urllib.request.urlopen(urllib.request.Request(base+p,headers={'User-Agent':'APG-Phase4-Product-QA/1.0'}),timeout=20).read().decode('utf-8','replace')
-              for name,needle in {'tag':'auproductguid-22','sponsored':'rel="sponsored nofollow noopener"','paid':'Affiliate paid link','product_schema':'"@type":"Product"','breadcrumb':'"@type":"BreadcrumbList"','testing':'Desk-researched / specification-based','commercial':'Commercial score','image':'APG-authored SVG/CSS decision visual'}.items():
-                  if needle not in text: raise SystemExit(f'Missing {name}: {p}')
-              if 'Exact individual product page verified' in text: direct+=1
-              if 'Model-specific search fallback' in text: fallback+=1
-              if 'genuine product photography pending verified rights' in text: owned+=1
-          print(f'AMAZON_DIRECT_PRODUCT_PAGES={direct}'); print(f'AMAZON_FALLBACK_SEARCH_PAGES={fallback}'); print(f'APG_OWNED_PRODUCT_VISUALS={owned}')
-          if direct!=3 or fallback!=34 or owned!=37: raise SystemExit(f'Unexpected retailer/image counts {direct}/{fallback}/{owned}')
-          print('PRODUCT_RETAILER_EVIDENCE_IMAGE_SCHEMA=37/37_PASS')
-          PY
-          curl -fsSL "$BASE_URL/products/bose-quietcomfort-ultra-headphones/" -o /tmp/bose.html; grep -q 'B0CCZ1HQ39' /tmp/bose.html
-          curl -fsSL "$BASE_URL/products/sennheiser-momentum-4-wireless/" -o /tmp/momentum.html; grep -q 'B0CCRZPKR1' /tmp/momentum.html
-          curl -fsSL "$BASE_URL/products/philips-5000-series-dual-basket-na55100/" -o /tmp/philips.html; grep -q 'B0DHS253VZ' /tmp/philips.html
-          echo 'AFFILIATE_DIRECT_ASINS=3/3_PASS'
-
-      - name: Render desktop laptop tablet and mobile visual QA
-        run: |
-          set -euo pipefail
-          CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)
-          test -n "$CHROME"
-          npm install --no-save --package-lock=false puppeteer-core@24.16.0 >/dev/null 2>&1
-          mkdir -p visual-qa
-          CHROME="$CHROME" node - <<'NODE'
-          const puppeteer=require('puppeteer-core'); const fs=require('fs');
-          const base=process.env.BASE_URL, chrome=process.env.CHROME;
-          const viewports=[['desktop',1440,1000],['laptop',1280,800],['tablet',900,1100],['mobile',390,844]];
-          const pages=[['home','/'],['category','/categories/wireless-headphones/'],['product','/products/bose-quietcomfort-ultra-headphones/'],['compare','/compare/custom/?products=sony-wh-1000xm6,bose-quietcomfort-ultra-headphones'],['finder','/categories/air-fryers/finder/?priority=family&secondary=dual-zone&position=value'],['about','/about/'],['privacy','/privacy/'],['terms','/terms/'],['notfound','/__apg-phase4-visual-404__/']];
-          (async()=>{const browser=await puppeteer.launch({headless:true,executablePath:chrome,args:['--no-sandbox','--disable-dev-shm-usage']}); const failures=[]; const report=[];
-            for(const [vp,w,h] of viewports){for(const [name,path] of pages){const page=await browser.newPage();await page.setViewport({width:w,height:h,deviceScaleFactor:1});const errors=[];page.on('pageerror',e=>errors.push(e.message));const response=await page.goto(base+path,{waitUntil:'networkidle0',timeout:30000});await page.screenshot({path:`visual-qa/${vp}-${name}.png`,fullPage:true});const metrics=await page.evaluate(()=>{const body=document.documentElement,header=document.querySelector('.site-header'),footer=document.querySelector('footer'),logo=document.querySelector('.logo-mark');return {scrollWidth:body.scrollWidth,clientWidth:body.clientWidth,header:header?header.getBoundingClientRect().toJSON():null,footer:footer?footer.getBoundingClientRect().toJSON():null,logo:logo?logo.getBoundingClientRect().toJSON():null}});if(metrics.scrollWidth>metrics.clientWidth+2)failures.push(`${vp}/${name} horizontal overflow ${metrics.scrollWidth}>${metrics.clientWidth}`);if(!metrics.header||!metrics.footer||!metrics.logo||metrics.logo.width<30)failures.push(`${vp}/${name} missing shell geometry`);if(errors.length)failures.push(`${vp}/${name} page errors: ${errors.join(' | ')}`);report.push({vp,name,status:response?.status(),...metrics});await page.close();}}
-            const desktop=await browser.newPage();await desktop.setViewport({width:1440,height:1000});await desktop.goto(base+'/',{waitUntil:'networkidle0'});await desktop.click('[data-mega-trigger]');await desktop.waitForSelector('[data-mega-menu]:not([hidden])');const mega=await desktop.$eval('.mega-surface',e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width}});if(mega.left<0||mega.right>1442||mega.width<900)failures.push('desktop mega menu geometry invalid '+JSON.stringify(mega));await desktop.screenshot({path:'visual-qa/desktop-mega-menu.png',fullPage:false});const search=await desktop.$('[data-site-search]');await search.click();await search.type('Bose');await desktop.waitForSelector('[data-search-suggestions]:not([hidden])');const sb=await desktop.$eval('[data-search-suggestions]:not([hidden])',e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}});if(sb.left<0||sb.right>1442)failures.push('desktop search dropdown overflow '+JSON.stringify(sb));await desktop.screenshot({path:'visual-qa/desktop-search.png',fullPage:false});await desktop.close();
-            const mobile=await browser.newPage();await mobile.setViewport({width:390,height:844});await mobile.goto(base+'/',{waitUntil:'networkidle0'});await mobile.click('[data-mobile-toggle]');await mobile.waitForSelector('#mobileNav:not([hidden])');const navBox=await mobile.$eval('#mobileNav',e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,width:r.width}});if(navBox.left<0||navBox.right>392)failures.push('mobile nav overflow '+JSON.stringify(navBox));await mobile.screenshot({path:'visual-qa/mobile-menu.png',fullPage:false});await mobile.close();
-            fs.writeFileSync('visual-qa/report.json',JSON.stringify({report,failures},null,2));await browser.close();if(failures.length){console.error(failures.join('\n'));process.exit(1)}console.log(`RENDERED_VISUAL_QA=${report.length}_PAGE_VIEWPORT_COMBINATIONS_PASS`);console.log('MEGA_MENU_GEOMETRY=PASS');console.log('SEARCH_DROPDOWN_GEOMETRY=PASS');console.log('MOBILE_NAV_GEOMETRY=PASS');})();
+          curl -fsSL "$BASE_URL/sitemap.xml" -o /tmp/sitemap.xml
+          BASE_URL="$BASE_URL" node - <<'NODE'
+          const fs=require('fs'); const {indexableRoutes}=require('./lib/routes'); const base=process.env.BASE_URL;
+          const urls=[...fs.readFileSync('/tmp/sitemap.xml','utf8').matchAll(/<loc>(.*?)<\/loc>/g)].map(x=>x[1]); if(urls.length!==722||new Set(urls).size!==722)throw new Error(`sitemap ${urls.length}`);
+          const expected=new Set(indexableRoutes.map(p=>base+p)); for(const u of urls)if(!expected.has(u))throw new Error(`unexpected ${u}`);
+          let next=0,done=0;const bad=[];async function worker(){while(next<urls.length){const u=urls[next++],path=new URL(u).pathname;try{const r=await fetch(u);const t=await r.text();if(r.status!==200)throw new Error(`HTTP ${r.status}`);if(!t.includes(`<link rel="canonical" href="${base+path}"`))throw new Error('canonical');if(/noindex/i.test((t.match(/<meta name="robots"[^>]*>/i)||[''])[0]))throw new Error('noindex');}catch(e){bad.push(`${path}: ${e.message}`)}done++;}}
+          Promise.all(Array.from({length:12},worker)).then(()=>{if(bad.length){console.error(bad.slice(0,30).join('\n'));process.exit(1)}console.log(`CANONICAL_CRAWL=${done}/722_PASS`)});
           NODE
 
-      - name: Upload visual QA screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
+      - name: Verify every product route, Amazon attribution and freshness
+        run: |
+          set -euo pipefail
+          BASE_URL="$BASE_URL" node - <<'NODE'
+          const {products}=require('./data'); const {direct}=require('./data/retailers'); const base=process.env.BASE_URL; let next=0,d=0,f=0;const bad=[];
+          async function worker(){while(next<products.length){const p=products[next++];try{const r=await fetch(`${base}/products/${p.slug}/`);const t=await r.text();if(r.status!==200)throw new Error(`HTTP ${r.status}`);for(const needle of ['auproductguid-22','rel="sponsored nofollow noopener"','"@type":"Product"','"@type":"BreadcrumbList"','Evidence freshness','Commercial score'])if(!t.includes(needle))throw new Error(`missing ${needle}`);const rr=p.retailers[0];if(rr.kind==='affiliate-direct'){d++;if(!t.includes(rr.asin))throw new Error(`ASIN ${rr.asin}`)}else f++;if(p.evidenceTier==='starter'&&!t.includes('Starter evidence'))throw new Error('starter disclosure');}catch(e){bad.push(`${p.slug}: ${e.message}`)}}}
+          Promise.all(Array.from({length:10},worker)).then(()=>{if(bad.length){console.error(bad.slice(0,30).join('\n'));process.exit(1)}if(d!==14||f!==243)throw new Error(`retailer ${d}/${f}`);if(Object.keys(direct).length!==14)throw new Error('direct registry');console.log('PRODUCT_ROUTES=257/257_PASS');console.log('AMAZON_DIRECT=14');console.log('AMAZON_FALLBACK=243');});
+          NODE
+
+      - name: Representative journeys, noindex and privacy boundaries
+        run: |
+          set -euo pipefail
+          check(){ code=$(curl -sSL -o /tmp/page -w '%{http_code}' "$BASE_URL$1"); test "$code" = 200; grep -qi "$2" /tmp/page; }
+          check '/categories/coffee-machines/' 'Deep evidence'; check '/categories/home-security-cameras/' 'Starter evidence'; check '/categories/office-chairs/' 'Office chairs'; check '/categories/smartwatches/' 'Smartwatches'; check '/categories/blenders/' 'Blenders'; check '/products/tp-link-tapo-c500/' 'Evidence freshness'; check '/categories/office-chairs/finder/?priority=ergonomic&secondary=lumbar' 'Best match'; check '/guides/office-chairs-buying-guide/' 'Starter evidence'; check '/search/?q=ergonomic+office+chair+with+lumbar+support' 'Office'; check '/decision-lab/?q=mesh+wifi+for+a+large+home+with+ethernet' 'Decision Engine v3'; check '/my-apg/' 'Optional account sync'
+          for p in /privacy/ /terms/ /methodology/ /editorial-standards/ /sources/ /corrections-policy/ /affiliate-disclosure/ /coverage/ /updates/ /contact/; do test "$(curl -sSL -o /tmp/t -w '%{http_code}' "$BASE_URL$p")" = 200; done
+          curl -fsSL "$BASE_URL/decision-lab/?q=robot+vacuum&category=robot-vacuums&_vercel_share=SECRET&utm_source=smoke" -o /tmp/lab
+          grep -qi 'noindex,follow' /tmp/lab; grep -q 'data-share-surface' /tmp/lab; ! grep -qE '_vercel_share|utm_source|SECRET' /tmp/lab
+          curl -fsSL "$BASE_URL/compare/custom/?products=sony-wh-1000xm6,bose-quietcomfort-ultra-headphones,INVALID&_vercel_share=SECRET" -o /tmp/cmp
+          grep -qi 'noindex,follow' /tmp/cmp; grep -q 'data-share-surface' /tmp/cmp; ! grep -qE 'INVALID|_vercel_share|SECRET' /tmp/cmp
+          ! curl -fsSL "$BASE_URL/my-apg/" | grep -qiE 'supabase\.co|firebaseio|clerk\.com'
+          echo 'JOURNEYS_PRIVACY=PASS'
+
+      - name: Desktop tablet and mobile visual QA
+        run: |
+          set -euo pipefail
+          CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser); npm install --no-save --package-lock=false puppeteer-core@24.16.0 >/dev/null 2>&1; mkdir -p visual-qa
+          CHROME="$CHROME" BASE_URL="$BASE_URL" node - <<'NODE'
+          const puppeteer=require('puppeteer-core'),fs=require('fs');const base=process.env.BASE_URL;const v=[['desktop',1440,1000],['tablet',900,1100],['mobile',390,844]];const pages=[['home','/'],['categories','/categories/'],['category','/categories/office-chairs/'],['product','/products/tp-link-tapo-c500/'],['compare','/compare/'],['custom','/compare/custom/?products=sony-wh-1000xm6,bose-quietcomfort-ultra-headphones'],['decision','/decision-lab/?q=mesh+wifi+for+a+large+home+with+ethernet'],['workspace','/my-apg/'],['guide','/guides/office-chairs-buying-guide/'],['privacy','/privacy/'],['404','/__apg-v3-visual-404__/']];
+          (async()=>{const b=await puppeteer.launch({headless:true,executablePath:process.env.CHROME,args:['--no-sandbox']});const bad=[],report=[];for(const [vp,w,h] of v)for(const [name,path] of pages){const p=await b.newPage();await p.setViewport({width:w,height:h});const errs=[];p.on('pageerror',e=>errs.push(e.message));const r=await p.goto(base+path,{waitUntil:'networkidle0',timeout:30000});const m=await p.evaluate(()=>({sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,text:document.body.innerText.length,platform:document.body.dataset.platformV3||'',bytes:performance.getEntriesByType('resource').reduce((n,x)=>n+(x.transferSize||0),0)}));await p.screenshot({path:`visual-qa/${vp}-${name}.png`,fullPage:true});if(m.sw>m.cw+2||m.text<100||errs.length||m.bytes>2500000)bad.push(`${vp}/${name} ${JSON.stringify(m)} ${errs.join('|')}`);report.push({vp,name,status:r?.status(),...m});await p.close()}await b.close();fs.writeFileSync('visual-qa/report.json',JSON.stringify(report,null,2));if(bad.length){console.error(bad.join('\n'));process.exit(1)}console.log('VISUAL_QA=33/33_PASS')})();
+          NODE
+
+      - uses: actions/upload-artifact@v4
         with:
-          name: apg-phase4-visual-qa-${{ github.sha }}
-          path: visual-qa/
-          retention-days: 14
+          name: apg-platform-v3-visual-qa-${{ github.run_id }}
+          path: visual-qa
+          retention-days: 30

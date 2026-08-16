@@ -23,6 +23,61 @@ const direct={
     url:`https://www.amazon.com.au/Philips-Technology-Versatile-NA551-00/dp/B0DHS253VZ?tag=${TAG}`,
     asin:'B0DHS253VZ',verified:'2026-08-16',variant:'NA551/00 black/silver 9L Dual Basket + Steam',confidence:'high',
     note:'Exact Philips 5000 Series Dual Basket Airfryer NA551/00 Amazon Australia individual listing independently verified.'
+  },
+  'amazon-eero-max-7':{
+    url:`https://www.amazon.com.au/eero-Ethernet-Coverage-Connect-devices/dp/B0CPKX85TD?tag=${TAG}`,
+    asin:'B0CPKX85TD',verified:'2026-08-16',variant:'eero Max 7 one-pack',confidence:'high',
+    note:'Exact eero Max 7 one-pack individual Amazon Australia listing independently verified.'
+  },
+  'anker-737-power-bank-24000mah-140w':{
+    url:`https://www.amazon.com.au/Anker-PowerCore-Portable-Charger-Compatible/dp/B09VPHVT2Z?tag=${TAG}`,
+    asin:'B09VPHVT2Z',verified:'2026-08-16',variant:'Anker 737 Power Bank / PowerCore 24K, model A1289',confidence:'high',
+    note:'Exact Anker 737 Power Bank 24,000mAh 140W individual Amazon Australia listing independently verified.'
+  },
+  'amazon-kindle-paperwhite-signature-edition-32gb':{
+    url:`https://www.amazon.com.au/All-new-Amazon-Kindle-Paperwhite-Signature/dp/B0CFPHSTDD?tag=${TAG}`,
+    asin:'B0CFPHSTDD',verified:'2026-08-16',variant:'Kindle Paperwhite Signature Edition 32GB, 12th generation / 2024 release',confidence:'high',
+    note:'Exact Kindle Paperwhite Signature Edition 32GB individual Amazon Australia listing independently verified.'
+  },
+  'tp-link-tapo-c500':{
+    url:`https://www.amazon.com.au/TP-Link-Tapo-Detection-supported-C500/dp/B0BQJVKVQR?tag=${TAG}`,
+    asin:'B0BQJVKVQR',verified:'2026-08-16',variant:'Tapo C500 outdoor pan/tilt camera',confidence:'high',
+    note:'Exact Tapo C500 individual Amazon Australia listing verified. Shoppers should confirm the current seller, included plug and offer details before purchase.'
+  },
+  'tp-link-tapo-c410':{
+    url:`https://www.amazon.com.au/Tapo-C410-Detection-Required-Compatible/dp/B0D3814FFN?tag=${TAG}`,
+    asin:'B0D3814FFN',verified:'2026-08-16',variant:'Tapo C410 battery Wi-Fi camera',confidence:'high',
+    note:'Exact Tapo C410 individual Amazon Australia listing verified.'
+  },
+  'reolink-argus-3-ultra':{
+    url:`https://www.amazon.com.au/REOLINK-Solar-Argus-Ultra-Panel/dp/B0C53F5PY3?tag=${TAG}`,
+    asin:'B0C53F5PY3',verified:'2026-08-16',variant:'Argus 3 Ultra with solar panel',confidence:'high',
+    note:'Exact Reolink Argus 3 Ultra Amazon Australia listing verified; this offer includes a solar panel, so shoppers should confirm bundle contents.'
+  },
+  'eufy-eufycam-2c-pro-3-cam-kit':{
+    url:`https://www.amazon.com.au/eufy-Security-Wireless-Resolution-Compatibility/dp/B08PP6DZCW?tag=${TAG}`,
+    asin:'B08PP6DZCW',verified:'2026-08-16',variant:'eufyCam 2C Pro 3-Cam Kit',confidence:'high',
+    note:'Exact eufyCam 2C Pro 3-Cam Kit Amazon Australia listing verified. The observed offer was an imported listing, so local warranty, plug and seller details should be checked.'
+  },
+  'apple-airpods-4-with-active-noise-cancellation':{
+    url:`https://www.amazon.com.au/Apple-AirPods-Active-Noise-Cancellation/dp/B0DGJ8YC5N?tag=${TAG}`,
+    asin:'B0DGJ8YC5N',verified:'2026-08-16',variant:'AirPods 4 with Active Noise Cancellation',confidence:'high',
+    note:'Exact Apple AirPods 4 with Active Noise Cancellation configuration verified on Amazon Australia.'
+  },
+  'samsung-galaxy-tab-a9':{
+    url:`https://www.amazon.com.au/Samsung-Galaxy-Tablet-Version-Graphite/dp/B0CSZ24PNN?tag=${TAG}`,
+    asin:'B0CSZ24PNN',verified:'2026-08-16',variant:'Galaxy Tab A9+ 11-inch Wi-Fi, 4GB/64GB, Graphite, AU version',confidence:'high',
+    note:'Exact Samsung Galaxy Tab A9+ Australian-version individual Amazon Australia listing verified; capacity/colour are variant-specific.'
+  },
+  'crucial-x9-pro-portable-ssd-1tb':{
+    url:`https://www.amazon.com.au/Crucial-Portable-2000MB-1050MB-CT1000X9PROSSD902/dp/B0C9WKGXHD?tag=${TAG}`,
+    asin:'B0C9WKGXHD',verified:'2026-08-16',variant:'Crucial X9 Pro Portable SSD 1TB',confidence:'high',
+    note:'Exact Crucial X9 Pro Portable SSD 1TB Amazon Australia listing verified. The observed listing may be an imported offer, so current seller and warranty terms should be checked.'
+  },
+  'philips-oneblade-pro-qp6530-15':{
+    url:`https://www.amazon.com.au/Rechargeable-14-Length-Precision-QP6530-15/dp/B09CB8W64F?tag=${TAG}`,
+    asin:'B09CB8W64F',verified:'2026-08-16',variant:'Philips OneBlade Pro QP6530/15',confidence:'high',
+    note:'Exact Philips OneBlade Pro QP6530/15 individual Amazon Australia listing verified.'
   }
 };
 
