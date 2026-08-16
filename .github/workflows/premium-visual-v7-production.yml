@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
-      BASE_URL: https://au-product-guide.vercel.app
+      BASE_URL: https://australianproductguide.au
     steps:
       - uses: actions/checkout@v4
       - name: Wait for exact Production SHA
@@ -39,13 +39,14 @@ jobs:
       - name: Verify v7 public identity and visual contract
         run: |
           set -euo pipefail
-          curl -fsSL "$BASE_URL/" -o /tmp/home
+          probe(){ echo "Checking $1"; curl -fsSL "$BASE_URL$1"; }
+          probe / > /tmp/home
           grep -q 'data-platform-v7="true"' /tmp/home
           grep -q 'Compare smarter. Choose with confidence.' /tmp/home
-          curl -fsSL "$BASE_URL/assets/logo.svg" | grep -q 'f4b45f'
-          curl -fsSL "$BASE_URL/assets/logo-dark.svg" | grep -q '0b3044'
-          curl -fsSL "$BASE_URL/assets/social.svg" | grep -q 'Compare smarter. Choose with confidence.'
-          curl -fsSL "$BASE_URL/categories/" -o /tmp/categories
+          probe /assets/logo.svg | grep -q 'f4b45f'
+          probe /assets/logo-dark.svg | grep -q '0b3044'
+          probe /assets/social.svg | grep -q 'Compare smarter. Choose with confidence.'
+          probe /categories/ > /tmp/categories
           test "$(grep -o 'class="category-card v7-category-card"' /tmp/categories | wc -l)" = 48
           grep -q 'data-v7-category="home-security-cameras"' /tmp/categories
           grep -q 'data-v7-category="luggage"' /tmp/categories
