@@ -26,11 +26,11 @@ Volatile facts such as deployment SHAs, prices, catalogue counts, retailer cover
 - Production: `https://au-product-guide.vercel.app`
 - GitHub: `australianproductguide-pixel/australianproductguide`
 - Vercel project: `au-product-guide`
-- APG Drive root folder: `18MfSFUsQpU_iN1Bx_Gy1Up5t3yhNgc_l`
-- Operating Backend & Product Register: `1gSnUQAukVl1UPl2a_Y5GIOlbQu3N62QSX3kZYAlI72o`
-- Venture Brief: `1J4UXVlNF4FPjK_VLNDYwydllcVvVoJLyjmWu5nDh5yc`
+- APG Google Drive workspace: dedicated `Australian Product Guide (APG)` folder under the Venture Lab operating structure
+- Operating Backend & Product Register: maintained in the private APG Drive workspace
+- Venture Brief: maintained in the private APG Drive workspace
 
-Do not store secrets, API tokens or private credentials in GitHub or generally accessible Drive documents.
+Internal Drive IDs, credentials, API tokens and private account identifiers should not be published in this public repository.
 
 ## 4. Drive operating taxonomy
 
