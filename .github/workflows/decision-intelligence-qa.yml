@@ -30,7 +30,7 @@ jobs:
           const engine=require('./lib/decision-engine');
           fs.writeFileSync('/tmp/apg-decision-client.js',decisionClientJs);
           if(!decisionCss.includes('.decision-hero')||!decisionCss.includes('.workspace-grid')) throw new Error('decision CSS controls missing');
-          if(typeof decisionPages.decisionLab!=='function'||typeof decisionPages.workspace!=='function') throw new Error('decision page exports missing');
+          if(typeof decisionPages.decisionLab!=='function'||typeof decisionPages.workspace!=='function'||typeof decisionPages.safeDecisionUrl!=='function') throw new Error('decision page exports missing');
           if(typeof engine.rankDecision!=='function'||typeof engine.publicDecision!=='function') throw new Error('decision engine exports missing');
           console.log('DECISION_MODULES=PASS');
           NODE
@@ -40,7 +40,7 @@ jobs:
         run: |
           set -euo pipefail
           node - <<'NODE'
-          const {rankDecision,publicDecision}=require('./lib/decision-engine');
+          const {rankDecision}=require('./lib/decision-engine');
           const profiles=[
             ['Coffee automation + bean switching','Easy automatic coffee machine under $1300 for milk drinks and switching beans','delonghi-rivelia-auto-milk-exam44055b'],
             ['Robot vacuum value + pets + no premium','Best value robot vacuum for pet hair and mopping, avoid premium','eufy-robot-vacuum-omni-c28'],
@@ -83,11 +83,15 @@ jobs:
           node - <<'NODE'
           const pages=require('./lib/decision-page');
           const req={headers:{host:'au-product-guide.vercel.app'}};
-          const decisionUrl=new URL('https://au-product-guide.vercel.app/decision-lab/?q=Best+value+robot+vacuum+for+pet+hair+and+mopping%2C+avoid+premium');
+          const decisionUrl=new URL('https://au-product-guide.vercel.app/decision-lab/?q=Best+value+robot+vacuum+for+pet+hair+and+mopping%2C+avoid+premium&_vercel_share=SECRETISH&utm_source=test&category=robot-vacuums');
           const lab=pages.decisionLab(req,decisionUrl);
           const workspace=pages.workspace(req);
           for(const token of ['APG Decision Lab','Decision Engine v2','0 commercial scoring points','noindex,follow','Explainable shortlist']) if(!lab.includes(token)) throw new Error(`Decision Lab token missing: ${token}`);
           for(const token of ['My APG','Browser-local storage','No account required','noindex,follow']) if(!workspace.includes(token)) throw new Error(`My APG token missing: ${token}`);
           if(lab.includes('performance score')) throw new Error('Decision Lab should not claim a performance score');
+          if(lab.includes('_vercel_share')||lab.includes('utm_source')) throw new Error('non-shopper query parameters leaked into rendered Decision Lab state');
+          const safe=pages.safeDecisionUrl(decisionUrl);
+          if(safe.includes('_vercel_share')||safe.includes('utm_source')) throw new Error('Decision URL sanitisation failed');
+          if(!safe.includes('q=')||!safe.includes('category=robot-vacuums')) throw new Error('allowed Decision Lab parameters were lost');
           console.log('DECISION_RENDER_PRIVACY=PASS');
           NODE
