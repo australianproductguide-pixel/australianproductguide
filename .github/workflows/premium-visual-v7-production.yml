@@ -70,11 +70,40 @@ jobs:
             ['brand','/brands/logitech/'],['guide','/guides/office-chairs-buying-guide/'],['about','/about/'],
             ['privacy','/privacy/'],['sitemap','/sitemap/'],['not-found','/__visual-v7-404__/']
           ];
-          const states=[['mega','/',async p=>{const b=await p.$('[data-mega-trigger]');if(b)await b.click();}],['search','/',async p=>{const i=await p.$('[data-site-search]');if(i){await i.click();await i.type('robot vacuum for pets');await new Promise(r=>setTimeout(r,450));}}]];
-          (async()=>{const browser=await puppeteer.launch({headless:true,executablePath:process.env.CHROME,args:['--no-sandbox']});const bad=[],report=[];
-          for(const [vp,w,h] of viewports){for(const [name,path] of pages){const p=await browser.newPage();await p.setViewport({width:w,height:h});const errors=[];p.on('pageerror',e=>errors.push(e.message));const r=await p.goto(base+path,{waitUntil:'networkidle0',timeout:30000});const m=await p.evaluate(()=>({sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,marker:document.body.dataset.platformV7||'',text:document.body.innerText.length,tiny:[...document.querySelectorAll('a,button,input,summary')].filter(el=>{const q=el.getBoundingClientRect();return q.width>0&&q.height>0&&q.width<24&&q.height<24}).length}));await p.screenshot({path:`visual-v7/${vp}-${name}.png`,fullPage:true});if(m.sw>m.cw+2||m.marker!=='true'||m.text<90||errors.length)bad.push(`${vp}/${name}: ${JSON.stringify(m)} ${errors.join('|')}`);report.push({vp,name,status:r?.status(),...m});await p.close()}
-          for(const [state,path,action] of states){const p=await browser.newPage();await p.setViewport({width:w,height:h});await p.goto(base+path,{waitUntil:'networkidle0',timeout:30000});await action(p);const m=await p.evaluate(()=>({sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,mega:[dataMega=document.querySelector('[data-mega-menu]')].map?false:!!(dataMega&&!dataMega.hidden),suggestions:[...document.querySelectorAll('[data-search-suggestions]')].some(x=>!x.hidden)}));await p.screenshot({path:`visual-v7/${vp}-state-${state}.png`,fullPage:false});if(m.sw>m.cw+2)bad.push(`${vp}/${state}: overflow ${m.sw}/${m.cw}`);report.push({vp,name:`state-${state}`,...m});await p.close()}}
-          await browser.close();fs.writeFileSync('visual-v7/report.json',JSON.stringify(report,null,2));if(bad.length){console.error(bad.join('\n'));process.exit(1)}console.log(`V7_VISUAL_CAPTURE=${report.length}_STATES_PASS`);})();
+          (async()=>{
+            const browser=await puppeteer.launch({headless:true,executablePath:process.env.CHROME,args:['--no-sandbox']});
+            const bad=[],report=[];
+            for(const [vp,w,h] of viewports){
+              for(const [name,path] of pages){
+                const p=await browser.newPage();await p.setViewport({width:w,height:h});const errors=[];p.on('pageerror',e=>errors.push(e.message));
+                const r=await p.goto(base+path,{waitUntil:'networkidle0',timeout:30000});
+                const m=await p.evaluate(()=>({sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,marker:document.body.dataset.platformV7||'',text:document.body.innerText.length,tiny:[...document.querySelectorAll('a,button,input,summary')].filter(el=>{const q=el.getBoundingClientRect();return q.width>0&&q.height>0&&q.width<24&&q.height<24}).length}));
+                await p.screenshot({path:`visual-v7/${vp}-${name}.png`,fullPage:true});
+                if(m.sw>m.cw+2||m.marker!=='true'||m.text<90||errors.length)bad.push(`${vp}/${name}: ${JSON.stringify(m)} ${errors.join('|')}`);
+                report.push({vp,name,status:r?.status(),...m});await p.close();
+              }
+              for(const state of ['navigation','search']){
+                const p=await browser.newPage();await p.setViewport({width:w,height:h});const errors=[];p.on('pageerror',e=>errors.push(e.message));
+                await p.goto(base+'/',{waitUntil:'networkidle0',timeout:30000});
+                if(state==='navigation'){
+                  const selector=w>820?'[data-mega-trigger]':'[data-mobile-toggle]';
+                  const control=await p.$(selector);if(!control)throw new Error(`Missing ${selector}`);await control.click();await new Promise(r=>setTimeout(r,180));
+                }else{
+                  if(w<=820){const toggle=await p.$('[data-mobile-toggle]');if(toggle){await toggle.click();await new Promise(r=>setTimeout(r,120));}}
+                  const selector=w>820?'.header-search [data-site-search]':'#mobileNav [data-site-search]';
+                  const input=await p.$(selector)||await p.$('[data-site-search]');if(!input)throw new Error(`Missing search input ${selector}`);await input.click();await input.type('robot vacuum for pets');await new Promise(r=>setTimeout(r,550));
+                }
+                const m=await p.evaluate(width=>{const mega=document.querySelector('[data-mega-menu]'),mobile=document.querySelector('#mobileNav');return {sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,navOpen:width>820?!!(mega&&!mega.hidden):!!(mobile&&!mobile.hidden),suggestions:[...document.querySelectorAll('[data-search-suggestions]')].some(x=>!x.hidden)}},w);
+                await p.screenshot({path:`visual-v7/${vp}-state-${state}.png`,fullPage:false});
+                if(m.sw>m.cw+2||errors.length)bad.push(`${vp}/${state}: ${JSON.stringify(m)} ${errors.join('|')}`);
+                if(state==='navigation'&&!m.navOpen)bad.push(`${vp}/${state}: expected navigation open`);
+                if(state==='search'&&!m.suggestions)bad.push(`${vp}/${state}: expected suggestions visible`);
+                report.push({vp,name:`state-${state}`,...m});await p.close();
+              }
+            }
+            await browser.close();fs.writeFileSync('visual-v7/report.json',JSON.stringify(report,null,2));
+            if(bad.length){console.error(bad.join('\n'));process.exit(1)}console.log(`V7_VISUAL_CAPTURE=${report.length}_STATES_PASS`);
+          })();
           NODE
       - uses: actions/upload-artifact@v4
         with:
