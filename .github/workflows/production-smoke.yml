@@ -44,7 +44,7 @@ jobs:
           node - <<'NODE'
           const {products,categories,pathways}=require('./data'); const {brands,pairPages,indexableRoutes}=require('./lib/routes'); const {direct}=require('./data/retailers-v6');
           const x=[products.length,Object.keys(categories).length,pathways.filter(p=>!p.maintained).length,brands.length,pairPages.length,indexableRoutes.length,Object.keys(direct).length];
-          if(x.join(',')!=='257,48,0,112,144,722,18')throw new Error(x.join(',')); console.log('SOURCE_METRICS=257/48/0/112/144/722/18');
+          if(x.join(',')!=='257,48,0,112,144,722,20')throw new Error(x.join(',')); console.log('SOURCE_METRICS=257/48/0/112/144/722/20');
           NODE
           curl -fsSL "$BASE_URL/" -o /tmp/home.html
           for t in 'Australian Product Guide' 'data-platform-v5="true"' 'data-platform-v3="true"' 'Decision Lab' 'Buying guides' 'My APG' 'How APG works' 'data-share-surface' 'href="/sitemap/"'; do grep -qi "$t" /tmp/home.html; done
@@ -52,7 +52,7 @@ jobs:
           for p in /categories/ /compare/ /guides/ /retailers/ /brands/ /decision-lab/ /my-apg/ /sitemap/; do test "$(curl -sSL -o /tmp/x -w '%{http_code}' "$BASE_URL$p")" = 200; done
           curl -fsSL "$BASE_URL/assets/app.js" -o /tmp/app.js; node --check /tmp/app.js
           curl -fsSL "$BASE_URL/assets/search-index.json" | jq -e 'length >= 350' >/dev/null
-          curl -fsSL "$BASE_URL/api/catalogue.json" | jq -e '.version=="platform-v6" and .productCount==257 and .categoryCount==48 and .commercialRecommendationWeight==0 and .amazon.exactVerified==18 and .amazon.furtherVerificationRequired==239' >/dev/null
+          curl -fsSL "$BASE_URL/api/catalogue.json" | jq -e '.version=="platform-v6" and .productCount==257 and .categoryCount==48 and .commercialRecommendationWeight==0 and .amazon.exactVerified==20 and .amazon.furtherVerificationRequired==237' >/dev/null
           test "$(curl -fsSL "$BASE_URL/api/catalogue.csv" | wc -l)" = 258
           echo 'PUBLIC_SHELL_EXPORTS=PASS'
 
@@ -74,7 +74,7 @@ jobs:
           BASE_URL="$BASE_URL" node - <<'NODE'
           const {products}=require('./data'); const {direct}=require('./data/retailers-v6'); const base=process.env.BASE_URL; let next=0,d=0,f=0;const bad=[];
           async function worker(){while(next<products.length){const p=products[next++];try{const r=await fetch(`${base}/products/${p.slug}/`);const t=await r.text();if(r.status!==200)throw new Error(`HTTP ${r.status}`);for(const needle of ['auproductguid-22','rel="sponsored nofollow noopener"','"@type":"Product"','"@type":"BreadcrumbList"','Evidence freshness','Commercial score','v7-product-art','data-v7-category='])if(!t.includes(needle))throw new Error(`missing ${needle}`);const rr=p.retailers[0];if(rr.kind==='affiliate-direct'){d++;if(!t.includes(rr.asin))throw new Error(`ASIN ${rr.asin}`)}else f++;if(p.evidenceTier==='starter'&&!t.includes('Starter evidence'))throw new Error('starter disclosure');}catch(e){bad.push(`${p.slug}: ${e.message}`)}}}
-          Promise.all(Array.from({length:10},worker)).then(()=>{if(bad.length){console.error(bad.slice(0,30).join('\n'));process.exit(1)}if(d!==18||f!==239)throw new Error(`retailer ${d}/${f}`);if(Object.keys(direct).length!==18)throw new Error('direct registry');console.log('PRODUCT_ROUTES=257/257_PASS');console.log('AMAZON_DIRECT=18');console.log('AMAZON_FALLBACK=239');});
+          Promise.all(Array.from({length:10},worker)).then(()=>{if(bad.length){console.error(bad.slice(0,30).join('\n'));process.exit(1)}if(d!==20||f!==237)throw new Error(`retailer ${d}/${f}`);if(Object.keys(direct).length!==20)throw new Error('direct registry');console.log('PRODUCT_ROUTES=257/257_PASS');console.log('AMAZON_DIRECT=20');console.log('AMAZON_FALLBACK=237');});
           NODE
 
       - name: Representative journeys, Difference Engine, noindex and privacy boundaries
@@ -82,6 +82,8 @@ jobs:
           set -euo pipefail
           check(){ code=$(curl -sSL -o /tmp/page -w '%{http_code}' "$BASE_URL$1"); test "$code" = 200; grep -qi "$2" /tmp/page; }
           check '/categories/coffee-machines/' 'Deep evidence'; check '/categories/home-security-cameras/' 'Starter evidence'; check '/categories/office-chairs/' 'Office chairs'; check '/categories/smartwatches/' 'Smartwatches'; check '/categories/blenders/' 'Blenders'; check '/products/tp-link-tapo-c500/' 'Evidence freshness'; check '/products/logitech-signature-k855/' 'B0BN6WJ1QZ'; check '/products/amazon-kindle-2024/' 'B0CP31QS6R'; check '/categories/office-chairs/finder/?priority=ergonomic&secondary=lumbar' 'Best match'; check '/guides/office-chairs-buying-guide/' 'Starter evidence'; check '/search/?q=ergonomic+office+chair+with+lumbar+support' 'Office'; check '/decision-lab/?q=mesh+wifi+for+a+large+home+with+ethernet' 'Decision Engine v3'; check '/my-apg/' 'Optional cross-device My APG sync is active'; check '/sitemap/' 'APG Sitemap'
+          curl -fsSL "$BASE_URL/search/?q=laptop+for+uni" -o /tmp/laptop-search
+          grep -qi 'Coverage gap' /tmp/laptop-search; grep -qi 'laptops are not yet a maintained category' /tmp/laptop-search
           curl -fsSL "$BASE_URL/compare/custom/?products=sony-wh-1000xm6,bose-quietcomfort-ultra-headphones" -o /tmp/diff
           grep -qi 'Difference Engine' /tmp/diff; grep -qi 'biggest difference' /tmp/diff; grep -qi 'Verify before buying' /tmp/diff
           for p in /about/ /privacy/ /terms/ /methodology/ /editorial-standards/ /sources/ /corrections-policy/ /affiliate-disclosure/ /coverage/ /updates/ /contact/; do test "$(curl -sSL -o /tmp/t -w '%{http_code}' "$BASE_URL$p")" = 200; done
