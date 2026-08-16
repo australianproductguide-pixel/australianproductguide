@@ -1,0 +1,87 @@
+name: APG Decision Intelligence Production Smoke
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: read
+
+jobs:
+  decision-production-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      BASE_URL: https://au-product-guide.vercel.app
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for matching Vercel Production deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 72); do
+            deployments=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments?sha=$SHA")
+            deployment_id=$(echo "$deployments" | jq -r '[.[] | select(.environment=="Production" or .original_environment=="Production")][0].id // empty')
+            if [ -n "$deployment_id" ]; then
+              statuses=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments/$deployment_id/statuses")
+              state=$(echo "$statuses" | jq -r '.[0].state // empty')
+              echo "Vercel Production state: ${state:-pending}"
+              if [ "$state" = "failure" ] || [ "$state" = "error" ]; then exit 1; fi
+              if [ "$state" = "success" ]; then exit 0; fi
+            fi
+            sleep 5
+          done
+          echo 'Timed out waiting for matching Vercel Production deployment'; exit 1
+
+      - name: Verify Decision Lab server render and privacy boundary
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -L -o /tmp/lab.html -w '%{http_code}' "$BASE_URL/decision-lab/?q=Best+value+robot+vacuum+for+pet+hair+and+mopping%2C+avoid+premium")
+          test "$code" = "200"
+          grep -q 'APG Decision Lab' /tmp/lab.html
+          grep -q 'Decision Engine v2' /tmp/lab.html
+          grep -q 'Explainable shortlist' /tmp/lab.html
+          grep -q '0 commercial scoring points' /tmp/lab.html
+          grep -q 'noindex,follow' /tmp/lab.html
+          grep -q 'Robot Vacuum Omni C28' /tmp/lab.html
+          grep -q 'Avoid Premium' /tmp/lab.html
+          if grep -q 'performance rating: [0-9]' /tmp/lab.html; then exit 1; fi
+          echo 'DECISION_LAB_PRODUCTION=PASS'
+
+      - name: Verify Decision API contract and neutrality
+        run: |
+          set -euo pipefail
+          curl -fsSL "$BASE_URL/api/decision?q=Easy+automatic+coffee+machine+under+%241300+for+milk+drinks+and+switching+beans" -o /tmp/decision.json
+          test "$(jq -r '.version' /tmp/decision.json)" = "decision-engine-v2"
+          test "$(jq -r '.commercialRecommendationWeight' /tmp/decision.json)" = "0"
+          test "$(jq -r '.results[0].slug' /tmp/decision.json)" = "delonghi-rivelia-auto-milk-exam44055b"
+          test "$(jq -r '.results[0] | has("score")' /tmp/decision.json)" = "false"
+          test "$(jq -r '.results | length' /tmp/decision.json)" -ge 3
+          jq -e '.results[0].reasons | length > 0' /tmp/decision.json >/dev/null
+          jq -e '.results[0] | has("tradeoff") and has("gaps") and has("conflicts")' /tmp/decision.json >/dev/null
+          echo 'DECISION_API_PRODUCTION=PASS'
+
+      - name: Verify My APG and progressive enhancement assets
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -L -o /tmp/workspace.html -w '%{http_code}' "$BASE_URL/my-apg/")
+          test "$code" = "200"
+          grep -q 'My APG' /tmp/workspace.html
+          grep -q 'Browser-local storage' /tmp/workspace.html
+          grep -q 'No account required' /tmp/workspace.html
+          grep -q 'noindex,follow' /tmp/workspace.html
+          curl -fsSL "$BASE_URL/assets/app.js" -o /tmp/app.js
+          curl -fsSL "$BASE_URL/assets/site.css" -o /tmp/site.css
+          node --check /tmp/app.js
+          for token in apgDecisionHistory data-decision-nav data-apg-workspace copy-decision; do grep -q "$token" /tmp/app.js; done
+          for token in decision-hero decision-result workspace-grid apg-workspace-badge; do grep -q "$token" /tmp/site.css; done
+          curl -fsSL "$BASE_URL/assets/search-index.json" -o /tmp/search-index.json
+          jq -e '.[] | select(.type=="decision" and .url=="/decision-lab/")' /tmp/search-index.json >/dev/null
+          jq -e '.[] | select(.type=="workspace" and .url=="/my-apg/")' /tmp/search-index.json >/dev/null
+          echo 'MY_APG_PRODUCTION=PASS'
