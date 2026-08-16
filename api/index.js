@@ -1,2 +1,2 @@
-// Google platform integration entry point.
-module.exports=require('../lib/google-platform');
+// APG production entry point: canonical domain, Google platform and shopping assistant.
+module.exports=require('../lib/assistant-platform');
