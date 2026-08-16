@@ -3,11 +3,12 @@ const {applyAssociatesStandard,REQUIRED_STATEMENT}=require('../lib/amazon-associ
 const {catalogueJson,catalogueCsv}=require('../lib/catalogue-export');
 const {products}=require('../data');
 
-const sample='<section class="retailer-panel"><div class="section-head compact-head"><span class="independence-badge">Retailer status does not affect ranking</span></div><a href="https://www.amazon.com.au/example/dp/B000000000?tag=auproductguid-22" rel="sponsored nofollow noopener">Affiliate paid link · Exact individual product page verified</a><p class="fine-inline">Paid retailer links are labelled. Prices, sellers, variants and availability can change after you leave APG.</p></section>';
+const sample='<section class="retailer-panel"><div class="section-head compact-head"><span class="independence-badge">Retailer status does not affect ranking</span></div><a href="https://www.amazon.com.au/example/dp/B000000000?tag=auproductguid-22" rel="sponsored nofollow noopener">Affiliate paid link · Exact individual product page verified</a><p class="fine-inline">Paid retailer links are labelled. Prices, sellers, variants and availability can change after you leave Australian Product Guide.</p></section>';
 const transformed=applyAssociatesStandard(sample);
 assert.ok(transformed.includes(REQUIRED_STATEMENT),'required Amazon Associate statement missing');
 assert.ok(transformed.includes('data-affiliate-link'),'Amazon paid link missing analytics marker');
 assert.ok(transformed.includes('Paid link · Amazon Associate ·'),'point-of-action paid-link label missing');
+assert.ok(transformed.includes('APG-maintained price context is not a live Amazon price'),'Amazon live-price clarification missing');
 
 const json=catalogueJson();
 assert.equal(json.affiliateUrlsExported,false,'catalogue must explicitly report affiliate URLs are excluded');
