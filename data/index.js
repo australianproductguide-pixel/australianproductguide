@@ -3,6 +3,7 @@ const air=require('./air-fryers');
 const robots=require('./robot-vacuums');
 const headphones=require('./headphones');
 const {categories:starterCategories}=require('./catalogue-v3');
+const {categories:expandedCategories}=require('./catalogue-v4');
 const {retailersFor}=require('./retailers-v6');
 const REVIEWED='2026-08-16';
 const DEEP_RESEARCHED='2026-08-15';
@@ -15,12 +16,16 @@ const deepCategories={
 };
 function deepProduct(p,c){return {...p,category:c.slug,categoryLabel:c.label,evidenceTier:'deep',firstResearched:DEEP_RESEARCHED,lastSubstantiveReview:DEEP_RESEARCHED,lastSourceVerification:REVIEWED,lastRetailerCheck:REVIEWED,lastPriceCheck:null,lastImageVerification:REVIEWED,nextReviewDue:NEXT_REVIEW,freshnessStatus:'reviewed-this-month',lastReviewed:DEEP_RESEARCHED,testingStatus:'Desk-researched / specification-based',retailers:retailersFor(p)};}
 function canonicalBrand(b){return String(b).toLowerCase()==='eufy'?'Eufy':b;}
+function starterProduct(p,c){const x={...p,brand:canonicalBrand(p.brand),category:c.slug,categoryLabel:c.label,lastReviewed:p.lastSubstantiveReview};return {...x,retailers:retailersFor(x)};}
 for(const c of Object.values(deepCategories))c.products=c.products.map(p=>deepProduct(p,c));
-for(const c of Object.values(starterCategories))c.products=c.products.map(p=>{const x={...p,brand:canonicalBrand(p.brand),category:c.slug,categoryLabel:c.label,lastReviewed:p.lastSubstantiveReview};return {...x,retailers:retailersFor(x)};});
-const categories={...deepCategories,...starterCategories};
-const pathways=[
+for(const c of Object.values(starterCategories))c.products=c.products.map(p=>starterProduct(p,c));
+for(const c of Object.values(expandedCategories))c.products=c.products.map(p=>starterProduct(p,c));
+const categories={...deepCategories,...starterCategories,...expandedCategories};
+const legacyPathways=[
 ['coffee-machines','Coffee machines'],['air-fryers','Air fryers'],['robot-vacuums','Robot vacuums'],['wireless-headphones','Wireless headphones'],
 ['home-security-cameras','Home security cameras'],['stick-vacuums','Stick vacuums'],['mesh-wifi-systems','Mesh Wi-Fi systems'],['earbuds','Earbuds'],['dash-cameras','Dash cameras'],['luggage','Luggage'],['portable-power-stations','Portable power stations'],['computer-monitors','Computer monitors'],['office-chairs','Office chairs'],['automatic-pet-feeders','Automatic pet feeders'],['standing-desks','Standing desks'],['mechanical-keyboards','Mechanical keyboards'],['home-fitness-equipment','Home fitness equipment'],['computer-mice','Computer mice'],['dehumidifiers','Dehumidifiers'],['air-purifiers','Air purifiers'],['cordless-drills','Cordless drills'],['pressure-washers','Pressure washers'],['smart-doorbells','Smart doorbells'],['baby-monitors','Baby monitors'],['smartwatches','Smartwatches'],['fitness-trackers','Fitness trackers'],['bluetooth-speakers','Bluetooth speakers'],['soundbars','Soundbars'],['projectors','Projectors'],['gaming-monitors','Gaming monitors'],['gaming-headsets','Gaming headsets'],['webcams','Webcams'],['microphones','Microphones'],['external-ssds','External SSDs'],['power-banks','Power banks'],['portable-monitors','Portable monitors'],['tablets','Tablets'],['e-readers','E-readers'],['electric-toothbrushes','Electric toothbrushes'],['hair-dryers','Hair dryers'],['electric-shavers','Electric shavers'],['kitchen-mixers','Kitchen mixers'],['blenders','Blenders'],['rice-cookers','Rice cookers'],['multicookers','Multicookers'],['vacuum-sealers','Vacuum sealers'],['water-filters','Water filters'],['portable-air-conditioners','Portable air conditioners']
-].map(([slug,label])=>({slug,label,maintained:!!categories[slug],evidenceTier:categories[slug]?.evidenceTier||'unverified'}));
+];
+const expandedPathways=Object.values(expandedCategories).map(c=>[c.slug,c.label]);
+const pathways=[...legacyPathways,...expandedPathways].map(([slug,label])=>({slug,label,maintained:!!categories[slug],evidenceTier:categories[slug]?.evidenceTier||'unverified'}));
 const products=Object.values(categories).flatMap(c=>c.products);
 module.exports={categories,pathways,products,REVIEWED,DEEP_RESEARCHED,NEXT_REVIEW};
