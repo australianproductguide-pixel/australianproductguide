@@ -14,11 +14,14 @@ function render(url){return new Promise((resolve,reject)=>{const headers={};cons
   const dishwasher=searchSite('quiet dishwasher under 1000');
   assert.ok(dishwasher.products.length>0,'dishwasher query should return maintained products');
   assert.ok(dishwasher.products.every(p=>p.category==='dishwashers'),'dishwasher query must not leak products from unrelated categories');
+  assert.ok(dishwasher.comparisons.length>0,'dishwasher query should expose useful maintained comparisons');
+  assert.ok(dishwasher.comparisons.every(x=>x.category==='dishwashers'),'dishwasher query comparisons must not leak unrelated categories');
   assert.equal(dishwasher.decisionIntent.categorySlug||dishwasher.decisionIntent.category?.slug||'dishwashers','dishwashers','dishwasher intent should resolve to dishwashers');
 
   const laptop=searchSite('gaming laptop for uni');
   assert.ok(laptop.products.length>0,'laptop query should return maintained products');
   assert.ok(laptop.products.every(p=>p.category==='laptops'),'laptop query must stay within laptops once category intent is resolved');
+  assert.ok(laptop.comparisons.every(x=>x.category==='laptops'),'laptop comparisons must stay within laptops once category intent is resolved');
 
   const compare=await render('/compare/');
   assert.equal(compare.status,200,'compare status');
@@ -29,9 +32,20 @@ function render(url){return new Promise((resolve,reject)=>{const headers={};cons
   assert.match(compare.body,/platform-integrity-v15\.js/,'v15 JS should be linked');
   assert.match(compare.body,/M17 9h30v46H17V9/,'dishwasher category should use a dishwasher-specific SSR glyph on Compare');
 
+  const search=await render('/search/?q=quiet+dishwasher+under+1000');
+  assert.equal(search.status,200,'dishwasher search status');
+  assert.match(search.body,/5 relevant maintained products/,'dishwasher search should retain the five maintained product results');
+  assert.doesNotMatch(search.body,/product-art art-headphones/,'dishwasher search surfaces must not render authority products as headphones');
+  assert.match(search.body,/data-v15-category="dishwashers"/,'dishwasher search should use dishwasher semantic visuals');
+  assert.doesNotMatch(search.body,/sony-wh-1000xm6-vs-bose-quietcomfort-ultra-headphones/,'dishwasher search must not surface the unrelated headphones comparison');
+
   const cleanDecision=await render('/decision-lab/');
   assert.equal(cleanDecision.status,200,'clean Decision Lab status');
   assert.doesNotMatch(cleanDecision.body,/<meta name="robots" content="noindex,follow">/,'clean Decision Lab must be indexable');
+  const internallyDecorated=app.transform('<head><meta name="robots" content="noindex,follow"></head>',new URL('https://australianproductguide.au/decision-lab/?__vercel_internal=1'));
+  assert.doesNotMatch(internallyDecorated,/noindex,follow/,'internal platform parameters must not make the clean Decision Lab noindex');
+  const userDecorated=app.transform('<head><meta name="robots" content="noindex,follow"></head>',new URL('https://australianproductguide.au/decision-lab/?category=dishwashers&__vercel_internal=1'));
+  assert.match(userDecorated,/noindex,follow/,'recognised Decision Lab inputs must remain noindex even with internal parameters');
   const personalisedDecision=await render('/decision-lab/?category=dishwashers&budget=1000');
   assert.match(personalisedDecision.body,/<meta name="robots" content="noindex,follow">/,'parameterised Decision Lab must remain noindex');
   const myApg=await render('/my-apg/');
@@ -53,5 +67,5 @@ function render(url){return new Promise((resolve,reject)=>{const headers={};cons
   assert.equal(sitemap.status,200,'sitemap status');
   assert.match(sitemap.body,/https:\/\/australianproductguide\.au\/decision-lab\//,'sitemap should include clean Decision Lab');
 
-  console.log(`PLATFORM_INTEGRITY_V15_QA=PASS products=${dishwasher.products.length} dishwasherResults compareFilter=PASS decisionIndexing=PASS semanticVisuals=PASS`);
+  console.log(`PLATFORM_INTEGRITY_V15_QA=PASS products=${dishwasher.products.length} comparisons=${dishwasher.comparisons.length} compareFilter=PASS decisionIndexing=PASS semanticVisuals=PASS`);
 })().catch(e=>{console.error(e.stack||e);process.exit(1);});
