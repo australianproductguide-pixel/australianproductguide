@@ -1,0 +1,16 @@
+const assert=require('node:assert/strict');
+const data=require('../data');
+const expected=['lg-oled-b6-55-inch-oled55b6psa','samsung-s90h-55-inch-oled-qa55s90hawxxy','asus-zenbook-s16-um5606','lenovo-yoga-pro-7i-gen10-aura-14'];
+const before=data.products.map(p=>p.slug);
+assert.equal(data.products.length,471,'clean GitHub-maintained catalogue must contain 471 products');
+assert.equal(new Set(before).size,before.length,'canonical catalogue must not contain duplicate product slugs');
+for(const slug of expected)assert.equal(before.filter(x=>x===slug).length,1,`${slug} must exist exactly once in canonical data`);
+require('../lib/consumer-readability-v13');
+const after=data.products.map(p=>p.slug);
+assert.equal(data.products.length,471,'consumer presentation layer must not mutate canonical catalogue count');
+assert.deepEqual(after,before,'consumer presentation layer must not mutate canonical catalogue identity/order');
+const exported=require('../lib/catalogue-export').catalogueJson();
+assert.equal(exported.productCount,471,'source catalogue exporter must resolve the canonical 471-product set');
+assert.equal(exported.products.length,471,'catalogue export rows must match canonical count');
+for(const slug of expected)assert(exported.products.some(p=>p['Product Slug']===slug),`${slug} missing from source export`);
+console.log('CATALOGUE_SOURCE_AUTHORITY=PASS products=471 runtimeMutation=0 canonicalAdditions=4');

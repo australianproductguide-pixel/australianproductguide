@@ -7,6 +7,7 @@ const {categories:expandedCategories}=require('./catalogue-v4');
 const {categories:searchCategories}=require('./catalogue-v5');
 const {categories:nationalCategories}=require('./catalogue-national');
 const {categories:authorityCategories}=require('./catalogue-authority-v1');
+const consumerV13=require('./catalogue-consumer-v13');
 const {retailersFor}=require('./retailers-v6');
 const REVIEWED='2026-08-17';
 const DEEP_RESEARCHED='2026-08-15';
@@ -30,6 +31,11 @@ for(const c of Object.values(expandedCategories))c.products=c.products.map(p=>ma
 for(const c of Object.values(searchCategories))c.products=c.products.map(p=>maintainedProduct(p,c));
 for(const c of Object.values(nationalCategories))c.products=c.products.map(p=>maintainedProduct(p,c));
 for(const c of Object.values(authorityCategories))c.products=c.products.map(p=>maintainedProduct(p,c));
+for(const [slug,rows] of Object.entries(consumerV13)){
+  const c=nationalCategories[slug];
+  if(!c)continue;
+  for(const row of rows)if(!c.products.some(p=>p.slug===row.slug))c.products.push(maintainedProduct(row,c));
+}
 const categories={...deepCategories,...starterCategories,...expandedCategories,...searchCategories,...nationalCategories,...authorityCategories};
 const legacyPathways=[
 ['coffee-machines','Coffee machines'],['air-fryers','Air fryers'],['robot-vacuums','Robot vacuums'],['wireless-headphones','Wireless headphones'],
