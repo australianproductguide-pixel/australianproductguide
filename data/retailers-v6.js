@@ -47,10 +47,22 @@ function retailersFor(p){
     return rows.map(r=>r.kind==='affiliate-search'?{...r,affiliateUrl:modelSearch(p),url:modelSearch(p)}:r);
   }
   return [{
-    retailer:'Amazon Australia',productIdentifier:d.asin,asin:d.asin,kind:'affiliate-direct',exactUrl:d.url,affiliateUrl:d.url,url:d.url,
-    imageUrl:null,imageSource:'Amazon Creators API — not yet connected',
-    imageProvenance:'No Amazon image is displayed until authorised Creators API credentials are configured and the returned product identifier matches the verified ASIN.',
-    imageVerified:false,verified:d.verified,variant:d.variant,availabilityConfidence:d.confidence,note:d.note
+    retailer:'Amazon Australia',
+    productIdentifier:d.asin,
+    asin:d.asin,
+    kind:'affiliate-direct',
+    exactUrl:d.url,
+    affiliateUrl:d.url,
+    url:d.url,
+    imageUrl:null,
+    imageSource:'No approved Amazon product-image mapping connected',
+    imageSourceType:null,
+    imageProvenance:'No Amazon image is displayed until it is obtained through a current Amazon Associates-approved manual image/linking mechanism for this verified ASIN, or later through an authorised Amazon API. Product-page scraping and reverse-engineered image URLs are prohibited.',
+    imageVerified:false,
+    verified:d.verified,
+    variant:d.variant,
+    availabilityConfidence:d.confidence,
+    note:d.note
   }];
 }
 module.exports={...base,direct,retailersFor,additions,modelSearch};
