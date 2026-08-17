@@ -1,2 +1,2 @@
-// Australian Product Guide production entry point: platform integrity v15 over editorial/compliance, authority depth v14, semantic discovery, national evidence, privacy, accessibility and performance hardening.
-module.exports=require('../lib/platform-integrity-v15');
+// APG Decision Intelligence v4 is the active release layer over the verified Platform Integrity v15 chain.
+module.exports=require('../lib/decision-intelligence-v4');
