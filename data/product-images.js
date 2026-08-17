@@ -3,10 +3,10 @@ const REVIEWED='2026-08-17';
 /**
  * Canonical product-image registry.
  *
- * This file is intentionally retailer-neutral. A product may have one current
- * verified hero image, with a documented source, rights basis and exact-match
- * status. Amazon Program Content must only be entered when it was obtained
- * through an Amazon Associates-approved mechanism for the matching product.
+ * Verified product photography now lives in a data-only registry so approved
+ * image mappings can be added without changing rendering code. A record is
+ * publishable only when source, rights basis, verification date and product
+ * match all pass validation below.
  *
  * Supported source types:
  * - amazon_associates_approved
@@ -14,16 +14,11 @@ const REVIEWED='2026-08-17';
  * - retailer_authorised
  * - other_licensed
  *
- * Amazon manual phase:
- * Basic Display / other approved Associates image -> registry -> APG renderer.
- * Do not scrape Amazon product pages or reverse-engineer image URLs.
- *
- * Future phase:
- * authorised Amazon API provider -> validation/freshness layer -> registry-like
- * provider output -> APG renderer. API image content must follow the applicable
- * Amazon caching and linking rules rather than being treated as APG-owned media.
+ * Amazon Program Content must be obtained through a current Associates-approved
+ * mechanism for the matching product. Never scrape Amazon product pages,
+ * reverse-engineer image URLs or treat Amazon Program Content as APG-owned.
  */
-const images={};
+const images=require('./product-images-verified-v42.json');
 
 const ALLOWED_SOURCE_TYPES=new Set([
   'amazon_associates_approved',
