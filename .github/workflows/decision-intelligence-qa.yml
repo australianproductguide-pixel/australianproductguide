@@ -1,4 +1,4 @@
-name: APG Decision Intelligence v4 QA
+name: APG Decision Intelligence v4.1 QA
 
 on:
   pull_request:
@@ -11,9 +11,13 @@ on:
       - 'lib/search-base.js'
       - 'lib/search-v4.js'
       - 'lib/scout-v4.js'
+      - 'lib/scout-v41.js'
       - 'lib/product-intelligence-v4.js'
+      - 'lib/product-intelligence-v41.js'
       - 'lib/intelligence-quality-v4.js'
+      - 'lib/intelligence-quality-v41.js'
       - 'scripts/intelligence-quality-report-v4.js'
+      - 'scripts/intelligence-quality-report-v41.js'
       - 'scripts/decision-intelligence-v4-runtime-qa.js'
       - '.github/workflows/decision-intelligence-qa.yml'
   push:
@@ -24,7 +28,7 @@ permissions:
   contents: read
 
 jobs:
-  intelligence-v4:
+  intelligence-v41:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -35,14 +39,16 @@ jobs:
       - name: Syntax and Scout asset
         run: |
           set -euo pipefail
-          for f in api/index.js lib/decision-engine-v4.js lib/decision-page.js lib/search.js lib/search-base.js lib/search-v4.js lib/scout-v4.js lib/product-intelligence-v4.js lib/intelligence-quality-v4.js lib/decision-intelligence-v4.js scripts/intelligence-quality-report-v4.js scripts/decision-intelligence-v4-runtime-qa.js; do node --check "$f"; done
+          for f in api/index.js data/catalogue-v41-depth.js lib/decision-engine-v4.js lib/decision-page.js lib/search.js lib/search-base.js lib/search-v4.js lib/scout-v4.js lib/scout-v41.js lib/product-intelligence-v4.js lib/product-intelligence-v41.js lib/intelligence-quality-v4.js lib/intelligence-quality-v41.js lib/decision-intelligence-v4.js scripts/intelligence-quality-report-v4.js scripts/intelligence-quality-report-v41.js scripts/decision-intelligence-v4-runtime-qa.js; do node --check "$f"; done
           node - <<'NODE'
-          const fs=require('fs'),scout=require('./lib/scout-v4');
-          fs.writeFileSync('/tmp/scout-v4.js',scout.js);
+          const fs=require('fs'),scout=require('./lib/scout-v41');
+          fs.writeFileSync('/tmp/scout-v41.js',scout.js);
           NODE
-          node --check /tmp/scout-v4.js
-          grep -q 'canonicalStateQuery' /tmp/scout-v4.js
-          ! grep -q "state.turns.join" /tmp/scout-v4.js
+          node --check /tmp/scout-v41.js
+          grep -q 'canonicalStateQuery' /tmp/scout-v41.js
+          grep -q 'scoutMascot' /tmp/scout-v41.js
+          grep -q '<svg' /tmp/scout-v41.js
+          ! grep -q "state.turns.join" /tmp/scout-v41.js
       - name: Decision contract and hard constraints
         run: |
           set -euo pipefail
@@ -57,6 +63,10 @@ jobs:
           assert.equal(tv.categorySlug,'televisions');
           assert.equal(tv.budget,2500); assert.equal(tv.budgetHard,true);
           assert.equal(tv.numericConstraints[0]?.value,75); assert.equal(tv.numericConstraints[0]?.hard,false);
+          const exact=d.publicDecision('TV must be exactly 75 inches for a bright living room sport and Netflix under $2500',{category:'televisions'});
+          assert.equal(exact.results[0]?.slug,'hisense-75u6sau-75-inch-u6s-uled-miniled-tv');
+          assert.equal(exact.results[0]?.hardConstraintStatus,'eligible');
+          assert(Number(exact.results[0]?.priceBasis)<=2500);
           const usb=d.interpretQuery('power bank must support USB-C for a laptop',{category:'power-banks'});
           assert(usb.requiredTags.includes('usb-c'));
           assert.equal(d.interpretQuery('TV under 75 inches',{category:'televisions'}).budget,null);
@@ -66,33 +76,33 @@ jobs:
           assert(pub.decisionState&&pub.recommendation&&Array.isArray(pub.paretoOptions));
           assert(pub.results.every(x=>!Object.prototype.hasOwnProperty.call(x,'score')));
           const priced=products.find(p=>Number(p.price)>1);if(priced){const out=d.publicDecision('',{category:priced.category,budget:String(Number(priced.price)-1)}),x=out.results.find(r=>r.slug===priced.slug);if(x)assert.notEqual(x.hardConstraintStatus,'eligible');}
-          console.log('DECISION_V4_CONTRACT=PASS');
+          console.log('DECISION_V41_CONTRACT=PASS');
           NODE
-      - name: Search, graph and current regressions
+      - name: Search, graph and depth regressions
         run: |
           set -euo pipefail
           node - <<'NODE'
           const assert=require('node:assert/strict');
           const {products}=require('./data');
           const canonical=require('./lib/search');
-          const graph=require('./lib/product-intelligence-v4');
+          const graph=require('./lib/product-intelligence-v41');
           const routes=require('./lib/routes');
           const {publicDecision}=require('./lib/decision-engine-v4');
           const s=canonical.searchSite('robot vacuum for pet hair and mopping');assert.equal(s.version,'search-ranking-v4');assert(s.products.length);assert(s.products.every(p=>p.category==='robot-vacuums'));
           const impossible=canonical.searchSite('TV must be exactly 999 inches');assert.equal(impossible.products.length,0);assert.equal(impossible.zeroResult?.reason,'hard-constraint-no-match');
           assert.equal(typeof canonical.searchIndex,'function');assert(canonical.searchIndex().length>500);
-          const node=graph.knowledgeNode(products[0].slug);assert(node&&node.schemaVersion==='product-intelligence-v1'&&node.evidence&&node.relationships);
-          const summary=graph.graphSummary();assert.equal(summary.brands,routes.brands.length);assert(summary.rawBrandLabels>=summary.brands);assert.equal(summary.brandEntityPolicy,'canonical-route-slug');
+          const node=graph.knowledgeNode('hisense-75u6sau-75-inch-u6s-uled-miniled-tv');assert(node&&node.schemaVersion==='product-intelligence-v1'&&node.depthVersion==='decision-intelligence-v4.1'&&node.evidence&&node.relationships);assert.equal(node.attributes.normalised.screenSizeInches,75);assert(Object.keys(node.factEvidence).length);assert.equal(node.commerce.commercialRecommendationWeight,0);assert(node.commerce.offers.some(x=>x.price===2299&&x.exactModel));
+          const summary=graph.graphSummary();assert.equal(summary.brands,routes.brands.length);assert(summary.rawBrandLabels>=summary.brands);assert.equal(summary.brandEntityPolicy,'canonical-route-slug');assert.equal(summary.depthVersion,'decision-intelligence-v4.1');assert(summary.withStructuredSpecs>15);assert(summary.withFactEvidence>0);for(const x of Object.values(summary.targetCategoryDepth)){assert(x.withStructuredSpecs>0);assert(x.withFactEvidence>0);}
           const coffee=publicDecision('Easy automatic coffee machine under $1300 for milk drinks and switching beans');assert.equal(coffee.results[0]?.slug,'delonghi-rivelia-auto-milk-exam44055b');
           const mesh=publicDecision('mesh wifi for a large home with ethernet');assert.equal(mesh.interpretation.category,'Mesh Wi-Fi systems');assert(mesh.results.length);
-          console.log('SEARCH_GRAPH_REGRESSIONS=PASS');
+          console.log('SEARCH_GRAPH_V41_REGRESSIONS=PASS');
           NODE
       - name: Mature surface integration
         run: node scripts/decision-intelligence-v4-runtime-qa.js
-      - name: Intelligence quality release gate
-        run: node scripts/intelligence-quality-report-v4.js --gate | tee intelligence-quality-v4.json
+      - name: Intelligence quality v4.1 release gate
+        run: node scripts/intelligence-quality-report-v41.js --gate | tee intelligence-quality-v41.json
       - uses: actions/upload-artifact@v4
         with:
-          name: intelligence-quality-v4
-          path: intelligence-quality-v4.json
+          name: intelligence-quality-v41
+          path: intelligence-quality-v41.json
           retention-days: 14
