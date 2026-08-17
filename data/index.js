@@ -9,6 +9,7 @@ const {categories:nationalCategories}=require('./catalogue-national');
 const {categories:authorityCategories}=require('./catalogue-authority-v1');
 const consumerV13=require('./catalogue-consumer-v13');
 const {retailersFor}=require('./retailers-v6');
+const v41Depth=require('./catalogue-v41-depth');
 const REVIEWED='2026-08-17';
 const DEEP_RESEARCHED='2026-08-15';
 const NEXT_REVIEW='2026-09-16';
@@ -36,6 +37,7 @@ for(const [slug,rows] of Object.entries(consumerV13)){
   if(!c)continue;
   for(const row of rows)if(!c.products.some(p=>p.slug===row.slug))c.products.push(maintainedProduct(row,c));
 }
+v41Depth.apply({deepCategories,nationalCategories,maintainedProduct});
 const categories={...deepCategories,...starterCategories,...expandedCategories,...searchCategories,...nationalCategories,...authorityCategories};
 const legacyPathways=[
 ['coffee-machines','Coffee machines'],['air-fryers','Air fryers'],['robot-vacuums','Robot vacuums'],['wireless-headphones','Wireless headphones'],
