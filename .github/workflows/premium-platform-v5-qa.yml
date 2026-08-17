@@ -48,8 +48,8 @@ jobs:
             if(!d.asin || !/^B[A-Z0-9]{9}$/.test(d.asin)) throw new Error('invalid ASIN '+slug);
             if(!d.url.includes('amazon.com.au/') || !d.url.includes('tag='+TAG)) throw new Error('affiliate/direct URL control failed '+slug);
           }
-          if(products.length!==257) throw new Error('catalogue count changed unexpectedly: '+products.length);
-          if(Object.keys(categories).length!==48) throw new Error('category count changed unexpectedly');
+          if(products.length<460) throw new Error('catalogue count regressed: '+products.length);
+          if(Object.keys(categories).length<90) throw new Error('category count regressed: '+Object.keys(categories).length);
           if(indexableRoutes.length<700) throw new Error('indexable route regression');
           console.log(JSON.stringify({products:products.length,categories:Object.keys(categories).length,directAmazon:Object.keys(direct).length,indexable:indexableRoutes.length}));
           console.log('APG_PREMIUM_V5_QA=PASS');
