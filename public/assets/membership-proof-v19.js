@@ -1,0 +1,9 @@
+(()=>{
+const q=(s,r=document)=>r.querySelector(s);
+const actions=q('[data-apg-member-actions-v19]');
+async function accountState(){try{const r=await fetch('/api/account/me',{credentials:'same-origin',headers:{Accept:'application/json'}});return r.ok?await r.json():{authenticated:false};}catch{return {authenticated:false}}}
+async function update(){if(!actions)return;const state=await accountState();const login=q('[data-v19-login]',actions),join=q('[data-v19-join]',actions);if(!login||!join)return;if(state.authenticated){login.textContent='My APG';login.href='/my-apg/';join.textContent='Sign out';join.href='#';join.dataset.v19Signout='true';join.setAttribute('role','button');join.setAttribute('aria-label','Sign out of Australian Product Guide');}else{login.textContent='Log in';login.href='/my-apg/?account=login';join.textContent='Join free';join.href='/my-apg/?account=signup';join.removeAttribute('data-v19-signout');join.removeAttribute('role');join.removeAttribute('aria-label');}}
+if(actions){actions.addEventListener('click',async e=>{const el=e.target.closest('[data-v19-signout]');if(!el)return;e.preventDefault();el.setAttribute('aria-busy','true');try{await fetch('/api/account/logout',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:'{}'});location.href='/';}catch{el.removeAttribute('aria-busy')}});update();}
+function activateRequestedAccountMode(){if(location.pathname!=='/my-apg/')return;const mode=new URLSearchParams(location.search).get('account');if(!['login','signup'].includes(mode))return;let tries=0;const timer=setInterval(()=>{const root=q('[data-account-shell]');const button=root&&q(`[data-account-tab="${mode}"]`,root);if(button){clearInterval(timer);button.click();root.scrollIntoView({behavior:'smooth',block:'start'});setTimeout(()=>q('[data-account-form] input[name="email"]',root)?.focus(),150);}else if(++tries>40)clearInterval(timer);},100);}
+activateRequestedAccountMode();
+})();
