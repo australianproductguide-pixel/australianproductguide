@@ -28,6 +28,11 @@ jobs:
           NODE
           node --check /tmp/apg-client.js
 
+      - name: Parse emitted runtime JavaScript assets
+        run: |
+          set -euo pipefail
+          node scripts/runtime-javascript-syntax.js
+
       - name: Catalogue, freshness, Amazon and export invariants
         run: |
           set -euo pipefail
