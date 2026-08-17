@@ -1,10 +1,18 @@
-Australian Product Guide — Premium Visual Identity v7 + Amazon Associates compliance uplift
-Release date: 2026-08-16
+Australian Product Guide — National-grade platform current release record
+Release date: 2026-08-17
 Production source: GitHub main via Vercel
 Canonical production domain: https://australianproductguide.au
-Release scope: guided-choice APG brand system; 48-category semantic illustration coverage; premium homepage, navigation, search, category, product, comparison, Decision Lab, My APG, brand, guide, trust and footer presentation; privacy-aware Google Analytics 4 and Search Console verification layer; Amazon Associates site-wide disclosure, link labelling, click measurement and Special Link export controls; exact-SHA Production QA.
-Catalogue truth at release: 257 products; 48 populated categories; 112 brands; 37 deep-evidence products; 220 starter-evidence products; 18 verified exact Amazon Australia product destinations; 239 further-verification-required/fallback cases; 0/257 authorised exact external product photographs.
-Amazon Associates controls: tag auproductguid-22 required on all Amazon retailer destinations; exact detail links require verified ASIN/product identity; unverified exact listings retain model-specific search fallbacks; public catalogue exports exclude monetised Amazon URLs; Amazon Product Advertising Content remains gated until authorised API access and exact identifier matching are available.
-Recommendation neutrality: retailer/affiliate commercial relationships contribute zero suitability points.
-Architecture: lightweight SSR-first Node application with progressive enhancement; GitHub main remains authoritative and deploys through Vercel.
-Current interface increment (2026-08-16): Footer v8.1 tightens the earlier v8 design to Finder-style proportions: compact 30px brand mark, restrained text sizing, simplified four-column navigation, flat dark footer background, compact Australia selector, Finder-like legal divider treatment and smaller disclosure copy. APG-specific trust, evidence and affiliate language is retained without the oversized cards or large brand treatment.
+
+Current platform: institutional v9 consumer design and navigation, v11 footer, Decision Lab / explainable recommendation journeys, My APG local-first workspace with optional account sync, universal search, comparison, category/product/guide/trust surfaces, responsive accessibility hardening, privacy-first analytics consent and Amazon Associates controls. Architecture remains lightweight SSR-first Node with progressive enhancement.
+
+Catalogue truth: 257 maintained products; 48 populated categories; 112 brands; 37 deep-evidence products; 220 starter-evidence products. Starter records are explicitly labelled and are not represented as equivalent to deep research.
+
+Amazon Australia retailer truth: 22 verified exact product destinations and 235 model-specific search/further-verification fallbacks across the 257 maintained products. Exact links require verified product/model identity and an observed Amazon Australia detail page; no ASIN is guessed. Eligible affiliate destinations use tag auproductguid-22. Retailer/affiliate availability and commission contribute zero recommendation points.
+
+Imagery truth: exact external product photography is not claimed unless rights and model identity are verified. APG-authored semantic/product-category illustrations remain the controlled fallback where authorised exact photography is unavailable.
+
+Privacy/analytics: Google Analytics is opt-in. Analytics storage defaults to denied and the GA script is loaded only after the visitor allows analytics. Essential browser storage remains available for privacy preferences and core/local-first research functionality. Account creation is optional and does not affect recommendations.
+
+Current release changes: mobile shopping-assistant entry point is reduced to a safe-area-aware icon on small screens to avoid obscuring decision content; two newly verified exact Amazon Australia destinations were added for Anker Nano Power Bank 10,000mAh 30W (A1259) and INIU Power Bank 20,000mAh 45W (P51L). Existing privacy-consent and accessibility/performance changes were preserved during a clean rebase onto the latest main branch.
+
+Release discipline: GitHub main is authoritative; Vercel Production must match the current source SHA; public canonical pages, retailer links, SEO/trust surfaces and responsive behaviour must be verified before the release is treated as complete. Historical v7 release counts and deployment identifiers are superseded by this record.
