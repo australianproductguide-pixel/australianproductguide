@@ -1,0 +1,22 @@
+name: Mobile menu polish v21 QA
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-menu-polish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run mobile menu regression QA
+        run: node scripts/mobile-menu-polish-v21-qa.js
