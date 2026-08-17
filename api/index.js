@@ -1,2 +1,2 @@
-// APG membership actions + truthful homepage proof band v19.
-module.exports=require('../lib/membership-proof-v19');
+// APG mobile account discoverability + homepage proof hierarchy v20.
+module.exports=require('../lib/mobile-account-proof-v20');
