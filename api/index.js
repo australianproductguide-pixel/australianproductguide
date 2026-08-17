@@ -1,2 +1,2 @@
-// APG mobile search/history UX v16 over Decision Intelligence v4 and Platform Integrity v15.
-module.exports=require('../lib/mobile-history-ux-v16');
+// APG Amazon disclosure brand-voice v17 over mobile history UX v16.
+module.exports=require('../lib/amazon-disclosure-brand-voice-v17');
