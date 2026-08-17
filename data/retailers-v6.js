@@ -35,9 +35,17 @@ const additions={
   }
 };
 const direct={...base.direct,...additions};
+function modelSearch(p){
+  const brand=String(p.brand||'').trim(),name=String(p.name||'').trim();
+  const term=brand&&name.toLocaleLowerCase('en-AU').startsWith(brand.toLocaleLowerCase('en-AU'))?name:`${brand} ${name}`.trim();
+  return `https://www.amazon.com.au/s?k=${encodeURIComponent(term)}&tag=${TAG}`;
+}
 function retailersFor(p){
   const d=direct[p.slug];
-  if(!d)return base.retailersFor(p);
+  if(!d){
+    const rows=base.retailersFor(p);
+    return rows.map(r=>r.kind==='affiliate-search'?{...r,affiliateUrl:modelSearch(p),url:modelSearch(p)}:r);
+  }
   return [{
     retailer:'Amazon Australia',productIdentifier:d.asin,asin:d.asin,kind:'affiliate-direct',exactUrl:d.url,affiliateUrl:d.url,url:d.url,
     imageUrl:null,imageSource:'Amazon Creators API — not yet connected',
@@ -45,4 +53,4 @@ function retailersFor(p){
     imageVerified:false,verified:d.verified,variant:d.variant,availabilityConfidence:d.confidence,note:d.note
   }];
 }
-module.exports={...base,direct,retailersFor,additions};
+module.exports={...base,direct,retailersFor,additions,modelSearch};
