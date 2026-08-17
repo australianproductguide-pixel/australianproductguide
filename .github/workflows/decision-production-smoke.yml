@@ -68,7 +68,7 @@ jobs:
         run: |
           set -euo pipefail
           code=$(curl -sS -L -o /tmp/workspace.html -w '%{http_code}' "$BASE_URL/my-apg/"); test "$code" = "200"
-          for token in 'My APG' 'Browser-local storage' 'No account required' 'Optional cross-device My APG sync is active' 'noindex,follow' 'Saved comparisons' 'Saved guides'; do grep -q "$token" /tmp/workspace.html || { echo "Missing My APG token: $token"; exit 1; }; done
+          for token in 'My APG' 'Account remains optional' 'Local-first when signed out' 'Cross-device sync when signed in' 'noindex,follow' 'Pinned products' 'Saved comparisons' 'Saved guides' 'Decision sessions'; do grep -q "$token" /tmp/workspace.html || { echo "Missing My APG token: $token"; exit 1; }; done
           curl -fsSL "$BASE_URL/assets/app.js" -o /tmp/app.js; node --check /tmp/app.js
           grep -q 'Optional account sync' /tmp/app.js
           for token in apgDecisionHistory apgSavedComparisons apgSavedGuides apgRecentSearches navigator.share data-copy-share whatsapp apgAccountSession gozovvhofdsshjuixcys.supabase.co data-delete-account; do grep -q "$token" /tmp/app.js || { echo "Missing app token: $token"; exit 1; }; done
