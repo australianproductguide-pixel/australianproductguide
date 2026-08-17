@@ -6,6 +6,7 @@ const AMAZON_IMAGE_CHANNELS={
     marketplace:'www.amazon.com.au',
     partnerTag:TAG,
     status:'approved-source-record-required',
+    active:true,
     imagePolicy:'Current pre-API pathway: only record product imagery obtained through an Amazon Associates-approved image/linking mechanism for the matching product. Do not scrape Amazon product pages, reverse-engineer image URLs, copy customer images or treat Amazon Program Content as APG-owned media.',
     reviewed:'2026-08-17'
   },
@@ -13,7 +14,8 @@ const AMAZON_IMAGE_CHANNELS={
     provider:'Amazon Creators API / Product Advertising API capability',
     marketplace:'www.amazon.com.au',
     partnerTag:TAG,
-    status:'credentials-required-not-active',
+    status:'credentials-required',
+    active:false,
     imagePolicy:'Future pathway only. Use image content returned through an authorised Amazon API integration for the matching identifier and follow the applicable linking, caching and freshness rules. Do not fabricate credentials or API responses.',
     reviewed:'2026-08-17'
   }
