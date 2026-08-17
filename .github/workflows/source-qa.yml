@@ -40,9 +40,11 @@ jobs:
           const {products,pathways,categories}=require('./data'); const {brands,pairPages,indexableRoutes}=require('./lib/routes');
           const {direct,CREATORS_API}=require('./data/retailers-v6'); const {catalogueCsv,catalogueJson,headers}=require('./lib/catalogue-export'); const {imageStatus}=require('./data/image-provenance');
           const expect=(ok,msg)=>{if(!ok)throw new Error(msg)};
-          expect(products.length===257,'257 products'); expect(Object.keys(categories).length===48,'48 categories'); expect(pathways.length===48&&!pathways.some(x=>!x.maintained),'zero empty pathways');
-          expect(brands.length===112,'112 canonical brand pages'); expect(pairPages.length===144,'144 maintained pair pages'); expect(indexableRoutes.length===722,'722 indexable routes');
-          const deep=products.filter(x=>x.evidenceTier==='deep'),starter=products.filter(x=>x.evidenceTier==='starter'); expect(deep.length===37&&starter.length===220,'37 deep / 220 starter');
+          const productCount=products.length,categoryCount=Object.keys(categories).length,directCount=Object.keys(direct).length;
+          const directProducts=products.filter(p=>p.retailers?.[0]?.kind==='affiliate-direct').length,fallbackProducts=products.filter(p=>p.retailers?.[0]?.kind==='affiliate-search').length;
+          expect(productCount>=460,`catalogue regression ${productCount}`); expect(categoryCount>=90,`category regression ${categoryCount}`); expect(pathways.length===categoryCount&&!pathways.some(x=>!x.maintained),'pathway/category mismatch or empty pathway');
+          expect(brands.length>=170,`brand coverage regression ${brands.length}`); expect(pairPages.length>=210,`comparison coverage regression ${pairPages.length}`); expect(indexableRoutes.length>=800,`indexable route regression ${indexableRoutes.length}`); expect(indexableRoutes.includes('/decision-lab/'),'Decision Lab missing from indexable routes');
+          const deep=products.filter(x=>x.evidenceTier==='deep'),starter=products.filter(x=>x.evidenceTier==='starter'); expect(deep.length+starter.length===productCount,'unexpected evidence tier outside deep/starter'); expect(deep.length>=37,'deep evidence coverage regressed');
           for(const p of products){
             for(const k of ['firstResearched','lastSourceVerification','lastRetailerCheck','lastImageVerification','nextReviewDue','freshnessStatus','evidenceTier'])expect(p[k]!=null,`${p.slug} missing ${k}`);
             if(p.evidenceTier==='starter'){expect(p.lastSubstantiveReview===null,`${p.slug} fake substantive review`);expect(p.price===null,`${p.slug} fake price`);}
@@ -51,11 +53,11 @@ jobs:
             if(r.kind==='affiliate-direct')expect(r.asin&&r.exactUrl&&r.productIdentifier,`${p.slug} direct metadata incomplete`);
             expect(!r.imageUrl&&!r.imageVerified,`${p.slug} unapproved third-party image active`);
           }
-          expect(Object.keys(direct).length===20,'20 exact Amazon links'); expect(products.filter(p=>p.retailers[0].kind==='affiliate-search').length===237,'237 Amazon fallbacks');
+          expect(directProducts===directCount,`exact Amazon registry/product mismatch ${directCount}/${directProducts}`); expect(directCount>=20,'exact Amazon coverage regressed below established baseline'); expect(directProducts+fallbackProducts===productCount,'Amazon direct/fallback taxonomy mismatch');
           expect(CREATORS_API.status==='credentials-required','Creators API must remain inactive until authorised credentials are configured');
-          const images=products.map(imageStatus); expect(images.length===257&&!images.some(x=>x.productPhotography||x.amazonProgramContent||x.displayUrl),'image provenance gate');
-          const json=catalogueJson(),csv=catalogueCsv(); expect(headers.length===33,'33 export columns after excluding Amazon Special Links'); expect(json.products.length===257&&json.categoryCount===48&&json.commercialRecommendationWeight===0,'JSON export'); expect(json.affiliateUrlsExported===false,'public catalogue must exclude affiliate URLs'); expect(!headers.includes('Affiliate URL')&&!headers.includes('Exact Amazon URL'),'Special Link columns excluded'); expect(json.amazon.exactVerified===20&&json.amazon.confirmedUnavailable===0&&json.amazon.furtherVerificationRequired===237,'Amazon verification taxonomy'); expect(csv.trimEnd().split('\n').length===258,'CSV export');
-          console.log('CATALOGUE=257'); console.log('CATEGORIES=48'); console.log('AMAZON_DIRECT=20'); console.log('AMAZON_FALLBACK=237'); console.log('CATALOGUE_EXPORT=PASS');
+          const images=products.map(imageStatus); expect(images.length===productCount&&!images.some(x=>x.productPhotography||x.amazonProgramContent||x.displayUrl),'image provenance gate');
+          const json=catalogueJson(),csv=catalogueCsv(); expect(headers.length===33,'33 export columns after excluding Amazon Special Links'); expect(json.products.length===productCount&&json.categoryCount===categoryCount&&json.commercialRecommendationWeight===0,'JSON export'); expect(json.affiliateUrlsExported===false,'public catalogue must exclude affiliate URLs'); expect(!headers.includes('Affiliate URL')&&!headers.includes('Exact Amazon URL'),'Special Link columns excluded'); expect(json.amazon.exactVerified===directCount&&json.amazon.confirmedUnavailable===0&&json.amazon.furtherVerificationRequired===fallbackProducts,'Amazon verification taxonomy'); expect(csv.trimEnd().split('\n').length===productCount+1,'CSV export row count');
+          console.log(`CATALOGUE=${productCount}`); console.log(`CATEGORIES=${categoryCount}`); console.log(`BRANDS=${brands.length}`); console.log(`COMPARISONS=${pairPages.length}`); console.log(`AMAZON_DIRECT=${directCount}`); console.log(`AMAZON_FALLBACK=${fallbackProducts}`); console.log('CATALOGUE_EXPORT=PASS');
           NODE
 
       - name: Search, decision and trust invariants
@@ -63,10 +65,10 @@ jobs:
           set -euo pipefail
           node - <<'NODE'
           const {searchSite,searchIndex}=require('./lib/search'); const {rankDecision,publicDecision}=require('./lib/decision-engine'); const runtime=require('./lib/platform-v3-runtime'); const content=require('./lib/content');
-          const tests=[['best coffee machine under $800','coffee-machines'],['robot vacuum for pet hair','robot-vacuums'],['quiet headphones for long flights','wireless-headphones'],['mesh wifi for a large home','mesh-wifi-systems'],['ergonomic office chair with lumbar support','office-chairs'],['power bank for a laptop','power-banks'],['portable air conditioner for a bedroom','portable-air-conditioners']];
-          for(const [q,cat] of tests){const r=searchSite(q);if(!r.products.some(p=>p.category===cat))throw new Error(`search ${q}`);const d=rankDecision(q);if(d.intent.categorySlug!==cat&&cat!=='coffee-machines')throw new Error(`decision category ${q}`);}
-          const gap=searchSite('laptop for uni'); if(!gap.coverageGap||gap.products.length)throw new Error('unsupported category coverage gap');
-          if(searchIndex().length<350)throw new Error('search index too small'); if(!searchSite('Breville vs DeLonghi').directCompare)throw new Error('comparison detection');
+          const tests=[['best coffee machine under $800','coffee-machines'],['robot vacuum for pet hair','robot-vacuums'],['quiet headphones for long flights','wireless-headphones'],['mesh wifi for a large home','mesh-wifi-systems'],['ergonomic office chair with lumbar support','office-chairs'],['power bank for a laptop','power-banks'],['portable air conditioner for a bedroom','portable-air-conditioners'],['laptop for uni','laptops'],['quiet dishwasher under 1000','dishwashers']];
+          for(const [q,cat] of tests){const r=searchSite(q);if(!r.products.length||!r.products.every(p=>p.category===cat))throw new Error(`search/category containment ${q}`);const d=rankDecision(q);if(d.intent.categorySlug!==cat&&cat!=='coffee-machines')throw new Error(`decision category ${q}`);}
+          const gap=searchSite('desktop computer for office'); if(!gap.coverageGap||gap.products.length)throw new Error('unsupported category coverage gap');
+          if(searchIndex().length<550)throw new Error('search index too small'); if(!searchSite('Breville vs DeLonghi').directCompare)throw new Error('comparison detection');
           const pub=publicDecision('mesh wifi for a large home with ethernet'); if(pub.version!=='decision-engine-v3'||pub.commercialRecommendationWeight!==0||pub.results.some(x=>'score' in x))throw new Error('public decision contract');
           const safe=runtime.safeSharePath('/decision-lab/',new URL('https://x/decision-lab/?q=robot+vacuum&category=robot-vacuums&_vercel_share=SECRET&utm_source=qa')); if(/_vercel_share|utm_source|SECRET/.test(safe))throw new Error('share sanitisation');
           for(const slug of ['about','privacy','terms','affiliate-disclosure','methodology','editorial-standards','sources','corrections-policy','coverage','updates','contact'])if(!content[slug]?.body)throw new Error(`trust page ${slug}`);
