@@ -55,7 +55,7 @@ jobs:
           const score=source.slice(source.indexOf('function scoreProduct'),source.indexOf('function labelFor'));
           if(/\bp\.(?:retailers?|affiliate|commission|asin)\b/i.test(score))throw new Error('commercial product field leaked into recommendation scoring');
           if(/require\([^)]*retailer/i.test(source))throw new Error('decision engine must not import retailer data');
-          console.log('SOURCE_METRICS=257/48/0/112/144/722/20');
+          console.log('SOURCE_METRICS=257/48/0/112/144/722/DIRECT_REGISTRY_20');
           console.log('COMMERCIAL_RECOMMENDATION_WEIGHT=0');
           NODE
 
@@ -63,7 +63,7 @@ jobs:
         run: |
           set -euo pipefail
           curl -fsSL "$BASE_URL/" -o /tmp/home.html
-          for t in 'Australian Product Guide' 'data-platform-v5="true"' 'data-platform-v3="true"' 'Decision Lab' 'Buying guides' 'My Australian Product Guide' 'How recommendations work' 'data-share-surface' 'href="/sitemap/"'; do grep -qi "$t" /tmp/home.html || { echo "Missing homepage contract: $t"; exit 1; }; done
+          for t in 'Australian Product Guide' 'data-platform-v5="true"' 'data-platform-v3="true"' 'Decision Lab' 'Buying guides' 'My Australian Product Guide' 'How recommendations work' 'href="/sitemap/"'; do grep -qi "$t" /tmp/home.html || { echo "Missing homepage contract: $t"; exit 1; }; done
           test "$(grep -o 'data-platform-v5="true"' /tmp/home.html | wc -l)" = 1
           for p in /categories/ /compare/ /guides/ /retailers/ /brands/ /decision-lab/ /my-apg/ /sitemap/; do code=$(curl -sSL -o /tmp/x -w '%{http_code}' "$BASE_URL$p"); test "$code" = 200 || { echo "$p returned $code"; exit 1; }; done
           echo 'PUBLIC_SHELL=PASS'
@@ -75,17 +75,26 @@ jobs:
           node --check /tmp/app.js
           count=$(curl -fsSL "$BASE_URL/assets/search-index.json" | jq 'length'); test "$count" -ge 350 || { echo "search index too small: $count"; exit 1; }
           curl -fsSL "$BASE_URL/api/catalogue.json" -o /tmp/catalogue.json
-          jq -e '
-            .version=="platform-v7-amazon-associates" and
-            .market=="Australia" and
-            .currency=="AUD" and
-            .counts.products==257 and
-            .counts.categories==48 and
-            .counts.brands==112 and
-            .affiliate.amazonAustralia.associateId=="auproductguid-22" and
-            ([.products[].retailer.type]|map(select(.=="affiliate-direct"))|length)==20 and
-            ([.products[].retailer.type]|map(select(.=="amazon-search"))|length)==237
-          ' /tmp/catalogue.json >/dev/null || { echo 'Catalogue JSON contract mismatch'; jq '{version,market,currency,counts,affiliate,retailerTypes:([.products[].retailer.type]|group_by(.)|map({type:.[0],count:length}))}' /tmp/catalogue.json; exit 1; }
+          node - <<'NODE'
+          const live=require('/tmp/catalogue.json');
+          const source=require('./lib/catalogue-export').catalogueJson();
+          const {brands}=require('./lib/routes');
+          if(JSON.stringify(live)!==JSON.stringify(source))throw new Error('Live catalogue JSON does not match the checked-out exact-SHA exporter');
+          if(live.version!=='platform-v7-amazon-associates')throw new Error(`version ${live.version}`);
+          if(live.generatedFrom!=='GitHub-maintained runtime catalogue')throw new Error(`generatedFrom ${live.generatedFrom}`);
+          if(live.commercialRecommendationWeight!==0)throw new Error('catalogue commercialRecommendationWeight must remain zero');
+          if(live.affiliateUrlsExported!==false)throw new Error('catalogue must not export affiliate URLs');
+          if(live.productCount!==257||live.categoryCount!==48)throw new Error(`catalogue counts ${live.productCount}/${live.categoryCount}`);
+          if(live.brandCount!==brands.length||live.brandCount!==112)throw new Error(`canonical brand count ${live.brandCount}/${brands.length}`);
+          if(!Array.isArray(live.products)||live.products.length!==live.productCount)throw new Error(`product export length ${live.products?.length}`);
+          const amazonTotal=Number(live.amazon?.exactVerified||0)+Number(live.amazon?.confirmedUnavailable||0)+Number(live.amazon?.furtherVerificationRequired||0);
+          if(amazonTotal!==live.productCount)throw new Error(`Amazon status coverage ${amazonTotal}/${live.productCount}`);
+          for(const product of live.products){
+            for(const key of ['Product Slug','Brand','Model'])if(typeof product[key]!=='string'||!product[key])throw new Error(`missing ${key}`);
+            if(String(product['Commercial Recommendation Weight'])!=='0')throw new Error(`commercial weight ${product['Product Slug']}`);
+          }
+          console.log(`CATALOGUE_EXPORT=PASS products=${live.productCount} categories=${live.categoryCount} brands=${live.brandCount} exact=${live.amazon.exactVerified} unavailable=${live.amazon.confirmedUnavailable} further=${live.amazon.furtherVerificationRequired}`);
+          NODE
           csv_lines=$(curl -fsSL "$BASE_URL/api/catalogue.csv" | wc -l); test "$csv_lines" = 258 || { echo "catalogue csv lines=$csv_lines"; exit 1; }
           curl -fsSI "$BASE_URL/api/catalogue.json" | tr -d '\r' | grep -qi '^cache-control:.*no-store' || { echo 'catalogue JSON must not be release-stale cached'; exit 1; }
           echo 'PUBLIC_ASSETS_EXPORTS=PASS'
@@ -109,15 +118,18 @@ jobs:
           set -euo pipefail
           BASE_URL="$BASE_URL" node - <<'NODE'
           const {products}=require('./data'); const {direct}=require('./data/retailers-v6'); const base=process.env.BASE_URL; let next=0,d=0,f=0;const bad=[];
-          async function worker(){while(next<products.length){const p=products[next++];try{const r=await fetch(`${base}/products/${p.slug}/`);const t=await r.text();if(r.status!==200)throw new Error(`HTTP ${r.status}`);for(const needle of ['auproductguid-22','rel="sponsored nofollow noopener"','"@type":"Product"','"@type":"BreadcrumbList"','Evidence freshness','Commercial score','v7-product-art','data-v7-category='])if(!t.includes(needle))throw new Error(`missing ${needle}`);const rr=p.retailers[0];if(rr.kind==='affiliate-direct'){d++;if(!t.includes(rr.asin))throw new Error(`ASIN ${rr.asin}`)}else f++;if(p.evidenceTier==='starter'&&!t.includes('Starter evidence'))throw new Error('starter disclosure');}catch(e){bad.push(`${p.slug}: ${e.message}`)}}}
-          Promise.all(Array.from({length:10},worker)).then(()=>{if(bad.length){console.error(bad.slice(0,30).join('\n'));process.exit(1)}if(d!==20||f!==237)throw new Error(`retailer ${d}/${f}`);if(Object.keys(direct).length!==20)throw new Error('direct registry');console.log('PRODUCT_ROUTES=257/257_PASS');console.log('AMAZON_DIRECT=20');console.log('AMAZON_FALLBACK=237');});
+          const expectedDirect=products.filter(p=>p.retailers?.[0]?.kind==='affiliate-direct').length,expectedFallback=products.length-expectedDirect;
+          async function worker(){while(next<products.length){const p=products[next++];try{const r=await fetch(`${base}/products/${p.slug}/`);const t=await r.text();if(r.status!==200)throw new Error(`HTTP ${r.status}`);for(const needle of ['auproductguid-22','rel="sponsored nofollow noopener"','"@type":"Product"','"@type":"BreadcrumbList"','Evidence freshness','Commercial score','v7-product-art','data-v7-category='])if(!t.includes(needle))throw new Error(`missing ${needle}`);const rr=p.retailers[0];if(rr.kind==='affiliate-direct'){d++;if(!rr.asin||!t.includes(rr.asin))throw new Error(`ASIN ${rr.asin||'missing'}`)}else f++;if(p.evidenceTier==='starter'&&!t.includes('Starter evidence'))throw new Error('starter disclosure');}catch(e){bad.push(`${p.slug}: ${e.message}`)}}}
+          Promise.all(Array.from({length:10},worker)).then(()=>{if(bad.length){console.error(bad.slice(0,30).join('\n'));process.exit(1)}if(d!==expectedDirect||f!==expectedFallback)throw new Error(`retailer kinds ${d}/${f} expected ${expectedDirect}/${expectedFallback}`);if(Object.keys(direct).length!==20)throw new Error('direct registry');console.log('PRODUCT_ROUTES=257/257_PASS');console.log(`AMAZON_DIRECT_CONFIGURED=${d}`);console.log(`AMAZON_SEARCH_FALLBACK=${f}`);});
           NODE
 
       - name: Representative journeys, Difference Engine, noindex and privacy boundaries
         run: |
           set -euo pipefail
           check(){ code=$(curl -sSL -o /tmp/page -w '%{http_code}' "$BASE_URL$1"); test "$code" = 200 || { echo "$1 returned $code"; exit 1; }; grep -qi "$2" /tmp/page || { echo "$1 missing $2"; exit 1; }; }
-          check '/categories/coffee-machines/' 'Deep evidence'; check '/categories/home-security-cameras/' 'Starter evidence'; check '/categories/office-chairs/' 'Office chairs'; check '/categories/smartwatches/' 'Smartwatches'; check '/categories/blenders/' 'Blenders'; check '/products/tp-link-tapo-c500/' 'Evidence freshness'; check '/products/logitech-signature-k855/' 'B0BN6WJ1QZ'; check '/products/amazon-kindle-2024/' 'B0CP31QS6R'; check '/categories/office-chairs/finder/?priority=ergonomic&secondary=lumbar' 'Best match'; check '/guides/office-chairs-buying-guide/' 'Starter evidence'; check '/search/?q=ergonomic+office+chair+with+lumbar+support' 'Office'; check '/decision-lab/?q=mesh+wifi+for+a+large+home+with+ethernet' 'Decision Engine v3'; check '/my-apg/' 'Optional cross-device My APG sync is active'; check '/sitemap/' 'APG Sitemap'
+          check '/categories/coffee-machines/' 'Deep evidence'; check '/categories/home-security-cameras/' 'Starter evidence'; check '/categories/office-chairs/' 'Office chairs'; check '/categories/smartwatches/' 'Smartwatches'; check '/categories/blenders/' 'Blenders'; check '/products/tp-link-tapo-c500/' 'Evidence freshness'; check '/products/logitech-signature-k855/' 'B0BN6WJ1QZ'; check '/products/amazon-kindle-2024/' 'B0CP31QS6R'; check '/categories/office-chairs/finder/?priority=ergonomic&secondary=lumbar' 'Best match'; check '/guides/office-chairs-buying-guide/' 'Starter evidence'; check '/search/?q=ergonomic+office+chair+with+lumbar+support' 'Office'; check '/decision-lab/?q=mesh+wifi+for+a+large+home+with+ethernet' 'Decision Engine v3'; check '/my-apg/' 'Local-first when signed out'; check '/sitemap/' 'APG Sitemap'
+          curl -fsSL "$BASE_URL/my-apg/" -o /tmp/my-apg
+          for t in 'Account remains optional' 'Local-first when signed out' 'Cross-device sync when signed in' 'Pinned products' 'Saved comparisons' 'Saved guides' 'Decision sessions'; do grep -qi "$t" /tmp/my-apg || { echo "My APG missing $t"; exit 1; }; done
           curl -fsSL "$BASE_URL/search/?q=laptop+for+uni" -o /tmp/laptop-search
           grep -qi 'Coverage gap' /tmp/laptop-search; grep -qi 'laptops are not yet a maintained category' /tmp/laptop-search
           curl -fsSL "$BASE_URL/compare/custom/?products=sony-wh-1000xm6,bose-quietcomfort-ultra-headphones" -o /tmp/diff
