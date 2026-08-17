@@ -1,2 +1,2 @@
-// Australian Product Guide production entry point: consumer readability and Scout over illustrative experience, canonical-domain consolidation, dynamic SEO discovery, national evidence, privacy, accessibility and performance hardening.
-module.exports=require('../lib/consumer-readability-v13');
+// Australian Product Guide production entry point: current consumer readability, Scout and evidence experience plus frictionless optional account access.
+module.exports=require('../lib/account-access-v2');
