@@ -63,9 +63,15 @@ function render(url){return new Promise((resolve,reject)=>{const headers={};cons
   assert.doesNotMatch(productPage.body,/product-art art-headphones/,'dishwasher product page must not SSR as headphones');
   assert.match(productPage.body,/data-v15-category="dishwashers"/,'dishwasher product page should use dishwasher semantic visual');
 
+  const missing=await render('/this-route-does-not-exist-v15-qa/');
+  assert.equal(missing.status,404,'missing route must remain a real 404');
+  assert.match(missing.body,/<meta name="robots" content="noindex,follow">/,'404 must remain noindex');
+  assert.match(missing.body,/href="\/compare\/" title="Open the comparison workspace"/,'404 header Compare shortcut must match the current global navigation');
+  assert.match(missing.body,/platform-integrity-v15\.css/,'404 should receive current shared integrity styling');
+
   const sitemap=await render('/sitemap.xml');
   assert.equal(sitemap.status,200,'sitemap status');
   assert.match(sitemap.body,/https:\/\/australianproductguide\.au\/decision-lab\//,'sitemap should include clean Decision Lab');
 
-  console.log(`PLATFORM_INTEGRITY_V15_QA=PASS products=${dishwasher.products.length} comparisons=${dishwasher.comparisons.length} compareFilter=PASS decisionIndexing=PASS semanticVisuals=PASS`);
+  console.log(`PLATFORM_INTEGRITY_V15_QA=PASS products=${dishwasher.products.length} comparisons=${dishwasher.comparisons.length} compareFilter=PASS decisionIndexing=PASS semanticVisuals=PASS htmlErrorStates=PASS`);
 })().catch(e=>{console.error(e.stack||e);process.exit(1);});
