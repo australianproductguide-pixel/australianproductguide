@@ -1,0 +1,39 @@
+/* APG mobile account discoverability + homepage proof hierarchy v20 */
+.apg-mobile-member-top-v20{display:none;align-items:center;gap:6px;margin-left:auto;margin-right:8px}
+.apg-mobile-member-top-v20 a{min-height:38px;display:inline-flex;align-items:center;justify-content:center;padding:0 11px;border:1px solid #c8d5d3;border-radius:10px;background:#fff;color:#082735;font-size:12px;font-weight:850;line-height:1;text-decoration:none;white-space:nowrap}
+.apg-mobile-member-top-v20 a.is-primary{background:#082735;border-color:#082735;color:#fff}
+.apg-mobile-account-v20{display:none;margin:2px 0 14px;padding:14px;border:1px solid #d5e1df;border-radius:14px;background:#f7faf9;grid-template-columns:auto 1fr 1fr;gap:8px;align-items:center}
+.apg-mobile-account-v20>span{grid-column:1/-1;color:#587078;font-size:11px;font-weight:850;letter-spacing:.06em;text-transform:uppercase}
+.apg-mobile-account-v20 a{min-height:44px;display:flex;align-items:center;justify-content:center;border:1px solid #c5d4d1;border-radius:11px;background:#fff;color:#082735;font-weight:850;text-decoration:none}
+.apg-mobile-account-v20 a.is-primary{background:#082735;border-color:#082735;color:#fff}
+
+.apg-proof-band-v20{border-top:1px solid #e0a630;border-bottom:1px solid #d89c24;background:linear-gradient(90deg,#ffd65b,#f4bb45 62%,#f2b348);color:#082735;overflow:hidden;position:relative}
+.apg-proof-band-v20:before,.apg-proof-band-v20:after{content:"";position:absolute;border-radius:999px;background:rgba(255,255,255,.17);pointer-events:none}.apg-proof-band-v20:before{width:210px;height:210px;left:-120px;top:-135px}.apg-proof-band-v20:after{width:170px;height:170px;right:-80px;bottom:-115px}
+.apg-proof-inner-v20{position:relative;z-index:1;min-height:86px;padding-top:15px!important;padding-bottom:15px!important;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:16px}
+.apg-proof-kicker-v20{font-size:11px;font-weight:900;letter-spacing:.075em;text-transform:uppercase;color:#254854}
+.apg-proof-main-v20{display:flex;align-items:center;justify-content:center;gap:12px;min-width:0}
+.apg-proof-main-v20>strong{font-size:clamp(1rem,1.7vw,1.3rem);line-height:1.2}
+.apg-counter-v20{display:inline-flex;gap:3px;flex:0 0 auto}
+.apg-counter-v20 span{min-width:32px;height:39px;display:grid;place-items:center;border:1px solid #303438;border-radius:6px;background:linear-gradient(#1c1e20 0 48%,#050607 48% 52%,#17191b 52%);color:#fff;font-size:25px;font-weight:900;line-height:1;box-shadow:0 5px 11px rgba(8,39,53,.2),inset 0 1px rgba(255,255,255,.13);text-shadow:0 1px #000}
+.apg-proof-trust-v20{max-width:320px;text-align:right;font-size:.78rem;font-weight:760;line-height:1.35;color:#2b4b56}
+
+@media(max-width:920px){
+  .apg-mobile-member-top-v20{display:flex}
+  .apg-mobile-account-v20{display:grid}
+  .apg-proof-inner-v20{min-height:0;grid-template-columns:1fr;gap:8px;text-align:center;padding-top:13px!important;padding-bottom:13px!important}
+  .apg-proof-kicker-v20{font-size:10px}
+  .apg-proof-main-v20{gap:10px;flex-wrap:wrap}
+  .apg-proof-main-v20>strong{font-size:1rem}
+  .apg-counter-v20 span{min-width:28px;height:34px;font-size:22px}
+  .apg-proof-trust-v20{max-width:none;text-align:center;font-size:.72rem}
+}
+@media(max-width:560px){
+  .apg-mobile-member-top-v20{margin-right:6px;gap:5px}
+  .apg-mobile-member-top-v20 a{min-height:36px;padding:0 9px;font-size:11.5px}
+  .apg-proof-main-v20{display:grid;justify-items:center;gap:7px}
+  .apg-proof-main-v20>strong{font-size:.98rem}
+  .apg-proof-trust-v20{font-size:.69rem;padding:0 4px}
+}
+@media(max-width:390px){
+  .apg-mobile-member-top-v20 a{padding:0 7px;font-size:11px}
+}
