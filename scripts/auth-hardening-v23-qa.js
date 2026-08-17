@@ -12,10 +12,13 @@ const config=read('docs/APG-AUTH-PRODUCTION-CONFIG.md');
 const architecture=read('docs/APG-ACCOUNT-ARCHITECTURE.md');
 const profilePath=path.join(__dirname,'../lib/account-profile-v24.js');
 const profile=fs.existsSync(profilePath)?fs.readFileSync(profilePath,'utf8'):'';
+const governancePath=path.join(__dirname,'../lib/account-governance-v25.js');
+const governance=fs.existsSync(governancePath)?fs.readFileSync(governancePath,'utf8'):'';
 
 const directV23=api.includes("require('../lib/auth-hardening-v23')");
 const layeredV23=api.includes("require('../lib/account-profile-v24')")&&profile.includes("require('./auth-hardening-v23')");
-assert(directV23||layeredV23,'api/index.js must preserve auth hardening v23 directly or through the current account wrapper');
+const layeredV25=api.includes("require('../lib/account-governance-v25')")&&governance.includes("require('./account-profile-v24')")&&profile.includes("require('./auth-hardening-v23')");
+assert(directV23||layeredV23||layeredV25,'api/index.js must preserve auth hardening v23 directly or through the current account wrapper chain');
 assert(auth.includes("require('./site-surface-polish-v22')"),'v23 must preserve the complete v22 site implementation chain');
 assert(auth.includes("path==='/auth/confirm'"),'first-party auth callback must be routed');
 assert(auth.includes("new Set(['email','recovery'])"),'callback must restrict accepted email action types');
