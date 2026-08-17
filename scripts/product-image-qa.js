@@ -5,6 +5,7 @@ const {TAG}=require('../data/retailers');
 
 const productBySlug=new Map(products.map(product=>[product.slug,product]));
 const issues=[];
+const displayUrlToSlugs=new Map();
 let verifiedImagery=0;
 let amazonProgramContent=0;
 let exactMatches=0;
@@ -34,8 +35,16 @@ for(const product of products){
   if(!status.alt||String(status.alt).trim().length<3)issues.push(`${product.slug}: displayed photography has no meaningful alt text`);
   if(!status.rights)issues.push(`${product.slug}: displayed photography has no rights basis`);
   if(!status.sourceType)issues.push(`${product.slug}: displayed photography has no source type`);
+  if(status.displayUrl){
+    const rows=displayUrlToSlugs.get(status.displayUrl)||[];
+    rows.push(product.slug);
+    displayUrlToSlugs.set(status.displayUrl,rows);
+  }
   if(status.matchStatus==='exact')exactMatches+=1;
-  if(status.matchStatus==='same_model_immaterial_variant')immaterialVariantMatches+=1;
+  if(status.matchStatus==='same_model_immaterial_variant'){
+    immaterialVariantMatches+=1;
+    if(!status.note)issues.push(`${product.slug}: immaterial-variant image match has no explanatory note`);
+  }
 
   if(status.amazonProgramContent){
     amazonProgramContent+=1;
@@ -50,6 +59,10 @@ for(const product of products){
       if(affiliate!==status.imageLinkUrl)issues.push(`${product.slug}: Amazon image destination does not equal the matching affiliate destination`);
     }
   }
+}
+
+for(const [imageUrl,slugs] of displayUrlToSlugs){
+  if(slugs.length>1)issues.push(`duplicate verified image URL across products: ${slugs.join(', ')} (${imageUrl})`);
 }
 
 const totalProducts=products.length;
@@ -67,7 +80,7 @@ const report={
   registryRecords:Object.keys(images).length,
   invalidRecords:issues.length,
   target:'As close to 100% as compliant verified imagery legitimately permits',
-  note:'Missing imagery is reported, not treated as a QA failure. Invalid or unsafe image mappings fail the release gate.'
+  note:'Missing imagery is reported, not treated as a QA failure. Invalid, duplicate or unsafe image mappings fail the release gate.'
 };
 
 console.log(JSON.stringify(report,null,2));
