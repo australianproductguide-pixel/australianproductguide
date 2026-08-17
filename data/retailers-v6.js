@@ -1,4 +1,10 @@
 const base=require('./retailers');
+// Transitional source-authority bridge: data/index.js loads retailers-v6 after
+// catalogue-national and before maintainedProduct() normalisation. Loading the
+// bridge here makes the four formerly presentation-injected records part of the
+// authoritative data assembly. The legacy presentation injector then no-ops on
+// duplicate slugs and can be removed separately after this release is stable.
+require('./catalogue-source-authority-v4');
 const {TAG}=base;
 const additions={
   'amazon-kindle-2024':{
