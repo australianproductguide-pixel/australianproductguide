@@ -24,6 +24,14 @@ const additions={
     variant:'INIU Power Bank 20,000mAh 45W with built-in USB-C cable, model P51L, Black',
     confidence:'high',
     note:'Exact INIU 20,000mAh 45W Amazon Australia detail page verified against model P51L. Shoppers should confirm current seller, colour and offer details before checkout.'
+  },
+  'delonghi-kg200-electric-coffee-grinder':{
+    url:`https://www.amazon.com.au/DeLonghi-KG200-Electric-Stainless-International/dp/B089NYQ9BV?tag=${TAG}`,
+    asin:'B089NYQ9BV',
+    verified:'2026-08-17',
+    variant:"De'Longhi KG200 electric blade coffee grinder, black",
+    confidence:'high',
+    note:'Exact De’Longhi KG200 Amazon Australia detail page and ASIN verified. Shoppers should recheck the current seller, delivery terms and offer before checkout.'
   }
 };
 const direct={...base.direct,...additions};
