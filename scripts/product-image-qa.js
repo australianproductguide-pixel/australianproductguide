@@ -10,6 +10,9 @@ let verifiedImagery=0;
 let amazonProgramContent=0;
 let exactMatches=0;
 let immaterialVariantMatches=0;
+let verifiedAmazonAsinMappings=0;
+let amazonSearchFallbackProducts=0;
+let amazonDirectMappingsWithoutAsin=0;
 
 for(const slug of Object.keys(images)){
   const product=productBySlug.get(slug);
@@ -21,6 +24,17 @@ for(const slug of Object.keys(images)){
 }
 
 for(const product of products){
+  const amazon=(product.retailers||[]).find(r=>r.retailer==='Amazon Australia');
+  if(amazon?.kind==='affiliate-direct'){
+    if(amazon.asin)verifiedAmazonAsinMappings+=1;
+    else {
+      amazonDirectMappingsWithoutAsin+=1;
+      issues.push(`${product.slug}: direct Amazon destination has no ASIN`);
+    }
+  }else if(amazon?.kind==='affiliate-search'){
+    amazonSearchFallbackProducts+=1;
+  }
+
   const record=imageFor(product);
   const status=imageStatus(product);
 
@@ -74,6 +88,9 @@ const report={
   verifiedImagery,
   withoutVerifiedImagery,
   coveragePercent,
+  verifiedAmazonAsinMappings,
+  amazonSearchFallbackProducts,
+  amazonDirectMappingsWithoutAsin,
   amazonProgramContent,
   exactMatches,
   immaterialVariantMatches,
