@@ -1,2 +1,2 @@
-// Australian Product Guide production entry point: privacy consent and delayed optional-account invitation over the final accessibility/performance platform.
-module.exports=require('../lib/privacy-experience');
+// Australian Product Guide production entry point: national category discovery over privacy, accessibility and performance hardening.
+module.exports=require('../lib/national-experience');
