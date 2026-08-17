@@ -12,6 +12,8 @@ const api=fs.readFileSync(path.join(__dirname,'../api/index.js'),'utf8');
 const wrapper=fs.readFileSync(path.join(__dirname,'../lib/site-surface-polish-v22.js'),'utf8');
 const authPath=path.join(__dirname,'../lib/auth-hardening-v23.js');
 const auth=fs.existsSync(authPath)?fs.readFileSync(authPath,'utf8'):'';
+const profilePath=path.join(__dirname,'../lib/account-profile-v24.js');
+const profile=fs.existsSync(profilePath)?fs.readFileSync(profilePath,'utf8'):'';
 
 assert(out.includes('data-surface-v22="true"'),'v22 body marker should be injected');
 assert.strictEqual((twice.match(/data-surface-v22="true"/g)||[]).length,1,'v22 body marker should only appear once');
@@ -29,8 +31,9 @@ assert(css.includes('.apg-assistant-panel'),'Scout preservation must remain expl
 assert(css.includes('prefers-reduced-motion'),'reduced-motion support must remain present');
 
 const directV22=api.includes("require('../lib/site-surface-polish-v22')");
-const layeredV22=api.includes("require('../lib/auth-hardening-v23')")&&auth.includes("require('./site-surface-polish-v22')");
-assert(directV22||layeredV22,'api entry point must preserve the v22 site-surface layer, directly or through the current wrapper');
+const viaV23=api.includes("require('../lib/auth-hardening-v23')")&&auth.includes("require('./site-surface-polish-v22')");
+const viaV24=api.includes("require('../lib/account-profile-v24')")&&profile.includes("require('./auth-hardening-v23')")&&auth.includes("require('./site-surface-polish-v22')");
+assert(directV22||viaV23||viaV24,'api entry point must preserve the v22 site-surface layer, directly or through the current wrapper chain');
 assert(wrapper.includes("require('./mobile-menu-polish-v21')"),'v22 must compose over v21 rather than bypassing it');
 assert(!wrapper.includes('recommendationScore')&&!wrapper.includes('affiliateCommission'),'v22 wrapper must remain presentation-only');
 
