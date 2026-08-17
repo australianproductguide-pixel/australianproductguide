@@ -1,2 +1,2 @@
-// APG Amazon disclosure brand-voice v17 over mobile history UX v16.
-module.exports=require('../lib/amazon-disclosure-brand-voice-v17');
+// APG homepage decision-panel badge emphasis v18 over Amazon disclosure v17.
+module.exports=require('../lib/homepage-decision-badge-v18');
