@@ -1,12 +1,24 @@
 const TAG='auproductguid-22';
-const CREATORS_API={
-  provider:'Amazon Creators API',
-  marketplace:'www.amazon.com.au',
-  partnerTag:TAG,
-  status:'credentials-required',
-  imagePolicy:'Use only image URLs returned through an authorised Amazon Creators API integration for the matching ASIN. Do not scrape, copy or permanently host Amazon product-page imagery.',
-  reviewed:'2026-08-16'
+
+const AMAZON_IMAGE_CHANNELS={
+  manualApproved:{
+    provider:'Amazon Associates approved manual display tools',
+    marketplace:'www.amazon.com.au',
+    partnerTag:TAG,
+    status:'approved-source-record-required',
+    imagePolicy:'Current pre-API pathway: only record product imagery obtained through an Amazon Associates-approved image/linking mechanism for the matching product. Do not scrape Amazon product pages, reverse-engineer image URLs, copy customer images or treat Amazon Program Content as APG-owned media.',
+    reviewed:'2026-08-17'
+  },
+  futureApi:{
+    provider:'Amazon Creators API / Product Advertising API capability',
+    marketplace:'www.amazon.com.au',
+    partnerTag:TAG,
+    status:'credentials-required-not-active',
+    imagePolicy:'Future pathway only. Use image content returned through an authorised Amazon API integration for the matching identifier and follow the applicable linking, caching and freshness rules. Do not fabricate credentials or API responses.',
+    reviewed:'2026-08-17'
+  }
 };
+const CREATORS_API=AMAZON_IMAGE_CHANNELS.futureApi;
 
 const direct={
   'bose-quietcomfort-ultra-headphones':{url:`https://www.amazon.com.au/Bose-QuietComfort-Wireless-Cancelling-Headphones/dp/B0CCZ1HQ39?tag=${TAG}`,asin:'B0CCZ1HQ39',verified:'2026-08-16',variant:'QuietComfort Ultra Headphones',confidence:'high',note:'Exact Bose QuietComfort Ultra Amazon Australia individual product page verified; colour/offer may vary.'},
@@ -33,6 +45,23 @@ const direct={
 function amazonSearch(p){return `https://www.amazon.com.au/s?k=${encodeURIComponent(`${p.brand} ${p.name}`)}&tag=${TAG}`;}
 function retailersFor(p){
   const d=direct[p.slug];
-  return [{retailer:'Amazon Australia',productIdentifier:d?.asin||null,asin:d?.asin||null,kind:d?'affiliate-direct':'affiliate-search',exactUrl:d?.url||null,affiliateUrl:d?.url||amazonSearch(p),url:d?.url||amazonSearch(p),imageUrl:null,imageSource:d?'Amazon Creators API — not yet connected':'No approved product-image source connected',imageProvenance:'No Amazon image is displayed until authorised Creators API credentials are configured and the returned product identifier matches the verified ASIN.',imageVerified:false,verified:d?.verified||'2026-08-16',variant:d?.variant||null,availabilityConfidence:d?.confidence||'unverified-exact-listing',note:d?.note||'Exact individual Amazon Australia listing was not independently verified in this review; model-specific Amazon search fallback retained to avoid a wrong-product link.'}];
+  return [{
+    retailer:'Amazon Australia',
+    productIdentifier:d?.asin||null,
+    asin:d?.asin||null,
+    kind:d?'affiliate-direct':'affiliate-search',
+    exactUrl:d?.url||null,
+    affiliateUrl:d?.url||amazonSearch(p),
+    url:d?.url||amazonSearch(p),
+    imageUrl:null,
+    imageSource:'No approved Amazon product-image mapping connected',
+    imageSourceType:null,
+    imageProvenance:'No Amazon image is displayed until it is obtained through a current Amazon Associates-approved manual image/linking mechanism for the matching product, or later through an authorised Amazon API. Product-page scraping and reverse-engineered image URLs are prohibited.',
+    imageVerified:false,
+    verified:d?.verified||'2026-08-16',
+    variant:d?.variant||null,
+    availabilityConfidence:d?.confidence||'unverified-exact-listing',
+    note:d?.note||'Exact individual Amazon Australia listing was not independently verified in this review; model-specific Amazon search fallback retained to avoid a wrong-product link.'
+  }];
 }
-module.exports={TAG,CREATORS_API,direct,amazonSearch,retailersFor};
+module.exports={TAG,AMAZON_IMAGE_CHANNELS,CREATORS_API,direct,amazonSearch,retailersFor};
