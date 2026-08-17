@@ -31,6 +31,8 @@ jobs:
           for(const expected of ['price-unmaintained','deep-research-pending','exact-amazon-link-pending','genuine-image-pending']) if(!(expected in r.byType)) throw new Error(`maturity queue missing ${expected}`);
           console.log(`CATALOGUE_FRESHNESS_CONTROLS=PASS products=${expectedProducts} categories=${expectedCategories}`);
           NODE
+      - name: Verify canonical catalogue source authority
+        run: node scripts/catalogue-source-authority-qa.js
       - name: Verify canonical public brand reconciliation
         run: |
           set -euo pipefail
