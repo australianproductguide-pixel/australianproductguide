@@ -32,6 +32,10 @@ function render(url){return new Promise((resolve,reject)=>{const headers={};cons
   const cleanDecision=await render('/decision-lab/');
   assert.equal(cleanDecision.status,200,'clean Decision Lab status');
   assert.doesNotMatch(cleanDecision.body,/<meta name="robots" content="noindex,follow">/,'clean Decision Lab must be indexable');
+  const internallyDecorated=app.transform('<head><meta name="robots" content="noindex,follow"></head>',new URL('https://australianproductguide.au/decision-lab/?__vercel_internal=1'));
+  assert.doesNotMatch(internallyDecorated,/noindex,follow/,'internal platform parameters must not make the clean Decision Lab noindex');
+  const userDecorated=app.transform('<head><meta name="robots" content="noindex,follow"></head>',new URL('https://australianproductguide.au/decision-lab/?category=dishwashers&__vercel_internal=1'));
+  assert.match(userDecorated,/noindex,follow/,'recognised Decision Lab inputs must remain noindex even with internal parameters');
   const personalisedDecision=await render('/decision-lab/?category=dishwashers&budget=1000');
   assert.match(personalisedDecision.body,/<meta name="robots" content="noindex,follow">/,'parameterised Decision Lab must remain noindex');
   const myApg=await render('/my-apg/');
