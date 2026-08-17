@@ -38,7 +38,7 @@ jobs:
           set -euo pipefail
           node - <<'NODE'
           const {products,pathways,categories}=require('./data'); const {brands,pairPages,indexableRoutes}=require('./lib/routes');
-          const {direct,CREATORS_API}=require('./data/retailers-v6'); const {catalogueCsv,catalogueJson,headers}=require('./lib/catalogue-export'); const {imageStatus}=require('./data/image-provenance');
+          const {direct,CREATORS_API,AMAZON_IMAGE_CHANNELS}=require('./data/retailers-v6'); const {catalogueCsv,catalogueJson,headers}=require('./lib/catalogue-export'); const {imageStatus}=require('./data/image-provenance');
           const expect=(ok,msg)=>{if(!ok)throw new Error(msg)};
           const productCount=products.length,categoryCount=Object.keys(categories).length,directCount=Object.keys(direct).length;
           const directProducts=products.filter(p=>p.retailers?.[0]?.kind==='affiliate-direct').length,fallbackProducts=products.filter(p=>p.retailers?.[0]?.kind==='affiliate-search').length;
@@ -51,13 +51,24 @@ jobs:
             const r=p.retailers?.[0]; expect(r&&r.retailer==='Amazon Australia',`${p.slug} retailer missing`); const u=r.affiliateUrl||r.url;
             expect(u.includes('amazon.com.au'),`${p.slug} non-Amazon URL`); expect(u.includes('tag=auproductguid-22'),`${p.slug} affiliate tag missing`);
             if(r.kind==='affiliate-direct')expect(r.asin&&r.exactUrl&&r.productIdentifier,`${p.slug} direct metadata incomplete`);
-            expect(!r.imageUrl&&!r.imageVerified,`${p.slug} unapproved third-party image active`);
+            const image=imageStatus(p);
+            if(image.productPhotography){
+              expect(image.status==='verified',`${p.slug} product photography is not verified`);
+              expect(image.displayUrl&&image.sourceType&&image.rights&&image.reviewed,`${p.slug} verified product image provenance incomplete`);
+              expect(image.matchStatus&&image.matchStatus!=='unverified',`${p.slug} verified product image match unresolved`);
+              if(image.amazonProgramContent){
+                expect(image.asin&&image.imageLinkUrl,`${p.slug} Amazon Program Content metadata incomplete`);
+                expect(image.imageLinkUrl.includes('amazon.com.au')&&image.imageLinkUrl.includes('tag=auproductguid-22'),`${p.slug} Amazon Program Content destination invalid`);
+              }
+            }else{
+              expect(!image.displayUrl&&!image.amazonProgramContent,`${p.slug} unverified product image escaped provenance gate`);
+            }
           }
           expect(directProducts===directCount,`exact Amazon registry/product mismatch ${directCount}/${directProducts}`); expect(directCount>=20,'exact Amazon coverage regressed below established baseline'); expect(directProducts+fallbackProducts===productCount,'Amazon direct/fallback taxonomy mismatch');
-          expect(CREATORS_API.status==='credentials-required','Creators API must remain inactive until authorised credentials are configured');
-          const images=products.map(imageStatus); expect(images.length===productCount&&!images.some(x=>x.productPhotography||x.amazonProgramContent||x.displayUrl),'image provenance gate');
+          expect(CREATORS_API.status==='credentials-required'&&CREATORS_API.active===false,'Creators API must remain inactive until authorised credentials are configured');
+          expect(AMAZON_IMAGE_CHANNELS.manualApproved?.active===true,'approved manual Amazon image pathway missing');
           const json=catalogueJson(),csv=catalogueCsv(); expect(headers.length===33,'33 export columns after excluding Amazon Special Links'); expect(json.products.length===productCount&&json.categoryCount===categoryCount&&json.commercialRecommendationWeight===0,'JSON export'); expect(json.affiliateUrlsExported===false,'public catalogue must exclude affiliate URLs'); expect(!headers.includes('Affiliate URL')&&!headers.includes('Exact Amazon URL'),'Special Link columns excluded'); expect(json.amazon.exactVerified===directCount&&json.amazon.confirmedUnavailable===0&&json.amazon.furtherVerificationRequired===fallbackProducts,'Amazon verification taxonomy'); expect(csv.trimEnd().split('\n').length===productCount+1,'CSV export row count');
-          console.log(`CATALOGUE=${productCount}`); console.log(`CATEGORIES=${categoryCount}`); console.log(`BRANDS=${brands.length}`); console.log(`COMPARISONS=${pairPages.length}`); console.log(`AMAZON_DIRECT=${directCount}`); console.log(`AMAZON_FALLBACK=${fallbackProducts}`); console.log('CATALOGUE_EXPORT=PASS');
+          console.log(`CATALOGUE=${productCount}`); console.log(`CATEGORIES=${categoryCount}`); console.log(`BRANDS=${brands.length}`); console.log(`COMPARISONS=${pairPages.length}`); console.log(`AMAZON_DIRECT=${directCount}`); console.log(`AMAZON_FALLBACK=${fallbackProducts}`); console.log('IMAGE_PROVENANCE_GATE=PASS'); console.log('CATALOGUE_EXPORT=PASS');
           NODE
 
       - name: Search, decision and trust invariants
