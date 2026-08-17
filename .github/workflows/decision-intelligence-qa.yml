@@ -7,11 +7,14 @@ on:
       - 'api/**'
       - 'data/**'
       - 'lib/decision-**'
+      - 'lib/search.js'
+      - 'lib/search-base.js'
       - 'lib/search-v4.js'
       - 'lib/scout-v4.js'
       - 'lib/product-intelligence-v4.js'
       - 'lib/intelligence-quality-v4.js'
       - 'scripts/intelligence-quality-report-v4.js'
+      - 'scripts/decision-intelligence-v4-runtime-qa.js'
       - '.github/workflows/decision-intelligence-qa.yml'
   push:
     branches: [main]
@@ -32,7 +35,7 @@ jobs:
       - name: Syntax and Scout asset
         run: |
           set -euo pipefail
-          for f in api/index.js lib/decision-engine-v4.js lib/search-v4.js lib/scout-v4.js lib/product-intelligence-v4.js lib/intelligence-quality-v4.js lib/decision-intelligence-v4.js scripts/intelligence-quality-report-v4.js; do node --check "$f"; done
+          for f in api/index.js lib/decision-engine-v4.js lib/decision-page.js lib/search.js lib/search-base.js lib/search-v4.js lib/scout-v4.js lib/product-intelligence-v4.js lib/intelligence-quality-v4.js lib/decision-intelligence-v4.js scripts/intelligence-quality-report-v4.js scripts/decision-intelligence-v4-runtime-qa.js; do node --check "$f"; done
           node - <<'NODE'
           const fs=require('fs'),scout=require('./lib/scout-v4');
           fs.writeFileSync('/tmp/scout-v4.js',scout.js);
@@ -71,16 +74,19 @@ jobs:
           node - <<'NODE'
           const assert=require('node:assert/strict');
           const {products}=require('./data');
-          const {searchSite}=require('./lib/search-v4');
+          const canonical=require('./lib/search');
           const graph=require('./lib/product-intelligence-v4');
           const {publicDecision}=require('./lib/decision-engine-v4');
-          const s=searchSite('robot vacuum for pet hair and mopping');assert.equal(s.version,'search-ranking-v4');assert(s.products.length);assert(s.products.every(p=>p.category==='robot-vacuums'));
-          const impossible=searchSite('TV must be exactly 999 inches');assert.equal(impossible.products.length,0);assert.equal(impossible.zeroResult?.reason,'hard-constraint-no-match');
+          const s=canonical.searchSite('robot vacuum for pet hair and mopping');assert.equal(s.version,'search-ranking-v4');assert(s.products.length);assert(s.products.every(p=>p.category==='robot-vacuums'));
+          const impossible=canonical.searchSite('TV must be exactly 999 inches');assert.equal(impossible.products.length,0);assert.equal(impossible.zeroResult?.reason,'hard-constraint-no-match');
+          assert.equal(typeof canonical.searchIndex,'function');assert(canonical.searchIndex().length>500);
           const node=graph.knowledgeNode(products[0].slug);assert(node&&node.schemaVersion==='product-intelligence-v1'&&node.evidence&&node.relationships);
           const coffee=publicDecision('Easy automatic coffee machine under $1300 for milk drinks and switching beans');assert.equal(coffee.results[0]?.slug,'delonghi-rivelia-auto-milk-exam44055b');
           const mesh=publicDecision('mesh wifi for a large home with ethernet');assert.equal(mesh.interpretation.category,'Mesh Wi-Fi systems');assert(mesh.results.length);
           console.log('SEARCH_GRAPH_REGRESSIONS=PASS');
           NODE
+      - name: Mature surface integration
+        run: node scripts/decision-intelligence-v4-runtime-qa.js
       - name: Intelligence quality release gate
         run: node scripts/intelligence-quality-report-v4.js --gate | tee intelligence-quality-v4.json
       - uses: actions/upload-artifact@v4
