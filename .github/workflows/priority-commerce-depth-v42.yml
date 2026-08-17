@@ -1,0 +1,36 @@
+name: Priority commerce depth v42
+
+on:
+  push:
+    branches:
+      - main
+      - 'apg/priority-commerce-depth-v42-*'
+    paths:
+      - 'data/**'
+      - 'lib/priority-commerce-depth-v42.js'
+      - 'scripts/priority-commerce-depth-report-v42.js'
+      - '.github/workflows/priority-commerce-depth-v42.yml'
+  pull_request:
+    paths:
+      - 'data/**'
+      - 'lib/priority-commerce-depth-v42.js'
+      - 'scripts/priority-commerce-depth-report-v42.js'
+  schedule:
+    - cron: '17 20 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validate priority catalogue, exact retailer offers and image controls
+        run: node scripts/priority-commerce-depth-report-v42.js
+      - name: Run existing product image QA
+        run: node scripts/product-image-qa.js
