@@ -1,2 +1,2 @@
-// APG homepage decision-panel badge emphasis v18 over Amazon disclosure v17.
-module.exports=require('../lib/homepage-decision-badge-v18');
+// APG membership actions + truthful homepage proof band v19.
+module.exports=require('../lib/membership-proof-v19');
