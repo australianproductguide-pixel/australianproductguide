@@ -28,8 +28,8 @@ Current Production scope:
 - **471 maintained products**;
 - **90 populated categories**;
 - **176 represented brands**;
-- **22 verified exact Amazon Australia product destinations**;
-- **449 transparent model-specific Amazon search/further-verification fallbacks**;
+- **23 verified exact Amazon Australia product destinations**;
+- **448 transparent model-specific Amazon search/further-verification fallbacks**;
 - commercial relationships contribute **zero recommendation points**.
 
 High-intent national categories include televisions, laptops, washing machines, fridges, dishwashers and smartphones. Televisions and laptops currently contain seven manufacturer-backed maintained models each. Authority-depth categories for coffee grinders, home printers and pizza ovens surface exact Australian manufacturer facts, documented decision factors and separately maintained retailer/support pathways.
@@ -60,7 +60,7 @@ Retailer data is stored separately from suitability logic. Amazon Australia reco
 
 The Amazon Associates tag is `auproductguid-22`. Never invent an ASIN or construct an unverified exact product destination.
 
-APG is now selectively adding **exact non-Amazon Australian retailer pathways** where model/configuration identity can be verified. Current examples include maintained LG C6, MacBook Air M5 and Bosch WGG244F0AU pathways, while authority-depth categories can expose verified Australian brand/retailer/support destinations. These links are kept separate from product-fit scoring. APG does **not** claim whole-of-market live price comparison.
+APG is selectively adding **exact non-Amazon Australian retailer pathways** where model/configuration identity can be verified. Current examples include maintained LG C6, MacBook Air M5 and Bosch WGG244F0AU pathways, while authority-depth categories can expose verified Australian brand/retailer/support destinations. These links are kept separate from product-fit scoring. APG does **not** claim whole-of-market live price comparison.
 
 Any new affiliate programme, paid feed, commercial agreement or consequential external commitment still requires explicit owner approval.
 
@@ -73,7 +73,7 @@ APG guidance is primarily **desk-researched / specification-based** unless a pag
 3. attributed independent professional evidence where appropriate;
 4. consumer-feedback signals only where methodology and limitations are clear.
 
-Selected high-intent products now surface independent professional evidence separately from manufacturer identity. Family, size and configuration differences must be disclosed; external reviewers' hands-on work must never be described as APG hands-on testing.
+Selected high-intent products surface independent professional evidence separately from manufacturer identity. Family, size and configuration differences must be disclosed; external reviewers' hands-on work must never be described as APG hands-on testing.
 
 A scheduled GitHub Actions **freshness/model audit** validates catalogue identity, required provenance/freshness fields, overdue review windows and exact-Amazon identifier/tag integrity. It flags defects and review debt but does not auto-publish changed product facts.
 
