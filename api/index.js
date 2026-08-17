@@ -1,2 +1,2 @@
-// Australian Product Guide production entry point: illustrative consumer experience over canonical-domain consolidation, dynamic SEO catalogue linking, national discovery, privacy, accessibility and performance hardening.
-module.exports=require('../lib/illustrative-experience');
+// Australian Product Guide production entry point: editorial/compliance review over the current illustrative consumer experience, canonical-domain consolidation, SEO discovery, privacy, accessibility and performance hardening.
+module.exports=require('../lib/editorial-compliance');
