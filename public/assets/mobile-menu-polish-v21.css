@@ -1,0 +1,222 @@
+/* Australian Product Guide mobile menu polish v21 */
+/* Tightens the mobile navigation hierarchy and makes account actions visually consistent. */
+
+@media(max-width:920px){
+  .apg-mobile-member-top-v20{
+    flex:0 0 auto!important;
+    gap:6px!important;
+    margin:0 6px 0 auto!important;
+  }
+  .apg-mobile-member-top-v20 a{
+    box-sizing:border-box!important;
+    width:72px!important;
+    min-width:72px!important;
+    height:42px!important;
+    min-height:42px!important;
+    padding:0 9px!important;
+    border-color:#cfdbd9!important;
+    border-radius:12px!important;
+    box-shadow:none!important;
+    font-size:12.5px!important;
+    font-weight:800!important;
+    letter-spacing:-.01em!important;
+  }
+  .apg-mobile-member-top-v20 a.is-primary{
+    background:#082f40!important;
+    border-color:#082f40!important;
+  }
+  .mobile-toggle{
+    box-sizing:border-box!important;
+    width:46px!important;
+    min-width:46px!important;
+    height:46px!important;
+    min-height:46px!important;
+    border-radius:13px!important;
+  }
+
+  .apg-mobile-v8{
+    background:#fff!important;
+    border-top:1px solid #e4ecea!important;
+  }
+  .apg-mobile-v8 .mobile-nav-inner{
+    display:grid!important;
+    gap:8px!important;
+    padding-top:14px!important;
+    padding-bottom:18px!important;
+  }
+  .apg-mobile-v8 .apg-mobile-search{
+    margin:0 0 2px!important;
+  }
+  .apg-mobile-v8 .global-search{
+    box-sizing:border-box!important;
+    min-height:52px!important;
+    border:1px solid #c9d8d5!important;
+    border-radius:14px!important;
+    background:#fff!important;
+    box-shadow:0 0 0 3px rgba(8,120,111,.055)!important;
+  }
+  .apg-mobile-v8 .global-search input{
+    min-width:0!important;
+    font-size:15px!important;
+  }
+  .apg-mobile-v8 .global-search button{
+    min-width:92px!important;
+    min-height:44px!important;
+    padding:0 14px!important;
+    border-radius:10px!important;
+    font-size:12.5px!important;
+  }
+
+  .apg-mobile-history-tools{
+    justify-content:flex-start!important;
+    gap:14px!important;
+    margin:0 0 4px!important;
+    padding:0 3px!important;
+  }
+  .apg-mobile-history-tools button{
+    min-height:30px!important;
+    padding:3px 1px!important;
+    border:0!important;
+    border-radius:7px!important;
+    background:transparent!important;
+    color:#587078!important;
+    font-size:11.5px!important;
+    font-weight:760!important;
+  }
+  .apg-mobile-history-tools button:hover,
+  .apg-mobile-history-tools button:focus-visible{
+    background:transparent!important;
+    color:#08786f!important;
+    text-decoration:underline!important;
+    text-underline-offset:3px!important;
+  }
+
+  .apg-mobile-account-v20{
+    box-sizing:border-box!important;
+    width:100%!important;
+    margin:2px 0 4px!important;
+    padding:12px!important;
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:8px!important;
+    align-items:center!important;
+    border:1px solid #dce6e4!important;
+    border-radius:14px!important;
+    background:#f8fbfa!important;
+    box-shadow:none!important;
+  }
+  .apg-mobile-account-v20>span{
+    grid-column:1/-1!important;
+    margin:0 0 1px!important;
+    color:#5b7077!important;
+    font-size:10.5px!important;
+    font-weight:820!important;
+    letter-spacing:.055em!important;
+    line-height:1.35!important;
+  }
+  .apg-mobile-account-v20 a{
+    box-sizing:border-box!important;
+    width:100%!important;
+    min-width:0!important;
+    height:44px!important;
+    min-height:44px!important;
+    padding:0 12px!important;
+    border:1px solid #cbd9d6!important;
+    border-radius:10px!important;
+    background:#fff!important;
+    box-shadow:none!important;
+    color:#082735!important;
+    font-size:13px!important;
+    font-weight:800!important;
+    letter-spacing:-.01em!important;
+  }
+  .apg-mobile-account-v20 a.is-primary{
+    background:#082f40!important;
+    border-color:#082f40!important;
+    color:#fff!important;
+  }
+
+  .apg-mobile-v8 .mobile-power{
+    box-sizing:border-box!important;
+    min-height:54px!important;
+    margin:2px 0!important;
+    padding:0 16px!important;
+    border-radius:14px!important;
+    box-shadow:none!important;
+    font-size:15px!important;
+    font-weight:820!important;
+  }
+  .apg-mobile-v8 .mobile-power+.mobile-power{display:none!important}
+
+  .apg-mobile-v8 .mobile-section{
+    margin:0!important;
+    overflow:hidden!important;
+    border:1px solid #dfe8e6!important;
+    border-radius:14px!important;
+    background:#fff!important;
+    box-shadow:none!important;
+  }
+  .apg-mobile-v8 .mobile-section summary{
+    box-sizing:border-box!important;
+    min-height:56px!important;
+    padding:0 15px!important;
+    display:flex!important;
+    align-items:center!important;
+    color:#0b3041!important;
+    font-size:14.5px!important;
+    font-weight:790!important;
+    letter-spacing:-.01em!important;
+  }
+  .apg-mobile-v8 .mobile-section[open] summary{
+    background:#f7faf9!important;
+  }
+  .apg-mobile-v8 .mobile-section>div{
+    padding:5px 8px 8px!important;
+    border-top:1px solid #edf2f1!important;
+  }
+  .apg-mobile-v8 .mobile-section a{
+    box-sizing:border-box!important;
+    min-height:43px!important;
+    padding:9px 8px!important;
+    border-radius:9px!important;
+    font-size:13px!important;
+    font-weight:650!important;
+  }
+  .apg-mobile-v8 .mobile-section a:hover,
+  .apg-mobile-v8 .mobile-section a:focus-visible{
+    background:#edf7f4!important;
+    color:#08786f!important;
+  }
+}
+
+@media(max-width:430px){
+  .apg-mobile-member-top-v20 a{
+    width:68px!important;
+    min-width:68px!important;
+    padding:0 7px!important;
+    font-size:12px!important;
+  }
+  .apg-mobile-v8 .mobile-nav-inner{
+    padding-left:16px!important;
+    padding-right:16px!important;
+  }
+}
+
+@media(max-width:370px){
+  .apg-mobile-member-top-v20{gap:4px!important;margin-right:4px!important}
+  .apg-mobile-member-top-v20 a{
+    width:62px!important;
+    min-width:62px!important;
+    height:40px!important;
+    min-height:40px!important;
+    padding:0 5px!important;
+    font-size:11px!important;
+  }
+  .mobile-toggle{
+    width:43px!important;
+    min-width:43px!important;
+    height:43px!important;
+    min-height:43px!important;
+  }
+  .apg-mobile-v8 .global-search button{min-width:82px!important;padding-inline:10px!important}
+}
