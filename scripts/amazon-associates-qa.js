@@ -11,6 +11,17 @@ assert.ok(transformed.includes('data-affiliate-link'),'Amazon paid link missing 
 assert.ok(transformed.includes('Paid link · Amazon Associate ·'),'point-of-action paid-link label missing');
 assert.ok(transformed.includes('APG-maintained price context is not a live Amazon price'),'Amazon live-price clarification missing');
 
+const supersededPolicySamples=[
+  'Amazon imagery may be displayed only through a supported authorised mechanism such as Amazon Creators API and only for the matching product identifier. Until that integration is authorised, Australian Product Guide-owned visuals remain the fallback.',
+  "Amazon's supported Associates product-data route is now Creators API. Australian Product Guide has prepared its retailer/media data model for exact product identifiers and authorised image URLs, but no Amazon product photograph is displayed until the account has eligible access, credentials are configured securely and the returned product identifier matches the verified Australian Product Guide product.",
+  "Amazon Product Advertising Content can be made available through supported Associates tools subject to programme terms. PA-API has been deprecated; Australian Product Guide's planned supported product-data route is Amazon Creators API. No Amazon product photograph is displayed until eligible API access and secure credentials are available and the image is returned for the exact matching product identifier."
+];
+for(const oldCopy of supersededPolicySamples){
+  const reconciled=applyAssociatesStandard(`<p>${oldCopy}</p>`);
+  assert.ok(!reconciled.includes(oldCopy),'superseded API-only image policy copy survived reconciliation');
+  assert.ok(reconciled.includes('Amazon Associates-approved mechanism'),'manual approved Amazon imagery pathway missing from reconciled policy copy');
+}
+
 const imageProduct=products.find(p=>p.slug==='bose-quietcomfort-ultra-headphones');
 assert.ok(imageProduct,'Amazon image-link QA fixture product missing');
 const amazonRetailer=(imageProduct.retailers||[]).find(r=>r.retailer==='Amazon Australia'&&r.asin);
@@ -55,4 +66,4 @@ for(const product of products){
   }
 }
 
-console.log(`Amazon Associates QA passed for ${products.length} products, including Amazon Program Content image-link behaviour.`);
+console.log(`Amazon Associates QA passed for ${products.length} products, including Amazon Program Content image-link behaviour and current manual-image policy copy.`);
