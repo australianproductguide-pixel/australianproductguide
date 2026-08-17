@@ -6,6 +6,7 @@ const {categories:starterCategories}=require('./catalogue-v3');
 const {categories:expandedCategories}=require('./catalogue-v4');
 const {categories:searchCategories}=require('./catalogue-v5');
 const {categories:nationalCategories}=require('./catalogue-national');
+const {categories:authorityCategories}=require('./catalogue-authority-v1');
 const {retailersFor}=require('./retailers-v6');
 const REVIEWED='2026-08-17';
 const DEEP_RESEARCHED='2026-08-15';
@@ -24,7 +25,8 @@ for(const c of Object.values(starterCategories))c.products=c.products.map(p=>mai
 for(const c of Object.values(expandedCategories))c.products=c.products.map(p=>maintainedProduct(p,c));
 for(const c of Object.values(searchCategories))c.products=c.products.map(p=>maintainedProduct(p,c));
 for(const c of Object.values(nationalCategories))c.products=c.products.map(p=>maintainedProduct(p,c));
-const categories={...deepCategories,...starterCategories,...expandedCategories,...searchCategories,...nationalCategories};
+for(const c of Object.values(authorityCategories))c.products=c.products.map(p=>maintainedProduct(p,c));
+const categories={...deepCategories,...starterCategories,...expandedCategories,...searchCategories,...nationalCategories,...authorityCategories};
 const legacyPathways=[
 ['coffee-machines','Coffee machines'],['air-fryers','Air fryers'],['robot-vacuums','Robot vacuums'],['wireless-headphones','Wireless headphones'],
 ['home-security-cameras','Home security cameras'],['stick-vacuums','Stick vacuums'],['mesh-wifi-systems','Mesh Wi-Fi systems'],['earbuds','Earbuds'],['dash-cameras','Dash cameras'],['luggage','Luggage'],['portable-power-stations','Portable power stations'],['computer-monitors','Computer monitors'],['office-chairs','Office chairs'],['automatic-pet-feeders','Automatic pet feeders'],['standing-desks','Standing desks'],['mechanical-keyboards','Mechanical keyboards'],['home-fitness-equipment','Home fitness equipment'],['computer-mice','Computer mice'],['dehumidifiers','Dehumidifiers'],['air-purifiers','Air purifiers'],['cordless-drills','Cordless drills'],['pressure-washers','Pressure washers'],['smart-doorbells','Smart doorbells'],['baby-monitors','Baby monitors'],['smartwatches','Smartwatches'],['fitness-trackers','Fitness trackers'],['bluetooth-speakers','Bluetooth speakers'],['soundbars','Soundbars'],['projectors','Projectors'],['gaming-monitors','Gaming monitors'],['gaming-headsets','Gaming headsets'],['webcams','Webcams'],['microphones','Microphones'],['external-ssds','External SSDs'],['power-banks','Power banks'],['portable-monitors','Portable monitors'],['tablets','Tablets'],['e-readers','E-readers'],['electric-toothbrushes','Electric toothbrushes'],['hair-dryers','Hair dryers'],['electric-shavers','Electric shavers'],['kitchen-mixers','Kitchen mixers'],['blenders','Blenders'],['rice-cookers','Rice cookers'],['multicookers','Multicookers'],['vacuum-sealers','Vacuum sealers'],['water-filters','Water filters'],['portable-air-conditioners','Portable air conditioners']
@@ -32,6 +34,8 @@ const legacyPathways=[
 const expandedPathways=Object.values(expandedCategories).map(c=>[c.slug,c.label]);
 const searchPathways=Object.values(searchCategories).map(c=>[c.slug,c.label]);
 const nationalPathways=Object.values(nationalCategories).map(c=>[c.slug,c.label]);
-const pathways=[...legacyPathways,...expandedPathways,...searchPathways,...nationalPathways].map(([slug,label])=>({slug,label,maintained:!!categories[slug],evidenceTier:categories[slug]?.evidenceTier||'unverified'}));
+const authorityPathways=Object.values(authorityCategories).map(c=>[c.slug,c.label]);
+const pathwayMap=new Map([...legacyPathways,...expandedPathways,...searchPathways,...nationalPathways,...authorityPathways].map(([slug,label])=>[slug,label]));
+const pathways=[...pathwayMap].map(([slug,label])=>({slug,label,maintained:!!categories[slug],evidenceTier:categories[slug]?.evidenceTier||'unverified'}));
 const products=Object.values(categories).flatMap(c=>c.products);
 module.exports={categories,pathways,products,REVIEWED,DEEP_RESEARCHED,NEXT_REVIEW};
