@@ -25,6 +25,13 @@ jobs:
           node --check public/assets/platform-integrity-v15.js
           node --check scripts/platform-integrity-v15-qa.js
       - name: Platform integrity regression
-        run: node scripts/platform-integrity-v15-qa.js
+        shell: bash
+        run: |
+          set -o pipefail
+          if ! node scripts/platform-integrity-v15-qa.js 2>&1 | tee /tmp/platform-integrity-v15.log; then
+            message=$(tail -c 7000 /tmp/platform-integrity-v15.log | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+            echo "::error title=Platform Integrity v15 regression::$message"
+            exit 1
+          fi
       - name: Existing rendered route regression
         run: node scripts/rendered-route-qa.js
