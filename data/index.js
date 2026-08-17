@@ -4,10 +4,11 @@ const robots=require('./robot-vacuums');
 const headphones=require('./headphones');
 const {categories:starterCategories}=require('./catalogue-v3');
 const {categories:expandedCategories}=require('./catalogue-v4');
+const {categories:nationalCategories}=require('./catalogue-national');
 const {retailersFor}=require('./retailers-v6');
-const REVIEWED='2026-08-16';
+const REVIEWED='2026-08-17';
 const DEEP_RESEARCHED='2026-08-15';
-const NEXT_REVIEW='2026-09-15';
+const NEXT_REVIEW='2026-09-16';
 const deepCategories={
   'coffee-machines':{slug:'coffee-machines',label:'Coffee machines',title:'Coffee Machines Australia',icon:'coffee',aliases:['coffee machine','espresso machine','automatic coffee machine','manual coffee machine'],description:'Compare maintained home espresso machines by workflow, milk system, space, cold-coffee capability and the amount of technique you want to learn.',products:coffee,priorities:['beginner','hands-on','milk','cold','compact','value'],factors:['Manual, guided or one-touch workflow','Milk preparation and drink preferences','Bench space and machine dimensions','Budget and current Australian availability'],faqs:[['Manual or automatic?','Choose manual when control and technique are part of the appeal; choose one-touch when speed and consistency matter more. Guided machines sit between those extremes.'],['What matters most for milk drinks?','Look at whether milk texturing is manual, assisted or automatic, then consider how often several drinks need to be made back-to-back.'],['Should I buy on price alone?','No. Workflow fit, bench space and drink preferences can matter more than a discount on a machine you will dislike using.']],evidenceTier:'deep',comparisonLimit:14},
   'air-fryers':{slug:'air-fryers',label:'Air fryers',title:'Air Fryers Australia',icon:'air',aliases:['air fryer','dual air fryer','dual basket air fryer'],description:'Compare maintained air fryers by basket layout, household size, bench space and cooking versatility.',products:air,priorities:['family','compact','dual-zone','versatile','quiet','value'],factors:['Single, dual or stacked basket layout','Capacity for your household','Bench width and depth','Whether you need grill, steam or other cooking modes'],faqs:[['Do I need dual baskets?','Dual zones are most useful when cooking foods with different temperatures or timings. A larger single basket can be simpler for one main dish.'],['How much capacity is enough?','Capacity labels are useful but basket shape and the foods you cook matter too. Compare the actual layout rather than litres alone.'],['Is a multi-function model better?','Only if you will use the extra modes. Added steam or grill functions can be valuable, but they can also add cost and cleaning complexity.']],evidenceTier:'deep',comparisonLimit:14},
@@ -16,16 +17,18 @@ const deepCategories={
 };
 function deepProduct(p,c){return {...p,category:c.slug,categoryLabel:c.label,evidenceTier:'deep',firstResearched:DEEP_RESEARCHED,lastSubstantiveReview:DEEP_RESEARCHED,lastSourceVerification:REVIEWED,lastRetailerCheck:REVIEWED,lastPriceCheck:null,lastImageVerification:REVIEWED,nextReviewDue:NEXT_REVIEW,freshnessStatus:'reviewed-this-month',lastReviewed:DEEP_RESEARCHED,testingStatus:'Desk-researched / specification-based',retailers:retailersFor(p)};}
 function canonicalBrand(b){return String(b).toLowerCase()==='eufy'?'Eufy':b;}
-function starterProduct(p,c){const x={...p,brand:canonicalBrand(p.brand),category:c.slug,categoryLabel:c.label,lastReviewed:p.lastSubstantiveReview};return {...x,retailers:retailersFor(x)};}
+function maintainedProduct(p,c){const x={...p,brand:canonicalBrand(p.brand),category:c.slug,categoryLabel:c.label,lastReviewed:p.lastSubstantiveReview};return {...x,retailers:retailersFor(x)};}
 for(const c of Object.values(deepCategories))c.products=c.products.map(p=>deepProduct(p,c));
-for(const c of Object.values(starterCategories))c.products=c.products.map(p=>starterProduct(p,c));
-for(const c of Object.values(expandedCategories))c.products=c.products.map(p=>starterProduct(p,c));
-const categories={...deepCategories,...starterCategories,...expandedCategories};
+for(const c of Object.values(starterCategories))c.products=c.products.map(p=>maintainedProduct(p,c));
+for(const c of Object.values(expandedCategories))c.products=c.products.map(p=>maintainedProduct(p,c));
+for(const c of Object.values(nationalCategories))c.products=c.products.map(p=>maintainedProduct(p,c));
+const categories={...deepCategories,...starterCategories,...expandedCategories,...nationalCategories};
 const legacyPathways=[
 ['coffee-machines','Coffee machines'],['air-fryers','Air fryers'],['robot-vacuums','Robot vacuums'],['wireless-headphones','Wireless headphones'],
 ['home-security-cameras','Home security cameras'],['stick-vacuums','Stick vacuums'],['mesh-wifi-systems','Mesh Wi-Fi systems'],['earbuds','Earbuds'],['dash-cameras','Dash cameras'],['luggage','Luggage'],['portable-power-stations','Portable power stations'],['computer-monitors','Computer monitors'],['office-chairs','Office chairs'],['automatic-pet-feeders','Automatic pet feeders'],['standing-desks','Standing desks'],['mechanical-keyboards','Mechanical keyboards'],['home-fitness-equipment','Home fitness equipment'],['computer-mice','Computer mice'],['dehumidifiers','Dehumidifiers'],['air-purifiers','Air purifiers'],['cordless-drills','Cordless drills'],['pressure-washers','Pressure washers'],['smart-doorbells','Smart doorbells'],['baby-monitors','Baby monitors'],['smartwatches','Smartwatches'],['fitness-trackers','Fitness trackers'],['bluetooth-speakers','Bluetooth speakers'],['soundbars','Soundbars'],['projectors','Projectors'],['gaming-monitors','Gaming monitors'],['gaming-headsets','Gaming headsets'],['webcams','Webcams'],['microphones','Microphones'],['external-ssds','External SSDs'],['power-banks','Power banks'],['portable-monitors','Portable monitors'],['tablets','Tablets'],['e-readers','E-readers'],['electric-toothbrushes','Electric toothbrushes'],['hair-dryers','Hair dryers'],['electric-shavers','Electric shavers'],['kitchen-mixers','Kitchen mixers'],['blenders','Blenders'],['rice-cookers','Rice cookers'],['multicookers','Multicookers'],['vacuum-sealers','Vacuum sealers'],['water-filters','Water filters'],['portable-air-conditioners','Portable air conditioners']
 ];
 const expandedPathways=Object.values(expandedCategories).map(c=>[c.slug,c.label]);
-const pathways=[...legacyPathways,...expandedPathways].map(([slug,label])=>({slug,label,maintained:!!categories[slug],evidenceTier:categories[slug]?.evidenceTier||'unverified'}));
+const nationalPathways=Object.values(nationalCategories).map(c=>[c.slug,c.label]);
+const pathways=[...legacyPathways,...expandedPathways,...nationalPathways].map(([slug,label])=>({slug,label,maintained:!!categories[slug],evidenceTier:categories[slug]?.evidenceTier||'unverified'}));
 const products=Object.values(categories).flatMap(c=>c.products);
 module.exports={categories,pathways,products,REVIEWED,DEEP_RESEARCHED,NEXT_REVIEW};
