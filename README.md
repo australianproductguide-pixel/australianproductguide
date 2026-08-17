@@ -17,6 +17,8 @@ APG Google Drive is the durable operating record for catalogue, evidence, govern
 APG deliberately remains small, readable and SSR-first:
 
 - one Vercel Node Function: `api/index.js`
+- national discovery wrapper: `lib/national-experience.js`
+- privacy/accessibility/performance layers beneath the production wrapper
 - request/router layer: `lib/app.js`
 - server-rendered crawlable HTML pages in `lib/`
 - structured maintained catalogue and retailer registry in `data/`
@@ -29,21 +31,22 @@ The request host is used for canonical URLs, structured-data URLs, `robots.txt` 
 
 ## Maintained consumer scope
 
-Current Platform v5 release scope preserves the v4 catalogue while materially upgrading the consumer experience:
+Current national-category release scope:
 
-- **257 maintained products**
-- **48 populated categories**
-- **37 deep-evidence products** and **220 starter-evidence products**
-- **112 represented brands**
-- **144 maintained prepared pair comparisons**
-- **722 canonical/indexable routes** before any later evidence-led catalogue expansion
-- universal search across products, brands, categories, use cases and budget signals
+- **387 maintained products**
+- **74 populated categories**
+- **145 represented brands**
+- **30 manufacturer-verified records** added across televisions, laptops, washing machines, fridges, dishwashers and smartphones
+- existing deep and starter evidence tiers preserved, with manufacturer-verified records explicitly labelled
+- universal search across maintained products, brands, categories, use cases and budget signals
 - deterministic/explainable Decision Lab recommendation journeys
 - global Compare, Buying Guides, Retailer Discovery, Brands and My APG surfaces
 - professional trust centre covering methodology, editorial standards, sources, coverage, updates, corrections, affiliate disclosure, privacy and terms
 - visible consumer HTML Sitemap plus XML sitemap
 
-Starter evidence is deliberately labelled and must not be represented as equivalent to deep specification research.
+The six national categories use exact Australian manufacturer product/specification evidence for the maintained model identities. APG does not represent manufacturer specification research as hands-on testing, and does not invent live prices where no current price feed is maintained.
+
+Starter evidence is deliberately labelled and must not be represented as equivalent to deeper specification research.
 
 ## Retailer architecture
 
@@ -54,11 +57,13 @@ Amazon Australia records use explicit states:
 - `affiliate-direct`: an exact individual Amazon Australia product page has been independently verified for the maintained model/variant
 - `affiliate-search`: a model-specific Amazon Australia search fallback is retained because an exact individual listing has not yet been independently verified
 
+The current verified direct-link register contains **22 exact Amazon Australia product destinations**. Other maintained products use transparent model-specific search/further-verification fallbacks rather than guessed ASINs.
+
 The Amazon Associates tag is `auproductguid-22`. Affiliate availability and commission contribute **zero recommendation points**. Never invent an ASIN, substitute an adjacent product merely to increase coverage, or construct an unverified direct detail-page URL.
 
 Amazon imagery must not be scraped from product pages. Exact Amazon product imagery may only be displayed when supplied through an authorised Amazon product-content mechanism for the matching verified identifier and used in accordance with the applicable programme requirements. Manufacturer or retailer imagery must likewise have appropriate provenance/permission. APG-owned/category illustration may be used where exact photography is unavailable but must not imply it is an exact-product photograph.
 
-No additional retailer affiliate programme or commercial agreement is activated merely because the data structure supports it.
+Broader exact Australian retailer paths are **PLANNED**, not claimed as current whole-of-market price comparison. Retailers such as JB Hi-Fi, The Good Guys, Officeworks, Appliances Online and relevant specialists may be added only after exact-model verification, data-rights checks and any required commercial approval. No additional retailer affiliate programme or commercial agreement is activated merely because the data structure supports it.
 
 ## Evidence and freshness standards
 
@@ -75,7 +80,7 @@ Each maintained product supports freshness fields including first researched, su
 
 ## Search, comparison and decision intelligence
 
-Search remains server-rendered and crawlable where appropriate, with lightweight visual autocomplete and noindex controls for thin/dynamic search surfaces. Decision Lab maps a shopper's budget, use case, priorities and deal-breakers into explainable maintained-product signals. Commercial relationships contribute zero score.
+Search remains server-rendered and crawlable where appropriate, with lightweight visual autocomplete and noindex controls for thin/dynamic search surfaces. Search now recognises the six national categories rather than returning stale unsupported-category messages. Decision Lab maps a shopper's budget, use case, priorities and deal-breakers into explainable maintained-product signals. Commercial relationships contribute zero score.
 
 Prepared comparison pages are indexable where they are maintained and useful. Arbitrary custom comparisons and personal Decision Lab outputs remain `noindex,follow` so personal/thin combinations do not create uncontrolled indexable inventory.
 
@@ -91,17 +96,19 @@ My APG is **local-first** and remains usable without an account. Optional cross-
 
 Do not expose Supabase service-role credentials or place privileged backend secrets in browser code.
 
-## Performance and accessibility
+## Performance, accessibility and privacy
 
 APG preserves a lightweight SSR-first delivery model. Visual richness should come from efficient CSS, optimised lawful imagery and progressive enhancement rather than large framework bundles or unnecessary third-party scripts.
 
-The consumer UI should maintain keyboard-operable navigation/search, visible focus states, semantic controls, labelled forms, adequate touch targets, reduced-motion support and honest image alt/provenance treatment.
+The consumer UI should maintain keyboard-operable navigation/search, visible focus states, semantic controls, labelled forms, adequate touch targets, reduced-motion support and honest image alt/provenance treatment. The national-category layer uses neutral APG-authored semantic visuals where genuine exact product photography is not rights-verified.
+
+Google Analytics remains opt-in: analytics storage defaults to denied and the Google Analytics script is loaded only after the visitor allows analytics. Advertising storage and personalisation remain denied.
 
 A privacy-minimised first-party field Web Vitals endpoint samples performance metrics without query strings, cookies, email addresses, account IDs or persistent behavioural identifiers.
 
 ## QA and release controls
 
-GitHub Actions cover source integrity, governance, catalogue freshness, Decision Intelligence, account sync, field Web Vitals and premium Platform v5 controls. Production smoke testing validates the exact Vercel Production deployment, canonical crawl/indexability, all product routes, retailer attribution, representative journeys and desktop/tablet/mobile rendering.
+GitHub Actions cover source integrity, governance, catalogue freshness, Decision Intelligence, account sync, field Web Vitals and platform controls. Production verification checks the exact Vercel Production deployment, canonical crawl/indexability, product/category routes, retailer attribution, representative journeys and responsive rendering.
 
 A release is not considered closed merely because code merged. The final state must reconcile GitHub `main`, matching Vercel Production, Supabase where relevant, the public site, and APG Google Drive release/operating records.
 
