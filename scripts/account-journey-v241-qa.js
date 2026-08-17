@@ -23,5 +23,5 @@ assert(journey.includes('Terms of use')&&journey.includes('Privacy Policy'),'sig
 assert(journey.includes('Australian Consumer Law rights are not limited'),'signup legal note must preserve mandatory consumer rights');
 assert(!journey.includes('access_token')&&!journey.includes('refresh_token'),'journey enhancement must not handle authentication tokens');
 
-assert(account.includes('data-account-tab=\\"signup\\"')&&account.includes('Create account'),'base account shell must retain the create-account tab used by the deep-link enhancement');
+assert(account.includes('data-account-tab="signup"')&&account.includes('Create account'),'base account shell must retain the create-account tab used by the deep-link enhancement');
 console.log('My APG account journey v24.1 QA passed');
