@@ -19,7 +19,11 @@ const deepCategories={
 };
 function deepProduct(p,c){return {...p,category:c.slug,categoryLabel:c.label,evidenceTier:'deep',firstResearched:DEEP_RESEARCHED,lastSubstantiveReview:DEEP_RESEARCHED,lastSourceVerification:REVIEWED,lastRetailerCheck:REVIEWED,lastPriceCheck:null,lastImageVerification:REVIEWED,nextReviewDue:NEXT_REVIEW,freshnessStatus:'reviewed-this-month',lastReviewed:DEEP_RESEARCHED,testingStatus:'Desk-researched / specification-based',retailers:retailersFor(p)};}
 function canonicalBrand(b){return String(b).toLowerCase()==='eufy'?'Eufy':b;}
-function maintainedProduct(p,c){const x={...p,brand:canonicalBrand(p.brand),category:c.slug,categoryLabel:c.label,lastReviewed:p.lastSubstantiveReview};return {...x,retailers:retailersFor(x)};}
+function maintainedProduct(p,c){
+  const lastRetailerCheck=p.lastRetailerCheck||p.lastRetailerVerification||p.lastSourceVerification||REVIEWED;
+  const x={...p,brand:canonicalBrand(p.brand),category:c.slug,categoryLabel:c.label,lastReviewed:p.lastSubstantiveReview,lastRetailerCheck,lastPriceCheck:p.lastPriceCheck??null,freshnessStatus:p.freshnessStatus||'reviewed-this-month'};
+  return {...x,retailers:retailersFor(x)};
+}
 for(const c of Object.values(deepCategories))c.products=c.products.map(p=>deepProduct(p,c));
 for(const c of Object.values(starterCategories))c.products=c.products.map(p=>maintainedProduct(p,c));
 for(const c of Object.values(expandedCategories))c.products=c.products.map(p=>maintainedProduct(p,c));

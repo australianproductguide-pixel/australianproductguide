@@ -23,10 +23,13 @@ jobs:
           cat /tmp/apg-freshness.md >> "$GITHUB_STEP_SUMMARY"
           node - <<'NODE'
           const r=require('/tmp/apg-freshness.json');
-          if(r.products!==257||r.categories!==48) throw new Error(`catalogue mismatch ${r.products}/${r.categories}`);
+          const {products,categories}=require('./data');
+          const expectedProducts=products.length,expectedCategories=Object.keys(categories).length;
+          if(r.products!==expectedProducts||r.categories!==expectedCategories) throw new Error(`catalogue/report mismatch ${r.products}/${r.categories} vs ${expectedProducts}/${expectedCategories}`);
+          if(expectedProducts<460||expectedCategories<90) throw new Error(`catalogue regression ${expectedProducts}/${expectedCategories}`);
           if(r.actionable!==0) throw new Error(`freshness queue has ${r.actionable} actionable stale/missing controls`);
           for(const expected of ['price-unmaintained','deep-research-pending','exact-amazon-link-pending','genuine-image-pending']) if(!(expected in r.byType)) throw new Error(`maturity queue missing ${expected}`);
-          console.log('CATALOGUE_FRESHNESS_CONTROLS=PASS');
+          console.log(`CATALOGUE_FRESHNESS_CONTROLS=PASS products=${expectedProducts} categories=${expectedCategories}`);
           NODE
       - name: Verify canonical public brand reconciliation
         run: |

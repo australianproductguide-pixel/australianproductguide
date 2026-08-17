@@ -1,0 +1,30 @@
+name: APG Platform Integrity v15 QA
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [apg/platform-integrity-v15-20260817]
+
+permissions:
+  contents: read
+
+jobs:
+  platform-integrity-v15-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax
+        run: |
+          node --check lib/search.js
+          node --check lib/platform-integrity-v15.js
+          node --check public/assets/platform-integrity-v15.js
+          node --check scripts/platform-integrity-v15-qa.js
+      - name: Platform integrity regression
+        run: node scripts/platform-integrity-v15-qa.js
+      - name: Existing rendered route regression
+        run: node scripts/rendered-route-qa.js
