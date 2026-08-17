@@ -1,0 +1,23 @@
+/* APG homepage decision-panel badge emphasis v18 */
+body[data-institutional-v9=true][data-platform-page="/"] .apg-home-panel-label-v9{
+  display:inline-flex;
+  align-items:center;
+  background:#f3b548!important;
+  color:#041f2b!important;
+  font-size:13px!important;
+  font-weight:900!important;
+  line-height:1.2!important;
+  letter-spacing:.015em!important;
+  text-transform:none!important;
+  padding:10px 13px!important;
+  border:1px solid rgba(4,31,43,.18)!important;
+  border-radius:9px!important;
+  box-shadow:0 2px 0 rgba(4,31,43,.08),0 7px 18px rgba(0,0,0,.12)!important;
+  position:relative;
+}
+@media(max-width:920px){
+  body[data-institutional-v9=true][data-platform-page="/"] .apg-home-panel-label-v9{
+    font-size:12.5px!important;
+    padding:9px 12px!important;
+  }
+}
