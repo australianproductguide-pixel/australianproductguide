@@ -1,2 +1,2 @@
-// Australian Product Guide production entry point: final performance, accessibility and browser-hardening layer over the reconciled consumer platform.
-module.exports=require('../lib/accessibility-final');
+// Australian Product Guide production entry point: privacy consent and delayed optional-account invitation over the final accessibility/performance platform.
+module.exports=require('../lib/privacy-experience');
