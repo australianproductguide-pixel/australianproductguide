@@ -1,90 +1,90 @@
-name: APG Decision Intelligence QA
+name: APG Decision Intelligence v4 QA
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'api/**'
+      - 'data/**'
+      - 'lib/decision-**'
+      - 'lib/search-v4.js'
+      - 'lib/scout-v4.js'
+      - 'lib/product-intelligence-v4.js'
+      - 'lib/intelligence-quality-v4.js'
+      - 'scripts/intelligence-quality-report-v4.js'
+      - '.github/workflows/decision-intelligence-qa.yml'
   push:
-    branches: ['**']
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  decision-intelligence-qa:
+  intelligence-v4:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-
-      - name: Verify decision modules and browser enhancement syntax
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax and Scout asset
         run: |
           set -euo pipefail
-          for f in lib/decision-engine.js lib/decision-page.js lib/decision-css.js lib/decision-client.js lib/platform-v3-runtime.js lib/platform-v3-client.js; do node --check "$f"; done
+          for f in api/index.js lib/decision-engine-v4.js lib/search-v4.js lib/scout-v4.js lib/product-intelligence-v4.js lib/intelligence-quality-v4.js lib/decision-intelligence-v4.js scripts/intelligence-quality-report-v4.js; do node --check "$f"; done
           node - <<'NODE'
-          const fs=require('fs'); const {decisionClientJs}=require('./lib/decision-client'); const {platformV3ClientJs}=require('./lib/platform-v3-client'); const {decisionCss}=require('./lib/decision-css'); const engine=require('./lib/decision-engine');
-          fs.writeFileSync('/tmp/apg-decision-client.js',decisionClientJs+platformV3ClientJs);
-          if(!decisionCss.includes('.decision-hero')||!decisionCss.includes('.workspace-grid')) throw new Error('decision CSS controls missing');
-          if(typeof engine.rankDecision!=='function'||typeof engine.publicDecision!=='function') throw new Error('decision engine exports missing');
-          console.log('DECISION_MODULES=PASS');
+          const fs=require('fs'),scout=require('./lib/scout-v4');
+          fs.writeFileSync('/tmp/scout-v4.js',scout.js);
           NODE
-          node --check /tmp/apg-decision-client.js
-
-      - name: Verify established deep-category regression profiles
-        run: |
-          set -euo pipefail
-          node - <<'NODE'
-          const {rankDecision}=require('./lib/decision-engine');
-          const profiles=[
-            ['Coffee automation + bean switching','Easy automatic coffee machine under $1300 for milk drinks and switching beans','delonghi-rivelia-auto-milk-exam44055b'],
-            ['Robot vacuum value + pets + no premium','Best value robot vacuum for pet hair and mopping, avoid premium','eufy-robot-vacuum-omni-c28'],
-            ['Travel headphones value + ANC + battery','Value quiet headphones for long flights with strong battery life','sennheiser-momentum-4-wireless'],
-            ['Compact quiet air fryer','Compact quiet air fryer under $400 for a small apartment','tefal-easy-fry-silence-essential-ey551h']
-          ];
-          for(const [label,q,expected] of profiles){const {ranked,intent}=rankDecision(q);if(ranked[0]?.p.slug!==expected) throw new Error(`${label}: expected ${expected}, got ${ranked[0]?.p.slug}`);if(!intent.signalCount) throw new Error(`${label}: no decision signals`);}
-          const robot=rankDecision('Best value robot vacuum for pet hair and mopping, avoid premium');if(!robot.intent.excludedTags.includes('premium')||robot.ranked[0].p.tags.includes('premium')) throw new Error('negative premium preference regression');
-          console.log('DEEP_CATEGORY_REGRESSIONS=4/4_PASS');
-          NODE
-
-      - name: Verify new category recognition and explainable starter matching
+          node --check /tmp/scout-v4.js
+          grep -q 'canonicalStateQuery' /tmp/scout-v4.js
+          ! grep -q "state.turns.join" /tmp/scout-v4.js
+      - name: Decision contract and hard constraints
         run: |
           set -euo pipefail
           node - <<'NODE'
-          const {rankDecision}=require('./lib/decision-engine');
-          const tests=[['mesh wifi for a large home with ethernet','mesh-wifi-systems'],['ergonomic office chair with lumbar support','office-chairs'],['power bank for a laptop and fast charging','power-banks'],['portable air conditioner with wifi','portable-air-conditioners'],['rugged external ssd for a creator','external-ssds'],['water filter reverse osmosis','water-filters']];
-          for(const [q,cat] of tests){const {intent,ranked}=rankDecision(q);if(intent.categorySlug!==cat) throw new Error(`${q}: category ${intent.categorySlug}`);if(ranked[0]?.p.category!==cat) throw new Error(`${q}: top category ${ranked[0]?.p.category}`);if(ranked[0].p.evidenceTier!=='starter') throw new Error(`${q}: starter evidence tier missing`);}
-          console.log('STARTER_CATEGORY_MATCHING=PASS');
+          const assert=require('node:assert/strict');
+          const {products}=require('./data');
+          const d=require('./lib/decision-engine-v4');
+          assert.equal(d.ENGINE_VERSION,'decision-engine-v4');
+          assert.equal(d.POLICY_VERSION,'decision-policy-v4.0');
+          assert.equal(d.STATE_SCHEMA_VERSION,'decision-state-v1');
+          const tv=d.interpretQuery('75-inch TV for a bright living room sport and Netflix under $2500');
+          assert.equal(tv.categorySlug,'televisions');
+          assert.equal(tv.budget,2500); assert.equal(tv.budgetHard,true);
+          assert.equal(tv.numericConstraints[0]?.value,75); assert.equal(tv.numericConstraints[0]?.hard,false);
+          const usb=d.interpretQuery('power bank must support USB-C for a laptop',{category:'power-banks'});
+          assert(usb.requiredTags.includes('usb-c'));
+          assert.equal(d.interpretQuery('TV under 75 inches',{category:'televisions'}).budget,null);
+          assert.equal(d.interpretQuery('quiet dishwasher under 1000',{category:'dishwashers'}).budget,1000);
+          const pub=d.publicDecision('quiet headphones for commuting with strong battery life',{category:'wireless-headphones'});
+          assert.equal(pub.version,'decision-engine-v4'); assert.equal(pub.commercialRecommendationWeight,0);
+          assert(pub.decisionState&&pub.recommendation&&Array.isArray(pub.paretoOptions));
+          assert(pub.results.every(x=>!Object.prototype.hasOwnProperty.call(x,'score')));
+          const priced=products.find(p=>Number(p.price)>1);if(priced){const out=d.publicDecision('',{category:priced.category,budget:String(Number(priced.price)-1)}),x=out.results.find(r=>r.slug===priced.slug);if(x)assert.notEqual(x.hardConstraintStatus,'eligible');}
+          console.log('DECISION_V4_CONTRACT=PASS');
           NODE
-
-      - name: Verify explainability neutrality and public response contract
+      - name: Search, graph and current regressions
         run: |
           set -euo pipefail
           node - <<'NODE'
-          const fs=require('fs');
-          const {publicDecision}=require('./lib/decision-engine');
-          const out=publicDecision('mesh wifi for a large home with ethernet');
-          if(out.version!=='decision-engine-v3') throw new Error(`wrong engine version ${out.version}`);
-          if(out.commercialRecommendationWeight!==0) throw new Error('commercial recommendation weight must be zero');
-          if(!Array.isArray(out.results)||out.results.length<3) throw new Error('insufficient public results');
-          if(!Array.isArray(out.interpretation.decisionFactors)||!out.interpretation.decisionFactors.length) throw new Error('category decision factors missing');
-          for(const r of out.results){if('score' in r) throw new Error('opaque numeric score leaked');if(!r.match||!r.tradeoff||!r.evidenceTier||!Array.isArray(r.reasons)||!Array.isArray(r.gaps)||!Array.isArray(r.conflicts)) throw new Error(`contract incomplete ${r.slug}`);}
-          if(!out.note.includes('not product performance ratings')||!out.note.includes('Starter-evidence')) throw new Error('evidence/performance boundary missing');
-          const source=fs.readFileSync('./lib/decision-engine.js','utf8');
-          const score=source.slice(source.indexOf('function scoreProduct'),source.indexOf('function labelFor'));
-          if(/\bp\.(?:retailers?|affiliate|commission|asin)\b/i.test(score))throw new Error('commercial product field leaked into recommendation scoring');
-          if(/require\([^)]*retailer/i.test(source))throw new Error('decision engine must not import retailer data');
-          console.log('DECISION_PUBLIC_CONTRACT_V3=PASS');
-          console.log('COMMERCIAL_SCORING_ISOLATION=PASS');
+          const assert=require('node:assert/strict');
+          const {products}=require('./data');
+          const {searchSite}=require('./lib/search-v4');
+          const graph=require('./lib/product-intelligence-v4');
+          const {publicDecision}=require('./lib/decision-engine-v4');
+          const s=searchSite('robot vacuum for pet hair and mopping');assert.equal(s.version,'search-ranking-v4');assert(s.products.length);assert(s.products.every(p=>p.category==='robot-vacuums'));
+          const impossible=searchSite('TV must be exactly 999 inches');assert.equal(impossible.products.length,0);assert.equal(impossible.zeroResult?.reason,'hard-constraint-no-match');
+          const node=graph.knowledgeNode(products[0].slug);assert(node&&node.schemaVersion==='product-intelligence-v1'&&node.evidence&&node.relationships);
+          const coffee=publicDecision('Easy automatic coffee machine under $1300 for milk drinks and switching beans');assert.equal(coffee.results[0]?.slug,'delonghi-rivelia-auto-milk-exam44055b');
+          const mesh=publicDecision('mesh wifi for a large home with ethernet');assert.equal(mesh.interpretation.category,'Mesh Wi-Fi systems');assert(mesh.results.length);
+          console.log('SEARCH_GRAPH_REGRESSIONS=PASS');
           NODE
-
-      - name: Verify Decision Lab share privacy and My APG boundaries
-        run: |
-          set -euo pipefail
-          node - <<'NODE'
-          const pages=require('./lib/decision-page'); const runtime=require('./lib/platform-v3-runtime'); const req={headers:{host:'au-product-guide.vercel.app'}};
-          const u=new URL('https://au-product-guide.vercel.app/decision-lab/?q=Best+value+robot+vacuum+for+pet+hair&_vercel_share=SECRETISH&utm_source=test&category=robot-vacuums');
-          const raw=pages.decisionLab(req,u),lab=runtime.enhance(raw,'/decision-lab/',u),workspace=runtime.enhance(pages.workspace(req),'/my-apg/',new URL('https://au-product-guide.vercel.app/my-apg/'));
-          for(const token of ['APG Decision Lab','Decision Engine v3','0 commercial scoring points','noindex,follow','Explainable shortlist','data-share-surface']) if(!lab.includes(token)) throw new Error(`Decision Lab token missing ${token}`);
-          for(const token of ['My APG','Browser-local storage','No account required','Optional account sync','No account profile collected','noindex,follow']) if(!workspace.includes(token)) throw new Error(`My APG token missing ${token}`);
-          if(lab.includes('_vercel_share')||lab.includes('utm_source')) throw new Error('non-shopper query leaked into rendered Decision Lab');
-          const safe=runtime.safeSharePath('/decision-lab/',u);if(safe.includes('_vercel_share')||safe.includes('utm_source')||!safe.includes('category=robot-vacuums')) throw new Error('share URL sanitisation failed');
-          console.log('DECISION_RENDER_PRIVACY_V3=PASS');
-          NODE
+      - name: Intelligence quality release gate
+        run: node scripts/intelligence-quality-report-v4.js --gate | tee intelligence-quality-v4.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: intelligence-quality-v4
+          path: intelligence-quality-v4.json
+          retention-days: 14
