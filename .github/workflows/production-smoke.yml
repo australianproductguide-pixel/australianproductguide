@@ -38,7 +38,7 @@ jobs:
           done
           exit 1
 
-      - name: Verify source metrics and recommendation neutrality
+      - name: Verify source authority and recommendation neutrality
         run: |
           set -euo pipefail
           node - <<'NODE'
@@ -47,15 +47,22 @@ jobs:
           const {brands,pairPages,indexableRoutes}=require('./lib/routes');
           const {direct}=require('./data/retailers-v6');
           const {publicDecision}=require('./lib/decision-engine');
-          const x=[products.length,Object.keys(categories).length,pathways.filter(p=>!p.maintained).length,brands.length,pairPages.length,indexableRoutes.length,Object.keys(direct).length];
-          if(x.join(',')!=='257,48,0,112,144,722,20')throw new Error(`source metrics ${x.join(',')}`);
+          const metrics={products:products.length,categories:Object.keys(categories).length,emptyPathways:pathways.filter(p=>!p.maintained).length,brands:brands.length,comparisons:pairPages.length,indexableRoutes:indexableRoutes.length,directAmazon:Object.keys(direct).length};
+          if(metrics.products<460)throw new Error(`product coverage regression ${metrics.products}`);
+          if(metrics.categories<90)throw new Error(`category coverage regression ${metrics.categories}`);
+          if(metrics.emptyPathways!==0||pathways.length!==metrics.categories)throw new Error(`pathway/category integrity ${pathways.length}/${metrics.categories}/${metrics.emptyPathways}`);
+          if(metrics.brands<170)throw new Error(`brand coverage regression ${metrics.brands}`);
+          if(metrics.comparisons<210)throw new Error(`comparison coverage regression ${metrics.comparisons}`);
+          if(metrics.indexableRoutes<1200)throw new Error(`indexable route regression ${metrics.indexableRoutes}`);
+          if(metrics.directAmazon<20)throw new Error(`exact Amazon coverage regression ${metrics.directAmazon}`);
+          if(!indexableRoutes.includes('/decision-lab/'))throw new Error('clean Decision Lab missing from indexable routes');
           const decision=publicDecision('mesh wifi for a large home with ethernet');
           if(decision.commercialRecommendationWeight!==0)throw new Error('commercial recommendation weight must remain zero');
           const source=fs.readFileSync('./lib/decision-engine.js','utf8');
           const score=source.slice(source.indexOf('function scoreProduct'),source.indexOf('function labelFor'));
           if(/\bp\.(?:retailers?|affiliate|commission|asin)\b/i.test(score))throw new Error('commercial product field leaked into recommendation scoring');
           if(/require\([^)]*retailer/i.test(source))throw new Error('decision engine must not import retailer data');
-          console.log('SOURCE_METRICS=257/48/0/112/144/722/DIRECT_REGISTRY_20');
+          console.log('SOURCE_AUTHORITY='+JSON.stringify(metrics));
           console.log('COMMERCIAL_RECOMMENDATION_WEIGHT=0');
           NODE
 
@@ -63,8 +70,8 @@ jobs:
         run: |
           set -euo pipefail
           curl -fsSL "$BASE_URL/" -o /tmp/home.html
-          for t in 'Australian Product Guide' 'data-platform-v5="true"' 'data-platform-v3="true"' 'Decision Lab' 'Buying guides' 'My Australian Product Guide' 'How recommendations work' 'href="/sitemap/"'; do grep -qi "$t" /tmp/home.html || { echo "Missing homepage contract: $t"; exit 1; }; done
-          test "$(grep -o 'data-platform-v5="true"' /tmp/home.html | wc -l)" = 1
+          for t in 'Australian Product Guide' 'data-platform-v7="true"' 'data-platform-v5="true"' 'Decision Lab' 'Buying guides' 'My APG' 'How recommendations work' 'href="/sitemap/"'; do grep -qi "$t" /tmp/home.html || { echo "Missing homepage contract: $t"; exit 1; }; done
+          test "$(grep -o 'data-platform-v7="true"' /tmp/home.html | wc -l)" = 1
           for p in /categories/ /compare/ /guides/ /retailers/ /brands/ /decision-lab/ /my-apg/ /sitemap/; do code=$(curl -sSL -o /tmp/x -w '%{http_code}' "$BASE_URL$p"); test "$code" = 200 || { echo "$p returned $code"; exit 1; }; done
           echo 'PUBLIC_SHELL=PASS'
 
@@ -73,19 +80,24 @@ jobs:
           set -euo pipefail
           curl -fsSL "$BASE_URL/assets/app.js" -o /tmp/app.js
           node --check /tmp/app.js
-          count=$(curl -fsSL "$BASE_URL/assets/search-index.json" | jq 'length'); test "$count" -ge 350 || { echo "search index too small: $count"; exit 1; }
+          count=$(curl -fsSL "$BASE_URL/assets/search-index.json" | jq 'length'); test "$count" -ge 550 || { echo "search index too small: $count"; exit 1; }
           curl -fsSL "$BASE_URL/api/catalogue.json" -o /tmp/catalogue.json
+          curl -fsSL "$BASE_URL/api/catalogue.csv" -o /tmp/catalogue.csv
           node - <<'NODE'
+          const fs=require('fs');
           const live=require('/tmp/catalogue.json');
           const source=require('./lib/catalogue-export').catalogueJson();
+          const {products,categories}=require('./data');
           const {brands}=require('./lib/routes');
+          const {direct}=require('./data/retailers-v6');
           if(JSON.stringify(live)!==JSON.stringify(source))throw new Error('Live catalogue JSON does not match the checked-out exact-SHA exporter');
           if(live.version!=='platform-v7-amazon-associates')throw new Error(`version ${live.version}`);
           if(live.generatedFrom!=='GitHub-maintained runtime catalogue')throw new Error(`generatedFrom ${live.generatedFrom}`);
           if(live.commercialRecommendationWeight!==0)throw new Error('catalogue commercialRecommendationWeight must remain zero');
           if(live.affiliateUrlsExported!==false)throw new Error('catalogue must not export affiliate URLs');
-          if(live.productCount!==257||live.categoryCount!==48)throw new Error(`catalogue counts ${live.productCount}/${live.categoryCount}`);
-          if(live.brandCount!==brands.length||live.brandCount!==112)throw new Error(`canonical brand count ${live.brandCount}/${brands.length}`);
+          if(live.productCount!==products.length||live.categoryCount!==Object.keys(categories).length)throw new Error(`catalogue/source counts ${live.productCount}/${live.categoryCount} vs ${products.length}/${Object.keys(categories).length}`);
+          if(live.brandCount!==brands.length)throw new Error(`canonical brand count ${live.brandCount}/${brands.length}`);
+          if(Number(live.amazon?.exactVerified||0)!==Object.keys(direct).length)throw new Error(`exact Amazon count ${live.amazon?.exactVerified}/${Object.keys(direct).length}`);
           if(!Array.isArray(live.products)||live.products.length!==live.productCount)throw new Error(`product export length ${live.products?.length}`);
           const amazonTotal=Number(live.amazon?.exactVerified||0)+Number(live.amazon?.confirmedUnavailable||0)+Number(live.amazon?.furtherVerificationRequired||0);
           if(amazonTotal!==live.productCount)throw new Error(`Amazon status coverage ${amazonTotal}/${live.productCount}`);
@@ -93,13 +105,14 @@ jobs:
             for(const key of ['Product Slug','Brand','Model'])if(typeof product[key]!=='string'||!product[key])throw new Error(`missing ${key}`);
             if(String(product['Commercial Recommendation Weight'])!=='0')throw new Error(`commercial weight ${product['Product Slug']}`);
           }
+          const csv=fs.readFileSync('/tmp/catalogue.csv','utf8').trimEnd().split('\n');
+          if(csv.length!==live.productCount+1)throw new Error(`catalogue CSV lines ${csv.length}/${live.productCount+1}`);
           console.log(`CATALOGUE_EXPORT=PASS products=${live.productCount} categories=${live.categoryCount} brands=${live.brandCount} exact=${live.amazon.exactVerified} unavailable=${live.amazon.confirmedUnavailable} further=${live.amazon.furtherVerificationRequired}`);
           NODE
-          csv_lines=$(curl -fsSL "$BASE_URL/api/catalogue.csv" | wc -l); test "$csv_lines" = 258 || { echo "catalogue csv lines=$csv_lines"; exit 1; }
           curl -fsSI "$BASE_URL/api/catalogue.json" | tr -d '\r' | grep -qi '^cache-control:.*no-store' || { echo 'catalogue JSON must not be release-stale cached'; exit 1; }
           echo 'PUBLIC_ASSETS_EXPORTS=PASS'
 
-      - name: Crawl all 722 indexable routes
+      - name: Crawl all indexable routes
         run: |
           set -euo pipefail
           curl -fsSL "$BASE_URL/sitemap.xml" -o /tmp/sitemap.xml
@@ -107,10 +120,12 @@ jobs:
           const fs=require('fs'); const {indexableRoutes}=require('./lib/routes'); const base=process.env.BASE_URL;
           const xml=fs.readFileSync('/tmp/sitemap.xml','utf8');
           if(/<lastmod>/i.test(xml))throw new Error('sitemap contains blanket/synthetic lastmod; wait for per-page substantive-change provenance');
-          const urls=[...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map(x=>x[1]); if(urls.length!==722||new Set(urls).size!==722)throw new Error(`sitemap ${urls.length}`);
+          const urls=[...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map(x=>x[1]);
+          if(urls.length!==indexableRoutes.length||new Set(urls).size!==indexableRoutes.length)throw new Error(`sitemap/source route count ${urls.length}/${indexableRoutes.length}`);
           const expected=new Set(indexableRoutes.map(p=>base+p)); for(const u of urls)if(!expected.has(u))throw new Error(`unexpected ${u}`);
-          let next=0,done=0;const bad=[];async function worker(){while(next<urls.length){const u=urls[next++],path=new URL(u).pathname;try{const r=await fetch(u);const t=await r.text();if(r.status!==200)throw new Error(`HTTP ${r.status}`);if(!t.includes(`<link rel="canonical" href="${base+path}"`))throw new Error('canonical');if(/noindex/i.test((t.match(/<meta name="robots"[^>]*>/i)||[''])[0]))throw new Error('noindex');if(!t.includes('data-platform-v5="true"'))throw new Error('v5 marker');}catch(e){bad.push(`${path}: ${e.message}`)}done++;}}
-          Promise.all(Array.from({length:12},worker)).then(()=>{if(bad.length){console.error(bad.slice(0,30).join('\n'));process.exit(1)}console.log(`CANONICAL_CRAWL=${done}/722_PASS`)});
+          let next=0,done=0;const bad=[];
+          async function worker(){while(next<urls.length){const u=urls[next++],path=new URL(u).pathname;try{const r=await fetch(u);const t=await r.text();if(r.status!==200)throw new Error(`HTTP ${r.status}`);if(!t.includes(`<link rel="canonical" href="${base+path}"`))throw new Error('canonical');if(/noindex/i.test((t.match(/<meta name="robots"[^>]*>/i)||[''])[0]))throw new Error('noindex');if(!t.includes('data-platform-v7="true"'))throw new Error('v7 marker');}catch(e){bad.push(`${path}: ${e.message}`)}done++;}}
+          Promise.all(Array.from({length:16},worker)).then(()=>{if(bad.length){console.error(bad.slice(0,30).join('\n'));process.exit(1)}console.log(`CANONICAL_CRAWL=${done}/${indexableRoutes.length}_PASS`)});
           NODE
 
       - name: Verify every product route, Amazon attribution and freshness
@@ -119,45 +134,58 @@ jobs:
           BASE_URL="$BASE_URL" node - <<'NODE'
           const {products}=require('./data'); const {direct}=require('./data/retailers-v6'); const base=process.env.BASE_URL; let next=0,d=0,f=0;const bad=[];
           const expectedDirect=products.filter(p=>p.retailers?.[0]?.kind==='affiliate-direct').length,expectedFallback=products.length-expectedDirect;
-          async function worker(){while(next<products.length){const p=products[next++];try{const r=await fetch(`${base}/products/${p.slug}/`);const t=await r.text();if(r.status!==200)throw new Error(`HTTP ${r.status}`);for(const needle of ['auproductguid-22','rel="sponsored nofollow noopener"','"@type":"Product"','"@type":"BreadcrumbList"','Evidence freshness','Commercial score','v7-product-art','data-v7-category='])if(!t.includes(needle))throw new Error(`missing ${needle}`);const rr=p.retailers[0];if(rr.kind==='affiliate-direct'){d++;if(!rr.asin||!t.includes(rr.asin))throw new Error(`ASIN ${rr.asin||'missing'}`)}else f++;if(p.evidenceTier==='starter'&&!t.includes('Starter evidence'))throw new Error('starter disclosure');}catch(e){bad.push(`${p.slug}: ${e.message}`)}}}
-          Promise.all(Array.from({length:10},worker)).then(()=>{if(bad.length){console.error(bad.slice(0,30).join('\n'));process.exit(1)}if(d!==expectedDirect||f!==expectedFallback)throw new Error(`retailer kinds ${d}/${f} expected ${expectedDirect}/${expectedFallback}`);if(Object.keys(direct).length!==20)throw new Error('direct registry');console.log('PRODUCT_ROUTES=257/257_PASS');console.log(`AMAZON_DIRECT_CONFIGURED=${d}`);console.log(`AMAZON_SEARCH_FALLBACK=${f}`);});
+          async function worker(){while(next<products.length){const p=products[next++];try{const r=await fetch(`${base}/products/${p.slug}/`);const t=await r.text();if(r.status!==200)throw new Error(`HTTP ${r.status}`);for(const needle of ['auproductguid-22','rel="sponsored nofollow noopener"','"@type":"Product"','"@type":"BreadcrumbList"','Evidence freshness','Commercial score','data-product-category='])if(!t.includes(needle))throw new Error(`missing ${needle}`);const rr=p.retailers[0];if(rr.kind==='affiliate-direct'){d++;if(!rr.asin||!t.includes(rr.asin))throw new Error(`ASIN ${rr.asin||'missing'}`)}else f++;if(p.evidenceTier==='starter'&&!t.includes('Starter evidence'))throw new Error('starter disclosure');}catch(e){bad.push(`${p.slug}: ${e.message}`)}}}
+          Promise.all(Array.from({length:12},worker)).then(()=>{if(bad.length){console.error(bad.slice(0,30).join('\n'));process.exit(1)}if(d!==expectedDirect||f!==expectedFallback)throw new Error(`retailer kinds ${d}/${f} expected ${expectedDirect}/${expectedFallback}`);if(Object.keys(direct).length!==expectedDirect)throw new Error(`direct registry ${Object.keys(direct).length}/${expectedDirect}`);console.log(`PRODUCT_ROUTES=${products.length}/${products.length}_PASS`);console.log(`AMAZON_DIRECT_CONFIGURED=${d}`);console.log(`AMAZON_SEARCH_FALLBACK=${f}`);});
           NODE
 
-      - name: Representative journeys, Difference Engine, noindex and privacy boundaries
+      - name: Representative journeys, search integrity, noindex and privacy boundaries
         run: |
           set -euo pipefail
           check(){ code=$(curl -sSL -o /tmp/page -w '%{http_code}' "$BASE_URL$1"); test "$code" = 200 || { echo "$1 returned $code"; exit 1; }; grep -qi "$2" /tmp/page || { echo "$1 missing $2"; exit 1; }; }
-          check '/categories/coffee-machines/' 'Deep evidence'; check '/categories/home-security-cameras/' 'Starter evidence'; check '/categories/office-chairs/' 'Office chairs'; check '/categories/smartwatches/' 'Smartwatches'; check '/categories/blenders/' 'Blenders'; check '/products/tp-link-tapo-c500/' 'Evidence freshness'; check '/products/logitech-signature-k855/' 'B0BN6WJ1QZ'; check '/products/amazon-kindle-2024/' 'B0CP31QS6R'; check '/categories/office-chairs/finder/?priority=ergonomic&secondary=lumbar' 'Best match'; check '/guides/office-chairs-buying-guide/' 'Starter evidence'; check '/search/?q=ergonomic+office+chair+with+lumbar+support' 'Office'; check '/decision-lab/?q=mesh+wifi+for+a+large+home+with+ethernet' 'Decision Engine v3'; check '/my-apg/' 'Local-first when signed out'; check '/sitemap/' '722 canonical indexable routes.'
+          check '/categories/coffee-machines/' 'Deep evidence'; check '/categories/home-security-cameras/' 'Starter evidence'; check '/categories/office-chairs/' 'Office chairs'; check '/categories/laptops/' 'Laptops'; check '/categories/dishwashers/' 'Dishwashers'; check '/products/tp-link-tapo-c500/' 'Evidence freshness'; check '/products/logitech-signature-k855/' 'B0BN6WJ1QZ'; check '/products/amazon-kindle-2024/' 'B0CP31QS6R'; check '/categories/office-chairs/finder/?priority=ergonomic&secondary=lumbar' 'Best match'; check '/guides/office-chairs-buying-guide/' 'Starter evidence'; check '/search/?q=ergonomic+office+chair+with+lumbar+support' 'Office'; check '/decision-lab/?q=mesh+wifi+for+a+large+home+with+ethernet' 'Decision Engine v3'; check '/my-apg/' 'Local-first when signed out'; check '/sitemap/' 'canonical indexable routes.'
           curl -fsSL "$BASE_URL/sitemap/" -o /tmp/sitemap-page
-          grep -qi 'Australian Product Guide Sitemap' /tmp/sitemap-page
-          grep -q '<strong>722</strong> canonical research routes are currently maintained.' /tmp/sitemap-page
-          if grep -q '\${indexableRoutes.length}' /tmp/sitemap-page; then echo 'Sitemap leaked an uninterpolated route-count token'; exit 1; fi
+          node - <<'NODE'
+          const fs=require('fs'); const {indexableRoutes}=require('./lib/routes'); const html=fs.readFileSync('/tmp/sitemap-page','utf8');
+          if(!/Australian Product Guide Sitemap/i.test(html))throw new Error('sitemap page title missing');
+          const m=html.match(/<strong>([\d,]+)<\/strong> canonical (?:research |indexable )?routes are currently maintained\./i);
+          if(!m||Number(m[1].replace(/,/g,''))!==indexableRoutes.length)throw new Error(`sitemap page count ${m?.[1]||'missing'}/${indexableRoutes.length}`);
+          if(html.includes('${indexableRoutes.length}'))throw new Error('Sitemap leaked an uninterpolated route-count token');
+          console.log(`SITEMAP_PAGE=${indexableRoutes.length}_PASS`);
+          NODE
           curl -fsSL "$BASE_URL/my-apg/" -o /tmp/my-apg
           for t in 'Account remains optional' 'Local-first when signed out' 'Cross-device sync when signed in' 'data-apg-workspace' 'data-workspace-compare' 'data-workspace-saved' 'data-workspace-decisions' 'data-workspace-recent' 'data-workspace-comparisons' 'data-workspace-guides' 'Products you kept' 'Saved comparisons' 'Saved guides' 'Recent decisions'; do grep -qi "$t" /tmp/my-apg || { echo "My APG missing $t"; exit 1; }; done
           curl -fsSL "$BASE_URL/search/?q=laptop+for+uni" -o /tmp/laptop-search
-          grep -qi 'Coverage gap' /tmp/laptop-search; grep -qi 'laptops are not yet a maintained category' /tmp/laptop-search
+          grep -qi 'Laptops' /tmp/laptop-search; grep -qi 'relevant maintained products' /tmp/laptop-search; ! grep -qi 'Coverage gap' /tmp/laptop-search
+          curl -fsSL "$BASE_URL/search/?q=quiet+dishwasher+under+1000" -o /tmp/dishwasher-search
+          grep -qi '5 relevant maintained products' /tmp/dishwasher-search; grep -q '/categories/dishwashers/' /tmp/dishwasher-search; ! grep -q 'sony-wh-1000xm6-vs-bose-quietcomfort-ultra-headphones' /tmp/dishwasher-search
           curl -fsSL "$BASE_URL/compare/custom/?products=sony-wh-1000xm6,bose-quietcomfort-ultra-headphones" -o /tmp/diff
           grep -qi 'Difference Engine' /tmp/diff; grep -qi 'biggest difference' /tmp/diff; grep -qi 'Verify before buying' /tmp/diff
           for p in /about/ /privacy/ /terms/ /methodology/ /editorial-standards/ /sources/ /corrections-policy/ /affiliate-disclosure/ /coverage/ /updates/ /contact/; do test "$(curl -sSL -o /tmp/t -w '%{http_code}' "$BASE_URL$p")" = 200; done
           ! curl -fsSL "$BASE_URL/my-apg/" | grep -qi 'does not currently operate consumer accounts'
+          curl -fsSL "$BASE_URL/decision-lab/" -o /tmp/lab-clean
+          ! grep -qi '<meta name="robots" content="noindex,follow">' /tmp/lab-clean
           curl -fsSL "$BASE_URL/decision-lab/?q=robot+vacuum&category=robot-vacuums&_vercel_share=SECRET&utm_source=smoke" -o /tmp/lab
           grep -qi 'noindex,follow' /tmp/lab; grep -q 'data-share-surface' /tmp/lab; ! grep -qE '_vercel_share|utm_source|SECRET' /tmp/lab
           curl -fsSL "$BASE_URL/compare/custom/?products=sony-wh-1000xm6,bose-quietcomfort-ultra-headphones,INVALID&_vercel_share=SECRET" -o /tmp/cmp
           grep -qi 'noindex,follow' /tmp/cmp; grep -q 'data-share-surface' /tmp/cmp; ! grep -qE 'INVALID|_vercel_share|SECRET' /tmp/cmp
           ! curl -fsSL "$BASE_URL/my-apg/" | grep -qiE 'service_role|SUPABASE_SERVICE_ROLE|firebaseio|clerk\.com'
-          echo 'JOURNEYS_PRIVACY=PASS'
+          test "$(curl -sSL -o /tmp/not-found -w '%{http_code}' "$BASE_URL/__apg-production-smoke-404__/")" = 404
+          grep -qi 'noindex,follow' /tmp/not-found; grep -q 'href="/compare/" title="Open the comparison workspace"' /tmp/not-found
+          curl -fsSL "$BASE_URL/robots.txt" -o /tmp/robots
+          grep -q 'Disallow: /search/' /tmp/robots; grep -q 'Disallow: /compare/custom/' /tmp/robots; grep -q 'Disallow: /my-apg/' /tmp/robots; ! grep -q 'Disallow: /decision-lab/' /tmp/robots
+          echo 'JOURNEYS_SEARCH_PRIVACY=PASS'
 
-      - name: Desktop laptop tablet and mobile visual QA
+      - name: Desktop laptop tablet and mobile visual smoke QA
         run: |
           set -euo pipefail
           CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser); npm install --no-save --package-lock=false puppeteer-core@24.16.0 >/dev/null 2>&1; mkdir -p visual-qa
           CHROME="$CHROME" BASE_URL="$BASE_URL" node - <<'NODE'
-          const puppeteer=require('puppeteer-core'),fs=require('fs');const base=process.env.BASE_URL;const v=[['wide',1600,1000],['laptop',1280,900],['tablet',900,1100],['mobile',390,844]];const pages=[['home','/'],['categories','/categories/'],['category','/categories/office-chairs/'],['product','/products/logitech-signature-k855/'],['compare','/compare/'],['custom','/compare/custom/?products=sony-wh-1000xm6,bose-quietcomfort-ultra-headphones'],['decision','/decision-lab/?q=mesh+wifi+for+a+large+home+with+ethernet'],['workspace','/my-apg/'],['guide','/guides/office-chairs-buying-guide/'],['privacy','/privacy/'],['sitemap','/sitemap/'],['404','/__apg-v6-visual-404__/']];
-          (async()=>{const b=await puppeteer.launch({headless:true,executablePath:process.env.CHROME,args:['--no-sandbox']});const bad=[],report=[];for(const [vp,w,h] of v)for(const [name,path] of pages){const p=await b.newPage();await p.setViewport({width:w,height:h});const errs=[];p.on('pageerror',e=>errs.push(e.message));const r=await p.goto(base+path,{waitUntil:'networkidle0',timeout:30000});const m=await p.evaluate(()=>({sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,text:document.body.innerText.length,v5:document.body.dataset.platformV5||'',buttons:[...document.querySelectorAll('a,button,input')].filter(el=>{const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&r.width<24&&r.height<24}).length,bytes:performance.getEntriesByType('resource').reduce((n,x)=>n+(x.transferSize||0),0)}));await p.screenshot({path:`visual-qa/${vp}-${name}.png`,fullPage:true});if(m.sw>m.cw+2||m.text<100||m.v5!=='true'||errs.length||m.bytes>2500000)bad.push(`${vp}/${name} ${JSON.stringify(m)} ${errs.join('|')}`);report.push({vp,name,status:r?.status(),...m});await p.close()}await b.close();fs.writeFileSync('visual-qa/report.json',JSON.stringify(report,null,2));if(bad.length){console.error(bad.join('\n'));process.exit(1)}console.log('VISUAL_QA=48/48_PASS')})();
+          const puppeteer=require('puppeteer-core'),fs=require('fs');const base=process.env.BASE_URL;const v=[['wide',1600,1000],['laptop',1280,900],['tablet',900,1100],['mobile',390,844]];const pages=[['home','/'],['categories','/categories/'],['category','/categories/dishwashers/'],['product','/products/logitech-signature-k855/'],['compare','/compare/'],['custom','/compare/custom/?products=sony-wh-1000xm6,bose-quietcomfort-ultra-headphones'],['decision','/decision-lab/?q=mesh+wifi+for+a+large+home+with+ethernet'],['workspace','/my-apg/'],['guide','/guides/office-chairs-buying-guide/'],['privacy','/privacy/'],['sitemap','/sitemap/'],['404','/__apg-production-smoke-404__/']];
+          (async()=>{const b=await puppeteer.launch({headless:true,executablePath:process.env.CHROME,args:['--no-sandbox']});const bad=[],report=[];for(const [vp,w,h] of v)for(const [name,path] of pages){const p=await b.newPage();await p.setViewport({width:w,height:h});const errs=[];p.on('pageerror',e=>errs.push(e.message));const r=await p.goto(base+path,{waitUntil:'networkidle0',timeout:30000});const m=await p.evaluate(()=>({sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,text:document.body.innerText.length,v7:document.body.dataset.platformV7||'',buttons:[...document.querySelectorAll('a,button,input')].filter(el=>{const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&r.width<24&&r.height<24}).length,bytes:performance.getEntriesByType('resource').reduce((n,x)=>n+(x.transferSize||0),0)}));await p.screenshot({path:`visual-qa/${vp}-${name}.png`,fullPage:true});const expected=name==='404'?404:200;if(r?.status()!==expected||m.sw>m.cw+2||m.text<100||m.v7!=='true'||errs.length||m.bytes>2500000)bad.push(`${vp}/${name} status=${r?.status()} expected=${expected} ${JSON.stringify(m)} ${errs.join('|')}`);report.push({vp,name,status:r?.status(),...m});await p.close()}await b.close();fs.writeFileSync('visual-qa/report.json',JSON.stringify(report,null,2));if(bad.length){console.error(bad.join('\n'));process.exit(1)}console.log(`VISUAL_SMOKE_QA=${report.length}/${report.length}_PASS`)})();
           NODE
 
       - uses: actions/upload-artifact@v4
         with:
-          name: apg-national-grade-visual-qa-${{ github.run_id }}
+          name: apg-production-smoke-visual-qa-${{ github.run_id }}
           path: visual-qa
           retention-days: 30
