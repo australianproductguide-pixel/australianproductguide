@@ -1,2 +1,2 @@
-// APG mobile account discoverability + homepage proof hierarchy v20.
-module.exports=require('../lib/mobile-account-proof-v20');
+// APG priority catalogue, retailer intelligence and imagery-governance release v42.
+module.exports=require('../lib/priority-commerce-depth-v42');
