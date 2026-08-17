@@ -1,2 +1,2 @@
-// Australian Product Guide production entry point: national category discovery with dynamic SEO catalogue linking over privacy, accessibility and performance hardening.
-module.exports=require('../lib/seo-discovery');
+// Australian Product Guide production entry point: illustrative consumer experience over dynamic SEO discovery, national catalogue, privacy, accessibility and performance hardening.
+module.exports=require('../lib/illustrative-experience');
