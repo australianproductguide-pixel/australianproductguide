@@ -4,116 +4,97 @@ Authoritative source repository for **Australian Product Guide (APG)** — an Au
 
 **Production:** https://australianproductguide.au
 
-## Source-of-truth and deployment chain
+## Source of truth and deployment
 
 `APG operating work -> GitHub main -> Vercel project au-product-guide -> Production`
 
-`main` is the Production code source of truth. GitHub pushes deploy automatically to the dedicated Vercel project. Release QA verifies the matching Git SHA, public runtime, crawlable routes, product/retailer controls and representative desktop/mobile journeys before a release is closed.
-
-APG Google Drive is the durable operating record for catalogue, evidence, governance, commercial controls, QA/release evidence and roadmap decisions. Supabase is the single optional-account/data backend; it is not a competing catalogue source.
+`main` is the Production code source of truth. GitHub pushes deploy automatically to the dedicated Vercel project. Google Drive is the durable operating record for catalogue, evidence, governance, commercial controls, QA/release evidence and roadmap decisions. Supabase is the optional account/sync backend; it is not a competing catalogue source.
 
 ## Current architecture
 
-APG deliberately remains small, readable and SSR-first:
+APG deliberately remains lightweight, readable and SSR-first:
 
-- one Vercel Node Function: `api/index.js`
-- national discovery wrapper: `lib/national-experience.js`
-- privacy/accessibility/performance layers beneath the production wrapper
-- request/router layer: `lib/app.js`
-- server-rendered crawlable HTML pages in `lib/`
-- structured maintained catalogue and retailer registry in `data/`
-- progressive enhancement for search/autocomplete, comparison, sharing, Decision Lab, My APG and optional account sync
-- no external frontend framework or client-side rendering requirement
-- no compressed opaque deployment bundle
-- no unrelated Australian Tradie code, data or branding
-
-The request host is used for canonical URLs, structured-data URLs, `robots.txt` and `sitemap.xml`, with the clean Vercel Production alias as the safe fallback.
+- one Vercel Node Function through `api/index.js`;
+- authority-depth v14 over semantic/readability/Scout v13 and illustrative consumer experience v12;
+- privacy, accessibility and performance layers beneath the current production wrappers;
+- server-rendered crawlable HTML with progressive enhancement for search, comparison, sharing, Decision Lab, Scout, My APG and optional account sync;
+- structured catalogue and retailer/evidence registries in `data/`;
+- no required client framework and no opaque compressed deployment bundle.
 
 ## Maintained consumer scope
 
-Current national-category release scope:
+Current Production scope:
 
-- **387 maintained products**
-- **74 populated categories**
-- **145 represented brands**
-- **30 manufacturer-verified records** added across televisions, laptops, washing machines, fridges, dishwashers and smartphones
-- existing deep and starter evidence tiers preserved, with manufacturer-verified records explicitly labelled
-- universal search across maintained products, brands, categories, use cases and budget signals
-- deterministic/explainable Decision Lab recommendation journeys
-- global Compare, Buying Guides, Retailer Discovery, Brands and My APG surfaces
-- professional trust centre covering methodology, editorial standards, sources, coverage, updates, corrections, affiliate disclosure, privacy and terms
-- visible consumer HTML Sitemap plus XML sitemap
+- **471 maintained products**;
+- **90 populated categories**;
+- **176 represented brands**;
+- **22 verified exact Amazon Australia product destinations**;
+- **449 transparent model-specific Amazon search/further-verification fallbacks**;
+- commercial relationships contribute **zero recommendation points**.
 
-The six national categories use exact Australian manufacturer product/specification evidence for the maintained model identities. APG does not represent manufacturer specification research as hands-on testing, and does not invent live prices where no current price feed is maintained.
+High-intent national categories include televisions, laptops, washing machines, fridges, dishwashers and smartphones. Televisions and laptops currently contain seven manufacturer-backed maintained models each. Authority-depth categories for coffee grinders, home printers and pizza ovens surface exact Australian manufacturer facts, documented decision factors and separately maintained retailer/support pathways.
 
-Starter evidence is deliberately labelled and must not be represented as equivalent to deeper specification research.
+Starter evidence remains explicitly labelled and must never be represented as equivalent to deeper specification research. APG does not invent live prices, ratings, reviews or hands-on testing.
+
+## Consumer experience and Scout
+
+The current homepage combines the institutional design with an illustrative “start with your situation” discovery layer. Readability controls use high-contrast text, stronger small-copy colours and visible focus states; in particular the decision-panel gold label is intentionally navy-on-gold rather than pale text on gold.
+
+**Scout** is APG's original conversational shopping-guide character. Scout:
+
+- accepts natural-language shopping needs, budgets, use cases and deal-breakers;
+- preserves context across follow-up refinements;
+- uses the existing deterministic `/api/decision` engine;
+- shows fit reasons and compromises rather than an unexplained score;
+- links into product evidence, Compare and Decision Lab;
+- keeps retailer commission and affiliate availability out of suitability scoring.
+
+National product visuals use APG-authored category-correct semantic SVGs where exact product photography is not rights-verified. Third-party product photography must never be scraped, fabricated or presented without verified delivery rights and exact model identity.
 
 ## Retailer architecture
 
-Retailer data is stored separately from suitability logic. A product can hold multiple retailer observations over time.
+Retailer data is stored separately from suitability logic. Amazon Australia records use explicit states:
 
-Amazon Australia records use explicit states:
+- `affiliate-direct`: an exact individual Amazon Australia product page has been independently verified for the maintained model/variant;
+- `affiliate-search`: a model-specific Amazon Australia search fallback is retained because an exact individual listing has not been independently verified.
 
-- `affiliate-direct`: an exact individual Amazon Australia product page has been independently verified for the maintained model/variant
-- `affiliate-search`: a model-specific Amazon Australia search fallback is retained because an exact individual listing has not yet been independently verified
+The Amazon Associates tag is `auproductguid-22`. Never invent an ASIN or construct an unverified exact product destination.
 
-The current verified direct-link register contains **22 exact Amazon Australia product destinations**. Other maintained products use transparent model-specific search/further-verification fallbacks rather than guessed ASINs.
+APG is now selectively adding **exact non-Amazon Australian retailer pathways** where model/configuration identity can be verified. Current examples include maintained LG C6, MacBook Air M5 and Bosch WGG244F0AU pathways, while authority-depth categories can expose verified Australian brand/retailer/support destinations. These links are kept separate from product-fit scoring. APG does **not** claim whole-of-market live price comparison.
 
-The Amazon Associates tag is `auproductguid-22`. Affiliate availability and commission contribute **zero recommendation points**. Never invent an ASIN, substitute an adjacent product merely to increase coverage, or construct an unverified direct detail-page URL.
+Any new affiliate programme, paid feed, commercial agreement or consequential external commitment still requires explicit owner approval.
 
-Amazon imagery must not be scraped from product pages. Exact Amazon product imagery may only be displayed when supplied through an authorised Amazon product-content mechanism for the matching verified identifier and used in accordance with the applicable programme requirements. Manufacturer or retailer imagery must likewise have appropriate provenance/permission. APG-owned/category illustration may be used where exact photography is unavailable but must not imply it is an exact-product photograph.
+## Evidence and freshness
 
-Broader exact Australian retailer paths are **PLANNED**, not claimed as current whole-of-market price comparison. Retailers such as JB Hi-Fi, The Good Guys, Officeworks, Appliances Online and relevant specialists may be added only after exact-model verification, data-rights checks and any required commercial approval. No additional retailer affiliate programme or commercial agreement is activated merely because the data structure supports it.
+APG guidance is primarily **desk-researched / specification-based** unless a page explicitly documents another testing status. Consequential claims should prefer:
 
-## Evidence and freshness standards
-
-APG guidance is primarily **desk-researched / specification-based** unless a page explicitly documents another testing status. Do not imply hands-on testing that did not occur.
-
-Consequential claims should prefer:
-
-1. Australian manufacturer product pages, manuals, support and warranty material;
-2. Australian retailer evidence for exact local model/availability checks;
+1. exact Australian manufacturer product pages, manuals, support and warranty material;
+2. exact Australian retailer evidence for local model/availability checks;
 3. attributed independent professional evidence where appropriate;
 4. consumer-feedback signals only where methodology and limitations are clear.
 
-Each maintained product supports freshness fields including first researched, substantive review, source verification, retailer check, price check, image verification, next review due, freshness status and evidence tier. The evidence queue should be reduced by genuine product-by-product verification, never by relabelling starter records.
+Selected high-intent products now surface independent professional evidence separately from manufacturer identity. Family, size and configuration differences must be disclosed; external reviewers' hands-on work must never be described as APG hands-on testing.
+
+A scheduled GitHub Actions **freshness/model audit** validates catalogue identity, required provenance/freshness fields, overdue review windows and exact-Amazon identifier/tag integrity. It flags defects and review debt but does not auto-publish changed product facts.
 
 ## Search, comparison and decision intelligence
 
-Search remains server-rendered and crawlable where appropriate, with lightweight visual autocomplete and noindex controls for thin/dynamic search surfaces. Search now recognises the six national categories rather than returning stale unsupported-category messages. Decision Lab maps a shopper's budget, use case, priorities and deal-breakers into explainable maintained-product signals. Commercial relationships contribute zero score.
+Search remains server-rendered and uses `noindex,follow` for thin/dynamic search-result combinations. The consumer layer tightens relevance for interpreted televisions, laptops, washing machines, fridges, dishwashers and smartphones so unrelated product-card noise is suppressed in the rendered experience.
 
-Prepared comparison pages are indexable where they are maintained and useful. Arbitrary custom comparisons and personal Decision Lab outputs remain `noindex,follow` so personal/thin combinations do not create uncontrolled indexable inventory.
+Decision Lab and Scout use maintained product data and explainable signals based on budget, needs, priorities and deal-breakers. Commercial relationships contribute zero score. Prepared useful comparison pages can be indexable; arbitrary personal/custom combinations remain controlled to avoid thin SEO inventory.
 
-## My APG and optional accounts
+## My APG, privacy and analytics
 
-My APG is **local-first** and remains usable without an account. Optional cross-device sync is active through the existing **Australian Product Guide Supabase project in Sydney (`ap-southeast-2`)**.
+My APG remains **local-first** and usable without an account. Optional cross-device sync uses the existing APG Supabase project in Sydney (`ap-southeast-2`), with Row Level Security and self-service deletion controls already documented in the privacy/terms surfaces.
 
-- unauthenticated shoppers can still save/use local research on their device
-- authenticated users can sync selected APG workspace records
-- Row Level Security restricts synced records to their owning user
-- self-service account deletion is available through a JWT-protected Edge Function and deletes synced APG workspace data
-- account status does not affect recommendation suitability or retailer ranking
+Google Analytics remains opt-in: analytics storage defaults to denied and the Google Analytics script loads only after the visitor allows analytics. Advertising storage and personalisation remain denied.
 
-Do not expose Supabase service-role credentials or place privileged backend secrets in browser code.
+## Performance, accessibility and QA
 
-## Performance, accessibility and privacy
+Visual richness should come from efficient CSS, lawful imagery and progressive enhancement rather than unnecessary framework bundles or third-party scripts. Maintain keyboard-operable navigation/search, labelled forms, adequate touch targets, visible focus states, reduced-motion support and readable contrast.
 
-APG preserves a lightweight SSR-first delivery model. Visual richness should come from efficient CSS, optimised lawful imagery and progressive enhancement rather than large framework bundles or unnecessary third-party scripts.
-
-The consumer UI should maintain keyboard-operable navigation/search, visible focus states, semantic controls, labelled forms, adequate touch targets, reduced-motion support and honest image alt/provenance treatment. The national-category layer uses neutral APG-authored semantic visuals where genuine exact product photography is not rights-verified.
-
-Google Analytics remains opt-in: analytics storage defaults to denied and the Google Analytics script is loaded only after the visitor allows analytics. Advertising storage and personalisation remain denied.
-
-A privacy-minimised first-party field Web Vitals endpoint samples performance metrics without query strings, cookies, email addresses, account IDs or persistent behavioural identifiers.
-
-## QA and release controls
-
-GitHub Actions cover source integrity, governance, catalogue freshness, Decision Intelligence, account sync, field Web Vitals and platform controls. Production verification checks the exact Vercel Production deployment, canonical crawl/indexability, product/category routes, retailer attribution, representative journeys and responsive rendering.
-
-A release is not considered closed merely because code merged. The final state must reconcile GitHub `main`, matching Vercel Production, Supabase where relevant, the public site, and APG Google Drive release/operating records.
+GitHub Actions and release QA cover source integrity, catalogue controls, freshness, decision intelligence, account/platform controls and representative Production behaviour. A release is not closed merely because code merged: reconcile GitHub `main`, Vercel Production, the canonical public site and APG Google Drive records.
 
 ## Governance
 
-Australian Product Guide is operationally separate from unrelated ventures, especially Australian Tradie Software Matcher. Keep APG brand, data, repository, Vercel project, Supabase project, retailer records and operating material separate unless an explicit decision changes that structure.
-
-Commercial relationships never change suitability scoring. Product, retailer, price, imagery, freshness and authority claims must be truthful, sourceable and dated where material. Never invent testing, reviews, awards, partnerships, customer numbers, rankings or commercial performance.
+Australian Product Guide remains operationally separate from unrelated ventures, especially Australian Tradie Software Matcher. Product, retailer, price, imagery, freshness and authority claims must be truthful, sourceable and dated where material. Never invent testing, reviews, awards, partnerships, customers, rankings or commercial performance.
