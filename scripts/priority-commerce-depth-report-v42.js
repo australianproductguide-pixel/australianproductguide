@@ -37,7 +37,7 @@ for(const slug of PRIORITY){
       if(!o.retailer)errs.push('retailer');
       if(!o.checkedAt)errs.push('checkedAt');
       if(!/^https:\/\//.test(o.url))errs.push('https url');
-      if(Number.isFinite(Number(o.price))&&o.currency!=='AUD')errs.push('AUD currency');
+      if(commerce.hasPrice(o.price)&&o.currency!=='AUD')errs.push('AUD currency');
       invalidOffers+=errs.length;
       assert.equal(errs.length,0,`${p.slug} invalid exact offer: ${errs.join(', ')}`);
     }
@@ -45,12 +45,18 @@ for(const slug of PRIORITY){
   rows.push({category:slug,maintained:c.products.length,verifiedPhotos,exactAmazon,exactOther,withExactRetailer,imageGap:c.products.length-verifiedPhotos,retailerGap:c.products.length-withExactRetailer});
 }
 
+const marker='<span class="independence-badge">Retailer status does not affect ranking</span></div>';
 const sample=products.find(p=>p.slug==='apple-iphone-17-pro');
 assert.ok(sample,'v42 iPhone 17 Pro record missing');
-const marker='<span class="independence-badge">Retailer status does not affect ranking</span></div>';
 const transformed=commerce.transform(`<section class="retailer-panel">${marker}</section>`,'/products/apple-iphone-17-pro/');
 assert.ok(transformed.includes('Verified exact-model retailer destination'), 'v42 exact retailer row failed to render');
 assert.ok(transformed.includes('A$1,999'), 'v42 observed price failed to render');
+
+const noPrice=products.find(p=>p.slug==='samsung-galaxy-z-flip7');
+assert.ok(noPrice,'v42 Galaxy Z Flip7 record missing');
+const noPriceHtml=commerce.transform(`<section class="retailer-panel">${marker}</section>`,'/products/samsung-galaxy-z-flip7/');
+assert.ok(noPriceHtml.includes('Samsung Australia'),'v42 exact no-price retailer destination failed to render');
+assert.ok(!noPriceHtml.includes('A$0'),'blank retailer price incorrectly rendered as A$0');
 
 console.log(JSON.stringify({
   version:'v42',
