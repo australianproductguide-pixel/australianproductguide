@@ -8,6 +8,22 @@ const additions={
     variant:'Amazon Kindle newest generation / 2024 family, 16GB, Matcha colour offer',
     confidence:'high',
     note:'Exact Amazon Kindle 2024/newest-generation 16GB Amazon Australia detail page verified. The linked ASIN is the Matcha colour variant; Amazon also exposes a Black colour variant under a different ASIN, so shoppers should confirm colour before checkout.'
+  },
+  'anker-nano-power-bank-10000mah-30w':{
+    url:`https://www.amazon.com.au/Anker-Compact-Portable-Charger-Compatible/dp/B0C9CSG3B7?tag=${TAG}`,
+    asin:'B0C9CSG3B7',
+    verified:'2026-08-17',
+    variant:'Anker Nano Power Bank 10,000mAh 30W with built-in USB-C cable, model A1259, Blue',
+    confidence:'high',
+    note:'Exact Anker Nano Power Bank 10,000mAh 30W Amazon Australia detail page verified against model A1259. The observed offer is Blue; shoppers should confirm colour and seller before checkout.'
+  },
+  'iniu-power-bank-20000mah-45w':{
+    url:`https://www.amazon.com.au/INIU-20000mAh-Portable-Charging-Compatible/dp/B0DCYRXNFN?tag=${TAG}`,
+    asin:'B0DCYRXNFN',
+    verified:'2026-08-17',
+    variant:'INIU Power Bank 20,000mAh 45W with built-in USB-C cable, model P51L, Black',
+    confidence:'high',
+    note:'Exact INIU 20,000mAh 45W Amazon Australia detail page verified against model P51L. Shoppers should confirm current seller, colour and offer details before checkout.'
   }
 };
 const direct={...base.direct,...additions};
