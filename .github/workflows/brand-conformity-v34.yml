@@ -1,0 +1,53 @@
+name: APG Brand Conformity v34 QA
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  source-conformity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax check v34 presentation layer
+        run: |
+          node --check lib/brand-conformity-v34.js
+          node --check scripts/brand-conformity-v34-production.js
+          node --check api/index.js
+      - name: Verify palette and Scout character contract
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const layer=require('./lib/brand-conformity-v34');
+          if(layer.VERSION!=='34')throw new Error('v34 version contract missing');
+          if(layer.CSS_PATH!=='/assets/brand-conformity-v34.css'||layer.JS_PATH!=='/assets/brand-conformity-v34.js')throw new Error('v34 assets missing');
+          const fixture='<html><head></head><body><section id="apgAssistantPanel" aria-label="Australian Product Guide Shopping Assistant"><div class="apg-assistant-brand"><span></span><span><strong>Shopping Assistant</strong><small>Evidence-backed product matching</small></span></div></section></body></html>';
+          const out=layer.inject(fixture);
+          if(!out.includes('data-brand-conformity-v34="true"'))throw new Error('v34 body marker missing');
+          if(!out.includes('/assets/brand-conformity-v34.css?v=34')||!out.includes('/assets/brand-conformity-v34.js?v=34'))throw new Error('v34 injected assets missing');
+          if(out.includes('<strong>Shopping Assistant</strong>')||out.includes('Evidence-backed product matching'))throw new Error('superseded Scout copy survived SSR normalisation');
+          const character=layer.scoutCharacterMarkup();
+          if(!character.includes('data-apg-scout-character="v34"'))throw new Error('Scout v34 character marker missing');
+          if(!character.includes('data-apg-v322-scout="true"'))throw new Error('v32.2 compatibility marker missing');
+          for(const required of ['#2563EB','#0F172A','#06B6D4','#EFF6FF','#FFFFFF'])if(!character.includes(required))throw new Error('Scout approved token missing '+required);
+          for(const old of ['#f4b548','#0a7275','#082f40','#fff4d8','#087c76'])if(character.toLowerCase().includes(old))throw new Error('old Scout colour survived '+old);
+          for(const old of ['#047857','#ECFDF5','#A7F3D0','#0891B2','#ECFEFF','#0E7490','#38BDF8'])if(layer.css.toUpperCase().includes(old.toUpperCase()))throw new Error('legacy decorative colour survives controlling v34 CSS '+old);
+          if(!layer.css.includes('--apg-v34-green:#10B981'))throw new Error('approved APG Green semantic token missing');
+          if(!layer.css.includes('border-left:4px solid var(--apg-v34-green)')&&!layer.css.includes('inset 3px 0 0 var(--apg-v34-green)'))throw new Error('semantic-only Green treatment missing');
+          if(typeof layer.amazonRecord!=='function'||typeof layer.transform!=='function')throw new Error('mature runtime helper/export contract not preserved');
+          console.log('PASS: v34 approved palette, semantic Green rule, Scout character and SSR text contract verified.');
+          NODE
+      - name: Verify runtime chain remains mature
+        run: |
+          node scripts/runtime-chain-qa.js brand-conformity-v34 brand-fidelity-v325 brand-fidelity-v324 brand-fidelity-v323 brand-fidelity-v322 brand-fidelity-v321 brand-fidelity-v32 amazon-conversion-v29 trust-infrastructure-v28 evidence-commerce-depth-v27 platform-cohesion-v26 account-governance-v25 account-profile-v24 auth-hardening-v23 site-surface-polish-v22
+          grep -q "brand-conformity-v34" api/index.js
+          grep -q "brand-fidelity-v325" lib/brand-conformity-v34.js

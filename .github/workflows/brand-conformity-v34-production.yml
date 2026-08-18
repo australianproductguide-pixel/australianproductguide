@@ -1,0 +1,97 @@
+name: APG Brand Conformity v34 Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: read
+  statuses: write
+
+jobs:
+  production-brand-certification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      BASE_URL: https://australianproductguide.au
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Wait for exact Production SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 96); do
+            curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments?sha=$SHA" >/tmp/v34-deployments.json
+            id=$(jq -r '[.[]|select(.environment=="Production" or .original_environment=="Production")][0].id//empty' /tmp/v34-deployments.json)
+            if [ -n "$id" ]; then
+              curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments/$id/statuses" >/tmp/v34-statuses.json
+              state=$(jq -r '.[0].state//empty' /tmp/v34-statuses.json)
+              [ "$state" = failure ] || [ "$state" = error ] && exit 1
+              [ "$state" = success ] && exit 0
+            fi
+            sleep 5
+          done
+          echo 'Exact Production deployment not observed for v34' >&2
+          exit 1
+      - name: Verify v34 public contract
+        run: |
+          set -euo pipefail
+          curl -fsSL "$BASE_URL/" >/tmp/v34-home.html
+          grep -q 'data-brand-conformity-v34="true"' /tmp/v34-home.html
+          grep -q 'data-brand-fidelity-v325="true"' /tmp/v34-home.html
+          grep -q '/assets/brand-conformity-v34.css?v=34' /tmp/v34-home.html
+          grep -q '/assets/brand-conformity-v34.js?v=34' /tmp/v34-home.html
+          grep -q '<strong>Scout</strong><small>Your APG decision guide</small>' /tmp/v34-home.html
+          ! grep -q '<strong>Shopping Assistant</strong>' /tmp/v34-home.html
+          curl -fsSL "$BASE_URL/assets/brand-conformity-v34.css?v=34" >/tmp/v34.css
+          curl -fsSL "$BASE_URL/assets/brand-conformity-v34.js?v=34" >/tmp/v34.js
+          grep -q -- '--apg-v34-blue:#2563EB' /tmp/v34.css
+          grep -q -- '--apg-v34-navy:#0F172A' /tmp/v34.css
+          grep -q -- '--apg-v34-green:#10B981' /tmp/v34.css
+          ! grep -Eqi '#047857|#ECFDF5|#A7F3D0|#0891B2|#ECFEFF|#0E7490|#38BDF8|#F4B548|#0A7275|#082F40|#FFF4D8|#087C76' /tmp/v34.css
+          curl -fsSL "$BASE_URL/api/intelligence/observability" >/tmp/v34-observability.json
+          jq -e '.catalogue.products > 0 and .catalogue.categories > 0 and .catalogue.brands > 0 and .recommendation.affiliateRecommendationWeight == 0 and .releaseGate.pass == true' /tmp/v34-observability.json >/dev/null
+      - name: Audit every canonical route and rendered page families
+        run: |
+          set -euo pipefail
+          CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser)
+          node --check scripts/brand-conformity-v34-production.js
+          npm install --no-save --package-lock=false puppeteer-core@24.16.0 >/dev/null 2>&1
+          mkdir -p visual-v34
+          CHROME="$CHROME" BASE_URL="$BASE_URL" VISUAL_OUT=visual-v34 CRAWL_CONCURRENCY=10 node scripts/brand-conformity-v34-production.js
+      - name: Confirm main remained on certified SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          current=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/commits/main" | jq -r '.sha')
+          test "$current" = "$SHA" || { echo "main advanced to $current during v34 certification" >&2; exit 1; }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: apg-v34-brand-conformity-${{ github.run_id }}
+          path: visual-v34
+          retention-days: 30
+          if-no-files-found: warn
+      - name: Publish retrievable v34 certification status
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          state=success; [ "$JOB_STATUS" = success ] || state=failure
+          curl -fsSL -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/statuses/$SHA" -d "$(jq -n --arg state "$state" --arg context 'APG v34 Brand Conformity Certification' --arg description "Whole-site palette and Scout character certification: $JOB_STATUS" --arg target_url "https://github.com/$REPO/actions/runs/$RUN_ID" '{state:$state,context:$context,description:$description,target_url:$target_url}')" >/dev/null
