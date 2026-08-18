@@ -8,5 +8,19 @@
 .apg-v27-coverage-note{margin:18px auto 0;max-width:1180px;padding:12px 16px;border:1px solid #d9e5e2;border-radius:14px;background:#fbfdfc;color:#344d55;display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
 .apg-v27-coverage-note strong{color:#082735}.apg-v27-coverage-note small{display:block;margin-top:3px;line-height:1.45}
 .apg-v27-coverage-note a{white-space:nowrap;font-weight:700;color:#087c76}
-@media(max-width:720px){.apg-v27-coverage-note{margin:14px 16px 0;display:block}.apg-v27-coverage-note a{display:inline-block;margin-top:8px}}
+@media(max-width:720px){
+  .apg-v27-coverage-note{margin:14px 16px 0;display:block}
+  .apg-v27-coverage-note a{display:inline-block;margin-top:8px}
+  /* Some legacy category-card art intentionally used a small edge bleed. Once
+     the v22/v26 mobile padding layers are combined that bleed can exceed a
+     390px viewport. Keep the semantic visual inside its containing card on
+     narrow screens; decorative art remains clipped inside the visual itself. */
+  body[data-evidence-commerce-v27="true"] .product-visual.v7-semantic-product-visual{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    margin-left:0!important;
+    margin-right:0!important;
+  }
+}
 @media(prefers-reduced-motion:reduce){.apg-v27-scout-continuity *{scroll-behavior:auto!important;transition:none!important}}
