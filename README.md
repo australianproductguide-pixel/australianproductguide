@@ -1,6 +1,6 @@
 # Australian Product Guide
 
-Authoritative source repository for **Australian Product Guide (APG)** — an Australian consumer product-comparison, decision-support and shopping-discovery platform.
+Authoritative source repository for **Australian Product Guide (APG)** — an Australian product-search, comparison, decision-support and shopping-discovery platform.
 
 **Production:** https://australianproductguide.au
 
@@ -15,56 +15,61 @@ Authoritative source repository for **Australian Product Guide (APG)** — an Au
 APG deliberately remains lightweight, readable and SSR-first:
 
 - one Vercel Node Function through `api/index.js`;
-- authority-depth v14 over semantic/readability/Scout v13 and illustrative consumer experience v12;
-- privacy, accessibility and performance layers beneath the current production wrappers;
+- Platform Cohesion v26 over My APG account governance v25 and the established institutional/semantic/decision stack;
+- governed integration of Priority Commerce Depth v42 and Research View v43 without replacing the current account/authentication chain;
 - server-rendered crawlable HTML with progressive enhancement for search, comparison, sharing, Decision Lab, Scout, My APG and optional account sync;
-- structured catalogue and retailer/evidence registries in `data/`;
+- structured catalogue, evidence, retailer and imagery-provenance registries in `data/`;
 - no required client framework and no opaque compressed deployment bundle.
 
 ## Maintained consumer scope
 
-Current Production scope:
+Current maintained scope at 18 August 2026:
 
-- **471 maintained products**;
+- **482 maintained products**;
 - **90 populated categories**;
-- **176 represented brands**;
-- **23 verified exact Amazon Australia product destinations**;
-- **448 transparent model-specific Amazon search/further-verification fallbacks**;
+- **178 represented brands**;
+- **23 independently verified exact Amazon Australia product destinations** remain in the maintained exact-link set;
+- other Amazon pathways use transparent model-specific search/further-verification fallbacks rather than guessed ASINs;
 - commercial relationships contribute **zero recommendation points**.
 
-High-intent national categories include televisions, laptops, washing machines, fridges, dishwashers and smartphones. Televisions and laptops currently contain seven manufacturer-backed maintained models each. Authority-depth categories for coffee grinders, home printers and pizza ovens surface exact Australian manufacturer facts, documented decision factors and separately maintained retailer/support pathways.
+High-intent depth includes televisions, laptops, robot vacuums, washing machines, coffee machines, wireless headphones, smartphones and earbuds. Catalogue expansion is subordinate to evidence quality, exact model identity and useful decision coverage.
 
-Starter evidence remains explicitly labelled and must never be represented as equivalent to deeper specification research. APG does not invent live prices, ratings, reviews or hands-on testing.
+## Search, Research View and decision intelligence
 
-## Consumer experience and Scout
+The canonical search contract is `search-ranking-v4`: maintained lexical/model discovery is combined with the governed Decision Intelligence state for category interpretation, budget handling, hard constraints, exclusions and explainable reranking.
 
-The current homepage combines the institutional design with an illustrative “start with your situation” discovery layer. Readability controls use high-contrast text, stronger small-copy colours and visible focus states; in particular the decision-panel gold label is intentionally navy-on-gold rather than pale text on gold.
+Platform Cohesion v26 activates the maintained **Research View v43** inside the current Production account/governance chain. Natural-language shopping questions can therefore surface:
 
-**Scout** is APG's original conversational shopping-guide character. Scout:
+- the interpreted buying brief;
+- current best fit and alternatives from maintained APG data;
+- reasons, compromises and verification needs;
+- source/freshness context;
+- follow-up refinements that preserve the original question;
+- a direct comparison path when suitable.
 
-- accepts natural-language shopping needs, budgets, use cases and deal-breakers;
-- preserves context across follow-up refinements;
-- uses the existing deterministic `/api/decision` engine;
-- shows fit reasons and compromises rather than an unexplained score;
-- links into product evidence, Compare and Decision Lab;
-- keeps retailer commission and affiliate availability out of suitability scoring.
+The Research View is deterministic and evidence-grounded; it does not call an external LLM. Missing proof is not invented. Affiliate status, retailer participation and commission contribute zero organic-search or recommendation weight.
 
-National product visuals use APG-authored category-correct semantic SVGs where exact product photography is not rights-verified. Third-party product photography must never be scraped, fabricated or presented without verified delivery rights and exact model identity.
+Decision Lab and Scout use the same maintained product and Decision Intelligence foundations. Scout remains a conversational interface to APG decision data rather than a generic chatbot, and Platform Cohesion v26 makes Scout a first-class navigation action on both desktop and mobile.
+
+## Comparison and mobile experience
+
+Prepared comparisons remain server rendered. Desktop retains the full evidence table; Platform Cohesion v26 progressively labels the same table and presents it as decision-point cards on narrow screens rather than forcing a desktop table into a mobile viewport. The original table semantics remain available for accessibility and no-JavaScript fallback behaviour.
 
 ## Retailer architecture
 
-Retailer data is stored separately from suitability logic. Amazon Australia records use explicit states:
+Retailer data remains separate from suitability logic. Platform Cohesion v26 reconciles the exact-model retailer rendering from Priority Commerce Depth v42 into the current account-governance chain.
 
-- `affiliate-direct`: an exact individual Amazon Australia product page has been independently verified for the maintained model/variant;
-- `affiliate-search`: a model-specific Amazon Australia search fallback is retained because an exact individual listing has not been independently verified.
+Structured non-affiliate Australian retailer offers may be shown only when the product record carries an exact-model destination and verification metadata. Observed price or stock is date-stamped context, not a live feed or a claim of whole-of-market lowest price.
 
-The Amazon Associates tag is `auproductguid-22`. Never invent an ASIN or construct an unverified exact product destination.
+Amazon Australia records retain explicit exact-versus-search states. The Amazon Associates tag is `auproductguid-22`. Never invent an ASIN or construct an unverified exact product destination.
 
-APG is selectively adding **exact non-Amazon Australian retailer pathways** where model/configuration identity can be verified. Current examples include maintained LG C6, MacBook Air M5 and Bosch WGG244F0AU pathways, while authority-depth categories can expose verified Australian brand/retailer/support destinations. These links are kept separate from product-fit scoring. APG does **not** claim whole-of-market live price comparison.
+## Product imagery
 
-Any new affiliate programme, paid feed, commercial agreement or consequential external commitment still requires explicit owner approval.
+APG maintains a governed photography registry. Genuine photography is publishable only where exact model identity, source, rights basis and verification are documented. Amazon Program Content additionally requires a verified matching Amazon pathway. Where authorised exact-model photography is unavailable, APG uses honest category-correct decision visuals rather than fabricated product photography.
 
-## Evidence and freshness
+The catalogue-wide genuine-photography rollout remains **PARTIAL** and must not be described as complete.
+
+## Evidence and trust
 
 APG guidance is primarily **desk-researched / specification-based** unless a page explicitly documents another testing status. Consequential claims should prefer:
 
@@ -73,27 +78,21 @@ APG guidance is primarily **desk-researched / specification-based** unless a pag
 3. attributed independent professional evidence where appropriate;
 4. consumer-feedback signals only where methodology and limitations are clear.
 
-Selected high-intent products surface independent professional evidence separately from manufacturer identity. Family, size and configuration differences must be disclosed; external reviewers' hands-on work must never be described as APG hands-on testing.
+APG must not claim hands-on testing that did not occur. Product family, size and configuration differences must be disclosed where material.
 
-A scheduled GitHub Actions **freshness/model audit** validates catalogue identity, required provenance/freshness fields, overdue review windows and exact-Amazon identifier/tag integrity. It flags defects and review debt but does not auto-publish changed product facts.
+## My APG, privacy and authentication
 
-## Search, comparison and decision intelligence
-
-Search remains server-rendered and uses `noindex,follow` for thin/dynamic search-result combinations. The consumer layer tightens relevance for interpreted televisions, laptops, washing machines, fridges, dishwashers and smartphones so unrelated product-card noise is suppressed in the rendered experience.
-
-Decision Lab and Scout use maintained product data and explainable signals based on budget, needs, priorities and deal-breakers. Commercial relationships contribute zero score. Prepared useful comparison pages can be indexable; arbitrary personal/custom combinations remain controlled to avoid thin SEO inventory.
-
-## My APG, privacy and analytics
-
-My APG remains **local-first** and usable without an account. Optional cross-device sync uses the existing APG Supabase project in Sydney (`ap-southeast-2`), with Row Level Security and self-service deletion controls already documented in the privacy/terms surfaces.
+My APG remains **local-first** and usable without an account. Optional cross-device sync uses the APG Supabase project in Sydney with Row Level Security over user-owned tables and self-service export/deletion controls. Account status and communication preferences contribute zero product-recommendation points.
 
 Google Analytics remains opt-in: analytics storage defaults to denied and the Google Analytics script loads only after the visitor allows analytics. Advertising storage and personalisation remain denied.
 
 ## Performance, accessibility and QA
 
-Visual richness should come from efficient CSS, lawful imagery and progressive enhancement rather than unnecessary framework bundles or third-party scripts. Maintain keyboard-operable navigation/search, labelled forms, adequate touch targets, visible focus states, reduced-motion support and readable contrast.
+Visual richness should come from efficient CSS, lawful imagery and progressive enhancement rather than unnecessary framework bundles or third-party scripts. Maintain keyboard-operable navigation/search, labelled forms, strong focus states, adequate touch targets, readable contrast, reduced-motion handling and no unintended horizontal overflow.
 
-GitHub Actions and release QA cover source integrity, catalogue controls, freshness, decision intelligence, account/platform controls and representative Production behaviour. A release is not closed merely because code merged: reconcile GitHub `main`, Vercel Production, the canonical public site and APG Google Drive records.
+Platform Cohesion v26 adds dedicated regression QA for catalogue truth, integrated Research View, decision-aware search, exact retailer rendering, mobile comparison enhancement and non-fabrication controls. Existing catalogue, freshness, Decision Intelligence, account, platform-integrity and governance suites remain part of release discipline.
+
+A release is not closed merely because code merged: reconcile GitHub `main`, Vercel Production, the canonical public site and APG Google Drive records.
 
 ## Governance
 

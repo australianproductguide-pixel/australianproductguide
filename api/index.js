@@ -1,3 +1,4 @@
-// APG account governance v25 over account profile/journey v24.1, Auth Hardening v23,
-// Site Surface Polish v22 and the established APG SSR implementation chain.
-module.exports=require('../lib/account-governance-v25');
+// APG Platform Cohesion v26 reconciles account governance v25 with the governed
+// Research View v43 and priority retailer depth v42 capabilities, then applies
+// the current cross-platform consumer experience layer.
+module.exports=require('../lib/platform-cohesion-v26');

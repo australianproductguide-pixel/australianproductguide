@@ -1,0 +1,86 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const cohesion=require('../lib/platform-cohesion-v26');
+const commerce=require('../lib/priority-commerce-depth-v42');
+const research=require('../lib/research-view-v43');
+const search=require('../lib/search');
+const {products,categories}=require('../data');
+
+const failures=[];
+function check(name,fn){
+  try{fn();process.stdout.write(`PASS ${name}\n`);}catch(err){failures.push(`${name}: ${err.message}`);process.stderr.write(`FAIL ${name}: ${err.message}\n`);}
+}
+
+check('catalogue truth remains 482 products / 90 categories / 178 brands',()=>{
+  assert.equal(products.length,482);
+  assert.equal(Object.keys(categories).length,90);
+  assert.equal(new Set(products.map(p=>p.brand).filter(Boolean)).size,178);
+});
+
+check('cohesion transform injects state, CSS, JS and Scout entry points once',()=>{
+  const html='<!doctype html><html><head><title>APG</title></head><body><nav class="primary-nav"><div class="nav-inner"><a class="apg-power-link" href="/decision-lab/" data-decision-nav>Decision Lab</a></div></nav><nav id="mobileNav"><a class="mobile-power" href="/decision-lab/">Decision Lab <span aria-hidden="true">→</span></a></nav><main></main></body></html>';
+  const once=cohesion.cohesionTransform(html,'https://australianproductguide.au/compare/');
+  const twice=cohesion.cohesionTransform(once,'https://australianproductguide.au/compare/');
+  assert.match(once,/data-cohesion-v26="true"/);
+  assert.match(once,/data-v26-page="compare"/);
+  assert.match(once,/platform-cohesion-v26\.css\?v=26/);
+  assert.match(once,/platform-cohesion-v26\.js\?v=26/);
+  assert.match(once,/data-v26-scout-open/);
+  assert.equal((twice.match(/platform-cohesion-v26\.css/g)||[]).length,1);
+  assert.equal((twice.match(/platform-cohesion-v26\.js/g)||[]).length,1);
+});
+
+check('Research View activates on SSR search and stays affiliate-neutral',()=>{
+  const fixture='<!doctype html><html><head></head><body><section class="search-hero"><p class="kicker">Product comparison search</p><h1>What are you trying to buy?</h1><p>Search by product, model, brand, use case or budget. Australian Product Guide translates the query into the current maintained catalogue.</p></section><div class="search-groups"></div></body></html>';
+  const url='https://australianproductguide.au/search/?q='+encodeURIComponent('robot vacuum for pet hair');
+  const html=research.searchTransform(fixture,url);
+  const payload=research.researchPayload('robot vacuum for pet hair');
+  assert.match(html,/APG Research View/);
+  assert.match(html,/id="all-results-v43"/);
+  assert.equal(payload.commercialRecommendationWeight,0);
+  assert.ok(Array.isArray(payload.results));
+});
+
+check('search v4 preserves governed decision-aware ranking',()=>{
+  const result=search.searchSite('robot vacuum for pet hair');
+  assert.equal(result.version,'search-ranking-v4');
+  assert.ok(result.queryUnderstanding);
+  assert.ok(Array.isArray(result.products));
+});
+
+check('exact retailer transform only uses verified exact-model offer records',()=>{
+  const p=products.find(x=>Array.isArray(x.offers)&&x.offers.some(o=>o&&o.exactModel===true&&o.url&&o.retailer));
+  assert.ok(p,'expected at least one verified exact-model retailer offer');
+  const fixture='<!doctype html><html><head></head><body><div><span class="independence-badge">Retailer status does not affect ranking</span></div></body></html>';
+  const out=commerce.commerceTransform(fixture,`https://australianproductguide.au/products/${p.slug}/`);
+  assert.match(out,/Verified retailer intelligence/);
+  assert.match(out,/non-affiliate/);
+  assert.doesNotMatch(out,/A\$0(?:\D|$)/);
+});
+
+check('mobile comparison enhancement is progressive and labelled',()=>{
+  const client=fs.readFileSync(path.join(__dirname,'../public/assets/platform-cohesion-v26.js'),'utf8');
+  const css=fs.readFileSync(path.join(__dirname,'../public/assets/platform-cohesion-v26.css'),'utf8');
+  assert.match(client,/data-label/);
+  assert.match(client,/table\.compare/);
+  assert.match(css,/max-width:720px/);
+  assert.match(css,/content:attr\(data-label\)/);
+});
+
+check('release entry point targets platform cohesion v26',()=>{
+  const entry=fs.readFileSync(path.join(__dirname,'../api/index.js'),'utf8');
+  assert.match(entry,/platform-cohesion-v26/);
+});
+
+check('cohesion does not manufacture reviews, ratings or offers',()=>{
+  const src=fs.readFileSync(path.join(__dirname,'../lib/platform-cohesion-v26.js'),'utf8');
+  assert.doesNotMatch(src,/aggregateRating|reviewRating|ratingValue/);
+  assert.doesNotMatch(src,/"@type"\s*:\s*"Offer"/);
+});
+
+if(failures.length){
+  process.stderr.write(`\n${failures.length} Platform Cohesion v26 QA failure(s):\n- ${failures.join('\n- ')}\n`);
+  process.exit(1);
+}
+process.stdout.write('\nPlatform Cohesion v26 QA passed.\n');

@@ -1,0 +1,61 @@
+(()=>{
+  const q=(s,r=document)=>r.querySelector(s);
+  const qa=(s,r=document)=>[...r.querySelectorAll(s)];
+
+  function openScout(trigger){
+    const launcher=q('#apgAssistantLauncher');
+    if(!launcher)return;
+    const mobile=q('[data-mobile-toggle][aria-expanded="true"]');
+    if(mobile)mobile.click();
+    launcher.click();
+    window.setTimeout(()=>{
+      const panel=q('#apgAssistantPanel');
+      const focusable=panel&&q('input,button,[href],[tabindex]:not([tabindex="-1"])',panel);
+      if(focusable&&panel&&!panel.hidden)focusable.focus({preventScroll:true});
+    },40);
+    if(trigger)trigger.setAttribute('aria-expanded','true');
+  }
+
+  function labelComparisonTables(){
+    qa('table.compare').forEach(table=>{
+      const headers=qa('thead th',table).map(x=>x.textContent.trim());
+      qa('tbody tr',table).forEach(row=>{
+        let column=0;
+        qa(':scope > td',row).forEach((cell,index)=>{
+          const span=Math.max(1,Number(cell.getAttribute('colspan')||1));
+          if(index===0)cell.dataset.label=headers[0]||'Decision point';
+          else if(span>1)cell.dataset.label='Both products';
+          else cell.dataset.label=headers[column]||headers[index]||'Product';
+          column+=span;
+        });
+      });
+      table.dataset.v26MobileReady='true';
+    });
+  }
+
+  function protectExternalLinks(){
+    qa('a[target="_blank"]').forEach(link=>{
+      const rel=new Set(String(link.getAttribute('rel')||'').split(/\s+/).filter(Boolean));
+      rel.add('noopener');
+      link.setAttribute('rel',[...rel].join(' '));
+    });
+  }
+
+  document.addEventListener('click',event=>{
+    const trigger=event.target.closest('[data-v26-scout-open]');
+    if(!trigger)return;
+    event.preventDefault();
+    openScout(trigger);
+  });
+
+  document.addEventListener('keydown',event=>{
+    if(event.key!=='Escape')return;
+    const panel=q('#apgAssistantPanel');
+    if(!panel||panel.hidden)return;
+    const close=q('[data-apg-assistant-close]',panel);
+    if(close)close.click();
+  });
+
+  labelComparisonTables();
+  protectExternalLinks();
+})();
