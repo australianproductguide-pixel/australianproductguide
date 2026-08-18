@@ -20,6 +20,8 @@ const v27Path=path.join(__dirname,'../lib/evidence-commerce-depth-v27.js');
 const v27=fs.existsSync(v27Path)?fs.readFileSync(v27Path,'utf8'):'';
 const v28Path=path.join(__dirname,'../lib/trust-infrastructure-v28.js');
 const v28=fs.existsSync(v28Path)?fs.readFileSync(v28Path,'utf8'):'';
+const v29Path=path.join(__dirname,'../lib/amazon-conversion-v29.js');
+const v29=fs.existsSync(v29Path)?fs.readFileSync(v29Path,'utf8'):'';
 
 const directV23=api.includes("require('../lib/auth-hardening-v23')");
 const layeredV23=api.includes("require('../lib/account-profile-v24')")&&profile.includes("require('./auth-hardening-v23')");
@@ -27,8 +29,10 @@ const layeredV25=api.includes("require('../lib/account-governance-v25')")&&gover
 const layeredV26=api.includes("require('../lib/platform-cohesion-v26')")&&cohesion.includes("require('./account-governance-v25')")&&governance.includes("require('./account-profile-v24')")&&profile.includes("require('./auth-hardening-v23')");
 const v27Chain=v27.includes("require('./platform-cohesion-v26')")&&cohesion.includes("require('./account-governance-v25')")&&governance.includes("require('./account-profile-v24')")&&profile.includes("require('./auth-hardening-v23')");
 const layeredV27=api.includes("require('../lib/evidence-commerce-depth-v27')")&&v27Chain;
-const layeredV28=api.includes("require('../lib/trust-infrastructure-v28')")&&v28.includes("require('./evidence-commerce-depth-v27')")&&v27Chain;
-assert(directV23||layeredV23||layeredV25||layeredV26||layeredV27||layeredV28,'api/index.js must preserve auth hardening v23 directly or through the current account/platform wrapper chain');
+const v28Chain=v28.includes("require('./evidence-commerce-depth-v27')")&&v27Chain;
+const layeredV28=api.includes("require('../lib/trust-infrastructure-v28')")&&v28Chain;
+const layeredV29=api.includes("require('../lib/amazon-conversion-v29')")&&v29.includes("require('./trust-infrastructure-v28')")&&v28Chain;
+assert(directV23||layeredV23||layeredV25||layeredV26||layeredV27||layeredV28||layeredV29,'api/index.js must preserve auth hardening v23 directly or through the current account/platform wrapper chain including v29');
 assert(auth.includes("require('./site-surface-polish-v22')"),'v23 must preserve the complete v22 site implementation chain');
 assert(auth.includes("path==='/auth/confirm'"),'first-party auth callback must be routed');
 assert(auth.includes("new Set(['email','recovery'])"),'callback must restrict accepted email action types');
