@@ -32,6 +32,14 @@ const additions={
     variant:"De'Longhi KG200 electric blade coffee grinder, black",
     confidence:'high',
     note:'Exact De’Longhi KG200 Amazon Australia detail page and ASIN verified. Shoppers should recheck the current seller, delivery terms and offer before checkout.'
+  },
+  'samsung-galaxy-tab-a9':{
+    url:`https://www.amazon.com.au/Samsung-Galaxy-Tablet-Unlocked-Graphite/dp/B0CJH97F1M?tag=${TAG}`,
+    asin:'B0CJH97F1M',
+    verified:'2026-08-18',
+    variant:'Samsung Galaxy Tab A9+ [AU Version] Wi-Fi tablet, 64GB, Graphite',
+    confidence:'high',
+    note:'Current exact Amazon Australia AU-version Galaxy Tab A9+ 64GB Graphite listing independently re-verified on 18 August 2026. This supersedes the older B0CSZ24PNN mapping, which could not be re-verified during the v29 conversion audit.'
   }
 };
 const direct={...base.direct,...additions};
