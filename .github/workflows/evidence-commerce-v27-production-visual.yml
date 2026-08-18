@@ -46,12 +46,15 @@ jobs:
           grep -qi 'x-apg-experience: evidence-commerce-depth-v27' /tmp/apg-home.headers.clean
           curl -fsSL "$BASE_URL/" >/tmp/apg-home.html
           grep -q 'data-evidence-commerce-v27="true"' /tmp/apg-home.html
+          grep -q 'data-trust-v28="true"' /tmp/apg-home.html
           curl -fsSL "$BASE_URL/api/intelligence/observability" >/tmp/observability.json
           jq -e '.releaseGate.pass == true and .retailers.exactOfferCount >= 43 and .retailers.productsWithExactOffers >= 41 and .retailers.independentRetailerOfferCount >= 33 and .imagery.invalid == 0 and .scout.evaluation.pass == true' /tmp/observability.json >/dev/null
           curl -fsSL "$BASE_URL/api/intelligence/retailers" >/tmp/retailers.json
           jq -e '.recommendationWeight == 0 and .exactOfferCount >= 43 and .productsWithExactOffers >= 41 and .independentRetailerOfferCount >= 33' /tmp/retailers.json >/dev/null
           curl -fsSL "$BASE_URL/api/intelligence/imagery" >/tmp/imagery.json
           jq -e '.verified == 0 and .invalid == 0' /tmp/imagery.json >/dev/null
+          curl -fsSL "$BASE_URL/api/intelligence/trust-readiness" >/tmp/trust-readiness.json
+          jq -e '.version == "trust-infrastructure-v28" and .passwordPolicy.newPasswordMinLength == 12 and .retailers.exactOfferCount >= 43 and .imagery.automaticPublication == false and .organic.searchConsoleConnected == false' /tmp/trust-readiness.json >/dev/null
       - name: Render v27 desktop and mobile visual matrix
         run: |
           set -euo pipefail
@@ -59,9 +62,12 @@ jobs:
           npm install --no-save --package-lock=false puppeteer-core@24.16.0 >/dev/null 2>&1
           mkdir -p visual-v27
           CHROME="$CHROME" BASE_URL="$BASE_URL" node <<'NODE'
-          const puppeteer=require('puppeteer-core'),fs=require('fs');
+          const puppeteer=require('puppeteer-core');
+          const fs=require('fs');
+          const http=require('http');
           (async()=>{
             const base=process.env.BASE_URL;
+            const productionOrigin=new URL(base).origin;
             const viewports=[['desktop',1440,1000],['mobile',390,844]];
             const pages=[
               ['home','/'],
@@ -74,93 +80,131 @@ jobs:
               ['workspace','/my-apg/'],
               ['privacy','/privacy/']
             ];
-            const browser=await puppeteer.launch({headless:true,executablePath:process.env.CHROME,args:['--no-sandbox']});
-            const report=[],bad=[],documentCache=new Map();
-            const productionDocument=async url=>{
-              if(documentCache.has(url))return documentCache.get(url);
+            const audit=[];
+            const server=http.createServer(async(req,res)=>{
               const started=Date.now();
-              const response=await fetch(url,{redirect:'follow',signal:AbortSignal.timeout(45000),headers:{'accept':'text/html,application/xhtml+xml','cache-control':'no-cache','user-agent':'APG-Production-Visual-Certification/28'}});
-              const html=await response.text();
-              const row={url:response.url,status:response.status,html,ms:Date.now()-started,csp:response.headers.get('content-security-policy')||''};
-              if(!response.ok)throw new Error(`Production HTML fetch failed ${response.status} for ${url}`);
-              if(!html.includes('data-evidence-commerce-v27="true"'))throw new Error(`Production HTML missing v27 marker for ${url}`);
-              if(!html.includes('data-trust-v28="true"'))throw new Error(`Production HTML missing v28 marker for ${url}`);
-              documentCache.set(url,row);
-              return row;
-            };
-            const navigate=async(page,url)=>{
-              const live=await productionDocument(url);
-              let navigationTimedOut=false,fulfilled=false;
-              await page.setRequestInterception(true);
-              const onRequest=req=>{
-                if(req.isNavigationRequest()&&req.frame()===page.mainFrame()&&!fulfilled){
-                  fulfilled=true;
-                  console.log(`VISUAL_DOCUMENT_FULFILLED ${url} chrome=${req.url()} production=${live.url}`);
-                  const headers={'cache-control':'no-store','x-apg-visual-source':'validated-production-html'};
-                  if(live.csp)headers['content-security-policy']=live.csp;
-                  req.respond({status:live.status,contentType:'text/html; charset=utf-8',headers,body:live.html}).catch(()=>{});
-                }else req.continue().catch(()=>{});
-              };
-              page.on('request',onRequest);
               try{
-                await page.goto(url,{waitUntil:'domcontentloaded',timeout:15000});
+                const target=new URL(req.url||'/',base);
+                if(target.origin!==productionOrigin)throw new Error('Proxy target escaped Production origin');
+                const chunks=[];
+                for await(const chunk of req)chunks.push(chunk);
+                const requestBody=Buffer.concat(chunks);
+                const headers={
+                  accept:req.headers.accept||'*/*',
+                  'accept-language':req.headers['accept-language']||'en-AU,en;q=0.9',
+                  'cache-control':'no-cache',
+                  'user-agent':'APG-Production-Visual-Certification/28'
+                };
+                if(req.headers['content-type'])headers['content-type']=req.headers['content-type'];
+                const init={method:req.method||'GET',headers,redirect:'follow',signal:AbortSignal.timeout(45000)};
+                if(requestBody.length&&!['GET','HEAD'].includes(init.method))init.body=requestBody;
+                const upstream=await fetch(target,init);
+                const body=Buffer.from(await upstream.arrayBuffer());
+                const contentType=upstream.headers.get('content-type')||'application/octet-stream';
+                const isHtml=contentType.toLowerCase().includes('text/html');
+                if(isHtml){
+                  const html=body.toString('utf8');
+                  if(!upstream.ok)throw new Error(`Production HTML returned ${upstream.status} for ${target}`);
+                  if(!html.includes('data-evidence-commerce-v27="true"'))throw new Error(`Production HTML missing v27 marker for ${target}`);
+                  if(!html.includes('data-trust-v28="true"'))throw new Error(`Production HTML missing v28 marker for ${target}`);
+                }
+                res.statusCode=upstream.status;
+                res.setHeader('content-type',contentType);
+                res.setHeader('cache-control','no-store');
+                res.setHeader('x-apg-visual-source','validated-production-byte-proxy');
+                // CSP/HSTS/content-encoding are deliberately not replayed on localhost;
+                // they are tested directly against Production outside this render lane.
+                if(req.method==='HEAD')res.end();else res.end(body);
+                audit.push({path:target.pathname+target.search,status:upstream.status,contentType,bytes:body.length,ms:Date.now()-started});
               }catch(err){
-                if(err?.name!=='TimeoutError')throw err;
-                navigationTimedOut=true;
+                console.error('VISUAL_PROXY_ERROR',req.url,err.message);
+                res.statusCode=502;
+                res.setHeader('content-type','text/plain; charset=utf-8');
+                res.end('Production visual proxy failure');
+                audit.push({path:req.url,status:502,error:err.message,ms:Date.now()-started});
               }
-              if(!fulfilled)throw new Error(`Chrome main-frame document was not fulfilled for ${url}`);
-              await page.waitForSelector('body[data-evidence-commerce-v27="true"][data-trust-v28="true"]',{timeout:10000});
-              await page.waitForFunction(()=>((document.body?.innerText||'').length>80),{timeout:10000});
-              await page.waitForNetworkIdle({idleTime:400,timeout:2500}).catch(()=>{});
-              await new Promise(r=>setTimeout(r,200));
-              return {status:live.status,productionFetchMs:live.ms,navigationTimedOut,transport:'validated-production-html'};
-            };
-            for(const [vp,width,height] of viewports){
-              for(const [name,path] of pages){
-                console.log(`VISUAL_ROUTE ${vp} ${name} ${path}`);
-                const page=await browser.newPage();
-                await page.setViewport({width,height});
-                const errors=[];page.on('pageerror',e=>errors.push(e.message));
-                const nav=await navigate(page,base+path);
-                const state=await page.evaluate(()=>({
-                  sw:document.documentElement.scrollWidth,
-                  cw:document.documentElement.clientWidth,
-                  v27:document.body?.dataset?.evidenceCommerceV27||'',
-                  v28:document.body?.dataset?.trustV28||'',
-                  text:document.body?.innerText?.length||0,
-                  exactRetailer:document.querySelectorAll('.apg-exact-offers-v42').length,
-                  coverageNote:document.querySelectorAll('.apg-v27-coverage-note').length,
-                  researchView:document.querySelectorAll('[data-rv-root]').length
-                }));
-                await page.screenshot({path:`visual-v27/${vp}-${name}.png`,fullPage:true});
-                if(nav.status>=400||state.sw>state.cw+2||state.v27!=='true'||state.v28!=='true'||state.text<80||errors.length)bad.push(`${vp}/${name}: ${JSON.stringify(state)} status=${nav.status} errors=${errors.join('|')}`);
-                if(name==='search'&&state.researchView<1)bad.push(`${vp}/${name}: Research View missing`);
-                if(name==='retailer-product'&&state.exactRetailer!==1)bad.push(`${vp}/${name}: expected one exact retailer block, found ${state.exactRetailer}`);
-                if(['laptops','headphones'].includes(name)&&state.coverageNote!==1)bad.push(`${vp}/${name}: v27 coverage note missing/duplicated`);
-                report.push({vp,name,...nav,...state,errors});
-                if(nav.navigationTimedOut)console.log(`VISUAL_NAVIGATION_SETTLE_WARNING ${vp} ${name}`);
-                await page.close();
-              }
-              console.log(`VISUAL_ROUTE ${vp} scout-open /`);
+            });
+            await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve)});
+            const address=server.address();
+            const renderBase=`http://127.0.0.1:${address.port}`;
+            console.log(`VISUAL_PRODUCTION_PROXY ${renderBase} -> ${base}`);
+
+            const browser=await puppeteer.launch({headless:true,executablePath:process.env.CHROME,args:['--no-sandbox']});
+            const report=[],bad=[];
+            const preparePage=async(width,height)=>{
               const page=await browser.newPage();
               await page.setViewport({width,height});
-              const errors=[];page.on('pageerror',e=>errors.push(e.message));
-              const nav=await navigate(page,base+'/');
-              const open=await page.$('[data-v26-scout-open]')||await page.$('#apgAssistantLauncher');
-              if(!open)bad.push(`${vp}/scout: launcher missing`);
-              else{await open.click();await new Promise(r=>setTimeout(r,250));}
-              const scout=await page.evaluate(()=>({
-                sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,
-                open:!document.getElementById('apgAssistantPanel')?.hidden,
-                input:!!document.querySelector('.scout-input')
-              }));
-              await page.screenshot({path:`visual-v27/${vp}-scout-open.png`,fullPage:false});
-              if(nav.status>=400||scout.sw>scout.cw+2||!scout.open||!scout.input||errors.length)bad.push(`${vp}/scout: ${JSON.stringify(scout)} status=${nav.status} ${errors.join('|')}`);
-              report.push({vp,name:'scout-open',...nav,...scout,errors});
-              await page.close();
+              await page.setRequestInterception(true);
+              page.on('request',req=>{
+                const url=req.url();
+                if(url.startsWith(renderBase)||url.startsWith('data:')||url.startsWith('blob:')||url==='about:blank')req.continue().catch(()=>{});
+                else{
+                  console.log(`VISUAL_BLOCKED_EXTERNAL ${url}`);
+                  req.abort('blockedbyclient').catch(()=>{});
+                }
+              });
+              return page;
+            };
+            const navigate=async(page,path)=>{
+              const renderUrl=renderBase+path;
+              const response=await page.goto(renderUrl,{waitUntil:'domcontentloaded',timeout:30000});
+              await page.waitForSelector('body[data-evidence-commerce-v27="true"][data-trust-v28="true"]',{timeout:10000});
+              await page.waitForFunction(()=>((document.body?.innerText||'').length>80),{timeout:10000});
+              await page.waitForNetworkIdle({idleTime:400,timeout:3000}).catch(()=>{});
+              await new Promise(r=>setTimeout(r,200));
+              return {status:response?.status()||0,productionUrl:base+path,renderUrl,transport:'validated-production-byte-proxy'};
+            };
+            try{
+              for(const [vp,width,height] of viewports){
+                for(const [name,path] of pages){
+                  console.log(`VISUAL_ROUTE ${vp} ${name} ${path}`);
+                  const page=await preparePage(width,height);
+                  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+                  const nav=await navigate(page,path);
+                  const state=await page.evaluate(()=>({
+                    sw:document.documentElement.scrollWidth,
+                    cw:document.documentElement.clientWidth,
+                    v27:document.body?.dataset?.evidenceCommerceV27||'',
+                    v28:document.body?.dataset?.trustV28||'',
+                    text:document.body?.innerText?.length||0,
+                    exactRetailer:document.querySelectorAll('.apg-exact-offers-v42').length,
+                    coverageNote:document.querySelectorAll('.apg-v27-coverage-note').length,
+                    researchView:document.querySelectorAll('[data-rv-root]').length
+                  }));
+                  await page.screenshot({path:`visual-v27/${vp}-${name}.png`,fullPage:true});
+                  if(nav.status>=400||state.sw>state.cw+2||state.v27!=='true'||state.v28!=='true'||state.text<80||errors.length)bad.push(`${vp}/${name}: ${JSON.stringify(state)} status=${nav.status} errors=${errors.join('|')}`);
+                  if(name==='search'&&state.researchView<1)bad.push(`${vp}/${name}: Research View missing`);
+                  if(name==='retailer-product'&&state.exactRetailer!==1)bad.push(`${vp}/${name}: expected one exact retailer block, found ${state.exactRetailer}`);
+                  if(['laptops','headphones'].includes(name)&&state.coverageNote!==1)bad.push(`${vp}/${name}: v27 coverage note missing/duplicated`);
+                  report.push({vp,name,...nav,...state,errors});
+                  await page.close();
+                }
+                console.log(`VISUAL_ROUTE ${vp} scout-open /`);
+                const page=await preparePage(width,height);
+                const errors=[];page.on('pageerror',e=>errors.push(e.message));
+                const nav=await navigate(page,'/');
+                const open=await page.$('[data-v26-scout-open]')||await page.$('#apgAssistantLauncher');
+                if(!open)bad.push(`${vp}/scout: launcher missing`);
+                else{await open.click();await new Promise(r=>setTimeout(r,250));}
+                const scout=await page.evaluate(()=>({
+                  sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,
+                  open:!document.getElementById('apgAssistantPanel')?.hidden,
+                  input:!!document.querySelector('.scout-input')
+                }));
+                await page.screenshot({path:`visual-v27/${vp}-scout-open.png`,fullPage:false});
+                if(nav.status>=400||scout.sw>scout.cw+2||!scout.open||!scout.input||errors.length)bad.push(`${vp}/scout: ${JSON.stringify(scout)} status=${nav.status} ${errors.join('|')}`);
+                report.push({vp,name:'scout-open',...nav,...scout,errors});
+                await page.close();
+              }
+            }finally{
+              await browser.close().catch(()=>{});
+              await new Promise(resolve=>server.close(resolve));
             }
-            await browser.close();
             fs.writeFileSync('visual-v27/report.json',JSON.stringify(report,null,2));
+            fs.writeFileSync('visual-v27/production-proxy-audit.json',JSON.stringify(audit,null,2));
+            const htmlFailures=audit.filter(row=>row.status>=400||row.error);
+            if(htmlFailures.length)bad.push(`Production proxy recorded ${htmlFailures.length} failed request(s)`);
+            if(report.length!==20)bad.push(`Expected 20 visual states, got ${report.length}`);
             if(bad.length){console.error(bad.join('\n'));process.exitCode=1;return;}
             console.log(`V27_VISUAL_CERTIFICATION=${report.length}_STATES_PASS`);
           })().catch(err=>{console.error(err);process.exit(1)});
@@ -194,7 +238,7 @@ jobs:
           set -euo pipefail
           if [ "$JOB_STATUS" = "success" ]; then
             api_state=success
-            description='Fresh desktop/mobile v27 visual matrix passed'
+            description='Fresh Production-byte desktop/mobile visual matrix passed'
           else
             api_state=failure
             description='v27 visual certification failed; inspect workflow'
