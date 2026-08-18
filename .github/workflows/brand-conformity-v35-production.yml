@@ -1,0 +1,101 @@
+name: APG Brand Conformity v35 Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: read
+  statuses: write
+
+jobs:
+  production-brand-certification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      BASE_URL: https://australianproductguide.au
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Wait for exact Production SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 150); do
+            curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments?sha=$SHA" >/tmp/v35-deployments.json
+            id=$(jq -r '[.[]|select(.environment=="Production" or .original_environment=="Production")][0].id//empty' /tmp/v35-deployments.json)
+            if [ -n "$id" ]; then
+              curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments/$id/statuses" >/tmp/v35-statuses.json
+              state=$(jq -r '.[0].state//empty' /tmp/v35-statuses.json)
+              [ "$state" = failure ] || [ "$state" = error ] && exit 1
+              [ "$state" = success ] && exit 0
+            fi
+            sleep 5
+          done
+          echo 'Exact Production deployment not observed for v35' >&2
+          exit 1
+      - name: Verify v35 public identity contract
+        run: |
+          set -euo pipefail
+          curl -fsSL "$BASE_URL/" >/tmp/v35-home.html
+          curl -fsSL "$BASE_URL/search/?q=robot+vacuum" >/tmp/v35-search.html
+          grep -q 'data-brand-conformity-v35="true"' /tmp/v35-home.html
+          grep -q '/assets/brand-conformity-v35.css?v=35' /tmp/v35-home.html
+          grep -q '/assets/favicon.svg?v=35' /tmp/v35-home.html
+          grep -q '/assets/apg-social-card.png?v=35' /tmp/v35-home.html
+          grep -q 'property="og:image:type" content="image/png"' /tmp/v35-home.html
+          grep -q 'property="og:image:width" content="1200"' /tmp/v35-home.html
+          grep -q 'property="og:image:height" content="630"' /tmp/v35-home.html
+          grep -q 'name="twitter:image"' /tmp/v35-home.html
+          grep -q '/assets/apple-touch-icon.png?v=35' /tmp/v35-home.html
+          grep -q '/site.webmanifest?v=35' /tmp/v35-home.html
+          grep -q 'data-apg-scout-character="v34.1"' /tmp/v35-home.html
+          grep -q 'apg-rv-v43' /tmp/v35-search.html
+          curl -fsSL "$BASE_URL/assets/brand-conformity-v35.css?v=35" >/tmp/v35.css
+          grep -q -- '--rv-teal:#2563EB' /tmp/v35.css
+          ! grep -Eqi '#087c76|#075e5a|#dff3ee|#def2ec|#99cfc2|#0c837a|#08716b' /tmp/v35.css
+          curl -fsSL "$BASE_URL/assets/apg-social-card.png?v=35" -o /tmp/social.png
+          test "$(xxd -p -l 8 /tmp/social.png)" = '89504e470d0a1a0a'
+      - name: Audit every canonical page and representative responsive states
+        run: |
+          set -euo pipefail
+          CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser)
+          node --check scripts/brand-conformity-v35-production.js
+          npm install --no-save --package-lock=false puppeteer-core@24.16.0 >/dev/null 2>&1
+          mkdir -p visual-v35
+          CHROME="$CHROME" BASE_URL="$BASE_URL" VISUAL_OUT=visual-v35 CRAWL_CONCURRENCY=10 node scripts/brand-conformity-v35-production.js
+      - name: Confirm main remained on certified SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          current=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/commits/main" | jq -r '.sha')
+          test "$current" = "$SHA" || { echo "main advanced to $current during v35 certification" >&2; exit 1; }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: apg-v35-brand-conformity-${{ github.run_id }}
+          path: visual-v35
+          retention-days: 30
+          if-no-files-found: warn
+      - name: Publish retrievable v35 certification status
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          state=success; [ "$JOB_STATUS" = success ] || state=failure
+          curl -fsSL -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/statuses/$SHA" -d "$(jq -n --arg state "$state" --arg context 'APG v35 Brand Conformity Certification' --arg description "Every-page search/share/browser identity certification: $JOB_STATUS" --arg target_url "https://github.com/$REPO/actions/runs/$RUN_ID" '{state:$state,context:$context,description:$description,target_url:$target_url}')" >/dev/null

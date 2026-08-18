@@ -1,0 +1,26 @@
+name: APG Brand Conformity v35
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  source-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify v35 source contract
+        run: |
+          set -euo pipefail
+          node --check lib/brand-conformity-v35.js
+          node --check scripts/brand-conformity-v35-qa.js
+          node scripts/brand-conformity-v35-qa.js
+          grep -q "brand-conformity-v35" api/index.js
