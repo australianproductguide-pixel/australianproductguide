@@ -1,0 +1,178 @@
+/* Australian Product Guide — Platform Cohesion v26
+   A restrained cross-platform layer: clearer hierarchy, tighter desktop use of
+   space, mobile-first comparison, consistent decision surfaces and accessible
+   Scout entry points. It intentionally avoids framework or animation overhead. */
+
+:root{
+  --apg-v26-ink:#082735;
+  --apg-v26-muted:#52636b;
+  --apg-v26-line:#dbe4e7;
+  --apg-v26-soft:#f6f9f9;
+  --apg-v26-soft-teal:#eef8f5;
+  --apg-v26-teal:#087c76;
+  --apg-v26-gold:#f4b548;
+  --apg-v26-radius:16px;
+  --apg-v26-radius-sm:11px;
+}
+
+html{scroll-padding-top:112px}
+body[data-cohesion-v26="true"]{color:var(--apg-v26-ink);text-rendering:optimizeLegibility}
+body[data-cohesion-v26="true"] main{min-width:0}
+body[data-cohesion-v26="true"] .wrap{width:min(100% - 40px,1240px)}
+body[data-cohesion-v26="true"] .section{padding-block:clamp(44px,5vw,72px)}
+body[data-cohesion-v26="true"] h1,
+body[data-cohesion-v26="true"] h2,
+body[data-cohesion-v26="true"] h3{letter-spacing:-.018em;text-wrap:balance}
+body[data-cohesion-v26="true"] .lede{max-width:760px}
+body[data-cohesion-v26="true"] p{line-height:1.66}
+body[data-cohesion-v26="true"] small,
+body[data-cohesion-v26="true"] .fine-inline{line-height:1.48}
+
+/* One calmer surface language across generations of APG components. */
+body[data-cohesion-v26="true"] :where(.product-card,.category-card,.winner-card,.workspace-panel,.finder-panel,.decision-engine-card,.soft-panel,.v6-diff-card,.apg-rv-card-v43,.apg-rv-answer-v43,.apg-rv-brief-v43){
+  border-color:var(--apg-v26-line);
+  border-radius:var(--apg-v26-radius);
+  box-shadow:0 1px 2px rgba(8,39,53,.045);
+}
+body[data-cohesion-v26="true"] :where(.button,button,input,select,textarea,summary,a){
+  -webkit-tap-highlight-color:transparent;
+}
+body[data-cohesion-v26="true"] :where(a,button,input,select,textarea,summary):focus-visible{
+  outline:3px solid rgba(8,124,118,.34);
+  outline-offset:3px;
+}
+body[data-cohesion-v26="true"] :where(input,select,textarea){font-size:16px}
+
+/* Header: Scout becomes a first-class decision tool without creating a new route. */
+.apg-v26-scout-nav{
+  appearance:none;border:0;background:transparent;color:inherit;font:inherit;font-weight:700;
+  padding:0;cursor:pointer;white-space:nowrap;
+}
+.apg-v26-scout-nav:hover{text-decoration:underline;text-underline-offset:4px}
+.apg-v26-scout-mobile{width:100%;border:0;text-align:left;font:inherit;cursor:pointer}
+.primary-nav .nav-inner{gap:clamp(18px,2.15vw,31px)}
+.header-search{min-width:0}
+.header-search .global-search{max-width:680px}
+.search-suggestions{z-index:60}
+
+/* Search becomes an evidence-backed research entry point while the normal result
+   inventory remains available underneath. */
+body[data-v26-page="search"] .search-hero{padding-bottom:clamp(30px,4vw,48px)}
+body[data-v26-page="search"] .apg-rv-v43{border-block:1px solid var(--apg-v26-line);background:#f6f9f9}
+body[data-v26-page="search"] .apg-rv-layout-v43{align-items:start}
+body[data-v26-page="search"] .apg-rv-answer-v43,
+body[data-v26-page="search"] .apg-rv-brief-v43{background:#fff}
+body[data-v26-page="search"] .apg-rv-products-v43{gap:14px}
+body[data-v26-page="search"] .apg-rv-card-v43{min-width:0}
+body[data-v26-page="search"] .apg-rv-follow-chips-v43 button,
+body[data-v26-page="search"] .apg-rv-follow-chips-v43 a{min-height:42px}
+body[data-v26-page="search"] #all-results-v43{scroll-margin-top:130px}
+
+/* Product and retailer evidence: make decision information scan cleanly. */
+body[data-v26-page="product"] .product-hero,
+body[data-v26-page="product"] .product-hero-grid{align-items:start}
+body[data-v26-page="product"] .retailer-row{border-radius:var(--apg-v26-radius-sm)}
+body[data-v26-page="product"] .apg-exact-offers-v42{display:grid;gap:10px;margin-top:14px}
+body[data-v26-page="product"] .apg-exact-offers-v42>.fine-inline{margin:0 0 2px;color:var(--apg-v26-muted)}
+body[data-v26-page="product"] .product-visual.large{min-height:min(410px,42vw)}
+
+/* Decision and account surfaces use denser desktop space without feeling busy. */
+body[data-v26-page="decision"] .decision-hero-grid,
+body[data-v26-page="account"] .decision-hero-grid{gap:clamp(28px,5vw,72px)}
+body[data-v26-page="account"] .workspace-grid{gap:18px}
+body[data-v26-page="account"] .workspace-panel{min-width:0}
+body[data-v26-page="account"] .workspace-controls{gap:12px;flex-wrap:wrap}
+
+/* Comparison is a desktop table and a genuine mobile decision pattern rather
+   than a desktop table squeezed into a narrow viewport. */
+body[data-v26-page="compare"] .compare-wrap{border:1px solid var(--apg-v26-line);border-radius:var(--apg-v26-radius);background:#fff}
+body[data-v26-page="compare"] table.compare{width:100%;border-collapse:separate;border-spacing:0}
+body[data-v26-page="compare"] table.compare th,
+body[data-v26-page="compare"] table.compare td{vertical-align:top;line-height:1.55}
+body[data-v26-page="compare"] table.compare thead th{position:sticky;top:0;z-index:2;background:#fff}
+body[data-v26-page="compare"] .comparison-summary{gap:18px}
+body[data-v26-page="compare"] .v6-diff-grid{gap:18px}
+
+/* Scout stays usable on short mobile viewports and no longer obscures as much UI. */
+.apg-assistant-panel{max-height:min(760px,calc(100dvh - 28px))}
+.apg-assistant-body{overscroll-behavior:contain}
+
+/* Avoid visual noise from nested cards. */
+body[data-cohesion-v26="true"] .soft-panel :where(.product-card,.winner-card),
+body[data-cohesion-v26="true"] .workspace-panel :where(.product-card){box-shadow:none}
+
+@media (min-width:1100px){
+  body[data-cohesion-v26="true"] .hero-shell .hero{padding-block:clamp(50px,5.2vw,76px)}
+  body[data-v26-page="category"] .product-grid,
+  body[data-v26-page="search"] .product-grid{gap:20px}
+}
+
+@media (max-width:860px){
+  body[data-cohesion-v26="true"] .wrap{width:min(100% - 30px,1240px)}
+  .primary-nav .apg-v26-scout-nav{display:none}
+  .apg-assistant-panel{inset:auto 10px 10px 10px;width:auto;max-width:none}
+  .apg-assistant-launcher{right:12px;bottom:12px}
+  body[data-v26-page="search"] .apg-rv-layout-v43{grid-template-columns:1fr}
+}
+
+@media (max-width:720px){
+  html{scroll-padding-top:86px}
+  body[data-cohesion-v26="true"] .wrap{width:min(100% - 24px,1240px)}
+  body[data-cohesion-v26="true"] .section{padding-block:38px}
+  body[data-cohesion-v26="true"] h1{font-size:clamp(2rem,10vw,3rem);line-height:1.03}
+  body[data-cohesion-v26="true"] h2{line-height:1.08}
+  body[data-cohesion-v26="true"] .button,
+  body[data-cohesion-v26="true"] button{min-height:44px}
+
+  /* Progressive stacked comparison. JS first derives labels from the original
+     table header and only then sets data-v26-compare-enhanced. Without JS the
+     established comparison fallback remains untouched. */
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] .compare-wrap{overflow:visible;border:0;background:transparent}
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"]{display:block;border:0;background:transparent}
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"] thead{
+    position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;
+    overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important;
+  }
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"] tbody,
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"] tr,
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"] td{display:block;width:100%}
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"] tr{
+    margin:0 0 14px;border:1px solid var(--apg-v26-line);border-radius:14px;background:#fff;overflow:hidden;
+  }
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"] td{
+    display:grid;grid-template-columns:minmax(110px,36%) 1fr;gap:14px;padding:13px 14px;border:0;border-top:1px solid #edf1f2;
+    overflow-wrap:anywhere;
+  }
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"] td:first-child{
+    display:block;padding:11px 14px;border-top:0;background:var(--apg-v26-soft);font-weight:800;color:var(--apg-v26-ink);
+  }
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"] td:not(:first-child)::before{
+    content:attr(data-label);font-size:.76rem;line-height:1.25;font-weight:800;color:var(--apg-v26-muted);text-transform:uppercase;letter-spacing:.035em;
+  }
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"] td[colspan]{grid-template-columns:1fr}
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"] td[colspan]::before{content:"Both products"}
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] .pair-visuals{grid-template-columns:1fr;gap:12px}
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] .big-vs{justify-self:start;margin:0}
+
+  body[data-v26-page="product"] .retailer-row{grid-template-columns:auto 1fr;gap:10px}
+  body[data-v26-page="product"] .retailer-action{grid-column:2;justify-self:start}
+  body[data-v26-page="product"] .product-visual.large{min-height:300px}
+
+  .apg-assistant-launcher-copy small{display:none}
+  .apg-assistant-launcher{max-width:150px}
+  .apg-assistant-panel{max-height:calc(100dvh - 16px);inset:auto 8px 8px 8px}
+}
+
+@media (max-width:480px){
+  .apg-assistant-launcher-copy{display:none}
+  .apg-assistant-launcher{width:54px;height:54px;padding:6px;border-radius:50%;justify-content:center}
+  .apg-assistant-launcher-icon{margin:0}
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"] td{grid-template-columns:1fr;gap:5px}
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"] td:not(:first-child)::before{text-transform:none;letter-spacing:0}
+}
+
+@media (prefers-reduced-motion:reduce){
+  body[data-cohesion-v26="true"] *,
+  body[data-cohesion-v26="true"] *::before,
+  body[data-cohesion-v26="true"] *::after{scroll-behavior:auto!important;transition-duration:.001ms!important;animation-duration:.001ms!important;animation-iteration-count:1!important}
+}

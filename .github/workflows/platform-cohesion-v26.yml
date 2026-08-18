@@ -1,0 +1,27 @@
+name: APG Platform Cohesion v26 QA
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  platform-cohesion-v26:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax check
+        run: |
+          node --check lib/platform-cohesion-v26.js
+          node --check public/assets/platform-cohesion-v26.js
+          node --check scripts/platform-cohesion-v26-qa.js
+      - name: Run Platform Cohesion regression QA
+        run: node scripts/platform-cohesion-v26-qa.js

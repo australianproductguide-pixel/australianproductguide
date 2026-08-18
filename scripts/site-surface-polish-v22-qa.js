@@ -16,6 +16,8 @@ const profilePath=path.join(__dirname,'../lib/account-profile-v24.js');
 const profile=fs.existsSync(profilePath)?fs.readFileSync(profilePath,'utf8'):'';
 const governancePath=path.join(__dirname,'../lib/account-governance-v25.js');
 const governance=fs.existsSync(governancePath)?fs.readFileSync(governancePath,'utf8'):'';
+const cohesionPath=path.join(__dirname,'../lib/platform-cohesion-v26.js');
+const cohesion=fs.existsSync(cohesionPath)?fs.readFileSync(cohesionPath,'utf8'):'';
 
 assert(out.includes('data-surface-v22="true"'),'v22 body marker should be injected');
 assert.strictEqual((twice.match(/data-surface-v22="true"/g)||[]).length,1,'v22 body marker should only appear once');
@@ -36,7 +38,8 @@ const directV22=api.includes("require('../lib/site-surface-polish-v22')");
 const viaV23=api.includes("require('../lib/auth-hardening-v23')")&&auth.includes("require('./site-surface-polish-v22')");
 const viaV24=api.includes("require('../lib/account-profile-v24')")&&profile.includes("require('./auth-hardening-v23')")&&auth.includes("require('./site-surface-polish-v22')");
 const viaV25=api.includes("require('../lib/account-governance-v25')")&&governance.includes("require('./account-profile-v24')")&&profile.includes("require('./auth-hardening-v23')")&&auth.includes("require('./site-surface-polish-v22')");
-assert(directV22||viaV23||viaV24||viaV25,'api entry point must preserve the v22 site-surface layer, directly or through the current wrapper chain');
+const viaV26=api.includes("require('../lib/platform-cohesion-v26')")&&cohesion.includes("require('./account-governance-v25')")&&governance.includes("require('./account-profile-v24')")&&profile.includes("require('./auth-hardening-v23')")&&auth.includes("require('./site-surface-polish-v22')");
+assert(directV22||viaV23||viaV24||viaV25||viaV26,'api entry point must preserve the v22 site-surface layer, directly or through the current wrapper chain');
 assert(wrapper.includes("require('./mobile-menu-polish-v21')"),'v22 must compose over v21 rather than bypassing it');
 assert(!wrapper.includes('recommendationScore')&&!wrapper.includes('affiliateCommission'),'v22 wrapper must remain presentation-only');
 

@@ -6,8 +6,12 @@ const governance=require('../lib/account-governance-v25');
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 const api=read('api/index.js');
 const source=read('lib/account-governance-v25.js');
+const cohesionPath=path.join(__dirname,'../lib/platform-cohesion-v26.js');
+const cohesion=fs.existsSync(cohesionPath)?fs.readFileSync(cohesionPath,'utf8'):'';
 
-assert(api.includes("require('../lib/account-governance-v25')"),'api/index.js must route through account governance v25');
+const directV25=api.includes("require('../lib/account-governance-v25')");
+const viaV26=api.includes("require('../lib/platform-cohesion-v26')")&&cohesion.includes("require('./account-governance-v25')");
+assert(directV25||viaV26,'api/index.js must preserve account governance v25 directly or through platform cohesion v26');
 assert(source.includes("require('./account-profile-v24')"),'v25 must compose over the current profile/auth chain');
 assert(source.includes('Effective 18 August 2026'),'v25 must refresh policy effective dates');
 assert(source.includes('download a JSON copy'),'privacy disclosure must explain the signed-in data export');
