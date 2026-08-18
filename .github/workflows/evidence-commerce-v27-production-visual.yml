@@ -90,10 +90,12 @@ jobs:
             };
             const navigate=async(page,url)=>{
               const live=await productionDocument(url);
-              let navigationTimedOut=false;
+              let navigationTimedOut=false,fulfilled=false;
               await page.setRequestInterception(true);
               const onRequest=req=>{
-                if(req.isNavigationRequest()&&req.frame()===page.mainFrame()&&req.url()===url){
+                if(req.isNavigationRequest()&&req.frame()===page.mainFrame()&&!fulfilled){
+                  fulfilled=true;
+                  console.log(`VISUAL_DOCUMENT_FULFILLED ${url} chrome=${req.url()} production=${live.url}`);
                   const headers={'cache-control':'no-store','x-apg-visual-source':'validated-production-html'};
                   if(live.csp)headers['content-security-policy']=live.csp;
                   req.respond({status:live.status,contentType:'text/html; charset=utf-8',headers,body:live.html}).catch(()=>{});
@@ -106,6 +108,7 @@ jobs:
                 if(err?.name!=='TimeoutError')throw err;
                 navigationTimedOut=true;
               }
+              if(!fulfilled)throw new Error(`Chrome main-frame document was not fulfilled for ${url}`);
               await page.waitForSelector('body[data-evidence-commerce-v27="true"][data-trust-v28="true"]',{timeout:10000});
               await page.waitForFunction(()=>((document.body?.innerText||'').length>80),{timeout:10000});
               await page.waitForNetworkIdle({idleTime:400,timeout:2500}).catch(()=>{});
