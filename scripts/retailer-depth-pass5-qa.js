@@ -23,8 +23,10 @@ check('pass 5 materially raises exact Australian retailer depth',()=>{
   const x=observability.retailerSnapshot();
   assert.ok(x.exactOfferCount>=52,`expected >=52 exact offers, got ${x.exactOfferCount}`);
   assert.ok(x.productsWithExactOffers>=46,`expected >=46 products with exact offers, got ${x.productsWithExactOffers}`);
-  assert.ok(x.independentRetailerOfferCount>=42,`expected >=42 independent/direct offers, got ${x.independentRetailerOfferCount}`);
-  assert.ok(x.verifiedRetailers>=19,`expected >=19 verified retailer/manufacturer sources, got ${x.verifiedRetailers}`);
+  assert.ok(x.independentRetailerOfferCount>=41,`expected >=41 independent retailer offers, got ${x.independentRetailerOfferCount}`);
+  assert.ok(x.manufacturerDirectOfferCount>=1,`expected >=1 manufacturer-direct offer, got ${x.manufacturerDirectOfferCount}`);
+  assert.ok(x.independentOrDirectOfferCount>=42,`expected >=42 independent-or-direct offers, got ${x.independentOrDirectOfferCount}`);
+  assert.ok(x.verifiedRetailers>=20,`expected >=20 verified retailer/manufacturer sources, got ${x.verifiedRetailers}`);
 });
 
 check('pass 5 closes five high-intent category coverage gaps',()=>{
