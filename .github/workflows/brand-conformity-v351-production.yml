@@ -1,0 +1,99 @@
+name: APG Brand Conformity v35.1 Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: read
+  statuses: write
+
+jobs:
+  dynamic-edge-certification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      BASE_URL: https://australianproductguide.au
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Wait for exact Production SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 120); do
+            curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments?sha=$SHA" >/tmp/v351-deployments.json
+            id=$(jq -r '[.[]|select(.environment=="Production" or .original_environment=="Production")][0].id//empty' /tmp/v351-deployments.json)
+            if [ -n "$id" ]; then
+              curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments/$id/statuses" >/tmp/v351-statuses.json
+              state=$(jq -r '.[0].state//empty' /tmp/v351-statuses.json)
+              [ "$state" = failure ] || [ "$state" = error ] && exit 1
+              [ "$state" = success ] && exit 0
+            fi
+            sleep 5
+          done
+          echo 'Exact Production deployment not observed for v35.1' >&2
+          exit 1
+      - name: Verify current dynamic/error public contract
+        run: |
+          set -euo pipefail
+          curl -fsSL "$BASE_URL/search/?q=robot+vacuum+for+pet+hair" >/tmp/v351-search.html
+          curl -fsSL "$BASE_URL/my-apg/" >/tmp/v351-account.html
+          code=$(curl -sS -o /tmp/v351-404.html -w '%{http_code}' "$BASE_URL/this-page-does-not-exist-brand-audit-v351/")
+          test "$code" = 404
+          for f in /tmp/v351-search.html /tmp/v351-account.html /tmp/v351-404.html; do
+            grep -q 'data-brand-conformity-v351="true"' "$f"
+            grep -q 'data-brand-conformity-v35="true"' "$f"
+            grep -q 'data-brand-fidelity-v32="true"' "$f"
+            grep -q 'apg-brand-v32-lockup' "$f"
+            ! grep -q 'v7-logo-lockup' "$f"
+            grep -q '/assets/favicon.svg?v=35.1' "$f"
+            grep -q '/favicon.ico?v=35.1' "$f"
+            grep -q '/assets/apg-social-card.png?v=35.1' "$f"
+            grep -q 'name="twitter:image"' "$f"
+            grep -q '/site.webmanifest?v=35.1' "$f"
+          done
+          curl -fsSL "$BASE_URL/favicon.ico?v=35.1" -o /tmp/favicon.ico
+          test "$(xxd -p -l 6 /tmp/favicon.ico)" = '000001000100'
+      - name: Render Search My APG and 404 on desktop and mobile
+        run: |
+          set -euo pipefail
+          CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser)
+          npm install --no-save --package-lock=false puppeteer-core@24.16.0 >/dev/null 2>&1
+          mkdir -p visual-v351
+          CHROME="$CHROME" BASE_URL="$BASE_URL" VISUAL_OUT=visual-v351 node scripts/brand-conformity-v351-production.js
+      - name: Confirm main remained on certified SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          current=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/commits/main" | jq -r '.sha')
+          test "$current" = "$SHA" || { echo "main advanced to $current during v35.1 certification" >&2; exit 1; }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: apg-v351-dynamic-edge-${{ github.run_id }}
+          path: visual-v351
+          retention-days: 30
+          if-no-files-found: warn
+      - name: Publish retrievable v35.1 certification status
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          state=success; [ "$JOB_STATUS" = success ] || state=failure
+          curl -fsSL -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/statuses/$SHA" -d "$(jq -n --arg state "$state" --arg context 'APG v35.1 Dynamic/Edge Certification' --arg description "Search/My APG/404/favicon certification: $JOB_STATUS" --arg target_url "https://github.com/$REPO/actions/runs/$RUN_ID" '{state:$state,context:$context,description:$description,target_url:$target_url}')" >/dev/null
