@@ -83,9 +83,13 @@ check('mobile comparison enhancement is progressive and labelled',()=>{
   assert.match(css,/content:attr\(data-label\)/);
 });
 
-check('release entry point targets platform cohesion v26',()=>{
+check('release entry point preserves platform cohesion v26 directly or through v27',()=>{
   const entry=fs.readFileSync(path.join(__dirname,'../api/index.js'),'utf8');
-  assert.match(entry,/platform-cohesion-v26/);
+  const v27Path=path.join(__dirname,'../lib/evidence-commerce-depth-v27.js');
+  const v27=fs.existsSync(v27Path)?fs.readFileSync(v27Path,'utf8'):'';
+  const direct=entry.includes("require('../lib/platform-cohesion-v26')");
+  const viaV27=entry.includes("require('../lib/evidence-commerce-depth-v27')")&&v27.includes("require('./platform-cohesion-v26')");
+  assert.ok(direct||viaV27,'release entry point must preserve platform cohesion v26 directly or through v27');
 });
 
 check('cohesion does not manufacture reviews, ratings or offers',()=>{

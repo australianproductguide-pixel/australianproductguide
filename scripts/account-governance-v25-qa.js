@@ -6,12 +6,15 @@ const governance=require('../lib/account-governance-v25');
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 const api=read('api/index.js');
 const source=read('lib/account-governance-v25.js');
+const v27Path=path.join(__dirname,'../lib/evidence-commerce-depth-v27.js');
+const v27=fs.existsSync(v27Path)?fs.readFileSync(v27Path,'utf8'):'';
 const cohesionPath=path.join(__dirname,'../lib/platform-cohesion-v26.js');
 const cohesion=fs.existsSync(cohesionPath)?fs.readFileSync(cohesionPath,'utf8'):'';
 
 const directV25=api.includes("require('../lib/account-governance-v25')");
 const viaV26=api.includes("require('../lib/platform-cohesion-v26')")&&cohesion.includes("require('./account-governance-v25')");
-assert(directV25||viaV26,'api/index.js must preserve account governance v25 directly or through platform cohesion v26');
+const viaV27=api.includes("require('../lib/evidence-commerce-depth-v27')")&&v27.includes("require('./platform-cohesion-v26')")&&cohesion.includes("require('./account-governance-v25')");
+assert(directV25||viaV26||viaV27,'api/index.js must preserve account governance v25 directly or through the current v26/v27 wrapper chain');
 assert(source.includes("require('./account-profile-v24')"),'v25 must compose over the current profile/auth chain');
 assert(source.includes('Effective 18 August 2026'),'v25 must refresh policy effective dates');
 assert(source.includes('download a JSON copy'),'privacy disclosure must explain the signed-in data export');

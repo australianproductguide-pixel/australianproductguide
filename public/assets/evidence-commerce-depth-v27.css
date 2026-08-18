@@ -1,0 +1,12 @@
+/* APG Evidence & Commerce Depth v27 — restrained additions over Platform Cohesion v26. */
+.apg-v27-scout-continuity{margin:0 0 14px;padding:12px;border:1px solid #c8ddd9;border-radius:16px;background:#f7fbfa;display:grid;gap:8px}
+.apg-v27-scout-continuity>button:first-child{appearance:none;border:0;background:transparent;padding:0;text-align:left;color:inherit;cursor:pointer;display:grid;gap:3px}
+.apg-v27-scout-continuity span{font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#087c76}
+.apg-v27-scout-continuity strong{font-size:.98rem;color:#082735;text-transform:capitalize}
+.apg-v27-scout-continuity small{font-size:.78rem;line-height:1.45;color:#52656d}
+.apg-v27-forget{justify-self:start;border:0;background:none;padding:2px 0;color:#49636b;text-decoration:underline;text-underline-offset:3px;font:inherit;font-size:.76rem;cursor:pointer}
+.apg-v27-coverage-note{margin:18px auto 0;max-width:1180px;padding:12px 16px;border:1px solid #d9e5e2;border-radius:14px;background:#fbfdfc;color:#344d55;display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
+.apg-v27-coverage-note strong{color:#082735}.apg-v27-coverage-note small{display:block;margin-top:3px;line-height:1.45}
+.apg-v27-coverage-note a{white-space:nowrap;font-weight:700;color:#087c76}
+@media(max-width:720px){.apg-v27-coverage-note{margin:14px 16px 0;display:block}.apg-v27-coverage-note a{display:inline-block;margin-top:8px}}
+@media(prefers-reduced-motion:reduce){.apg-v27-scout-continuity *{scroll-behavior:auto!important;transition:none!important}}

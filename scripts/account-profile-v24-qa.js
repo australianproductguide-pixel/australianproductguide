@@ -4,6 +4,8 @@ const path=require('path');
 
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 const api=read('api/index.js');
+const v27Path=path.join(__dirname,'../lib/evidence-commerce-depth-v27.js');
+const v27=fs.existsSync(v27Path)?fs.readFileSync(v27Path,'utf8'):'';
 const cohesionPath=path.join(__dirname,'../lib/platform-cohesion-v26.js');
 const cohesion=fs.existsSync(cohesionPath)?fs.readFileSync(cohesionPath,'utf8'):'';
 const governancePath=path.join(__dirname,'../lib/account-governance-v25.js');
@@ -17,7 +19,8 @@ const css=read('public/assets/account-profile-v24.css');
 const directV24=api.includes("require('../lib/account-profile-v24')");
 const viaV25=api.includes("require('../lib/account-governance-v25')")&&governance.includes("require('./account-profile-v24')");
 const viaV26=api.includes("require('../lib/platform-cohesion-v26')")&&cohesion.includes("require('./account-governance-v25')")&&governance.includes("require('./account-profile-v24')");
-assert(directV24||viaV25||viaV26,'api/index.js must preserve account profile v24 directly, through governance v25, or through the v26 cohesion wrapper over governance v25');
+const viaV27=api.includes("require('../lib/evidence-commerce-depth-v27')")&&v27.includes("require('./platform-cohesion-v26')")&&cohesion.includes("require('./account-governance-v25')")&&governance.includes("require('./account-profile-v24')");
+assert(directV24||viaV25||viaV26||viaV27,'api/index.js must preserve account profile v24 directly or through the current v25/v26/v27 wrapper chain');
 assert(profile.includes("require('./auth-hardening-v23')"),'v24 must compose over auth hardening v23');
 assert(auth.includes("require('./site-surface-polish-v22')"),'v23 must continue preserving the site surface chain');
 assert(profile.includes("path==='/api/account/profile'"),'v24 must expose a signed-in profile endpoint');

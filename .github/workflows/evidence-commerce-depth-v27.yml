@@ -1,0 +1,29 @@
+name: APG Evidence Commerce Depth v27
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  evidence-commerce-depth-v27:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax check v27 source
+        run: |
+          node --check api/index.js
+          node --check data/catalogue-v27-retailers.js
+          node --check lib/intelligence-observability-v27.js
+          node --check lib/evidence-commerce-depth-v27.js
+          node --check public/assets/evidence-commerce-depth-v27.js
+          node --check scripts/evidence-commerce-depth-v27-qa.js
+          node --check scripts/catalogue-docs-reconciliation-v27.js
+      - name: Run Evidence Commerce Depth v27 QA
+        run: node scripts/evidence-commerce-depth-v27-qa.js
+      - name: Verify README catalogue reconciliation
+        run: node scripts/catalogue-docs-reconciliation-v27.js
