@@ -41,21 +41,29 @@ jobs:
           done
           echo 'Exact Production deployment not observed' >&2
           exit 1
-      - name: Verify v32 public contract and identity assets
+      - name: Verify final v32.2 public contract identity and Decision Lab SSR
         run: |
           set -euo pipefail
           curl -fsSL "$BASE_URL/" >/tmp/apg-v32-home.html
+          grep -q 'data-brand-fidelity-v322="true"' /tmp/apg-v32-home.html
           grep -q 'data-brand-fidelity-v32="true"' /tmp/apg-v32-home.html
           grep -q '/assets/brand-fidelity-v32.css?v=32' /tmp/apg-v32-home.html
           grep -q '/assets/brand-fidelity-v321.css?v=32.1' /tmp/apg-v32-home.html
+          grep -q '/assets/brand-fidelity-v322.css?v=32.2' /tmp/apg-v32-home.html
+          grep -q '/assets/brand-fidelity-v322.js?v=32.2' /tmp/apg-v32-home.html
           grep -q 'apg-brand-v32-lockup' /tmp/apg-v32-home.html
           grep -q 'apg-brand-v32-monogram-svg' /tmp/apg-v32-home.html
           grep -q 'id="scoutHat"' /tmp/apg-v32-home.html
           ! grep -q 'site-header[^>]*apg-brand-v30-lockup' /tmp/apg-v32-home.html
-          for asset in brand-fidelity-v32.css brand-fidelity-v321.css logo.svg logo-horizontal.svg logo-horizontal-dark.svg logo-white.svg logo-compact.svg logo-monogram.svg logo-symbol.svg logo-mono.svg favicon.svg app-icon.svg social.svg; do
+          for asset in brand-fidelity-v32.css brand-fidelity-v321.css brand-fidelity-v322.css brand-fidelity-v322.js logo.svg logo-horizontal.svg logo-horizontal-dark.svg logo-white.svg logo-compact.svg logo-monogram.svg logo-symbol.svg logo-mono.svg favicon.svg app-icon.svg social.svg; do
             curl -fsSL "$BASE_URL/assets/$asset" >/tmp/apg-v32-asset
             test -s /tmp/apg-v32-asset
           done
+          curl -fsSL "$BASE_URL/decision-lab/?q=75+inch+TV+for+a+bright+room+under+%242500" >/tmp/apg-v32-decision.html
+          grep -q 'data-brand-fidelity-v322="true"' /tmp/apg-v32-decision.html
+          grep -q 'Explainable shortlist' /tmp/apg-v32-decision.html
+          grep -q 'decision-results' /tmp/apg-v32-decision.html
+          grep -q 'Best fits in Televisions' /tmp/apg-v32-decision.html
           curl -fsSL "$BASE_URL/api/intelligence/observability" >/tmp/apg-v32-observability.json
           jq -e '.catalogue.products == 482 and .catalogue.categories == 90 and .catalogue.brands == 178 and .recommendation.affiliateRecommendationWeight == 0 and .releaseGate.pass == true' /tmp/apg-v32-observability.json >/dev/null
       - name: Render desktop tablet and mobile Production matrix
