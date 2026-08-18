@@ -64,7 +64,11 @@ check('mobile comparison enhancement is progressive and labelled',()=>{
   const css=fs.readFileSync(path.join(__dirname,'../public/assets/platform-cohesion-v26.css'),'utf8');
   assert.match(client,/data-label/);
   assert.match(client,/table\.compare/);
+  assert.match(client,/v26CompareEnhanced/);
+  assert.match(client,/v26MobileReady/);
   assert.match(css,/max-width:720px/);
+  assert.match(css,/data-v26-compare-enhanced="true"/);
+  assert.match(css,/data-v26-mobile-ready="true"/);
   assert.match(css,/content:attr\(data-label\)/);
 });
 
