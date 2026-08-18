@@ -8,5 +8,19 @@
 .apg-v27-coverage-note{margin:18px auto 0;max-width:1180px;padding:12px 16px;border:1px solid #d9e5e2;border-radius:14px;background:#fbfdfc;color:#344d55;display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
 .apg-v27-coverage-note strong{color:#082735}.apg-v27-coverage-note small{display:block;margin-top:3px;line-height:1.45}
 .apg-v27-coverage-note a{white-space:nowrap;font-weight:700;color:#087c76}
-@media(max-width:720px){.apg-v27-coverage-note{margin:14px 16px 0;display:block}.apg-v27-coverage-note a{display:inline-block;margin-top:8px}}
+@media(max-width:720px){
+  .apg-v27-coverage-note{margin:14px 16px 0;display:block}
+  .apg-v27-coverage-note a{display:inline-block;margin-top:8px}
+  /* Production visual certification found legacy negative bleed on category Decision
+     shortcut artwork could exceed a 390px viewport. Contain that exact component in
+     the first-party stylesheet so APG's `style-src 'self'` CSP can enforce the fix. */
+  body[data-evidence-commerce-v27="true"] .pick-card>.product-visual.v7-semantic-product-visual{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    margin-left:0!important;
+    margin-right:0!important;
+    box-sizing:border-box!important;
+  }
+}
 @media(prefers-reduced-motion:reduce){.apg-v27-scout-continuity *{scroll-behavior:auto!important;transition:none!important}}
