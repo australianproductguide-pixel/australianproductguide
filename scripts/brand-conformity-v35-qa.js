@@ -5,7 +5,7 @@ const assert=require('assert');
 const runtime=require('../lib/brand-conformity-v35');
 
 const api=fs.readFileSync(require.resolve('../api/index.js'),'utf8');
-assert(api.includes("require('../lib/brand-conformity-v35')"),'api/index.js must activate v35');
+assert(api.includes("require('../lib/brand-conformity-v35')")||api.includes("require('../lib/brand-conformity-v351')"),'api/index.js must activate v35 directly or through the governing v35.1 wrapper');
 assert.strictEqual(runtime.VERSION,'35');
 assert(runtime.css.includes('--apg35-blue:#2563EB'));
 assert(runtime.css.includes('--apg35-navy:#0F172A'));
