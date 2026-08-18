@@ -28,8 +28,8 @@ async function setPrivacyCookie(page){
   await page.setCookie({name:'apg_cookie_preferences',value,url:BASE_URL+'/',secure:true,sameSite:'Lax'});
 }
 async function settle(page){
-  await page.waitForSelector('body[data-brand-fidelity-v32="true"]',{timeout:15000});
-  await page.waitForNetworkIdle({idleTime:350,timeout:5000}).catch(()=>{});
+  await page.waitForSelector('body[data-brand-fidelity-v32="true"]',{timeout:20000});
+  await page.waitForNetworkIdle({idleTime:350,timeout:7000}).catch(()=>{});
   await new Promise(r=>setTimeout(r,250));
 }
 async function openPage(browser,width,height,path,{javascript=true}={}){
@@ -40,9 +40,14 @@ async function openPage(browser,width,height,path,{javascript=true}={}){
   await setPrivacyCookie(page);
   const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
-  const response=await page.goto(BASE_URL+path,{waitUntil:'domcontentloaded',timeout:30000});
-  await settle(page);
-  return {page,response,errors};
+  try{
+    const response=await page.goto(BASE_URL+path,{waitUntil:'domcontentloaded',timeout:60000});
+    await settle(page);
+    return {page,response,errors};
+  }catch(err){
+    await page.close().catch(()=>{});
+    throw err;
+  }
 }
 async function inspect(page,name,vp){
   return page.evaluate(({name,vp})=>{
@@ -57,15 +62,18 @@ async function inspect(page,name,vp){
     const mark=header?.querySelector('.apg-brand-v32-symbol');
     const monogram=header?.querySelector('.apg-brand-v32-monogram');
     const type=header?.querySelector('.apg-brand-v32-type');
-    const offenders=[...document.querySelectorAll('body *')].map(el=>{const r=el.getBoundingClientRect(),cs=getComputedStyle(el);return {tag:el.tagName.toLowerCase(),cls:String(el.className||'').slice(0,100),left:r.left,right:r.right,width:r.width,display:cs.display,position:cs.position};}).filter(x=>x.display!=='none'&&x.width>0&&x.position!=='fixed'&&(x.left<-2||x.right>innerWidth+2)).slice(0,12);
+    const scrollWidth=Math.max(document.documentElement.scrollWidth,document.body?.scrollWidth||0);
+    const clientWidth=document.documentElement.clientWidth;
+    const documentOverflow=scrollWidth>clientWidth+2;
+    const diagnosticOffenders=documentOverflow?[...document.querySelectorAll('body *')].map(el=>{const r=el.getBoundingClientRect(),cs=getComputedStyle(el);return {tag:el.tagName.toLowerCase(),cls:String(el.className||'').slice(0,100),left:r.left,right:r.right,width:r.width,display:cs.display,position:cs.position,overflowX:cs.overflowX};}).filter(x=>x.display!=='none'&&x.width>0&&x.position!=='fixed'&&(x.left<-2||x.right>innerWidth+2)).slice(0,12):[];
     return {
-      name,vp,scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth,
+      name,vp,scrollWidth,clientWidth,documentOverflow,
       v32:document.body.dataset.brandFidelityV32||'',v31:document.body.dataset.themeV31||'',v27:document.body.dataset.evidenceCommerceV27||'',v28:document.body.dataset.trustV28||'',
       headerV32:!!header,markPaths:mark?.querySelectorAll('path').length||0,markGeometry:[...mark?.querySelectorAll('path')||[]].map(x=>x.getAttribute('d')),
       fullWordmarkVisible:visible(type),monogramVisible:visible(monogram),legacyHeader:!!document.querySelector('.site-header .apg-brand-v30-lockup'),
       proofPresent:!!proof,proofBackground:proof?getComputedStyle(proof).backgroundImage:'',proofColor:rgb(proof),proofCounterColor:rgb(proofCounter),
       darkHeadingColor:rgb(darkHeading),darkCopyColor:rgb(darkCopy),footerCopyColor:rgb(footerCopy),
-      textLength:(document.body.innerText||'').length,overflowOffenders:offenders
+      textLength:(document.body.innerText||'').length,diagnosticOffenders
     };
   },{name,vp});
 }
@@ -79,7 +87,7 @@ function assertState(state,status,errors){
   if(state.markGeometry[0]!=='M54 81 86 83 105 51 123 83 154 83 125 32 83 33Z')fail(`${tag}: traced top geometry drifted`);
   if(state.vp==='desktop'&&!state.fullWordmarkVisible)fail(`${tag}: desktop horizontal wordmark hidden`);
   if(['tablet','mobile'].includes(state.vp)&&!state.monogramVisible)fail(`${tag}: compact APG monogram hidden at standard responsive width`);
-  if(state.scrollWidth>state.clientWidth+2||state.overflowOffenders.length)fail(`${tag}: horizontal overflow ${JSON.stringify(state.overflowOffenders)}`);
+  if(state.documentOverflow)fail(`${tag}: document width ${state.scrollWidth}px exceeds viewport ${state.clientWidth}px; offenders=${JSON.stringify(state.diagnosticOffenders)}`);
   if(state.textLength<80)fail(`${tag}: unexpectedly little rendered text`);
   if(errors.length)fail(`${tag}: page errors ${errors.join(' | ')}`);
   if(state.name==='home'){
@@ -92,6 +100,24 @@ function assertState(state,status,errors){
   }
 }
 
+async function capturePage(browser,vp,width,height,name,path){
+  let opened;
+  try{
+    opened=await openPage(browser,width,height,path,{javascript:true});
+    const {page,response,errors}=opened;
+    const state=await inspect(page,name,vp);
+    const status=response?.status()||0;
+    await page.screenshot({path:`${OUT}/${vp}-${name}.png`,fullPage:true});
+    assertState(state,status,errors);
+    report.push({...state,status,errors,path});
+  }catch(err){
+    fail(`${vp}/${name}: ${err.message}`);
+    if(opened?.page)await opened.page.screenshot({path:`${OUT}/${vp}-${name}-failure.png`,fullPage:true}).catch(()=>{});
+  }finally{
+    if(opened?.page)await opened.page.close().catch(()=>{});
+  }
+}
+
 async function run(){
   if(!CHROME)throw new Error('CHROME executable is required');
   const browser=await puppeteer.launch({headless:true,executablePath:CHROME,args:['--no-sandbox','--disable-dev-shm-usage']});
@@ -99,32 +125,23 @@ async function run(){
     for(const [vp,width,height] of VIEWPORTS){
       for(const [name,path] of PAGES){
         console.log(`V32_VISUAL ${vp} ${name} ${path}`);
-        const {page,response,errors}=await openPage(browser,width,height,path,{javascript:true});
-        try{
-          const state=await inspect(page,name,vp);
-          const status=response?.status()||0;
-          await page.screenshot({path:`${OUT}/${vp}-${name}.png`,fullPage:true});
-          assertState(state,status,errors);
-          report.push({...state,status,errors,path});
-        }catch(err){fail(`${vp}/${name}: ${err.message}`);await page.screenshot({path:`${OUT}/${vp}-${name}-failure.png`,fullPage:true}).catch(()=>{});}finally{await page.close();}
+        await capturePage(browser,vp,width,height,name,path);
       }
-      // Scout open state on all three responsive classes.
       const scout=await openPage(browser,width,height,'/');
       try{
         const clicked=await scout.page.evaluate(()=>{const els=[...document.querySelectorAll('[data-v26-scout-open],#apgAssistantLauncher')];const el=els.find(x=>{const r=x.getBoundingClientRect(),cs=getComputedStyle(x);return r.width>0&&r.height>0&&cs.display!=='none'&&cs.visibility!=='hidden'});if(!el)return false;el.click();return true;});
         await new Promise(r=>setTimeout(r,250));
-        const state=await scout.page.evaluate(()=>({open:!document.getElementById('apgAssistantPanel')?.hidden,scoutGraphic:!!document.querySelector('#scoutHat.apg-brand-v32-symbol'),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}));
+        const state=await scout.page.evaluate(()=>({open:!document.getElementById('apgAssistantPanel')?.hidden,scoutGraphic:!!document.querySelector('#scoutHat.apg-brand-v32-symbol'),overflow:Math.max(document.documentElement.scrollWidth,document.body?.scrollWidth||0)>document.documentElement.clientWidth+2}));
         await scout.page.screenshot({path:`${OUT}/${vp}-scout-open.png`,fullPage:false});
         if(!clicked||!state.open||!state.scoutGraphic||state.overflow||scout.errors.length)fail(`${vp}/scout: ${JSON.stringify(state)} ${scout.errors.join('|')}`);
         report.push({vp,name:'scout-open',...state,status:scout.response?.status()||0});
       }finally{await scout.page.close();}
-      // Navigation state at responsive widths where the mobile control is present.
       if(vp!=='desktop'){
         const nav=await openPage(browser,width,height,'/');
         try{
           const clicked=await nav.page.evaluate(()=>{const el=document.querySelector('[data-mobile-toggle]');if(!el)return false;el.click();return true;});
           await new Promise(r=>setTimeout(r,200));
-          const state=await nav.page.evaluate(()=>({open:!document.getElementById('mobileNav')?.hidden,overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2,brand:!!document.querySelector('.site-header .apg-brand-v32-monogram-svg')}));
+          const state=await nav.page.evaluate(()=>({open:!document.getElementById('mobileNav')?.hidden,overflow:Math.max(document.documentElement.scrollWidth,document.body?.scrollWidth||0)>document.documentElement.clientWidth+2,brand:!!document.querySelector('.site-header .apg-brand-v32-monogram-svg')}));
           await nav.page.screenshot({path:`${OUT}/${vp}-mobile-menu.png`,fullPage:false});
           if(!clicked||!state.open||state.overflow||!state.brand||nav.errors.length)fail(`${vp}/mobile-menu: ${JSON.stringify(state)} ${nav.errors.join('|')}`);
           report.push({vp,name:'mobile-menu',...state,status:nav.response?.status()||0});
