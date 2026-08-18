@@ -1,0 +1,50 @@
+name: APG Brand Fidelity v32.5.2 Semantic QA
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  semantic-mobile-hierarchy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax check current presentation chain
+        run: |
+          node --check lib/brand-fidelity-v325.js
+          node --check lib/brand-conformity-v34.js
+          node --check api/index.js
+      - name: Verify one semantic Decision Lab destination and one Ask Scout
+        run: |
+          node <<'NODE'
+          const layer=require('./lib/brand-fidelity-v325');
+          const fixture='<html><head></head><body><nav id="mobileNav" class="mobile-nav apg-mobile-v8"><div class="mobile-nav-inner"><a class="legacy-decision-shortcut" href="/decision-lab/">Decision Lab →</a><a class="mobile-power" href="/decision-lab/">Decision Lab <span>→</span></a><button type="button" class="mobile-power apg-v26-scout-mobile" data-v26-scout-open data-v26-scout-mobile>Ask Scout <span>→</span></button><details class="mobile-section"><summary>Popular products</summary></details></div></nav></body></html>';
+          const out=layer.inject(fixture);
+          if(layer.VERSION!=='32.5.2')throw new Error(`expected v32.5.2, found ${layer.VERSION}`);
+          const nav=(out.match(/<nav\b[^>]*\bid="mobileNav"[^>]*>[\s\S]*?<\/nav>/i)||[])[0]||'';
+          if(!nav)throw new Error('mobile nav missing after SSR transform');
+          const decisionCount=(nav.match(/href="\/decision-lab\/"/g)||[]).length;
+          if(decisionCount!==1)throw new Error(`expected exactly one Decision Lab destination after SSR reconciliation; found ${decisionCount}`);
+          if(!nav.includes('apg-v325-decision-mobile'))throw new Error('approved primary Decision Lab control missing');
+          if(!nav.includes('apg-v325-scout-mobile'))throw new Error('approved Ask Scout control missing');
+          if(nav.includes('legacy-decision-shortcut'))throw new Error('legacy semantic Decision Lab duplicate survived');
+          if(!layer.css.includes('a[href="/decision-lab/"]:not(.apg-v325-decision-mobile){display:none!important}'))throw new Error('semantic CSS safeguard missing');
+          if(!layer.clientJs.includes(':scope > a[href="/decision-lab/"]'))throw new Error('bounded client does not remove semantic duplicate anchors');
+          if(layer.clientJs.includes('MutationObserver'))throw new Error('observer-loop regression detected');
+          if(!layer.clientJs.includes('setTimeout(reconcile,120)')||!layer.clientJs.includes('setTimeout(reconcile,600)'))throw new Error('bounded reconciliation passes missing');
+          if(typeof layer.amazonRecord!=='function'||typeof layer.transform!=='function')throw new Error('mature helper/export contract not preserved');
+          console.log('PASS: v32.5.2 enforces exactly one semantic mobile Decision Lab destination plus one Ask Scout.');
+          NODE
+      - name: Verify v34 remains the active outer layer
+        run: |
+          grep -q "brand-conformity-v34" api/index.js
+          node scripts/runtime-chain-qa.js brand-conformity-v34 brand-fidelity-v325 brand-fidelity-v324 brand-fidelity-v323 brand-fidelity-v322 brand-fidelity-v321 brand-fidelity-v32 amazon-conversion-v29 trust-infrastructure-v28 evidence-commerce-depth-v27 platform-cohesion-v26
