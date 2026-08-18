@@ -58,7 +58,7 @@ body[data-cohesion-v26="true"] :where(input,select,textarea){font-size:16px}
 /* Search becomes an evidence-backed research entry point while the normal result
    inventory remains available underneath. */
 body[data-v26-page="search"] .search-hero{padding-bottom:clamp(30px,4vw,48px)}
-body[data-v26-page="search"] .apg-rv-v43{border-block:1px solid var(--apg-v26-line);background:linear-gradient(180deg,#fbfdfd 0%,#f6f9f9 100%)}
+body[data-v26-page="search"] .apg-rv-v43{border-block:1px solid var(--apg-v26-line);background:#f6f9f9}
 body[data-v26-page="search"] .apg-rv-layout-v43{align-items:start}
 body[data-v26-page="search"] .apg-rv-answer-v43,
 body[data-v26-page="search"] .apg-rv-brief-v43{background:#fff}
@@ -124,34 +124,35 @@ body[data-cohesion-v26="true"] .workspace-panel :where(.product-card){box-shadow
   body[data-cohesion-v26="true"] .button,
   body[data-cohesion-v26="true"] button{min-height:44px}
 
-  /* Accessible stacked comparison. JS adds data-label values from the original
-     table header; table semantics remain in the DOM for assistive technology. */
-  body[data-v26-page="compare"] .compare-wrap{overflow:visible;border:0;background:transparent}
-  body[data-v26-page="compare"] table.compare{display:block;border:0;background:transparent}
-  body[data-v26-page="compare"] table.compare thead{
+  /* Progressive stacked comparison. JS first derives labels from the original
+     table header and only then sets data-v26-compare-enhanced. Without JS the
+     established comparison fallback remains untouched. */
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] .compare-wrap{overflow:visible;border:0;background:transparent}
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"]{display:block;border:0;background:transparent}
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"] thead{
     position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;
     overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important;
   }
-  body[data-v26-page="compare"] table.compare tbody,
-  body[data-v26-page="compare"] table.compare tr,
-  body[data-v26-page="compare"] table.compare td{display:block;width:100%}
-  body[data-v26-page="compare"] table.compare tr{
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"] tbody,
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"] tr,
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"] td{display:block;width:100%}
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"] tr{
     margin:0 0 14px;border:1px solid var(--apg-v26-line);border-radius:14px;background:#fff;overflow:hidden;
   }
-  body[data-v26-page="compare"] table.compare td{
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"] td{
     display:grid;grid-template-columns:minmax(110px,36%) 1fr;gap:14px;padding:13px 14px;border:0;border-top:1px solid #edf1f2;
     overflow-wrap:anywhere;
   }
-  body[data-v26-page="compare"] table.compare td:first-child{
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"] td:first-child{
     display:block;padding:11px 14px;border-top:0;background:var(--apg-v26-soft);font-weight:800;color:var(--apg-v26-ink);
   }
-  body[data-v26-page="compare"] table.compare td:not(:first-child)::before{
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"] td:not(:first-child)::before{
     content:attr(data-label);font-size:.76rem;line-height:1.25;font-weight:800;color:var(--apg-v26-muted);text-transform:uppercase;letter-spacing:.035em;
   }
-  body[data-v26-page="compare"] table.compare td[colspan]{grid-template-columns:1fr}
-  body[data-v26-page="compare"] table.compare td[colspan]::before{content:"Both products"}
-  body[data-v26-page="compare"] .pair-visuals{grid-template-columns:1fr;gap:12px}
-  body[data-v26-page="compare"] .big-vs{justify-self:start;margin:0}
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"] td[colspan]{grid-template-columns:1fr}
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"] td[colspan]::before{content:"Both products"}
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] .pair-visuals{grid-template-columns:1fr;gap:12px}
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] .big-vs{justify-self:start;margin:0}
 
   body[data-v26-page="product"] .retailer-row{grid-template-columns:auto 1fr;gap:10px}
   body[data-v26-page="product"] .retailer-action{grid-column:2;justify-self:start}
@@ -166,8 +167,8 @@ body[data-cohesion-v26="true"] .workspace-panel :where(.product-card){box-shadow
   .apg-assistant-launcher-copy{display:none}
   .apg-assistant-launcher{width:54px;height:54px;padding:6px;border-radius:50%;justify-content:center}
   .apg-assistant-launcher-icon{margin:0}
-  body[data-v26-page="compare"] table.compare td{grid-template-columns:1fr;gap:5px}
-  body[data-v26-page="compare"] table.compare td:not(:first-child)::before{text-transform:none;letter-spacing:0}
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"] td{grid-template-columns:1fr;gap:5px}
+  body[data-v26-page="compare"][data-v26-compare-enhanced="true"] table.compare[data-v26-mobile-ready="true"] td:not(:first-child)::before{text-transform:none;letter-spacing:0}
 }
 
 @media (prefers-reduced-motion:reduce){
