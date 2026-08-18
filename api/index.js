@@ -1,4 +1,4 @@
-// APG Brand Fidelity v32.5 is the current presentation layer.
+// APG Brand Fidelity v32.5.1 is the current presentation layer.
 // It completes the approved brand-board reconciliation with SSR-stable mobile
 // Decision Lab / Ask Scout hierarchy, exact historical yellow proof treatment,
 // accessible contrast, responsive APG identity and Scout master-brand treatment.

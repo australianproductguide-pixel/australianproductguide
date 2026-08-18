@@ -1,4 +1,4 @@
-name: APG Brand Fidelity v32.5 QA
+name: APG Brand Fidelity v32.5.1 QA
 
 on:
   pull_request:
@@ -23,22 +23,26 @@ jobs:
           node --check lib/brand-fidelity-v325.js
           node --check lib/brand-fidelity-v324.js
           node --check api/index.js
-      - name: Verify SSR-stable mobile controls and CSS safeguards
+      - name: Verify SSR-stable mobile controls CSS safeguards and bounded client
         run: |
           node <<'NODE'
           const layer=require('./lib/brand-fidelity-v325');
           const fixture='<html><head></head><body><nav id="mobileNav" class="mobile-nav apg-mobile-v8"><div class="mobile-nav-inner"><a class="mobile-power" href="/decision-lab/">Decision Lab <span>→</span></a><button type="button" class="mobile-power apg-v26-scout-mobile" data-v26-scout-open data-v26-scout-mobile>Ask Scout <span>→</span></button><details class="mobile-section"><summary>Popular products</summary></details></div></nav></body></html>';
           const out=layer.inject(fixture);
+          if(layer.VERSION!=='32.5.1')throw new Error(`expected v32.5.1, found ${layer.VERSION}`);
           if(!out.includes('data-brand-fidelity-v325="true"'))throw new Error('v32.5 body marker missing');
           if(!out.includes('apg-v325-decision-mobile'))throw new Error('Decision Lab is not classified server-side');
           if(!out.includes('apg-v325-scout-mobile'))throw new Error('Ask Scout is not classified server-side');
-          if(!out.includes('/assets/brand-fidelity-v325.css?v=32.5')||!out.includes('/assets/brand-fidelity-v325.js?v=32.5'))throw new Error('v32.5 assets missing');
+          if(!out.includes('/assets/brand-fidelity-v325.css?v=32.5.1')||!out.includes('/assets/brand-fidelity-v325.js?v=32.5.1'))throw new Error('v32.5.1 cache-busted assets missing');
+          if(!out.includes('aria-label="Decision Lab"')||!out.includes('aria-label="Ask Scout"'))throw new Error('server-rendered accessible labels missing');
           if(!layer.css.includes('.mobile-power:not(.apg-v325-decision-mobile):not(.apg-v325-scout-mobile){display:none!important}'))throw new Error('later duplicate action CSS guard missing');
           if(!layer.css.includes('.apg-v325-scout-mobile:before{content:"Ask Scout"'))throw new Error('Ask Scout visual label is not CSS-stable');
           if(!layer.css.includes('.apg-v325-decision-mobile:before{content:"Decision Lab"'))throw new Error('Decision Lab visual label is not CSS-stable');
           if(!layer.css.includes('order:30!important')||!layer.css.includes('order:31!important')||!layer.css.includes('.mobile-section{order:40!important}'))throw new Error('stable mobile grid order missing');
+          if(layer.clientJs.includes('MutationObserver'))throw new Error('v32.5.1 must not use a self-triggering MutationObserver');
+          if(!layer.clientJs.includes('setTimeout(reconcile,120)')||!layer.clientJs.includes('setTimeout(reconcile,600)'))throw new Error('bounded reconciliation passes missing');
           if(typeof layer.amazonRecord!=='function'||typeof layer.transform!=='function')throw new Error('mature helper/export contract not preserved');
-          console.log('PASS: v32.5 mobile controls are SSR-classified, CSS-labelled and order-stable.');
+          console.log('PASS: v32.5.1 mobile controls are SSR-classified, CSS-labelled, order-stable and observer-loop free.');
           NODE
       - name: Verify recursive mature runtime chain
         run: |
