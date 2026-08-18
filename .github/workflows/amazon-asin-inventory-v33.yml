@@ -1,0 +1,36 @@
+name: Amazon ASIN Inventory v33
+
+on:
+  push:
+    branches: [apg/amazon-asin-audit-v33]
+    paths:
+      - 'data/**'
+      - 'scripts/amazon-asin-inventory-v33.js'
+      - '.github/workflows/amazon-asin-inventory-v33.yml'
+  pull_request:
+    paths:
+      - 'data/**'
+      - 'scripts/amazon-asin-inventory-v33.js'
+      - '.github/workflows/amazon-asin-inventory-v33.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Generate full Amazon ASIN inventory
+        run: node scripts/amazon-asin-inventory-v33.js
+      - name: Upload Amazon ASIN inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: amazon-asin-inventory-v33
+          path: |
+            artifacts/amazon-asin-inventory-v33.json
+            artifacts/amazon-asin-summary-v33.json
+          if-no-files-found: error
