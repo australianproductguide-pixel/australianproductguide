@@ -6,6 +6,7 @@ const commerce=require('../lib/priority-commerce-depth-v42');
 const research=require('../lib/research-view-v43');
 const search=require('../lib/search');
 const {products,categories}=require('../data');
+const {runtimeChainIncludes}=require('./runtime-chain-qa');
 
 const failures=[];
 function check(name,fn){
@@ -83,21 +84,8 @@ check('mobile comparison enhancement is progressive and labelled',()=>{
   assert.match(css,/content:attr\(data-label\)/);
 });
 
-check('release entry point preserves platform cohesion v26 directly or through v27/v28/v29',()=>{
-  const entry=fs.readFileSync(path.join(__dirname,'../api/index.js'),'utf8');
-  const v27Path=path.join(__dirname,'../lib/evidence-commerce-depth-v27.js');
-  const v27=fs.existsSync(v27Path)?fs.readFileSync(v27Path,'utf8'):'';
-  const v28Path=path.join(__dirname,'../lib/trust-infrastructure-v28.js');
-  const v28=fs.existsSync(v28Path)?fs.readFileSync(v28Path,'utf8'):'';
-  const v29Path=path.join(__dirname,'../lib/amazon-conversion-v29.js');
-  const v29=fs.existsSync(v29Path)?fs.readFileSync(v29Path,'utf8'):'';
-  const direct=entry.includes("require('../lib/platform-cohesion-v26')");
-  const v27Chain=v27.includes("require('./platform-cohesion-v26')");
-  const viaV27=entry.includes("require('../lib/evidence-commerce-depth-v27')")&&v27Chain;
-  const v28Chain=v28.includes("require('./evidence-commerce-depth-v27')")&&v27Chain;
-  const viaV28=entry.includes("require('../lib/trust-infrastructure-v28')")&&v28Chain;
-  const viaV29=entry.includes("require('../lib/amazon-conversion-v29')")&&v29.includes("require('./trust-infrastructure-v28')")&&v28Chain;
-  assert.ok(direct||viaV27||viaV28||viaV29,'release entry point must preserve platform cohesion v26 directly or through v27/v28/v29');
+check('release entry point preserves platform cohesion v26 through the active wrapper chain',()=>{
+  assert.ok(runtimeChainIncludes('platform-cohesion-v26'),'release entry point must preserve platform cohesion v26 through the active recursive runtime wrapper chain');
 });
 
 check('cohesion does not manufacture reviews, ratings or offers',()=>{

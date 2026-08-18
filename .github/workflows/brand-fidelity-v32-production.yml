@@ -1,0 +1,99 @@
+name: APG Brand Fidelity v32 Production Visual
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: read
+  statuses: write
+
+jobs:
+  brand-visual-certification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BASE_URL: https://australianproductguide.au
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Wait for exact Production SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 72); do
+            curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments?sha=$SHA" >/tmp/apg-v32-deployments.json
+            id=$(jq -r '[.[]|select(.environment=="Production" or .original_environment=="Production")][0].id//empty' /tmp/apg-v32-deployments.json)
+            if [ -n "$id" ]; then
+              curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments/$id/statuses" >/tmp/apg-v32-statuses.json
+              state=$(jq -r '.[0].state//empty' /tmp/apg-v32-statuses.json)
+              [ "$state" = failure ] || [ "$state" = error ] && exit 1
+              [ "$state" = success ] && exit 0
+            fi
+            sleep 5
+          done
+          echo 'Exact Production deployment not observed' >&2
+          exit 1
+      - name: Verify v32 public contract and identity assets
+        run: |
+          set -euo pipefail
+          curl -fsSL "$BASE_URL/" >/tmp/apg-v32-home.html
+          grep -q 'data-brand-fidelity-v32="true"' /tmp/apg-v32-home.html
+          grep -q '/assets/brand-fidelity-v32.css?v=32' /tmp/apg-v32-home.html
+          grep -q '/assets/brand-fidelity-v321.css?v=32.1' /tmp/apg-v32-home.html
+          grep -q 'apg-brand-v32-lockup' /tmp/apg-v32-home.html
+          grep -q 'apg-brand-v32-monogram-svg' /tmp/apg-v32-home.html
+          grep -q 'id="scoutHat"' /tmp/apg-v32-home.html
+          ! grep -q 'site-header[^>]*apg-brand-v30-lockup' /tmp/apg-v32-home.html
+          for asset in brand-fidelity-v32.css brand-fidelity-v321.css logo.svg logo-horizontal.svg logo-horizontal-dark.svg logo-white.svg logo-compact.svg logo-monogram.svg logo-symbol.svg logo-mono.svg favicon.svg app-icon.svg social.svg; do
+            curl -fsSL "$BASE_URL/assets/$asset" >/tmp/apg-v32-asset
+            test -s /tmp/apg-v32-asset
+          done
+          curl -fsSL "$BASE_URL/api/intelligence/observability" >/tmp/apg-v32-observability.json
+          jq -e '.catalogue.products == 482 and .catalogue.categories == 90 and .catalogue.brands == 178 and .recommendation.affiliateRecommendationWeight == 0 and .releaseGate.pass == true' /tmp/apg-v32-observability.json >/dev/null
+      - name: Render desktop tablet and mobile Production matrix
+        run: |
+          set -euo pipefail
+          CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser)
+          node --check scripts/brand-fidelity-v32-production.js
+          npm install --no-save --package-lock=false puppeteer-core@24.16.0 >/dev/null 2>&1
+          mkdir -p visual-v32
+          CHROME="$CHROME" BASE_URL="$BASE_URL" VISUAL_OUT=visual-v32 node scripts/brand-fidelity-v32-production.js
+      - name: Confirm main remained on certified SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/commits/main" >/tmp/apg-v32-main.json
+          current=$(jq -r '.sha' /tmp/apg-v32-main.json)
+          test "$current" = "$SHA" || { echo "main advanced to $current during v32 certification" >&2; exit 1; }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: apg-v32-visual-${{ github.run_id }}
+          path: visual-v32
+          retention-days: 30
+          if-no-files-found: warn
+      - name: Publish retrievable v32 visual certification status
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          state=success
+          [ "$JOB_STATUS" = success ] || state=failure
+          curl -fsSL -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/statuses/$SHA" \
+            -d "$(jq -n --arg state "$state" --arg context 'APG v32 Brand Visual Certification' --arg description "Brand fidelity Production visual certification: $JOB_STATUS" --arg target_url "https://github.com/$REPO/actions/runs/$RUN_ID" '{state:$state,context:$context,description:$description,target_url:$target_url}')" >/dev/null

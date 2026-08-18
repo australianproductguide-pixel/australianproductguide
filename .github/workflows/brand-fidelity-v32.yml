@@ -1,0 +1,87 @@
+name: APG Brand Fidelity v32 QA
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  brand-fidelity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax check v32 runtime chain
+        run: |
+          node --check lib/brand-fidelity-v321.js
+          node --check lib/brand-fidelity-v32.js
+          node --check lib/premium-theme-v311.js
+          node --check lib/premium-theme-v31.js
+          node --check lib/premium-brand-v30.js
+          node --check scripts/runtime-chain-qa.js
+          node --check scripts/brand-fidelity-v32-production.js
+          node --check api/index.js
+      - name: Verify approved board palette and recovered yellow
+        run: |
+          node <<'NODE'
+          const layer=require('./lib/brand-fidelity-v32');
+          const css=layer.css||'';
+          const required=[
+            '#2563EB','#0F172A','#06B6D4','#10B981','#F1F5F9','#64748B',
+            '#FFD65B','#F4BB45','#F2B348','#E0A630','#D89C24','#082735',
+            '--apg-text-dark-primary:#FFFFFF','--apg-text-dark-secondary:#CBD5E1'
+          ];
+          for(const token of required){if(!css.includes(token))throw new Error(`Missing approved/recovered token: ${token}`)}
+          if(!css.includes('.apg-proof-band-v20'))throw new Error('Maintained-research proof treatment missing');
+          if(!css.includes('linear-gradient(90deg,var(--apg-yellow),var(--apg-yellow-mid) 62%,var(--apg-yellow-deep))'))throw new Error('Recovered yellow gradient not applied');
+          console.log('PASS: approved palette, explicit surface text tokens and historical yellow treatment verified.');
+          NODE
+      - name: Verify faithful vector identity system
+        run: |
+          node <<'NODE'
+          const layer=require('./lib/brand-fidelity-v32');
+          const mark=layer.tracedMark({});
+          const mono=layer.monogramSvg();
+          const header=layer.lockup('header');
+          const asset=layer.primaryLogoSvg();
+          const expected=['M54 81 86 83 105 51 123 83 154 83 125 32 83 33Z','M81 96 48 96 26 135 59 137Z','M128 97 151 137 182 136 159 95Z','M104 87 76 136 106 126 132 137Z'];
+          for(const geometry of expected){if(!mark.includes(geometry))throw new Error(`Traced mark geometry missing: ${geometry}`)}
+          if(!mono.includes('apg-brand-v32-monogram-svg'))throw new Error('Stylised APG monogram missing');
+          if(!header.includes('apg-brand-v32-lockup')||!header.includes('apg-brand-v32-monogram'))throw new Error('Responsive v32 lockup missing');
+          if(!asset.includes('Australian')||!asset.includes('Product Guide'))throw new Error('Primary horizontal asset missing wordmark');
+          console.log('PASS: traced symbol, responsive lockup and custom monogram verified.');
+          NODE
+      - name: Verify HTML integration helper exports and data-driven research metrics
+        run: |
+          node <<'NODE'
+          const layer=require('./lib/brand-fidelity-v32');
+          const final=require('./lib/brand-fidelity-v321');
+          const fixture='<html><head><link rel="icon" href="/assets/favicon.svg?v=30" type="image/svg+xml"></head><body data-theme-v31="true"><span class="apg-brand-v30-lockup is-header"><span class="apg-brand-v30-mark"><svg></svg></span><span class="apg-brand-v30-type"><span class="apg-brand-v30-name">Australian</span><span class="apg-brand-v30-product">Product Guide</span></span><span class="apg-brand-v30-monogram" aria-hidden="true">APG</span></span><span class="apg-brand-v32-scout"><span class="apg-brand-v32-scout-disc"><svg class="apg-brand-v32-symbol apg-brand-v32-symbol-mono"></svg></span></span></body></html>';
+          let out=layer.inject(fixture);out=final.finalPolish(out);
+          if(!out.includes('data-brand-fidelity-v32="true"'))throw new Error('v32 body marker missing');
+          if(!out.includes('/assets/brand-fidelity-v32.css?v=32'))throw new Error('v32 stylesheet missing');
+          if(!out.includes('/assets/brand-fidelity-v321.css?v=32.1'))throw new Error('v32.1 responsive stylesheet missing');
+          if(!out.includes('apg-brand-v32-lockup'))throw new Error('v32 header lockup not injected');
+          if(!out.includes('/assets/favicon.svg?v=32'))throw new Error('v32 favicon not selected');
+          if(!out.includes('id="scoutHat"'))throw new Error('stable graphical Scout SSR anchor missing');
+          if(typeof final.transform!=='function'||typeof final.amazonRecord!=='function')throw new Error('mature runtime helper exports not preserved');
+          const src=require('fs').readFileSync(require.resolve('./lib/mobile-account-proof-v20'),'utf8');
+          if(!src.includes('const p=products.length,c=Object.keys(categories).length,b=brands.length'))throw new Error('Research metrics are no longer data-driven');
+          console.log('PASS: v32 integration, helper export compatibility and data-driven research metrics verified.');
+          NODE
+      - name: Verify recursive mature runtime chain
+        run: |
+          node scripts/runtime-chain-qa.js amazon-conversion-v29 trust-infrastructure-v28 evidence-commerce-depth-v27 platform-cohesion-v26 account-governance-v25 account-profile-v24 auth-hardening-v23 site-surface-polish-v22
+          grep -q "brand-fidelity-v321" api/index.js
+          grep -q "brand-fidelity-v32" lib/brand-fidelity-v321.js
+          grep -q "premium-theme-v311" lib/brand-fidelity-v32.js
+          grep -q "premium-theme-v31" lib/premium-theme-v311.js
+          grep -q "premium-brand-v30" lib/premium-theme-v31.js
+          grep -q "amazon-conversion-v29" lib/premium-brand-v30.js

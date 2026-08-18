@@ -3,11 +3,12 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
+const {runtimeChainIncludes}=require('./runtime-chain-qa');
 
 const entry=fs.readFileSync(path.join(__dirname,'../api/index.js'),'utf8');
 const css=fs.readFileSync(path.join(__dirname,'../public/assets/evidence-commerce-depth-v27.css'),'utf8');
 
-assert.ok(entry.includes("module.exports=require('../lib/amazon-conversion-v29')"),'application entry point must directly preserve Amazon conversion v29 and its helper exports');
+assert.ok(runtimeChainIncludes('amazon-conversion-v29'),'application entry point must preserve Amazon conversion v29 through the active recursive runtime wrapper chain');
 assert.ok(!entry.includes('apg-mobile-category-visual-fix'),'do not inject an inline style that APG style-src self CSP will reject');
 assert.ok(css.includes('@media(max-width:720px)'),'fix must remain restricted to the mobile/tablet certification breakpoint');
 assert.ok(css.includes('body[data-evidence-commerce-v27="true"] .pick-card>.product-visual.v7-semantic-product-visual'),'fix must target only category Decision-shortcut product visuals within the v27 evidence layer');
