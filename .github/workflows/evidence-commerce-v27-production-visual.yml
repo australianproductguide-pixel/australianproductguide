@@ -77,17 +77,32 @@ jobs:
             const browser=await puppeteer.launch({headless:true,executablePath:process.env.CHROME,args:['--no-sandbox']});
             const report=[],bad=[];
             const navigate=async(page,url)=>{
-              const response=await page.goto(url,{waitUntil:'domcontentloaded',timeout:45000});
-              await page.waitForNetworkIdle({idleTime:500,timeout:5000}).catch(()=>{});
-              await new Promise(r=>setTimeout(r,250));
-              return response;
+              let response=null,navigationTimedOut=false;
+              const onResponse=r=>{
+                if(r.request().isNavigationRequest()&&r.frame()===page.mainFrame())response=r;
+              };
+              page.on('response',onResponse);
+              try{
+                await page.goto(url,{waitUntil:'domcontentloaded',timeout:15000});
+              }catch(err){
+                if(err?.name!=='TimeoutError')throw err;
+                navigationTimedOut=true;
+              }
+              await page.waitForSelector('body[data-evidence-commerce-v27="true"]',{timeout:15000});
+              await page.waitForFunction(()=>((document.body?.innerText||'').length>80),{timeout:10000});
+              await page.waitForNetworkIdle({idleTime:400,timeout:2500}).catch(()=>{});
+              await new Promise(r=>setTimeout(r,200));
+              page.off('response',onResponse);
+              return {response,navigationTimedOut};
             };
             for(const [vp,width,height] of viewports){
               for(const [name,path] of pages){
+                console.log(`VISUAL_ROUTE ${vp} ${name} ${path}`);
                 const page=await browser.newPage();
                 await page.setViewport({width,height});
                 const errors=[];page.on('pageerror',e=>errors.push(e.message));
-                const response=await navigate(page,base+path);
+                const nav=await navigate(page,base+path);
+                const response=nav.response;
                 const state=await page.evaluate(()=>({
                   sw:document.documentElement.scrollWidth,
                   cw:document.documentElement.clientWidth,
@@ -99,16 +114,19 @@ jobs:
                 }));
                 await page.screenshot({path:`visual-v27/${vp}-${name}.png`,fullPage:true});
                 if((response?.status()||0)>=400||state.sw>state.cw+2||state.v27!=='true'||state.text<80||errors.length)bad.push(`${vp}/${name}: ${JSON.stringify(state)} status=${response?.status()} errors=${errors.join('|')}`);
+                if(!response)bad.push(`${vp}/${name}: no main-document response captured`);
                 if(name==='search'&&state.researchView<1)bad.push(`${vp}/${name}: Research View missing`);
                 if(name==='retailer-product'&&state.exactRetailer!==1)bad.push(`${vp}/${name}: expected one exact retailer block, found ${state.exactRetailer}`);
                 if(['laptops','headphones'].includes(name)&&state.coverageNote!==1)bad.push(`${vp}/${name}: v27 coverage note missing/duplicated`);
-                report.push({vp,name,status:response?.status(),...state,errors});
+                report.push({vp,name,status:response?.status(),navigationTimedOut:nav.navigationTimedOut,...state,errors});
+                if(nav.navigationTimedOut)console.log(`VISUAL_NAVIGATION_SETTLE_WARNING ${vp} ${name}`);
                 await page.close();
               }
+              console.log(`VISUAL_ROUTE ${vp} scout-open /`);
               const page=await browser.newPage();
               await page.setViewport({width,height});
               const errors=[];page.on('pageerror',e=>errors.push(e.message));
-              await navigate(page,base+'/');
+              const nav=await navigate(page,base+'/');
               const open=await page.$('[data-v26-scout-open]')||await page.$('#apgAssistantLauncher');
               if(!open)bad.push(`${vp}/scout: launcher missing`);
               else{await open.click();await new Promise(r=>setTimeout(r,250));}
@@ -119,7 +137,7 @@ jobs:
               }));
               await page.screenshot({path:`visual-v27/${vp}-scout-open.png`,fullPage:false});
               if(scout.sw>scout.cw+2||!scout.open||!scout.input||errors.length)bad.push(`${vp}/scout: ${JSON.stringify(scout)} ${errors.join('|')}`);
-              report.push({vp,name:'scout-open',...scout,errors});
+              report.push({vp,name:'scout-open',status:nav.response?.status(),navigationTimedOut:nav.navigationTimedOut,...scout,errors});
               await page.close();
             }
             await browser.close();
