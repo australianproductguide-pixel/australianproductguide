@@ -57,7 +57,7 @@ check('Creators API readiness cannot self-authorise or auto-publish imagery',()=
   const x=trust.trustReadiness();
   assert.equal(x.imagery.authorisedIntegrationTarget,'Amazon Creators API');
   assert.equal(x.imagery.marketplace,'www.amazon.com.au');
-  assert.equal(x.imagery.exactAmazonIdentityReady,23);
+  assert.equal(x.imagery.exactAmazonIdentityReady,22);
   assert.equal(x.imagery.verifiedImageMappings,0);
   assert.equal(x.imagery.invalidImageMappings,0);
   assert.equal(x.imagery.automaticPublication,false);

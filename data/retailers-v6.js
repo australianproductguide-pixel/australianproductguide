@@ -1,5 +1,8 @@
 const base=require('./retailers');
 const {TAG}=base;
+const suppressedDirect=new Set([
+  'keychron-k2-pro'
+]);
 const additions={
   'amazon-kindle-2024':{
     url:`https://www.amazon.com.au/New-Amazon-Kindle-2024-release/dp/B0CP31QS6R?tag=${TAG}`,
@@ -32,9 +35,17 @@ const additions={
     variant:"De'Longhi KG200 electric blade coffee grinder, black",
     confidence:'high',
     note:'Exact De’Longhi KG200 Amazon Australia detail page and ASIN verified. Shoppers should recheck the current seller, delivery terms and offer before checkout.'
+  },
+  'samsung-galaxy-tab-a9':{
+    url:`https://www.amazon.com.au/Samsung-Galaxy-Tablet-Unlocked-Graphite/dp/B0CJH97F1M?tag=${TAG}`,
+    asin:'B0CJH97F1M',
+    verified:'2026-08-18',
+    variant:'Samsung Galaxy Tab A9+ [AU Version] Wi-Fi tablet, 64GB, Graphite',
+    confidence:'high',
+    note:'Current exact Amazon Australia AU-version Galaxy Tab A9+ 64GB Graphite listing independently re-verified on 18 August 2026. This supersedes the older B0CSZ24PNN mapping, which could not be re-verified during the v29 conversion audit.'
   }
 };
-const direct={...base.direct,...additions};
+const direct={...Object.fromEntries(Object.entries(base.direct).filter(([slug])=>!suppressedDirect.has(slug))),...additions};
 function modelSearch(p){
   const brand=String(p.brand||'').trim(),name=String(p.name||'').trim();
   const term=brand&&name.toLocaleLowerCase('en-AU').startsWith(brand.toLocaleLowerCase('en-AU'))?name:`${brand} ${name}`.trim();
@@ -44,7 +55,22 @@ function retailersFor(p){
   const d=direct[p.slug];
   if(!d){
     const rows=base.retailersFor(p);
-    return rows.map(r=>r.kind==='affiliate-search'?{...r,affiliateUrl:modelSearch(p),url:modelSearch(p)}:r);
+    const fallback=modelSearch(p);
+    return rows.map(r=>r.retailer==='Amazon Australia'?{
+      ...r,
+      productIdentifier:null,
+      asin:null,
+      kind:'affiliate-search',
+      exactUrl:null,
+      affiliateUrl:fallback,
+      url:fallback,
+      verified:'2026-08-18',
+      variant:null,
+      availabilityConfidence:'unverified-exact-listing',
+      note:suppressedDirect.has(p.slug)
+        ?'A previously recorded exact Amazon Australia destination could not be independently re-verified during the 18 August 2026 conversion audit. APG therefore downgraded this product to a transparent model-specific Amazon Australia search rather than retaining an uncertain ASIN.'
+        :r.note
+    }:r);
   }
   return [{
     retailer:'Amazon Australia',
@@ -65,4 +91,4 @@ function retailersFor(p){
     note:d.note
   }];
 }
-module.exports={...base,direct,retailersFor,additions,modelSearch};
+module.exports={...base,direct,retailersFor,additions,modelSearch,suppressedDirect};

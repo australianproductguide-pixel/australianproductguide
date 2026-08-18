@@ -22,6 +22,8 @@ const v27Path=path.join(__dirname,'../lib/evidence-commerce-depth-v27.js');
 const v27=fs.existsSync(v27Path)?fs.readFileSync(v27Path,'utf8'):'';
 const v28Path=path.join(__dirname,'../lib/trust-infrastructure-v28.js');
 const v28=fs.existsSync(v28Path)?fs.readFileSync(v28Path,'utf8'):'';
+const v29Path=path.join(__dirname,'../lib/amazon-conversion-v29.js');
+const v29=fs.existsSync(v29Path)?fs.readFileSync(v29Path,'utf8'):'';
 
 assert(out.includes('data-surface-v22="true"'),'v22 body marker should be injected');
 assert.strictEqual((twice.match(/data-surface-v22="true"/g)||[]).length,1,'v22 body marker should only appear once');
@@ -45,8 +47,10 @@ const viaV25=api.includes("require('../lib/account-governance-v25')")&&governanc
 const viaV26=api.includes("require('../lib/platform-cohesion-v26')")&&cohesion.includes("require('./account-governance-v25')")&&governance.includes("require('./account-profile-v24')")&&profile.includes("require('./auth-hardening-v23')")&&auth.includes("require('./site-surface-polish-v22')");
 const v27Chain=v27.includes("require('./platform-cohesion-v26')")&&cohesion.includes("require('./account-governance-v25')")&&governance.includes("require('./account-profile-v24')")&&profile.includes("require('./auth-hardening-v23')")&&auth.includes("require('./site-surface-polish-v22')");
 const viaV27=api.includes("require('../lib/evidence-commerce-depth-v27')")&&v27Chain;
-const viaV28=api.includes("require('../lib/trust-infrastructure-v28')")&&v28.includes("require('./evidence-commerce-depth-v27')")&&v27Chain;
-assert(directV22||viaV23||viaV24||viaV25||viaV26||viaV27||viaV28,'api entry point must preserve the v22 site-surface layer, directly or through the current wrapper chain');
+const v28Chain=v28.includes("require('./evidence-commerce-depth-v27')")&&v27Chain;
+const viaV28=api.includes("require('../lib/trust-infrastructure-v28')")&&v28Chain;
+const viaV29=api.includes("require('../lib/amazon-conversion-v29')")&&v29.includes("require('./trust-infrastructure-v28')")&&v28Chain;
+assert(directV22||viaV23||viaV24||viaV25||viaV26||viaV27||viaV28||viaV29,'api entry point must preserve the v22 site-surface layer, directly or through the current wrapper chain including v29');
 assert(wrapper.includes("require('./mobile-menu-polish-v21')"),'v22 must compose over v21 rather than bypassing it');
 assert(!wrapper.includes('recommendationScore')&&!wrapper.includes('affiliateCommission'),'v22 wrapper must remain presentation-only');
 
