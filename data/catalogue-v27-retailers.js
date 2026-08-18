@@ -48,6 +48,21 @@ const OFFERS={
   ],
   'hisense-75u7sau-75-inch-u7s-uled-miniled-tv':[
     exactListing({retailer:'The Good Guys',url:'https://www.thegoodguys.com.au/hisense-uled-miniled-75-inches-4k-165hz-tv-2026-75u7sau',variant:'75U7SAU',note:'Exact 75U7SAU Australian retailer listing verified. APG keeps current retailer price and stock live-at-retailer because promotional pricing changes frequently.'})
+  ],
+  'tp-link-tapo-c500':[
+    exactListing({retailer:'JB Hi-Fi',url:'https://www.jbhifi.com.au/products/tp-link-tapo-outdoor-pan-tilt-wifi-security-camera',variant:'TAPO-C500 · SKU 631856',note:'Exact Tapo C500 Australian retailer listing verified. APG does not copy the retailer ticket price or imply live stock.'})
+  ],
+  'apple-airpods-4-with-active-noise-cancellation':[
+    exactListing({retailer:'JB Hi-Fi',url:'https://www.jbhifi.com.au/products/apple-airpods-4-with-active-noise-cancellation',variant:'AirPods 4 with Active Noise Cancellation · current JB model MXP93ZA/A · SKU 754745',note:'Exact AirPods 4 with Active Noise Cancellation retailer destination verified. Retailer model coding can change over time, so APG records the current observed retailer identity and leaves price and stock live-at-retailer.'})
+  ],
+  'dji-osmo-action-5-pro':[
+    exactListing({retailer:'JB Hi-Fi',url:'https://www.jbhifi.com.au/products/dji-osmo-action-5-pro-adventure-combo',variant:'Osmo Action 5 Pro Adventure Combo · CP.OS.00000350.01 · SKU 786705',note:'Exact Osmo Action 5 Pro Adventure Combo retailer variant verified. APG guidance is family-level, so consumers should confirm Standard versus Adventure Combo contents before purchase.'})
+  ],
+  'logitech-signature-k855':[
+    exactListing({retailer:'JB Hi-Fi',url:'https://www.jbhifi.com.au/products/logitech-k855-wireless-mechanical-tkl-keyboard-blue-grey-linear',variant:'Signature K855 · 920-011221(K855) · Blue/Grey Linear',note:'Exact Logitech K855 Australian retailer variant verified. Switch and colour variants can differ, so APG records the verified Blue/Grey linear-switch configuration.'})
+  ],
+  'tp-link-archer-be550':[
+    exactListing({retailer:'JB Hi-Fi',url:'https://www.jbhifi.com.au/products/tp-link-archer-be550-wi-fi-7-router',variant:'ARCHER-BE550 · SKU 686660',note:'Exact Archer BE550 Australian retailer listing verified. APG leaves current price and orderability live-at-retailer.'})
   ]
 };
 

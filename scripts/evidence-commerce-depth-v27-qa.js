@@ -21,10 +21,18 @@ check('canonical catalogue truth remains 482 / 90 / 178',()=>{
 
 check('v27 retailer overlay materially deepens exact Australian destinations without catalogue expansion',()=>{
   const x=observability.retailerSnapshot();
-  assert.ok(x.exactOfferCount>=19,`expected at least 19 exact offers, got ${x.exactOfferCount}`);
-  assert.ok(x.productsWithExactOffers>=17,`expected at least 17 products with exact offers, got ${x.productsWithExactOffers}`);
-  assert.ok(x.independentRetailerOfferCount>=9,`expected at least 9 independent retailer offers, got ${x.independentRetailerOfferCount}`);
+  assert.ok(x.exactOfferCount>=24,`expected at least 24 exact offers, got ${x.exactOfferCount}`);
+  assert.ok(x.productsWithExactOffers>=22,`expected at least 22 products with exact offers, got ${x.productsWithExactOffers}`);
+  assert.ok(x.independentRetailerOfferCount>=14,`expected at least 14 independent retailer offers, got ${x.independentRetailerOfferCount}`);
   assert.ok(x.verifiedRetailers>=8,`expected broad retailer/manufacturer set, got ${x.verifiedRetailers}`);
+});
+
+check('second v27 retailer pass closes five zero-coverage category gaps',()=>{
+  const x=observability.retailerSnapshot();
+  for(const category of ['home-security-cameras','earbuds','action-cameras','mechanical-keyboards','wifi-routers']){
+    assert.ok(x.byCategory[category],`missing retailer coverage summary for ${category}`);
+    assert.ok(x.byCategory[category].exactOffers>=1,`expected at least one exact offer for ${category}`);
+  }
 });
 
 check('new v27 retailer evidence is exact-model, non-affiliate and does not fabricate price or stock',()=>{
@@ -43,13 +51,13 @@ check('new v27 retailer evidence is exact-model, non-affiliate and does not fabr
       seen.add(offer.url);
     }
   }
-  assert.equal(rows,10,'v27 should add the reviewed ten exact Australian destinations');
+  assert.equal(rows,15,'v27 should contain the fifteen reviewed exact Australian destinations');
 });
 
 check('retailer participation remains zero recommendation weight',()=>{
   const x=observability.snapshot();
   assert.equal(x.recommendation.affiliateRecommendationWeight,0);
-  assert.equal(x.retailers.exactOfferCount>=19,true);
+  assert.equal(x.retailers.exactOfferCount>=24,true);
 });
 
 check('imagery governance reports truth and produces an exact-model acquisition queue without publishing unlicensed images',()=>{
