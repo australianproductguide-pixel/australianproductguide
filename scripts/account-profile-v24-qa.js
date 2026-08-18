@@ -4,6 +4,8 @@ const path=require('path');
 
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 const api=read('api/index.js');
+const v29Path=path.join(__dirname,'../lib/amazon-conversion-v29.js');
+const v29=fs.existsSync(v29Path)?fs.readFileSync(v29Path,'utf8'):'';
 const v28Path=path.join(__dirname,'../lib/trust-infrastructure-v28.js');
 const v28=fs.existsSync(v28Path)?fs.readFileSync(v28Path,'utf8'):'';
 const v27Path=path.join(__dirname,'../lib/evidence-commerce-depth-v27.js');
@@ -23,8 +25,10 @@ const viaV25=api.includes("require('../lib/account-governance-v25')")&&governanc
 const viaV26=api.includes("require('../lib/platform-cohesion-v26')")&&cohesion.includes("require('./account-governance-v25')")&&governance.includes("require('./account-profile-v24')");
 const v27Chain=v27.includes("require('./platform-cohesion-v26')")&&cohesion.includes("require('./account-governance-v25')")&&governance.includes("require('./account-profile-v24')");
 const viaV27=api.includes("require('../lib/evidence-commerce-depth-v27')")&&v27Chain;
-const viaV28=api.includes("require('../lib/trust-infrastructure-v28')")&&v28.includes("require('./evidence-commerce-depth-v27')")&&v27Chain;
-assert(directV24||viaV25||viaV26||viaV27||viaV28,'api/index.js must preserve account profile v24 directly or through the current v25/v26/v27/v28 wrapper chain');
+const v28Chain=v28.includes("require('./evidence-commerce-depth-v27')")&&v27Chain;
+const viaV28=api.includes("require('../lib/trust-infrastructure-v28')")&&v28Chain;
+const viaV29=api.includes("require('../lib/amazon-conversion-v29')")&&v29.includes("require('./trust-infrastructure-v28')")&&v28Chain;
+assert(directV24||viaV25||viaV26||viaV27||viaV28||viaV29,'api/index.js must preserve account profile v24 directly or through the current v25/v26/v27/v28/v29 wrapper chain');
 assert(profile.includes("require('./auth-hardening-v23')"),'v24 must compose over auth hardening v23');
 assert(auth.includes("require('./site-surface-polish-v22')"),'v23 must continue preserving the site surface chain');
 assert(profile.includes("path==='/api/account/profile'"),'v24 must expose a signed-in profile endpoint');
