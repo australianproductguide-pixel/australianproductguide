@@ -1,0 +1,28 @@
+name: Mobile Category Visual Overflow QA
+
+on:
+  pull_request:
+    paths:
+      - 'api/index.js'
+      - 'scripts/mobile-category-visual-overflow-qa.js'
+      - '.github/workflows/mobile-category-visual-overflow-qa.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'api/index.js'
+      - 'scripts/mobile-category-visual-overflow-qa.js'
+      - '.github/workflows/mobile-category-visual-overflow-qa.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-category-overflow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify targeted overflow containment
+        run: node scripts/mobile-category-visual-overflow-qa.js
