@@ -64,6 +64,26 @@ const card=commerce.enhance(shell(`<article class="product-card"><div class="car
 assert.ok(card.includes('Search this model on Amazon AU'),'product card missing safe Amazon purchase path');
 assert.ok(card.includes('data-affiliate-placement="product_card"'),'product-card affiliate placement marker missing');
 
+const researchExact=commerce.enhance(shell(`<article class="apg-rv-card-v43"><a class="apg-rv-open-v43" href="/products/${exactProduct.slug}/">Inspect product evidence →</a></article>`),'/search/?q=example');
+assert.ok(researchExact.includes(`href="/products/${exactProduct.slug}/">Inspect product evidence →</a>`),'Research View must preserve APG evidence route');
+assert.ok(researchExact.includes('View on Amazon AU'),'Research View exact recommendation missing direct Amazon transition');
+assert.ok(researchExact.includes('data-affiliate-placement="search_research_view"'),'Research View affiliate placement marker missing');
+assert.ok(researchExact.includes('data-affiliate-context="research_view_recommendation"'),'Research View referral context marker missing');
+
+const researchFallback=commerce.enhance(shell(`<article class="apg-rv-card-v43"><a class="apg-rv-open-v43" href="/products/${fallbackProduct.slug}/">Inspect product evidence →</a></article>`),'/search/?q=example');
+assert.ok(researchFallback.includes('Search this model on Amazon AU'),'Research View fallback recommendation must remain transparent search');
+assert.ok(researchFallback.includes(`tag=${TAG}`),'Research View fallback must retain Associates tag');
+
+const categoryExact=commerce.enhance(shell(`<article class="pick-card"><a class="text-link" href="/products/${exactProduct.slug}/">See why it fits →</a></article>`),'/categories/example/');
+assert.ok(categoryExact.includes(`href="/products/${exactProduct.slug}/">See why it fits →</a>`),'category decision shortcut must preserve APG analysis route');
+assert.ok(categoryExact.includes('View on Amazon AU'),'category decision shortcut exact recommendation missing Amazon transition');
+assert.ok(categoryExact.includes('data-affiliate-placement="category_decision_shortcut"'),'category decision shortcut placement marker missing');
+assert.ok(categoryExact.includes('data-affiliate-context="category_decision_shortcut"'),'category decision shortcut referral context marker missing');
+
+const categoryFallback=commerce.enhance(shell(`<article class="pick-card"><a class="text-link" href="/products/${fallbackProduct.slug}/">See why it fits →</a></article>`),'/categories/example/');
+assert.ok(categoryFallback.includes('Search this model on Amazon AU'),'category decision shortcut fallback must remain transparent search');
+assert.ok(categoryFallback.includes(`tag=${TAG}`),'category decision shortcut fallback must retain Associates tag');
+
 const decision=commerce.enhance(shell(`<div class="decision-result"><div class="actions"><a class="button" href="/products/${exactProduct.slug}/">Inspect decision guide</a><button data-compare-product="${exactProduct.slug}">Compare</button></div></div>`),'/decision-lab/');
 assert.ok(decision.includes('View on Amazon Australia'),'Decision Lab result missing Amazon transition');
 assert.ok(decision.includes('data-affiliate-placement="decision_lab_result"'),'Decision Lab affiliate context marker missing');
@@ -78,6 +98,8 @@ assert.ok(commerce.clientJs.includes("'scout_recommendation'"),'Scout purchase e
 assert.ok(commerce.clientJs.includes("'my_apg_saved'"),'My APG purchase enhancement missing');
 assert.ok(commerce.clientJs.includes("'comparison_result'"),'dynamic comparison purchase enhancement missing');
 assert.ok(commerce.css.includes('.apg-mobile-purchase'),'mobile purchase component styling missing');
+assert.ok(commerce.css.includes('.apg-rv-card-v43 .apg-intent-purchase'),'Research View commerce styling missing');
+assert.ok(commerce.css.includes('.pick-card .apg-intent-purchase'),'category decision shortcut commerce styling missing');
 
 for(const field of ['category','referral_context','device_bucket','placement','product_slug','page_path']){
   assert.ok(amazonClientJs.includes(field+':')||amazonClientJs.includes(field+','),`affiliate_click analytics missing ${field}`);
