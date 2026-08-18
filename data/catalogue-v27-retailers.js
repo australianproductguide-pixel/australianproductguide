@@ -63,6 +63,21 @@ const OFFERS={
   ],
   'tp-link-archer-be550':[
     exactListing({retailer:'JB Hi-Fi',url:'https://www.jbhifi.com.au/products/tp-link-archer-be550-wi-fi-7-router',variant:'ARCHER-BE550 · SKU 686660',note:'Exact Archer BE550 Australian retailer listing verified. APG leaves current price and orderability live-at-retailer.'})
+  ],
+  'philips-5000-series-dual-basket-na55100':[
+    exactListing({retailer:'The Good Guys',url:'https://www.thegoodguys.com.au/philips-5000-series-9-litre-xxl-dual-basket-steam-airfryer-black-na55100',variant:'NA551/00 · 9L XXL Dual Basket Steam Airfryer · Black/Silver',note:'Exact NA551/00 Australian retailer listing verified. APG leaves current promotional price and stock live-at-retailer.'})
+  ],
+  'philips-pureprotect-mini-900-series-ac0950-10':[
+    exactListing({retailer:'The Good Guys',url:'https://www.thegoodguys.com.au/philips-900i-series-air-purifier-white-ac095010',variant:'AC0950/10 · 900i Series · Arctic White',note:'Exact AC0950/10 Australian retailer listing verified. Product naming differs between APG and retailer copy, so the model number is the identity control.'})
+  ],
+  'samsung-galaxy-tab-a9':[
+    exactListing({retailer:'Officeworks',url:'https://www.officeworks.com.au/shop/officeworks/p/samsung-galaxy-tab-a9-wifi-128gb-graphite-samtaba915',variant:'Galaxy Tab A9+ Wi-Fi 128GB Graphite · SM-X210NZAEXSA · SAMTABA915',note:'Exact Galaxy Tab A9+ Wi-Fi 128GB Australian retailer configuration verified. APG guidance is family-level, so cellular, storage and memory configuration must be confirmed before purchase.'})
+  ],
+  'amazon-kindle-2024':[
+    exactListing({retailer:'JB Hi-Fi',url:'https://www.jbhifi.com.au/products/kindle-11th-gen-6-16gb-black2024',variant:'Kindle 11th Gen 6-inch 16GB Black [2024] · B0CP31L73X · SKU 749550',note:'Exact 2024 16GB Black Kindle retailer variant verified. Colour variants may use different retailer model identifiers.'})
+  ],
+  'amazon-kindle-paperwhite-signature-edition-32gb':[
+    exactListing({retailer:'JB Hi-Fi',url:'https://www.jbhifi.com.au/products/kindle-paperwhite-12th-gen-7-signature-edition-32gb',variant:'Kindle Paperwhite 12th Gen 7-inch Signature Edition 32GB · B0CFPHTMDX · SKU 778670',note:'Exact current 32GB Signature Edition Australian retailer destination verified. APG records the retailer generation/variant explicitly rather than generalising it to older Paperwhite generations.'})
   ]
 };
 
