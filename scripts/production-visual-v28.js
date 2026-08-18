@@ -127,9 +127,10 @@ async function main(){
 
   const browser=await puppeteer.launch({headless:true,executablePath:CHROME,args:['--no-sandbox']});
 
-  async function preparePage(width,height){
+  async function preparePage(width,height,{javascript=true}={}){
     const page=await browser.newPage();
     await page.setViewport({width,height});
+    await page.setJavaScriptEnabled(javascript);
     await page.setRequestInterception(true);
     page.on('request',req=>{
       const raw=req.url();
@@ -162,8 +163,8 @@ async function main(){
     }
     await page.waitForSelector('body[data-evidence-commerce-v27="true"][data-trust-v28="true"]',{timeout:10000});
     await page.waitForFunction(()=>((document.body?.innerText||'').length>80),{timeout:10000});
-    await page.waitForNetworkIdle({idleTime:400,timeout:3000}).catch(()=>{});
-    await new Promise(r=>setTimeout(r,300));
+    await page.waitForNetworkIdle({idleTime:350,timeout:4000}).catch(()=>{});
+    await new Promise(r=>setTimeout(r,250));
     page.off('response',onResponse);
     const observed=response||mainResponse;
     return {status:observed?.status()||0,productionUrl:BASE_URL+path,renderUrl,navigationTimedOut,transport:'prefetched-production-document-plus-live-asset-proxy'};
@@ -171,21 +172,33 @@ async function main(){
 
   async function runPage(vp,width,height,name,path){
     console.log(`VISUAL_ROUTE ${vp} ${name} ${path}`);
-    const page=await preparePage(width,height);
+    // The matrix certifies APG's SSR visual baseline. JavaScript is deliberately
+    // disabled here so a progressive-enhancement script cannot block parsing and
+    // be mistaken for a server-rendered visual defect. Scout is separately tested
+    // below with JavaScript enabled and a real interactive state change.
+    const page=await preparePage(width,height,{javascript:false});
     const errors=[];
     page.on('pageerror',e=>errors.push(e.message));
     try{
       const nav=await navigate(page,path);
-      const state=await page.evaluate(()=>({
-        sw:document.documentElement.scrollWidth,
-        cw:document.documentElement.clientWidth,
-        v27:document.body?.dataset?.evidenceCommerceV27||'',
-        v28:document.body?.dataset?.trustV28||'',
-        text:document.body?.innerText?.length||0,
-        exactRetailer:document.querySelectorAll('.apg-exact-offers-v42').length,
-        coverageNote:document.querySelectorAll('.apg-v27-coverage-note').length,
-        researchView:document.querySelectorAll('[data-rv-root]').length
-      }));
+      const state=await page.evaluate(()=>{
+        const offenders=[...document.querySelectorAll('body *')].map(el=>{
+          const r=el.getBoundingClientRect();
+          const cs=getComputedStyle(el);
+          return {tag:el.tagName.toLowerCase(),cls:String(el.className||'').slice(0,120),id:el.id||'',left:Math.round(r.left*10)/10,right:Math.round(r.right*10)/10,width:Math.round(r.width*10)/10,display:cs.display,position:cs.position};
+        }).filter(x=>x.display!=='none'&&x.width>0&&(x.left<-2||x.right>innerWidth+2)).slice(0,12);
+        return {
+          sw:document.documentElement.scrollWidth,
+          cw:document.documentElement.clientWidth,
+          v27:document.body?.dataset?.evidenceCommerceV27||'',
+          v28:document.body?.dataset?.trustV28||'',
+          text:document.body?.innerText?.length||0,
+          exactRetailer:document.querySelectorAll('.apg-exact-offers-v42').length,
+          coverageNote:document.querySelectorAll('.apg-v27-coverage-note').length,
+          researchView:document.querySelectorAll('[data-rv-root]').length,
+          overflowOffenders:offenders
+        };
+      });
       await page.screenshot({path:`${OUT}/${vp}-${name}.png`,fullPage:true});
       if(nav.status<200||nav.status>=400||state.sw>state.cw+2||state.v27!=='true'||state.v28!=='true'||state.text<80||errors.length)bad.push(`${vp}/${name}: ${JSON.stringify(state)} status=${nav.status} errors=${errors.join('|')}`);
       if(name==='search'&&state.researchView<1)bad.push(`${vp}/${name}: Research View missing`);
@@ -203,14 +216,23 @@ async function main(){
 
   async function runScout(vp,width,height){
     console.log(`VISUAL_ROUTE ${vp} scout-open /`);
-    const page=await preparePage(width,height);
+    const page=await preparePage(width,height,{javascript:true});
     const errors=[];
     page.on('pageerror',e=>errors.push(e.message));
     try{
       const nav=await navigate(page,'/');
-      const open=await page.$('[data-v26-scout-open]')||await page.$('#apgAssistantLauncher');
-      if(!open)bad.push(`${vp}/scout: launcher missing`);
-      else{await open.click();await new Promise(r=>setTimeout(r,250));}
+      const clicked=await page.evaluate(()=>{
+        const candidates=[...document.querySelectorAll('[data-v26-scout-open],#apgAssistantLauncher')];
+        const el=candidates.find(node=>{
+          const r=node.getBoundingClientRect(),cs=getComputedStyle(node);
+          return r.width>0&&r.height>0&&cs.display!=='none'&&cs.visibility!=='hidden'&&cs.pointerEvents!=='none';
+        });
+        if(!el)return false;
+        el.click();
+        return true;
+      });
+      if(!clicked)bad.push(`${vp}/scout: visible launcher missing`);
+      await new Promise(r=>setTimeout(r,300));
       const scout=await page.evaluate(()=>({
         sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,
         open:!document.getElementById('apgAssistantPanel')?.hidden,
