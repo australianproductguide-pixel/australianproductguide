@@ -8,7 +8,7 @@ const app=require('../lib/amazon-conversion-v29');
 // but contain that legacy artwork inside the mobile card instead of hiding page overflow.
 const MOBILE_CATEGORY_VISUAL_FIX='<style id="apg-mobile-category-visual-fix">@media(max-width:720px){body[data-institutional-v9="true"] .pick-card>.product-visual.v7-semantic-product-visual{margin-left:0!important;margin-right:0!important;width:100%!important;max-width:100%!important;box-sizing:border-box!important}}</style>';
 
-module.exports=(req,res)=>{
+function handler(req,res){
   const originalEnd=res.end.bind(res);
   res.end=(body,...args)=>{
     const type=String(res.getHeader('Content-Type')||'').toLowerCase();
@@ -18,4 +18,9 @@ module.exports=(req,res)=>{
     return originalEnd(body,...args);
   };
   return app(req,res);
-};
+}
+
+// Preserve the complete v29 module contract (including transform/version helpers) for
+// QA, renderer tooling and any other internal consumers that import api/index directly.
+Object.assign(handler,app);
+module.exports=handler;
