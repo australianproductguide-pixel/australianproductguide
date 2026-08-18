@@ -1,0 +1,22 @@
+name: Retailer Depth Pass 5
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  retailer-depth-pass5:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Verify exact Australian retailer depth pass 5
+        run: node scripts/retailer-depth-pass5-qa.js
