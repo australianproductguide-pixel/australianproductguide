@@ -48,13 +48,13 @@ jobs:
           grep -q 'data-evidence-commerce-v27="true"' /tmp/apg-home.html
           grep -q 'data-trust-v28="true"' /tmp/apg-home.html
           curl -fsSL "$BASE_URL/api/intelligence/observability" >/tmp/observability.json
-          jq -e '.releaseGate.pass == true and .retailers.exactOfferCount >= 43 and .retailers.productsWithExactOffers >= 41 and .retailers.independentRetailerOfferCount >= 33 and .imagery.invalid == 0 and .scout.evaluation.pass == true' /tmp/observability.json >/dev/null
+          jq -e '.releaseGate.pass == true and .retailers.exactOfferCount >= 52 and .retailers.productsWithExactOffers >= 46 and .retailers.independentRetailerOfferCount >= 41 and .retailers.manufacturerDirectOfferCount >= 11 and .retailers.independentOrDirectOfferCount >= 52 and .retailers.verifiedRetailers >= 20 and .imagery.invalid == 0 and .scout.evaluation.pass == true' /tmp/observability.json >/dev/null
           curl -fsSL "$BASE_URL/api/intelligence/retailers" >/tmp/retailers.json
-          jq -e '.recommendationWeight == 0 and .exactOfferCount >= 43 and .productsWithExactOffers >= 41 and .independentRetailerOfferCount >= 33' /tmp/retailers.json >/dev/null
+          jq -e '.recommendationWeight == 0 and .exactOfferCount >= 52 and .productsWithExactOffers >= 46 and .independentRetailerOfferCount >= 41 and .manufacturerDirectOfferCount >= 11 and .independentOrDirectOfferCount >= 52 and .verifiedRetailers >= 20' /tmp/retailers.json >/dev/null
           curl -fsSL "$BASE_URL/api/intelligence/imagery" >/tmp/imagery.json
           jq -e '.verified == 0 and .invalid == 0' /tmp/imagery.json >/dev/null
           curl -fsSL "$BASE_URL/api/intelligence/trust-readiness" >/tmp/trust-readiness.json
-          jq -e '.version == "trust-infrastructure-v28" and .passwordPolicy.newPasswordMinLength == 12 and .retailers.exactOfferCount >= 43 and .imagery.automaticPublication == false and .organic.searchConsoleConnected == false' /tmp/trust-readiness.json >/dev/null
+          jq -e '.version == "trust-infrastructure-v28" and .passwordPolicy.newPasswordMinLength == 12 and .retailers.exactOfferCount >= 52 and .retailers.productsWithExactOffers >= 46 and .retailers.independentRetailerOfferCount >= 41 and .retailers.manufacturerDirectOfferCount >= 11 and .retailers.independentOrDirectOfferCount >= 52 and .retailers.verifiedRetailerOrManufacturerSources >= 20 and .imagery.automaticPublication == false and .organic.searchConsoleConnected == false' /tmp/trust-readiness.json >/dev/null
       - name: Render prefetched Production desktop and mobile visual matrix
         run: |
           set -euo pipefail
