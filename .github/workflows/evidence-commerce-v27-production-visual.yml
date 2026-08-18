@@ -75,25 +75,42 @@ jobs:
               ['privacy','/privacy/']
             ];
             const browser=await puppeteer.launch({headless:true,executablePath:process.env.CHROME,args:['--no-sandbox']});
-            const report=[],bad=[];
+            const report=[],bad=[],documentCache=new Map();
+            const productionDocument=async url=>{
+              if(documentCache.has(url))return documentCache.get(url);
+              const started=Date.now();
+              const response=await fetch(url,{redirect:'follow',signal:AbortSignal.timeout(45000),headers:{'accept':'text/html,application/xhtml+xml','cache-control':'no-cache','user-agent':'APG-Production-Visual-Certification/28'}});
+              const html=await response.text();
+              const row={url:response.url,status:response.status,html,ms:Date.now()-started,csp:response.headers.get('content-security-policy')||''};
+              if(!response.ok)throw new Error(`Production HTML fetch failed ${response.status} for ${url}`);
+              if(!html.includes('data-evidence-commerce-v27="true"'))throw new Error(`Production HTML missing v27 marker for ${url}`);
+              if(!html.includes('data-trust-v28="true"'))throw new Error(`Production HTML missing v28 marker for ${url}`);
+              documentCache.set(url,row);
+              return row;
+            };
             const navigate=async(page,url)=>{
-              let response=null,navigationTimedOut=false;
-              const onResponse=r=>{
-                if(r.request().isNavigationRequest()&&r.frame()===page.mainFrame())response=r;
+              const live=await productionDocument(url);
+              let navigationTimedOut=false;
+              await page.setRequestInterception(true);
+              const onRequest=req=>{
+                if(req.isNavigationRequest()&&req.frame()===page.mainFrame()&&req.url()===url){
+                  const headers={'cache-control':'no-store','x-apg-visual-source':'validated-production-html'};
+                  if(live.csp)headers['content-security-policy']=live.csp;
+                  req.respond({status:live.status,contentType:'text/html; charset=utf-8',headers,body:live.html}).catch(()=>{});
+                }else req.continue().catch(()=>{});
               };
-              page.on('response',onResponse);
+              page.on('request',onRequest);
               try{
                 await page.goto(url,{waitUntil:'domcontentloaded',timeout:15000});
               }catch(err){
                 if(err?.name!=='TimeoutError')throw err;
                 navigationTimedOut=true;
               }
-              await page.waitForSelector('body[data-evidence-commerce-v27="true"]',{timeout:15000});
+              await page.waitForSelector('body[data-evidence-commerce-v27="true"][data-trust-v28="true"]',{timeout:10000});
               await page.waitForFunction(()=>((document.body?.innerText||'').length>80),{timeout:10000});
               await page.waitForNetworkIdle({idleTime:400,timeout:2500}).catch(()=>{});
               await new Promise(r=>setTimeout(r,200));
-              page.off('response',onResponse);
-              return {response,navigationTimedOut};
+              return {status:live.status,productionFetchMs:live.ms,navigationTimedOut,transport:'validated-production-html'};
             };
             for(const [vp,width,height] of viewports){
               for(const [name,path] of pages){
@@ -102,23 +119,22 @@ jobs:
                 await page.setViewport({width,height});
                 const errors=[];page.on('pageerror',e=>errors.push(e.message));
                 const nav=await navigate(page,base+path);
-                const response=nav.response;
                 const state=await page.evaluate(()=>({
                   sw:document.documentElement.scrollWidth,
                   cw:document.documentElement.clientWidth,
                   v27:document.body?.dataset?.evidenceCommerceV27||'',
+                  v28:document.body?.dataset?.trustV28||'',
                   text:document.body?.innerText?.length||0,
                   exactRetailer:document.querySelectorAll('.apg-exact-offers-v42').length,
                   coverageNote:document.querySelectorAll('.apg-v27-coverage-note').length,
                   researchView:document.querySelectorAll('[data-rv-root]').length
                 }));
                 await page.screenshot({path:`visual-v27/${vp}-${name}.png`,fullPage:true});
-                if((response?.status()||0)>=400||state.sw>state.cw+2||state.v27!=='true'||state.text<80||errors.length)bad.push(`${vp}/${name}: ${JSON.stringify(state)} status=${response?.status()} errors=${errors.join('|')}`);
-                if(!response)bad.push(`${vp}/${name}: no main-document response captured`);
+                if(nav.status>=400||state.sw>state.cw+2||state.v27!=='true'||state.v28!=='true'||state.text<80||errors.length)bad.push(`${vp}/${name}: ${JSON.stringify(state)} status=${nav.status} errors=${errors.join('|')}`);
                 if(name==='search'&&state.researchView<1)bad.push(`${vp}/${name}: Research View missing`);
                 if(name==='retailer-product'&&state.exactRetailer!==1)bad.push(`${vp}/${name}: expected one exact retailer block, found ${state.exactRetailer}`);
                 if(['laptops','headphones'].includes(name)&&state.coverageNote!==1)bad.push(`${vp}/${name}: v27 coverage note missing/duplicated`);
-                report.push({vp,name,status:response?.status(),navigationTimedOut:nav.navigationTimedOut,...state,errors});
+                report.push({vp,name,...nav,...state,errors});
                 if(nav.navigationTimedOut)console.log(`VISUAL_NAVIGATION_SETTLE_WARNING ${vp} ${name}`);
                 await page.close();
               }
@@ -136,8 +152,8 @@ jobs:
                 input:!!document.querySelector('.scout-input')
               }));
               await page.screenshot({path:`visual-v27/${vp}-scout-open.png`,fullPage:false});
-              if(scout.sw>scout.cw+2||!scout.open||!scout.input||errors.length)bad.push(`${vp}/scout: ${JSON.stringify(scout)} ${errors.join('|')}`);
-              report.push({vp,name:'scout-open',status:nav.response?.status(),navigationTimedOut:nav.navigationTimedOut,...scout,errors});
+              if(nav.status>=400||scout.sw>scout.cw+2||!scout.open||!scout.input||errors.length)bad.push(`${vp}/scout: ${JSON.stringify(scout)} status=${nav.status} ${errors.join('|')}`);
+              report.push({vp,name:'scout-open',...nav,...scout,errors});
               await page.close();
             }
             await browser.close();
