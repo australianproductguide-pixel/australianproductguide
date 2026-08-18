@@ -2,28 +2,14 @@ const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
 const {polishSiteSurfaces}=require('../lib/site-surface-polish-v22');
+const {runtimeChainIncludes}=require('./runtime-chain-qa');
 
 const fixture='<!doctype html><html><head><link rel="stylesheet" href="/assets/mobile-menu-polish-v21.css?v=21"></head><body data-institutional-v9="true"><main><article class="product-card"><div class="product-card-body">Product</div></article><section class="workspace-panel">Workspace</section><div class="faq"><details><summary>Question</summary><p>Answer</p></details></div><div class="compare-wrap"><table class="compare"></table></div><nav class="policy-nav"><a href="#a">A</a></nav></main></body></html>';
 
 const out=polishSiteSurfaces(fixture);
 const twice=polishSiteSurfaces(out);
 const css=fs.readFileSync(path.join(__dirname,'../public/assets/site-surface-polish-v22.css'),'utf8');
-const api=fs.readFileSync(path.join(__dirname,'../api/index.js'),'utf8');
 const wrapper=fs.readFileSync(path.join(__dirname,'../lib/site-surface-polish-v22.js'),'utf8');
-const authPath=path.join(__dirname,'../lib/auth-hardening-v23.js');
-const auth=fs.existsSync(authPath)?fs.readFileSync(authPath,'utf8'):'';
-const profilePath=path.join(__dirname,'../lib/account-profile-v24.js');
-const profile=fs.existsSync(profilePath)?fs.readFileSync(profilePath,'utf8'):'';
-const governancePath=path.join(__dirname,'../lib/account-governance-v25.js');
-const governance=fs.existsSync(governancePath)?fs.readFileSync(governancePath,'utf8'):'';
-const cohesionPath=path.join(__dirname,'../lib/platform-cohesion-v26.js');
-const cohesion=fs.existsSync(cohesionPath)?fs.readFileSync(cohesionPath,'utf8'):'';
-const v27Path=path.join(__dirname,'../lib/evidence-commerce-depth-v27.js');
-const v27=fs.existsSync(v27Path)?fs.readFileSync(v27Path,'utf8'):'';
-const v28Path=path.join(__dirname,'../lib/trust-infrastructure-v28.js');
-const v28=fs.existsSync(v28Path)?fs.readFileSync(v28Path,'utf8'):'';
-const v29Path=path.join(__dirname,'../lib/amazon-conversion-v29.js');
-const v29=fs.existsSync(v29Path)?fs.readFileSync(v29Path,'utf8'):'';
 
 assert(out.includes('data-surface-v22="true"'),'v22 body marker should be injected');
 assert.strictEqual((twice.match(/data-surface-v22="true"/g)||[]).length,1,'v22 body marker should only appear once');
@@ -40,17 +26,7 @@ assert(css.includes('.difference-engine'),'signature Difference Engine preservat
 assert(css.includes('.apg-assistant-panel'),'Scout preservation must remain explicit');
 assert(css.includes('prefers-reduced-motion'),'reduced-motion support must remain present');
 
-const directV22=api.includes("require('../lib/site-surface-polish-v22')");
-const viaV23=api.includes("require('../lib/auth-hardening-v23')")&&auth.includes("require('./site-surface-polish-v22')");
-const viaV24=api.includes("require('../lib/account-profile-v24')")&&profile.includes("require('./auth-hardening-v23')")&&auth.includes("require('./site-surface-polish-v22')");
-const viaV25=api.includes("require('../lib/account-governance-v25')")&&governance.includes("require('./account-profile-v24')")&&profile.includes("require('./auth-hardening-v23')")&&auth.includes("require('./site-surface-polish-v22')");
-const viaV26=api.includes("require('../lib/platform-cohesion-v26')")&&cohesion.includes("require('./account-governance-v25')")&&governance.includes("require('./account-profile-v24')")&&profile.includes("require('./auth-hardening-v23')")&&auth.includes("require('./site-surface-polish-v22')");
-const v27Chain=v27.includes("require('./platform-cohesion-v26')")&&cohesion.includes("require('./account-governance-v25')")&&governance.includes("require('./account-profile-v24')")&&profile.includes("require('./auth-hardening-v23')")&&auth.includes("require('./site-surface-polish-v22')");
-const viaV27=api.includes("require('../lib/evidence-commerce-depth-v27')")&&v27Chain;
-const v28Chain=v28.includes("require('./evidence-commerce-depth-v27')")&&v27Chain;
-const viaV28=api.includes("require('../lib/trust-infrastructure-v28')")&&v28Chain;
-const viaV29=api.includes("require('../lib/amazon-conversion-v29')")&&v29.includes("require('./trust-infrastructure-v28')")&&v28Chain;
-assert(directV22||viaV23||viaV24||viaV25||viaV26||viaV27||viaV28||viaV29,'api entry point must preserve the v22 site-surface layer, directly or through the current wrapper chain including v29');
+assert(runtimeChainIncludes('site-surface-polish-v22'),'api entry point must preserve the v22 site-surface layer through the active recursive runtime wrapper chain');
 assert(wrapper.includes("require('./mobile-menu-polish-v21')"),'v22 must compose over v21 rather than bypassing it');
 assert(!wrapper.includes('recommendationScore')&&!wrapper.includes('affiliateCommission'),'v22 wrapper must remain presentation-only');
 
