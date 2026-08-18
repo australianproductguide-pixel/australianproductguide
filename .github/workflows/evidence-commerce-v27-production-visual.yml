@@ -26,11 +26,11 @@ jobs:
         run: |
           set -euo pipefail
           for attempt in $(seq 1 72); do
-            d=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments?sha=$SHA")
-            id=$(echo "$d" | jq -r '[.[]|select(.environment=="Production" or .original_environment=="Production")][0].id//empty')
+            curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments?sha=$SHA" >/tmp/apg-deployments.json
+            id=$(jq -r '[.[]|select(.environment=="Production" or .original_environment=="Production")][0].id//empty' /tmp/apg-deployments.json)
             if [ -n "$id" ]; then
-              s=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments/$id/statuses")
-              state=$(echo "$s" | jq -r '.[0].state//empty')
+              curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments/$id/statuses" >/tmp/apg-deployment-statuses.json
+              state=$(jq -r '.[0].state//empty' /tmp/apg-deployment-statuses.json)
               [ "$state" = failure ] || [ "$state" = error ] && exit 1
               [ "$state" = success ] && exit 0
             fi
@@ -41,12 +41,17 @@ jobs:
       - name: Verify v27 public contract
         run: |
           set -euo pipefail
-          curl -fsSI "$BASE_URL/" | tr -d '\r' | grep -qi 'x-apg-experience: evidence-commerce-depth-v27'
-          curl -fsSL "$BASE_URL/" | grep -q 'data-evidence-commerce-v27="true"'
-          curl -fsSL "$BASE_URL/api/intelligence/observability" > /tmp/observability.json
+          curl -fsSI "$BASE_URL/" >/tmp/apg-home.headers
+          tr -d '\r' </tmp/apg-home.headers >/tmp/apg-home.headers.clean
+          grep -qi 'x-apg-experience: evidence-commerce-depth-v27' /tmp/apg-home.headers.clean
+          curl -fsSL "$BASE_URL/" >/tmp/apg-home.html
+          grep -q 'data-evidence-commerce-v27="true"' /tmp/apg-home.html
+          curl -fsSL "$BASE_URL/api/intelligence/observability" >/tmp/observability.json
           jq -e '.releaseGate.pass == true and .retailers.exactOfferCount >= 43 and .retailers.productsWithExactOffers >= 41 and .retailers.independentRetailerOfferCount >= 33 and .imagery.invalid == 0 and .scout.evaluation.pass == true' /tmp/observability.json >/dev/null
-          curl -fsSL "$BASE_URL/api/intelligence/retailers" | jq -e '.recommendationWeight == 0 and .exactOfferCount >= 43 and .productsWithExactOffers >= 41 and .independentRetailerOfferCount >= 33' >/dev/null
-          curl -fsSL "$BASE_URL/api/intelligence/imagery" | jq -e '.verified == 0 and .invalid == 0' >/dev/null
+          curl -fsSL "$BASE_URL/api/intelligence/retailers" >/tmp/retailers.json
+          jq -e '.recommendationWeight == 0 and .exactOfferCount >= 43 and .productsWithExactOffers >= 41 and .independentRetailerOfferCount >= 33' /tmp/retailers.json >/dev/null
+          curl -fsSL "$BASE_URL/api/intelligence/imagery" >/tmp/imagery.json
+          jq -e '.verified == 0 and .invalid == 0' /tmp/imagery.json >/dev/null
       - name: Render v27 desktop and mobile visual matrix
         run: |
           set -euo pipefail
@@ -122,7 +127,8 @@ jobs:
           SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          current=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/commits/main" | jq -r '.sha')
+          curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/commits/main" >/tmp/apg-main-commit.json
+          current=$(jq -r '.sha' /tmp/apg-main-commit.json)
           test "$current" = "$SHA" || { echo "main advanced to $current during certification" >&2; exit 1; }
       - uses: actions/upload-artifact@v4
         if: always()
