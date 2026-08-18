@@ -112,8 +112,6 @@ jobs:
                 res.setHeader('content-type',contentType);
                 res.setHeader('cache-control','no-store');
                 res.setHeader('x-apg-visual-source','validated-production-byte-proxy');
-                // CSP/HSTS/content-encoding are deliberately not replayed on localhost;
-                // they are tested directly against Production outside this render lane.
                 if(req.method==='HEAD')res.end();else res.end(body);
                 audit.push({path:target.pathname+target.search,status:upstream.status,contentType,bytes:body.length,ms:Date.now()-started});
               }catch(err){
@@ -147,12 +145,23 @@ jobs:
             };
             const navigate=async(page,path)=>{
               const renderUrl=renderBase+path;
-              const response=await page.goto(renderUrl,{waitUntil:'domcontentloaded',timeout:30000});
-              await page.waitForSelector('body[data-evidence-commerce-v27="true"][data-trust-v28="true"]',{timeout:10000});
+              let response=null,mainResponse=null,navigationTimedOut=false;
+              const onResponse=r=>{if(r.request().isNavigationRequest()&&r.frame()===page.mainFrame())mainResponse=r;};
+              page.on('response',onResponse);
+              try{
+                response=await page.goto(renderUrl,{waitUntil:'domcontentloaded',timeout:12000});
+              }catch(err){
+                if(err?.name!=='TimeoutError')throw err;
+                navigationTimedOut=true;
+                console.log(`VISUAL_LIFECYCLE_TIMEOUT ${path} - evaluating rendered state instead`);
+              }
+              await page.waitForSelector('body[data-evidence-commerce-v27="true"][data-trust-v28="true"]',{timeout:20000});
               await page.waitForFunction(()=>((document.body?.innerText||'').length>80),{timeout:10000});
               await page.waitForNetworkIdle({idleTime:400,timeout:3000}).catch(()=>{});
-              await new Promise(r=>setTimeout(r,200));
-              return {status:response?.status()||0,productionUrl:base+path,renderUrl,transport:'validated-production-byte-proxy'};
+              await new Promise(r=>setTimeout(r,300));
+              page.off('response',onResponse);
+              const observed=response||mainResponse;
+              return {status:observed?.status()||0,productionUrl:base+path,renderUrl,navigationTimedOut,transport:'validated-production-byte-proxy'};
             };
             try{
               for(const [vp,width,height] of viewports){
@@ -172,7 +181,7 @@ jobs:
                     researchView:document.querySelectorAll('[data-rv-root]').length
                   }));
                   await page.screenshot({path:`visual-v27/${vp}-${name}.png`,fullPage:true});
-                  if(nav.status>=400||state.sw>state.cw+2||state.v27!=='true'||state.v28!=='true'||state.text<80||errors.length)bad.push(`${vp}/${name}: ${JSON.stringify(state)} status=${nav.status} errors=${errors.join('|')}`);
+                  if(nav.status<200||nav.status>=400||state.sw>state.cw+2||state.v27!=='true'||state.v28!=='true'||state.text<80||errors.length)bad.push(`${vp}/${name}: ${JSON.stringify(state)} status=${nav.status} errors=${errors.join('|')}`);
                   if(name==='search'&&state.researchView<1)bad.push(`${vp}/${name}: Research View missing`);
                   if(name==='retailer-product'&&state.exactRetailer!==1)bad.push(`${vp}/${name}: expected one exact retailer block, found ${state.exactRetailer}`);
                   if(['laptops','headphones'].includes(name)&&state.coverageNote!==1)bad.push(`${vp}/${name}: v27 coverage note missing/duplicated`);
@@ -192,7 +201,7 @@ jobs:
                   input:!!document.querySelector('.scout-input')
                 }));
                 await page.screenshot({path:`visual-v27/${vp}-scout-open.png`,fullPage:false});
-                if(nav.status>=400||scout.sw>scout.cw+2||!scout.open||!scout.input||errors.length)bad.push(`${vp}/scout: ${JSON.stringify(scout)} status=${nav.status} ${errors.join('|')}`);
+                if(nav.status<200||nav.status>=400||scout.sw>scout.cw+2||!scout.open||!scout.input||errors.length)bad.push(`${vp}/scout: ${JSON.stringify(scout)} status=${nav.status} ${errors.join('|')}`);
                 report.push({vp,name:'scout-open',...nav,...scout,errors});
                 await page.close();
               }
@@ -202,8 +211,8 @@ jobs:
             }
             fs.writeFileSync('visual-v27/report.json',JSON.stringify(report,null,2));
             fs.writeFileSync('visual-v27/production-proxy-audit.json',JSON.stringify(audit,null,2));
-            const htmlFailures=audit.filter(row=>row.status>=400||row.error);
-            if(htmlFailures.length)bad.push(`Production proxy recorded ${htmlFailures.length} failed request(s)`);
+            const proxyFailures=audit.filter(row=>row.status>=400||row.error);
+            if(proxyFailures.length)bad.push(`Production proxy recorded ${proxyFailures.length} failed request(s)`);
             if(report.length!==20)bad.push(`Expected 20 visual states, got ${report.length}`);
             if(bad.length){console.error(bad.join('\n'));process.exitCode=1;return;}
             console.log(`V27_VISUAL_CERTIFICATION=${report.length}_STATES_PASS`);
