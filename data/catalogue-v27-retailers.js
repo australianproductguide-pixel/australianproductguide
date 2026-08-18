@@ -78,6 +78,48 @@ const OFFERS={
   ],
   'amazon-kindle-paperwhite-signature-edition-32gb':[
     exactListing({retailer:'JB Hi-Fi',url:'https://www.jbhifi.com.au/products/kindle-paperwhite-12th-gen-7-signature-edition-32gb',variant:'Kindle Paperwhite 12th Gen 7-inch Signature Edition 32GB · B0CFPHTMDX · SKU 778670',note:'Exact current 32GB Signature Edition Australian retailer destination verified. APG records the retailer generation/variant explicitly rather than generalising it to older Paperwhite generations.'})
+  ],
+  'dyson-v8-cyclone':[
+    exactListing({retailer:'The Good Guys',url:'https://www.thegoodguys.com.au/dyson-v8-cyclone-cordless-vacuum-626406-01',variant:'Dyson V8 Cyclone · 626406-01',note:'Exact Australian Dyson V8 Cyclone retailer model verified. APG leaves promotional price and stock live-at-retailer.'})
+  ],
+  'tp-link-deco-x50':[
+    exactListing({retailer:'JB Hi-Fi',url:'https://www.jbhifi.com.au/products/tp-link-deco-x50-wi-fi-6-mesh-system-3-pack',variant:'Deco X50 Wi-Fi 6 Mesh System · 3 Pack · DECO-X50(3-PACK) · SKU 671666',note:'Exact Australian Deco X50 three-pack verified. APG guidance is product-family level, so pack size must be confirmed before purchase.'})
+  ],
+  'garmin-dash-cam-mini-3':[
+    exactListing({retailer:'JB Hi-Fi',url:'https://www.jbhifi.com.au/products/garmin-dash-cam-mini-3',variant:'Garmin Dash Cam Mini 3 · 010-02899-10 · SKU 786542',note:'Exact Australian Garmin Dash Cam Mini 3 retailer identity verified. APG does not copy live ticket price or stock.'})
+  ],
+  'ecoflow-delta-3-plus':[
+    exactListing({retailer:'Anaconda',url:'https://www.anacondastores.com/en-au/p/ecoflow-delta-3-plus-1800w-power-station/90246196',variant:'EcoFlow DELTA 3 Plus · 1024Wh / 1800W · EFDELTA3S',note:'Exact EcoFlow DELTA 3 Plus Australian retailer model verified. Delivery and store availability are location-dependent and remain live-at-retailer.'})
+  ],
+  'asus-proart-display-pa279crv':[
+    exactListing({retailer:'Umart',url:'https://www.umart.com.au/product/asus-proart-display-27inch-4k-uhd-ips-professional-monitor-pa279crv-76588',variant:'ASUS ProArt Display PA279CRV · 27-inch 4K UHD IPS',note:'Exact PA279CRV Australian retailer listing verified. APG leaves current price and stock live-at-retailer.'})
+  ],
+  'logitech-g305-lightspeed':[
+    exactListing({retailer:'JB Hi-Fi',url:'https://www.jbhifi.com.au/products/logitech-g305-lightspeed-wireless-gaming-mouse-white',variant:'G305 LIGHTSPEED · White · 910-006042(G305) · SKU 480071',note:'Exact Logitech G305 LIGHTSPEED white retailer variant verified. Colour variants can carry different retailer identifiers.'})
+  ],
+  'breville-the-smart-dry-connect-dehumidifier-lad208':[
+    exactListing({retailer:'Appliances Online',url:'https://www.appliancesonline.com.au/product/breville-smart-dry-connect-dehumidifier-lad208wht2ian1/',variant:'the Smart Dry Connect · LAD208WHT2IAN1 · White',note:'Exact current connected LAD208WHT2IAN1 Australian retailer variant verified. APG leaves price, stock and delivery live-at-retailer.'})
+  ],
+  'ryobi-one-hp-18v-drill-driver':[
+    exactListing({retailer:'Bunnings',url:'https://www.bunnings.com.au/ryobi-18v-one-hp-brushless-compact-drill-driver-tool-only_p0919292',variant:'RYOBI 18V ONE+ HP Brushless Compact Drill Driver · Tool Only · I/N 0919292',note:'Exact Australian tool-only drill-driver configuration verified. Battery and charger inclusion must be checked because APG guidance is family-level.'})
+  ],
+  'tp-link-tapo-d235':[
+    exactListing({retailer:'Officeworks',url:'https://www.officeworks.com.au/shop/officeworks/p/tp-link-tapo-video-doorbell-camera-d235-tptapod235',variant:'TP-Link Tapo Video Doorbell Camera D235 · TPTAPOD235',note:'Exact Tapo D235 Australian retailer listing verified. APG keeps current ticket price and stock live-at-retailer.'})
+  ],
+  'apple-watch-se-3':[
+    exactListing({retailer:'JB Hi-Fi',url:'https://www.jbhifi.com.au/products/apple-watch-se-3-44mm-midnight-aluminium-case-gps-sport-band-s-m-2025',variant:'Apple Watch SE 3 · 44mm · Midnight Aluminium · GPS · Sport Band S/M · MEHN4X/A · SKU 835915',note:'Exact Apple Watch SE 3 configuration verified. APG guidance is family-level, so case size, GPS/cellular and band configuration must be confirmed.'})
+  ],
+  'jbl-go-4':[
+    exactListing({retailer:'JB Hi-Fi',url:'https://www.jbhifi.com.au/products/jbl-go-4-mini-portable-bluetooth-speaker-black',variant:'JBL Go 4 · Black · model 6081974 · SKU 751953',note:'Exact JBL Go 4 black Australian retailer variant verified. Colour variants can differ in retailer coding and availability.'})
+  ],
+  'crucial-x9-pro-portable-ssd-1tb':[
+    exactListing({retailer:'Umart',url:'https://www.umart.com.au/product/crucial-x9-pro-1tb-portable-ssd-ct1000x9prossd9-74962',variant:'Crucial X9 Pro Portable SSD · 1TB · CT1000X9PROSSD9',note:'Exact 1TB X9 Pro Australian retailer model verified. APG keeps current price and stock live-at-retailer.'})
+  ],
+  'anker-nano-power-bank-10000mah-30w':[
+    exactListing({retailer:'Scorptec',url:'https://www.scorptec.com.au/product/power-and-chargers/power-banks/108236-a1259h11',variant:'Anker Nano Power Bank · 10,000mAh · 30W · A1259H11',note:'Exact A1259-series Australian retailer configuration verified. APG keeps current retailer price and orderability live-at-retailer.'})
+  ],
+  'philips-oneblade-pro-qp6530-15':[
+    exactListing({retailer:'Joyce Mayne',url:'https://www.joycemayne.com.au/philips-oneblade-pro-face.html',variant:'Philips OneBlade Pro Face · QP6530/15 · GTIN 8710103963738',note:'Exact QP6530/15 Australian retailer model verified. APG uses the explicit model and GTIN as identity controls and leaves current price and availability live-at-retailer.'})
   ]
 };
 

@@ -21,10 +21,10 @@ check('canonical catalogue truth remains 482 / 90 / 178',()=>{
 
 check('v27 retailer overlay materially deepens exact Australian destinations without catalogue expansion',()=>{
   const x=observability.retailerSnapshot();
-  assert.ok(x.exactOfferCount>=29,`expected at least 29 exact offers, got ${x.exactOfferCount}`);
-  assert.ok(x.productsWithExactOffers>=27,`expected at least 27 products with exact offers, got ${x.productsWithExactOffers}`);
-  assert.ok(x.independentRetailerOfferCount>=19,`expected at least 19 independent retailer offers, got ${x.independentRetailerOfferCount}`);
-  assert.ok(x.verifiedRetailers>=8,`expected broad retailer/manufacturer set, got ${x.verifiedRetailers}`);
+  assert.ok(x.exactOfferCount>=43,`expected at least 43 exact offers, got ${x.exactOfferCount}`);
+  assert.ok(x.productsWithExactOffers>=41,`expected at least 41 products with exact offers, got ${x.productsWithExactOffers}`);
+  assert.ok(x.independentRetailerOfferCount>=33,`expected at least 33 independent retailer offers, got ${x.independentRetailerOfferCount}`);
+  assert.ok(x.verifiedRetailers>=14,`expected broad retailer/manufacturer set, got ${x.verifiedRetailers}`);
 });
 
 check('second v27 retailer pass closes five zero-coverage category gaps',()=>{
@@ -44,6 +44,14 @@ check('third v27 retailer pass closes four more zero-coverage category gaps',()=
   assert.ok(x.byCategory['e-readers'].exactOffers>=2,'e-readers should expose both verified Kindle retailer destinations');
 });
 
+check('fourth v27 retailer pass closes fourteen more zero-coverage category gaps',()=>{
+  const x=observability.retailerSnapshot();
+  for(const category of ['stick-vacuums','mesh-wifi-systems','dash-cameras','portable-power-stations','computer-monitors','computer-mice','dehumidifiers','cordless-drills','smart-doorbells','smartwatches','bluetooth-speakers','external-ssds','power-banks','electric-shavers']){
+    assert.ok(x.byCategory[category],`missing retailer coverage summary for ${category}`);
+    assert.ok(x.byCategory[category].exactOffers>=1,`expected at least one exact offer for ${category}`);
+  }
+});
+
 check('new v27 retailer evidence is exact-model, non-affiliate and does not fabricate price or stock',()=>{
   const seen=new Set();let rows=0;
   for(const [slug,offers] of Object.entries(v27Retailers.OFFERS)){
@@ -60,13 +68,13 @@ check('new v27 retailer evidence is exact-model, non-affiliate and does not fabr
       seen.add(offer.url);
     }
   }
-  assert.equal(rows,20,'v27 should contain the twenty reviewed exact Australian destinations');
+  assert.equal(rows,34,'v27 should contain the thirty-four reviewed exact Australian destinations');
 });
 
 check('retailer participation remains zero recommendation weight',()=>{
   const x=observability.snapshot();
   assert.equal(x.recommendation.affiliateRecommendationWeight,0);
-  assert.equal(x.retailers.exactOfferCount>=29,true);
+  assert.equal(x.retailers.exactOfferCount>=43,true);
 });
 
 check('imagery governance reports truth and produces an exact-model acquisition queue without publishing unlicensed images',()=>{
