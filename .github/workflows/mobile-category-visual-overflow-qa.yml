@@ -4,12 +4,14 @@ on:
   pull_request:
     paths:
       - 'api/index.js'
+      - 'public/assets/evidence-commerce-depth-v27.css'
       - 'scripts/mobile-category-visual-overflow-qa.js'
       - '.github/workflows/mobile-category-visual-overflow-qa.yml'
   push:
     branches: [main]
     paths:
       - 'api/index.js'
+      - 'public/assets/evidence-commerce-depth-v27.css'
       - 'scripts/mobile-category-visual-overflow-qa.js'
       - '.github/workflows/mobile-category-visual-overflow-qa.yml'
 
@@ -24,5 +26,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify targeted overflow containment
+      - name: Verify targeted CSP-safe overflow containment
         run: node scripts/mobile-category-visual-overflow-qa.js
