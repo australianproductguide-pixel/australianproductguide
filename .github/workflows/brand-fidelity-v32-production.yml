@@ -65,7 +65,13 @@ jobs:
           grep -q 'decision-results' /tmp/apg-v32-decision.html
           grep -q 'Best fits in Televisions' /tmp/apg-v32-decision.html
           curl -fsSL "$BASE_URL/api/intelligence/observability" >/tmp/apg-v32-observability.json
-          jq -e '.catalogue.products == 482 and .catalogue.categories == 90 and .catalogue.brands == 178 and .recommendation.affiliateRecommendationWeight == 0 and .releaseGate.pass == true' /tmp/apg-v32-observability.json >/dev/null
+          jq -e '.catalogue.products > 0 and .catalogue.categories > 0 and .catalogue.brands > 0 and .recommendation.affiliateRecommendationWeight == 0 and .releaseGate.pass == true' /tmp/apg-v32-observability.json >/dev/null
+          products=$(jq -r '.catalogue.products' /tmp/apg-v32-observability.json)
+          categories=$(jq -r '.catalogue.categories' /tmp/apg-v32-observability.json)
+          brands=$(jq -r '.catalogue.brands' /tmp/apg-v32-observability.json)
+          grep -q "aria-label=\"$products\"" /tmp/apg-v32-home.html
+          grep -q "maintained products across $categories categories" /tmp/apg-v32-home.html
+          grep -q "$brands brands represented" /tmp/apg-v32-home.html
       - name: Render desktop tablet and mobile Production matrix
         run: |
           set -euo pipefail
