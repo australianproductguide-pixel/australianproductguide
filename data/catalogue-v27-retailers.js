@@ -89,7 +89,7 @@ const OFFERS={
     exactListing({retailer:'JB Hi-Fi',url:'https://www.jbhifi.com.au/products/garmin-dash-cam-mini-3',variant:'Garmin Dash Cam Mini 3 · 010-02899-10 · SKU 786542',note:'Exact Australian Garmin Dash Cam Mini 3 retailer identity verified. APG does not copy live ticket price or stock.'})
   ],
   'ecoflow-delta-3-plus':[
-    exactListing({retailer:'Anaconda',url:'https://www.anacondastores.com/en-au/p/ecoflow-delta-3-plus-1800w-power-station',variant:'EcoFlow DELTA 3 Plus · 1024Wh / 1800W · EFDELTA3S',note:'Exact EcoFlow DELTA 3 Plus Australian retailer model verified. Delivery and store availability are location-dependent and remain live-at-retailer.'})
+    exactListing({retailer:'Anaconda',url:'https://www.anacondastores.com/en-au/p/ecoflow-delta-3-plus-1800w-power-station/90246196',variant:'EcoFlow DELTA 3 Plus · 1024Wh / 1800W · EFDELTA3S',note:'Exact EcoFlow DELTA 3 Plus Australian retailer model verified. Delivery and store availability are location-dependent and remain live-at-retailer.'})
   ],
   'asus-proart-display-pa279crv':[
     exactListing({retailer:'Umart',url:'https://www.umart.com.au/product/asus-proart-display-27inch-4k-uhd-ips-professional-monitor-pa279crv-76588',variant:'ASUS ProArt Display PA279CRV · 27-inch 4K UHD IPS',note:'Exact PA279CRV Australian retailer listing verified. APG leaves current price and stock live-at-retailer.'})
@@ -119,7 +119,7 @@ const OFFERS={
     exactListing({retailer:'Scorptec',url:'https://www.scorptec.com.au/product/power-and-chargers/power-banks/108236-a1259h11',variant:'Anker Nano Power Bank · 10,000mAh · 30W · A1259H11',note:'Exact A1259-series Australian retailer configuration verified. APG keeps current retailer price and orderability live-at-retailer.'})
   ],
   'philips-oneblade-pro-qp6530-15':[
-    exactListing({retailer:'David Jones',url:'https://www.davidjones.com/product/philips-qp6530%7C15-oneblade-pro-face-shaver-24610330',variant:'Philips OneBlade Pro · QP6530/15',note:'Exact QP6530/15 Australian retailer product identity verified. APG leaves price and stock live-at-retailer.'})
+    exactListing({retailer:'Joyce Mayne',url:'https://www.joycemayne.com.au/philips-oneblade-pro-face.html',variant:'Philips OneBlade Pro Face · QP6530/15 · GTIN 8710103963738',note:'Exact QP6530/15 Australian retailer model verified. APG uses the explicit model and GTIN as identity controls and leaves current price and availability live-at-retailer.'})
   ]
 };
 
