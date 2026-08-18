@@ -1,5 +1,6 @@
-// APG Premium Brand v30 is the approved national identity layer.
-// It wraps the verified Amazon Affiliate Conversion v29 runtime without changing
-// product-fit logic, retailer neutrality, account behaviour, Scout decision logic,
-// or the maintained SSR-first platform architecture.
-module.exports=require('../lib/premium-brand-v30');
+// APG Premium Theme v31 applies the approved Premium Brand v30 palette and visual
+// system across the full consumer experience while preserving the verified runtime.
+// Runtime chain: premium-theme-v31 -> premium-brand-v30 -> amazon-conversion-v29.
+// Product-fit logic, retailer neutrality, account behaviour, Scout decision logic,
+// privacy controls and the maintained SSR-first architecture remain unchanged.
+module.exports=require('../lib/premium-theme-v31');
