@@ -6,6 +6,7 @@ const graph=require('../lib/product-intelligence-v41');
 const observability=require('../lib/intelligence-observability-v27');
 const runtime=require('../lib/evidence-commerce-depth-v27');
 const v27Retailers=require('../data/catalogue-v27-retailers');
+const amazon=require('../data/retailers-v6');
 
 let passed=0;
 function check(name,fn){try{fn();passed++;console.log('PASS',name)}catch(err){console.error('FAIL',name,'-',err.message);process.exitCode=1}}
@@ -79,11 +80,12 @@ check('retailer participation remains zero recommendation weight',()=>{
 
 check('imagery governance reports truth and produces an exact-model acquisition queue without publishing unlicensed images',()=>{
   const x=observability.imagerySnapshot();
+  const verifiedDirectAmazonIdentities=Object.keys(amazon.direct).length;
   assert.equal(x.total,482);
   assert.equal(x.invalid,0);
   assert.equal(x.verified,0,'do not claim verified photography before rights-backed mappings exist');
   assert.equal(x.coveragePct,0);
-  assert.equal(x.acquisition.exactAmazonIdentityReady,22,'all currently re-verified exact Amazon identities should be ready for an approved image delivery mechanism; unverified exact identities must be downgraded rather than carried forward');
+  assert.equal(x.acquisition.exactAmazonIdentityReady,verifiedDirectAmazonIdentities,'all currently verified direct Amazon identities should be ready for an approved image delivery mechanism; unverified identities must be downgraded rather than carried forward');
   assert.equal(x.acquisition.verifiedImageMappings,0);
   assert.match(x.acquisition.publicationRule,/not image permission/i);
   assert.ok(x.priority.some(row=>row.gap>0),'high-intent image acquisition gap must remain visible');
