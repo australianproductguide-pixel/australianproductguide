@@ -60,6 +60,16 @@ check('exact retailer transform only uses verified exact-model offer records',()
   assert.doesNotMatch(out,/A\$0(?:\D|$)/);
 });
 
+check('integrated retailer enhancement is idempotent when renderer already supplied v42 offers',()=>{
+  const p=products.find(x=>Array.isArray(x.offers)&&x.offers.some(o=>o&&o.exactModel===true&&o.url&&o.retailer));
+  assert.ok(p,'expected verified exact retailer product');
+  const base='<!doctype html><html><head></head><body><div><span class="independence-badge">Retailer status does not affect ranking</span></div></body></html>';
+  const once=commerce.commerceTransform(base,`https://australianproductguide.au/products/${p.slug}/`);
+  assert.equal((once.match(/apg-exact-offers-v42/g)||[]).length,1);
+  const reconciled=cohesion.applyIntegratedTransforms(once,`https://australianproductguide.au/products/${p.slug}/`);
+  assert.equal((reconciled.match(/apg-exact-offers-v42/g)||[]).length,1,'v26 must not duplicate an existing exact-retailer block');
+});
+
 check('mobile comparison enhancement is progressive and labelled',()=>{
   const client=fs.readFileSync(path.join(__dirname,'../public/assets/platform-cohesion-v26.js'),'utf8');
   const css=fs.readFileSync(path.join(__dirname,'../public/assets/platform-cohesion-v26.css'),'utf8');
