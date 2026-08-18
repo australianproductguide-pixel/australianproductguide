@@ -17,8 +17,10 @@
   }
 
   function labelComparisonTables(){
+    let enhanced=false;
     qa('table.compare').forEach(table=>{
       const headers=qa('thead th',table).map(x=>x.textContent.trim());
+      if(headers.length<2)return;
       qa('tbody tr',table).forEach(row=>{
         let column=0;
         qa(':scope > td',row).forEach((cell,index)=>{
@@ -30,7 +32,9 @@
         });
       });
       table.dataset.v26MobileReady='true';
+      enhanced=true;
     });
+    if(enhanced)document.body.dataset.v26CompareEnhanced='true';
   }
 
   function protectExternalLinks(){
