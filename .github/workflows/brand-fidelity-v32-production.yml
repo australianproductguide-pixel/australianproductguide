@@ -41,7 +41,7 @@ jobs:
           done
           echo 'Exact Production deployment not observed' >&2
           exit 1
-      - name: Verify final v32.4 public contract identity and Decision Lab SSR
+      - name: Verify retained v32.4 brand foundation and current Scout SSR
         run: |
           set -euo pipefail
           curl -fsSL "$BASE_URL/" >/tmp/apg-v32-home.html
@@ -58,7 +58,8 @@ jobs:
           grep -q '/assets/brand-fidelity-v324.js?v=32.4' /tmp/apg-v32-home.html
           grep -q 'apg-brand-v32-lockup' /tmp/apg-v32-home.html
           grep -q 'apg-brand-v32-monogram-svg' /tmp/apg-v32-home.html
-          grep -q 'id="scoutHat"' /tmp/apg-v32-home.html
+          grep -q 'data-apg-scout-character="v34.1"' /tmp/apg-v32-home.html
+          ! grep -q 'id="scoutHat"' /tmp/apg-v32-home.html
           ! grep -q 'site-header[^>]*apg-brand-v30-lockup' /tmp/apg-v32-home.html
           for asset in brand-fidelity-v32.css brand-fidelity-v321.css brand-fidelity-v322.css brand-fidelity-v322.js brand-fidelity-v323.css brand-fidelity-v324.css brand-fidelity-v324.js logo.svg logo-horizontal.svg logo-horizontal-dark.svg logo-white.svg logo-compact.svg logo-monogram.svg logo-symbol.svg logo-mono.svg favicon.svg app-icon.svg social.svg; do
             curl -fsSL "$BASE_URL/assets/$asset" >/tmp/apg-v32-asset
