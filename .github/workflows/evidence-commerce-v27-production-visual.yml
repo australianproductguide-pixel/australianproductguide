@@ -76,12 +76,18 @@ jobs:
             ];
             const browser=await puppeteer.launch({headless:true,executablePath:process.env.CHROME,args:['--no-sandbox']});
             const report=[],bad=[];
+            const navigate=async(page,url)=>{
+              const response=await page.goto(url,{waitUntil:'domcontentloaded',timeout:45000});
+              await page.waitForNetworkIdle({idleTime:500,timeout:5000}).catch(()=>{});
+              await new Promise(r=>setTimeout(r,250));
+              return response;
+            };
             for(const [vp,width,height] of viewports){
               for(const [name,path] of pages){
                 const page=await browser.newPage();
                 await page.setViewport({width,height});
                 const errors=[];page.on('pageerror',e=>errors.push(e.message));
-                const response=await page.goto(base+path,{waitUntil:'networkidle0',timeout:30000});
+                const response=await navigate(page,base+path);
                 const state=await page.evaluate(()=>({
                   sw:document.documentElement.scrollWidth,
                   cw:document.documentElement.clientWidth,
@@ -102,7 +108,7 @@ jobs:
               const page=await browser.newPage();
               await page.setViewport({width,height});
               const errors=[];page.on('pageerror',e=>errors.push(e.message));
-              await page.goto(base+'/',{waitUntil:'networkidle0',timeout:30000});
+              await navigate(page,base+'/');
               const open=await page.$('[data-v26-scout-open]')||await page.$('#apgAssistantLauncher');
               if(!open)bad.push(`${vp}/scout: launcher missing`);
               else{await open.click();await new Promise(r=>setTimeout(r,250));}
