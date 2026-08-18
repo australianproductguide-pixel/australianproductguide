@@ -20,6 +20,7 @@ jobs:
           node-version: 22
       - name: Syntax check v32 runtime chain
         run: |
+          node --check lib/brand-fidelity-v323.js
           node --check lib/brand-fidelity-v322.js
           node --check lib/brand-fidelity-v321.js
           node --check lib/brand-fidelity-v32.js
@@ -34,11 +35,7 @@ jobs:
           node <<'NODE'
           const layer=require('./lib/brand-fidelity-v32');
           const css=layer.css||'';
-          const required=[
-            '#2563EB','#0F172A','#06B6D4','#10B981','#F1F5F9','#64748B',
-            '#FFD65B','#F4BB45','#F2B348','#E0A630','#D89C24','#082735',
-            '--apg-text-dark-primary:#FFFFFF','--apg-text-dark-secondary:#CBD5E1'
-          ];
+          const required=['#2563EB','#0F172A','#06B6D4','#10B981','#F1F5F9','#64748B','#FFD65B','#F4BB45','#F2B348','#E0A630','#D89C24','#082735','--apg-text-dark-primary:#FFFFFF','--apg-text-dark-secondary:#CBD5E1'];
           for(const token of required){if(!css.includes(token))throw new Error(`Missing approved/recovered token: ${token}`)}
           if(!css.includes('.apg-proof-band-v20'))throw new Error('Maintained-research proof treatment missing');
           if(!css.includes('linear-gradient(90deg,var(--apg-yellow),var(--apg-yellow-mid) 62%,var(--apg-yellow-deep))'))throw new Error('Recovered yellow gradient not applied');
@@ -59,32 +56,36 @@ jobs:
           if(!asset.includes('Australian')||!asset.includes('Product Guide'))throw new Error('Primary horizontal asset missing wordmark');
           console.log('PASS: traced symbol, responsive lockup and custom monogram verified.');
           NODE
-      - name: Verify final v32.2 integration Scout identity and mobile contrast
+      - name: Verify final v32.3 integration contrast Scout identity and metrics
         run: |
           node <<'NODE'
           const base=require('./lib/brand-fidelity-v32');
           const compat=require('./lib/brand-fidelity-v321');
-          const final=require('./lib/brand-fidelity-v322');
+          const brand=require('./lib/brand-fidelity-v322');
+          const final=require('./lib/brand-fidelity-v323');
           const fixture='<html><head><link rel="icon" href="/assets/favicon.svg?v=30" type="image/svg+xml"></head><body data-theme-v31="true"><span class="apg-brand-v30-lockup is-header"><span class="apg-brand-v30-mark"><svg></svg></span><span class="apg-brand-v30-type"><span class="apg-brand-v30-name">Australian</span><span class="apg-brand-v30-product">Product Guide</span></span><span class="apg-brand-v30-monogram" aria-hidden="true">APG</span></span><span class="apg-brand-v32-scout"><span class="apg-brand-v32-scout-disc"><svg class="apg-brand-v32-symbol apg-brand-v32-symbol-mono"></svg></span></span></body></html>';
-          let out=base.inject(fixture);out=compat.finalPolish(out);out=final.inject(out);
-          if(!out.includes('data-brand-fidelity-v322="true"')||!out.includes('data-brand-fidelity-v32="true"'))throw new Error('final v32.2/v32 body markers missing');
-          for(const asset of ['/assets/brand-fidelity-v32.css?v=32','/assets/brand-fidelity-v321.css?v=32.1','/assets/brand-fidelity-v322.css?v=32.2','/assets/brand-fidelity-v322.js?v=32.2'])if(!out.includes(asset))throw new Error(`Missing final brand asset ${asset}`);
+          let out=base.inject(fixture);out=compat.finalPolish(out);out=brand.inject(out);out=final.inject(out);
+          if(!out.includes('data-brand-fidelity-v323="true"')||!out.includes('data-brand-fidelity-v322="true"')||!out.includes('data-brand-fidelity-v32="true"'))throw new Error('final brand body markers missing');
+          for(const asset of ['/assets/brand-fidelity-v32.css?v=32','/assets/brand-fidelity-v321.css?v=32.1','/assets/brand-fidelity-v322.css?v=32.2','/assets/brand-fidelity-v322.js?v=32.2','/assets/brand-fidelity-v323.css?v=32.3'])if(!out.includes(asset))throw new Error(`Missing final brand asset ${asset}`);
           if(!out.includes('apg-brand-v32-lockup'))throw new Error('v32 header lockup not injected');
           if(!out.includes('/assets/favicon.svg?v=32'))throw new Error('v32 favicon not selected');
           if(!out.includes('id="scoutHat"'))throw new Error('stable graphical Scout SSR anchor missing');
           if(typeof final.transform!=='function'||typeof final.amazonRecord!=='function')throw new Error('mature runtime helper exports not preserved');
-          if(!final.css.includes('path:nth-of-type(2){fill:#FFFFFF!important}'))throw new Error('mobile APG monogram P contrast correction missing');
-          const scout=final.scoutMarkup();
+          if(!brand.css.includes('path:nth-of-type(2){fill:#FFFFFF!important}'))throw new Error('mobile APG monogram P contrast correction missing');
+          const scout=brand.scoutMarkup();
           if(!scout.includes('data-apg-v322-scout="true"')||!scout.includes('#2563EB')||!scout.includes('#FFFFFF'))throw new Error('board-faithful Scout APG mark missing');
-          if(final.clientJs.includes('fff4d8')||final.clientJs.includes('f4b548'))throw new Error('legacy Scout mascot colours leaked into v32.2 client');
+          if(brand.clientJs.includes('fff4d8')||brand.clientJs.includes('f4b548'))throw new Error('legacy Scout mascot colours leaked into v32.2 client');
+          if(!final.css.includes('color:#2B4B56!important'))throw new Error('yellow proof independence copy contrast override missing');
+          if(!final.css.includes('width:58px!important')||!final.css.includes('.apg-assistant-launcher-copy{display:none!important}'))throw new Error('compact desktop Scout launcher clearance missing');
           const src=require('fs').readFileSync(require.resolve('./lib/mobile-account-proof-v20'),'utf8');
           if(!src.includes('const p=products.length,c=Object.keys(categories).length,b=brands.length'))throw new Error('Research metrics are no longer data-driven');
-          console.log('PASS: v32.2 integration, Scout master identity, mobile contrast, helper compatibility and data-driven metrics verified.');
+          console.log('PASS: v32.3 final integration, proof contrast, Scout identity/clearance, helper compatibility and data-driven metrics verified.');
           NODE
       - name: Verify recursive mature runtime chain
         run: |
-          node scripts/runtime-chain-qa.js brand-fidelity-v322 brand-fidelity-v321 brand-fidelity-v32 amazon-conversion-v29 trust-infrastructure-v28 evidence-commerce-depth-v27 platform-cohesion-v26 account-governance-v25 account-profile-v24 auth-hardening-v23 site-surface-polish-v22
-          grep -q "brand-fidelity-v322" api/index.js
+          node scripts/runtime-chain-qa.js brand-fidelity-v323 brand-fidelity-v322 brand-fidelity-v321 brand-fidelity-v32 amazon-conversion-v29 trust-infrastructure-v28 evidence-commerce-depth-v27 platform-cohesion-v26 account-governance-v25 account-profile-v24 auth-hardening-v23 site-surface-polish-v22
+          grep -q "brand-fidelity-v323" api/index.js
+          grep -q "brand-fidelity-v322" lib/brand-fidelity-v323.js
           grep -q "brand-fidelity-v321" lib/brand-fidelity-v322.js
           grep -q "brand-fidelity-v32" lib/brand-fidelity-v321.js
           grep -q "premium-theme-v311" lib/brand-fidelity-v32.js
