@@ -83,7 +83,7 @@ check('imagery governance reports truth and produces an exact-model acquisition 
   assert.equal(x.invalid,0);
   assert.equal(x.verified,0,'do not claim verified photography before rights-backed mappings exist');
   assert.equal(x.coveragePct,0);
-  assert.equal(x.acquisition.exactAmazonIdentityReady,23,'all verified exact Amazon identities should be ready for an approved image delivery mechanism');
+  assert.equal(x.acquisition.exactAmazonIdentityReady,22,'all currently re-verified exact Amazon identities should be ready for an approved image delivery mechanism; unverified exact identities must be downgraded rather than carried forward');
   assert.equal(x.acquisition.verifiedImageMappings,0);
   assert.match(x.acquisition.publicationRule,/not image permission/i);
   assert.ok(x.priority.some(row=>row.gap>0),'high-intent image acquisition gap must remain visible');
