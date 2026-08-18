@@ -23,7 +23,7 @@ check('new-password policy is 12 characters without breaking existing-password l
 check('browser UX mirrors stronger new-password policy while retaining login compatibility',()=>{
   const js=fs.readFileSync(path.join(__dirname,'../public/assets/trust-infrastructure-v28.js'),'utf8');
   assert.match(js,/NEW_MIN=12,LOGIN_MIN=8/);
-  assert.match(js,/data-account-tab=\\?"signup/);
+  assert.ok(js.includes('data-account-tab="signup"'));
   assert.match(js,/data-password-form/);
   assert.match(js,/data-profile-password-form/);
   assert.doesNotMatch(js,/localStorage|sessionStorage/);
