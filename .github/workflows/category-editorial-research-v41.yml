@@ -1,0 +1,45 @@
+name: APG Category Editorial Research v41
+
+on:
+  push:
+    branches:
+      - main
+      - apg-category-editorial-imagery-v41
+    paths:
+      - scripts/category-editorial-research-v41.js
+      - .github/workflows/category-editorial-research-v41.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - scripts/category-editorial-research-v41.js
+      - .github/workflows/category-editorial-research-v41.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: apg-category-editorial-imagery-v41
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Research CC0 category imagery
+        run: node scripts/category-editorial-research-v41.js
+      - name: Commit candidate register to research branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/category-editorial-candidates-v41.json
+          if git diff --cached --quiet; then
+            echo "Candidate register unchanged"
+          else
+            git commit -m "Generate category editorial image candidates v41 [skip ci]"
+            git push origin HEAD:apg-category-editorial-imagery-v41
+          fi
