@@ -10,6 +10,7 @@ on:
 permissions:
   contents: read
   deployments: read
+  statuses: write
 
 concurrency:
   group: apg-production-verification
@@ -205,6 +206,11 @@ jobs:
           echo "CHROME=$CHROME" >> "$GITHUB_ENV"
           npm install --no-save --package-lock=false puppeteer-core@24.16.0 >/dev/null 2>&1
 
+      - name: Mobile Search hit-target certification
+        run: |
+          set -euo pipefail
+          node scripts/mobile-search-hit-target-v37.js
+
       - name: Browser interaction and responsive diagnostic
         env:
           OUTPUT_DIR: artifacts/production-experience
@@ -220,3 +226,19 @@ jobs:
           path: artifacts/production-experience
           retention-days: 14
           if-no-files-found: ignore
+
+      - name: Publish retrievable Production verification status
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          state=success
+          [ "$JOB_STATUS" = success ] || state=failure
+          description="Exact-SHA Production verification: $JOB_STATUS"
+          payload=$(jq -n --arg state "$state" --arg context 'APG Production Verification' --arg description "$description" --arg target_url "https://github.com/$REPO/actions/runs/$RUN_ID" '{state:$state,context:$context,description:$description,target_url:$target_url}')
+          curl -fsSL -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/statuses/$SHA" -d "$payload" >/dev/null
