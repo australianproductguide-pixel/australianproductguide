@@ -1,18 +1,14 @@
-name: APG Category Editorial Research v42
+name: APG Category Editorial Research
 
 on:
   push:
     branches:
       - main
       - apg-category-editorial-research-v42-main
+      - apg-category-editorial-images-v44
     paths:
       - scripts/category-editorial-research-v42.js
-      - .github/workflows/category-editorial-research-v41.yml
-  pull_request:
-    branches:
-      - main
-    paths:
-      - scripts/category-editorial-research-v42.js
+      - scripts/category-editorial-research-v44.js
       - .github/workflows/category-editorial-research-v41.yml
   workflow_dispatch:
 
@@ -20,46 +16,62 @@ permissions:
   contents: write
 
 concurrency:
-  group: apg-category-editorial-research-v42
+  group: apg-category-editorial-research-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
   research:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: apg-category-editorial-research-v42-main
+          ref: ${{ github.ref_name }}
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
-      - name: Research CC0 category imagery
-        run: node scripts/category-editorial-research-v42.js
-      - name: Publish candidate register to research branch
+      - name: Research category imagery
+        shell: bash
+        run: |
+          if [ "${GITHUB_REF_NAME}" = "apg-category-editorial-images-v44" ]; then
+            node scripts/category-editorial-research-v44.js || test -f data/category-editorial-selected-v44.json
+          else
+            node scripts/category-editorial-research-v42.js
+          fi
+      - name: Publish research register to source branch
+        shell: bash
         run: |
           set -euo pipefail
-          branch='apg-category-editorial-research-v42-main'
-          candidate='data/category-editorial-candidates-v42.json'
-          snapshot="$(mktemp)"
-          cp "$candidate" "$snapshot"
+          branch="${GITHUB_REF_NAME}"
+          if [ "$branch" = "apg-category-editorial-images-v44" ]; then
+            files='data/category-editorial-candidates-v44.json data/category-editorial-selected-v44.json'
+            message='Generate Wikimedia category editorial image register v44 [skip ci]'
+          else
+            files='data/category-editorial-candidates-v42.json'
+            message='Generate category editorial image candidates v42 [skip ci]'
+          fi
+          snapshot="$(mktemp -d)"
+          for candidate in $files; do
+            mkdir -p "$snapshot/$(dirname "$candidate")"
+            cp "$candidate" "$snapshot/$candidate"
+          done
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           for attempt in 1 2 3; do
             git fetch origin "$branch"
             git reset --hard "origin/$branch"
-            cp "$snapshot" "$candidate"
-            git add "$candidate"
+            for candidate in $files; do cp "$snapshot/$candidate" "$candidate"; done
+            git add $files
             if git diff --cached --quiet; then
-              echo "Candidate register unchanged"
+              echo "Editorial image register unchanged"
               exit 0
             fi
-            git commit -m "Generate category editorial image candidates v42 [skip ci]"
+            git commit -m "$message"
             if git push origin "HEAD:$branch"; then
-              echo "Candidate register published on attempt $attempt"
+              echo "Editorial image register published on attempt $attempt"
               exit 0
             fi
-            echo "Research branch advanced during publish; retrying from the latest remote head"
+            echo "Research branch advanced during publish; retrying from latest remote head"
           done
-          echo 'Unable to publish the candidate register after 3 safe retries'
+          echo 'Unable to publish the editorial image register after 3 safe retries'
           exit 1
