@@ -7,4 +7,5 @@
 // Consumer Intelligence v47 is the final decision-continuity, explainability and release-gate layer.
 require('../lib/scout-concierge-v5-runtime');
 require('../lib/consumer-intelligence-v47-runtime');
+require('../lib/brand-system-v46');
 module.exports=require('../lib/consumer-intelligence-v47');
