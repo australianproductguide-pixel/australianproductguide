@@ -50,13 +50,16 @@
     });
   }
 
+  // Capture Scout before any legacy target/bubble handlers. Some older mobile feature
+  // listeners can otherwise misinterpret the button click as Search input and coerce
+  // the event object into q=[object Object], aborting the current Scout scripts.
   document.addEventListener('click',event=>{
     const trigger=event.target.closest&&event.target.closest('[data-v26-scout-open]');
     if(!trigger)return;
     event.preventDefault();
     event.stopImmediatePropagation();
     openScout(trigger);
-  });
+  },true);
 
   document.addEventListener('keydown',event=>{
     if(event.key!=='Escape')return;
