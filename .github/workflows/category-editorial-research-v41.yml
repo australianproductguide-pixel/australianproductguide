@@ -11,6 +11,7 @@ on:
       - scripts/category-editorial-research-v44.js
       - scripts/category-editorial-review-v44.js
       - scripts/category-editorial-materialise-v44.js
+      - scripts/category-editorial-v44-qa.js
       - .github/workflows/category-editorial-research-v41.yml
   workflow_dispatch:
 
@@ -39,6 +40,9 @@ jobs:
             node scripts/category-editorial-research-v44.js || test -f data/category-editorial-selected-v44.json
             node scripts/category-editorial-review-v44.js || test -f data/category-editorial-review-v44.md
             node scripts/category-editorial-materialise-v44.js
+            node -c lib/pages.js
+            node -c lib/premium-css.js
+            node scripts/category-editorial-v44-qa.js
           else
             node scripts/category-editorial-research-v42.js
           fi
