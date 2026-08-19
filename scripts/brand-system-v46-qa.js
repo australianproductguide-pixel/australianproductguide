@@ -14,7 +14,7 @@ assert.equal(brand.VERSION,'46');
 assert.equal(brand.CSS_PATH,'/assets/brand-system-v46.css');
 assert.equal(brand.COMMERCE_CSS_PATH,'/assets/brand-system-v46-commerce.css');
 assert(api.includes("require('../lib/brand-system-v46')"),'api/index.js must make v46 the final presentation layer');
-assert(wrapper.includes("require('./amazon-shopping-final-v39')"),'v46 must preserve the governed v39 shopping runtime downstream');
+assert(wrapper.includes("require('./amazon-shopping-creative-final-v41')"),'v46 must preserve current Amazon shopping creative v41 downstream');
 
 for(const [name,value] of Object.entries({blue:'#2563EB',navy:'#0F172A',teal:'#06B6D4',green:'#10B981',light:'#F1F5F9',slate:'#64748B'}))assert(css.includes(value),`missing master brand token ${name} ${value}`);
 assert(css.includes('Inter,ui-sans-serif'),'Inter must remain the first-choice APG typeface without adding an external font dependency');
@@ -28,9 +28,12 @@ for(const selector of [
   '.apg-nav-v8 .apg-deals-link','.apg-mobile-account-v20','.apg-footer-v11',
   '.category-hero[data-category-editorial-image]'
 ])assert(css.includes(selector),`v46 missing governed surface ${selector}`);
-for(const selector of ['.apg-shopping-hero','.apg-shopping-principles','.apg-shopping-card','.apg-shopping-icon','.apg-shopping-bridge-shell','.apg-search-shopping-shell'])assert(commerceCss.includes(selector),`v46 shopping reconciliation missing ${selector}`);
+for(const selector of [
+  '.apg-shopping-hero','.apg-shopping-principles','.apg-shopping-card','.apg-shopping-icon','.apg-shopping-bridge-shell','.apg-search-shopping-shell',
+  '.apg-amz-v41-card','.apg-amz-v41-eyebrow','.apg-amz-v41-cta','.apg-amz-v41-art','.apg-amz-v41-orbit','.apg-amz-v41-chip'
+])assert(commerceCss.includes(selector),`v46 shopping reconciliation missing ${selector}`);
 
-for(const retired of ['#082735','#087c76','#075e5a','#0b6f70','#ffd95d','#f6bd45','#f3b548','#f4b548']){
+for(const retired of ['#082735','#087c76','#075e5a','#0b6f70','#0b3445','#08786f','#ffd95d','#f6bd45','#f3b548','#f4b548']){
   assert(!css.toLowerCase().includes(retired),`retired historical brand colour leaked into v46: ${retired}`);
   assert(!commerceCss.toLowerCase().includes(retired),`retired historical brand colour leaked into v46 commerce: ${retired}`);
 }
@@ -64,4 +67,4 @@ assert(css.includes('@media(max-width:920px)'),'v46 must explicitly govern respo
 assert(css.includes('@media(max-width:640px)'),'v46 must explicitly govern compact mobile controls');
 assert(commerceCss.includes('@media(max-width:820px)'),'shopping discovery must retain responsive v46 coverage');
 
-console.log('APG Brand System v46 source QA passed: palette=PASS typography=PASS account=PASS search=PASS scout=PASS research=PASS shopping=PASS contrast=PASS responsive=PASS');
+console.log('APG Brand System v46 source QA passed: palette=PASS typography=PASS account=PASS search=PASS scout=PASS research=PASS shopping-v39=PASS shopping-v41=PASS contrast=PASS responsive=PASS');
