@@ -29,8 +29,15 @@ jobs:
           node --check scripts/interaction-reliability-v37-qa.js
           node --check scripts/experience-v37-browser-diagnostic.js
           node --check scripts/experience-v37-site-crawl.js
+          node --check scripts/mobile-search-hit-target-v37.js
           node scripts/interaction-reliability-v37-qa.js
-          grep -q "interaction-reliability-v37" api/index.js
+          node - <<'NODE'
+          const app=require('./api/index');
+          if(app.ASSET_PATH!=='/assets/interaction-reliability-v37.js')throw new Error(`v37 JS is not present in the composed runtime: ${app.ASSET_PATH||'missing'}`);
+          if(app.CSS_PATH!=='/assets/interaction-reliability-v37.css')throw new Error(`v37 CSS is not present in the composed runtime: ${app.CSS_PATH||'missing'}`);
+          if(app.VERSION!=='37')throw new Error(`v37 version is not present in the composed runtime: ${app.VERSION||'missing'}`);
+          console.log('APG_V37_COMPOSED_RUNTIME=PASS');
+          NODE
           grep -q "interaction-reliability-v37-qa.js" package.json
       - name: Wait for exact Production SHA
         env:
@@ -51,23 +58,28 @@ jobs:
             sleep 5
           done
           exit 1
-      - name: Verify live reliability asset
+      - name: Verify live reliability assets
         run: |
           set -euo pipefail
           curl -fsSL "$BASE_URL/" >/tmp/v37-home.html
           grep -q '/assets/interaction-reliability-v37.js?v=37' /tmp/v37-home.html
-          curl -fsSL -D /tmp/v37-asset-headers.txt "$BASE_URL/assets/interaction-reliability-v37.js?v=37" >/tmp/v37.js
+          grep -q '/assets/interaction-reliability-v37.css?v=37' /tmp/v37-home.html
+          curl -fsSL -D /tmp/v37-js-headers.txt "$BASE_URL/assets/interaction-reliability-v37.js?v=37" >/tmp/v37.js
+          curl -fsSL -D /tmp/v37-css-headers.txt "$BASE_URL/assets/interaction-reliability-v37.css?v=37" >/tmp/v37.css
           grep -q 'SCOUT_TIMEOUT_MS=15000' /tmp/v37.js
-          grep -qi 'x-apg-interaction-reliability: v37' /tmp/v37-asset-headers.txt
+          grep -q 'top:calc(100% + 8px)!important' /tmp/v37.css
+          grep -qi 'x-apg-interaction-reliability: v37' /tmp/v37-js-headers.txt
+          grep -qi 'x-apg-interaction-reliability: v37' /tmp/v37-css-headers.txt
       - name: Crawl every canonical Production route
         run: |
           set -euo pipefail
           REQUIRE_V37=1 node scripts/experience-v37-site-crawl.js
-      - name: Certify desktop and mobile consumer journeys
+      - name: Certify desktop, mobile and Search hit-target journeys
         run: |
           set -euo pipefail
           CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser)
           npm install --no-save --package-lock=false puppeteer-core@24.16.0 >/dev/null 2>&1
+          CHROME="$CHROME" node scripts/mobile-search-hit-target-v37.js
           CHROME="$CHROME" node scripts/experience-v37-browser-diagnostic.js
       - name: Confirm main remained on certified SHA
         env:
@@ -96,5 +108,5 @@ jobs:
         run: |
           set -euo pipefail
           state=success; [ "$JOB_STATUS" = success ] || state=failure
-          description="v37 full route + Search + Decision Lab + Compare + Scout certification: $JOB_STATUS"
+          description="v37 routes + Search hit targets + Decision Lab + Compare + Scout: $JOB_STATUS"
           curl -fsSL -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/statuses/$SHA" -d "$(jq -n --arg state "$state" --arg context 'APG v37 Experience Certification' --arg description "$description" --arg target_url "https://github.com/$REPO/actions/runs/$RUN_ID" '{state:$state,context:$context,description:$description,target_url:$target_url}')" >/dev/null
