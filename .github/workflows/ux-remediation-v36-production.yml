@@ -60,11 +60,11 @@ jobs:
           grep -q 'max-width:920px' /tmp/v36.css
           grep -q 'apg-assistant-launcher' /tmp/v36.css
           curl -fsSL "$BASE_URL/api/search/research?q=Sony%20XM6" >/tmp/v36-sony.json
-          jq -e '.version=="research-view-v44" and .modelScoped==true and .results|length>0' /tmp/v36-sony.json >/dev/null
-          jq -e '([.results[].category]|unique|length)==1 and ([.compareSlugs[]]|length)>0' /tmp/v36-sony.json >/dev/null
+          jq -e '.version=="research-view-v44" and .modelScoped==true and ((.results|length)>0)' /tmp/v36-sony.json >/dev/null
+          jq -e '([.results[].category]|unique|length)==1 and ((.compareSlugs|length)>0)' /tmp/v36-sony.json >/dev/null
           curl -fsSL "$BASE_URL/api/search/research?q=Philips%20NA551" >/tmp/v36-philips.json
-          jq -e '.version=="research-view-v44" and .modelScoped==true and .results|length>0' /tmp/v36-philips.json >/dev/null
-          jq -e '([.results[].category]|unique|length)==1 and ([.compareSlugs[]]|length)>0' /tmp/v36-philips.json >/dev/null
+          jq -e '.version=="research-view-v44" and .modelScoped==true and ((.results|length)>0)' /tmp/v36-philips.json >/dev/null
+          jq -e '([.results[].category]|unique|length)==1 and ((.compareSlugs|length)>0)' /tmp/v36-philips.json >/dev/null
       - name: Render and certify responsive Scout states
         run: |
           set -euo pipefail
