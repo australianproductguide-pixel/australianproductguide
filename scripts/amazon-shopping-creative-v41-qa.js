@@ -14,8 +14,8 @@ function links(html){
   return [...String(html).matchAll(/<a\b[^>]*\bhref="(https:\/\/www\.amazon\.com\.au\/[^\"]+)"[^>]*>/gi)].map(m=>({tag:m[0],href:m[1]}));
 }
 function assertAffiliateLinks(html,label,min=1){
-  const found=links(html);
-  assert(found.length>=min,`${label}: expected at least ${min} Amazon links, found ${found.length}`);
+  const found=links(html).filter(link=>/data-amazon-creative-source="APG_ORIGINAL"/i.test(link.tag));
+  assert(found.length>=min,`${label}: expected at least ${min} v41 Amazon links, found ${found.length}`);
   for(const link of found){
     const u=new URL(link.href.replace(/&amp;/g,'&'));
     assert.strictEqual(u.hostname,'www.amazon.com.au',`${label}: wrong marketplace`);
