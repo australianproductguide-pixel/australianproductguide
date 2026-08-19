@@ -72,6 +72,11 @@ assert(scout.client.css.includes('prefers-reduced-motion'),'Scout must respect r
 assert(scout.brand.css.includes('#2563EB'),'Scout must use the current APG blue identity');
 assert(scout.brand.css.includes('#0F172A'),'Scout must use the current APG navy identity');
 assert(!/#087c76|#08786f|#0b6e6a|#116c67|#176e69|#082f40|#0a5660|#dff1ec|#e5f4ef|#e8f5f1|#e9f6f2|#f2f9f7|#edf6f3/i.test(scout.brand.css),'Scout v5 must not reintroduce the retired green/teal presentation palette');
+assert(scout.brand.css.includes('body.scout-v5-open[data-scout-v5="true"] .apg-assistant-launcher'),'open Scout must visually replace the launcher instead of leaving two detached surfaces');
+assert(/\.apg-assistant-avatar::before/.test(scout.brand.css),'Scout header avatar must retain a first-party visual identity when the panel opens');
+assert(/\.scout-v5-mini::before/.test(scout.brand.css),'Scout messages must retain the same persistent assistant identity');
+assert(scout.brand.css.includes("content:'S'"),'Scout avatar must render an explicit Scout mark rather than relying on legacy APG copy');
+assert(/@media\(min-width:641px\).*\.apg-assistant-panel\{bottom:22px!important/s.test(scout.brand.css),'desktop open panel must occupy the launcher anchor for a cohesive open state');
 
 const source=fs.readFileSync(path.join(__dirname,'..','lib','scout-concierge-v5.js'),'utf8');
 assert(source.includes("user_id:userId"),'saved-product writes must bind server-authenticated user id');
