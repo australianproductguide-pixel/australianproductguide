@@ -83,8 +83,34 @@ for(const [query,expected] of [['headphones','wireless-headphones'],['smartphone
   report.push({query,budget:payload.decisionState.budget,results:payload.results.map(x=>({slug:x.slug,priceBasis:x.priceBasis,status:x.status}))});
 }
 
-const comparison=research.researchPayload('Samsung vs LG');
-assert.notStrictEqual(comparison.modelScoped,true,'comparison query must retain comparison/discovery behaviour');
-report.push({query:'Samsung vs LG',modelScoped:false,mode:comparison.mode,results:(comparison.results||[]).slice(0,3).map(x=>x.slug)});
+// Brand-vs-brand without a category is ambiguous. Never construct a head-to-head
+// from arbitrary products in different categories; ask for one more detail instead.
+{
+  const query='Samsung vs LG',lexical=searchSite(query),payload=research.researchPayload(query);
+  assert.strictEqual(lexical.directCompare,null,`${query}: cross-category direct comparison must be suppressed`);
+  assert.strictEqual(payload.mode,'comparison-needs-category',`${query}: expected clarification state`);
+  assert(!payload.comparison,`${query}: must not expose a fabricated prepared comparison`);
+  assert.strictEqual((payload.results||[]).length,0,`${query}: must not present unrelated product candidates as a comparison`);
+  assert((payload.followUps||[]).every(x=>String(x.query||'').startsWith('Samsung vs LG ')),`${query}: follow-ups must preserve both brands and add a category`);
+  report.push({query,mode:payload.mode,followUps:(payload.followUps||[]).map(x=>x.query)});
+}
+
+// The coherence guard must not remove legitimate exact product comparisons. Build a
+// maintained Samsung/LG same-category pair dynamically so the test follows catalogue truth.
+{
+  let pair=null;
+  for(const a of products.filter(p=>p.brand==='Samsung')){
+    const b=products.find(p=>p.brand==='LG'&&p.category===a.category);
+    if(b){pair={a,b};break;}
+  }
+  if(pair){
+    const query=`${pair.a.brand} ${pair.a.name} vs ${pair.b.brand} ${pair.b.name}`,lexical=searchSite(query),payload=research.researchPayload(query);
+    assert(lexical.directCompare,`${query}: exact same-category products should retain direct comparison`);
+    assert.strictEqual(lexical.directCompare.a.category,lexical.directCompare.b.category,`${query}: direct comparison must remain like-for-like`);
+    assert.strictEqual(payload.mode,'comparison',`${query}: exact same-category comparison should retain prepared comparison mode`);
+    assert(payload.comparison,`${query}: expected prepared comparison payload`);
+    report.push({query,mode:payload.mode,category:lexical.directCompare.a.category,products:[lexical.directCompare.a.slug,lexical.directCompare.b.slug]});
+  }
+}
 
 console.log(JSON.stringify({status:'PASS',version:research.VERSION,cases:report},null,2));
