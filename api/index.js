@@ -12,4 +12,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/catalogue-intelligence-v49-pass7-runtime');
+module.exports=require('../lib/catalogue-intelligence-v49-pass8-runtime');
