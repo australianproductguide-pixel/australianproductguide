@@ -18,7 +18,8 @@
 - [ ] Genuine third-party imagery is used only where provenance/rights are verified.
 
 ## Release checks
-- [ ] APG Source QA passes.
+- [ ] **APG Release Gate** passes.
+- [ ] **APG CodeQL Security** passes where triggered.
 - [ ] Vercel Preview is READY and reviewed before merge.
 - [ ] Representative desktop and mobile journeys were checked where presentation changed.
 - [ ] Search, compare and Help Me Choose remain decision-focused where affected.
@@ -30,7 +31,7 @@
 After merge, Production is not considered complete until:
 - [ ] Vercel Production is READY.
 - [ ] Production deployment SHA matches GitHub `main`.
-- [ ] APG Production Smoke Test passes.
+- [ ] **APG Production Verification** passes.
 - [ ] Public Production returns expected content and key journeys work.
 - [ ] Any material operating records are reconciled in the APG Drive workspace.
 

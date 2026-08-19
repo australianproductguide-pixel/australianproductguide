@@ -1,16 +1,15 @@
 #!/usr/bin/env node
 'use strict';
 const assert=require('node:assert/strict');
-const fs=require('fs');
 const app=require('../api/index');
 const runtime=require('../lib/brand-conformity-v351');
+const {runtimeChainIncludes}=require('./runtime-chain-qa');
 
 function render(url){return new Promise((resolve,reject)=>{const headers={};const req={url,method:'GET',headers:{host:'australianproductguide.au'},on(){},destroy(){}};const res={statusCode:200,setHeader(k,v){headers[String(k).toLowerCase()]=v;},getHeader(k){return headers[String(k).toLowerCase()];},end(body=''){resolve({status:this.statusCode,headers,body:Buffer.isBuffer(body)?body:String(body||'')});}};try{const r=app(req,res);if(r&&typeof r.then==='function')r.catch(reject);}catch(e){reject(e);}});}
 
 (async()=>{
   assert.equal(runtime.VERSION,'35.1');
-  const api=fs.readFileSync(require.resolve('../api/index.js'),'utf8');
-  assert(api.includes("require('../lib/brand-conformity-v351')")||api.includes("require('../lib/brand-conformity-v352')"),'api/index.js must activate v35.1 directly or through the governing v35.2 wrapper');
+  assert(runtimeChainIncludes('brand-conformity-v351'),'current API runtime chain must include v35.1');
   assert(runtime.css.includes('--apg351-blue:#2563EB'));
   assert(runtime.css.includes('.apg-account-head'));
   const ico=runtime.makeIco();

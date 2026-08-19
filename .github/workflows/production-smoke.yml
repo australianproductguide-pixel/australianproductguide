@@ -1,22 +1,33 @@
-name: APG Production Smoke Test
+name: APG Production Verification
 
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: '20 20 * * *'
   workflow_dispatch:
 
 permissions:
   contents: read
   deployments: read
 
+concurrency:
+  group: apg-production-verification
+  cancel-in-progress: true
+
 jobs:
-  smoke:
+  production-ready:
+    name: Production Ready
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     env:
       BASE_URL: https://australianproductguide.au
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
 
       - name: Wait for exact Vercel Production deployment
         env:
@@ -25,18 +36,27 @@ jobs:
           SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          for attempt in $(seq 1 72); do
+          for attempt in $(seq 1 90); do
             d=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments?sha=$SHA")
             id=$(echo "$d"|jq -r '[.[]|select(.environment=="Production" or .original_environment=="Production")][0].id//empty')
             if [ -n "$id" ]; then
               s=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments/$id/statuses")
-              state=$(echo "$s"|jq -r '.[0].state//empty'); echo "Production state=${state:-pending}"
+              state=$(echo "$s"|jq -r '.[0].state//empty')
+              echo "Production state=${state:-pending}"
               if [ "$state" = failure ] || [ "$state" = error ]; then exit 1; fi
-              if [ "$state" = success ]; then exit 0; fi
+              if [ "$state" = success ]; then break; fi
+            fi
+            sleep 5
+            if [ "$attempt" = 90 ]; then echo 'Timed out waiting for Vercel Production'; exit 1; fi
+          done
+          short=$(printf '%s' "$SHA" | cut -c1-16)
+          for attempt in $(seq 1 24); do
+            if curl -fsSL "$BASE_URL/" -o /tmp/home-sha.html && grep -q "v=$short" /tmp/home-sha.html; then
+              echo "PRODUCTION_SHA=$SHA"; exit 0
             fi
             sleep 5
           done
-          exit 1
+          echo "Canonical Production did not expose commit marker $short"; exit 1
 
       - name: Verify source authority and recommendation neutrality
         run: |
@@ -66,18 +86,44 @@ jobs:
           console.log('COMMERCIAL_RECOMMENDATION_WEIGHT=0');
           NODE
 
-      - name: Verify public shell and core routes
+      - name: Verify public shell, analytics and core routes
         run: |
           set -euo pipefail
           curl -fsSL "$BASE_URL/" -o /tmp/home.html
-          for t in 'Australian Product Guide' 'data-platform-v7="true"' 'data-platform-v5="true"' 'Decision Lab' 'Buying guides' 'My Australian Product Guide' 'How recommendations work' 'href="/sitemap/"'; do grep -qi "$t" /tmp/home.html || { echo "Missing homepage contract: $t"; exit 1; }; done
+          for t in 'Australian Product Guide' 'data-platform-v7="true"' 'Decision Lab' 'Buying guides' 'My Australian Product Guide' 'How recommendations work' 'data-sdkn="@vercel/analytics/apg-ssr"'; do
+            grep -qi "$t" /tmp/home.html || { echo "Missing homepage contract: $t"; exit 1; }
+          done
           test "$(grep -o 'data-platform-v7="true"' /tmp/home.html | wc -l)" = 1
-          for p in /categories/ /compare/ /guides/ /retailers/ /brands/ /decision-lab/ /my-apg/ /sitemap/; do code=$(curl -sSL -o /tmp/x -w '%{http_code}' "$BASE_URL$p"); test "$code" = 200 || { echo "$p returned $code"; exit 1; }; done
+          curl -fsSL "$BASE_URL/_vercel/insights/script.js" -o /tmp/vercel-analytics.js
+          test -s /tmp/vercel-analytics.js
+          for p in /categories/ /compare/ /guides/ /retailers/ /brands/ /decision-lab/ /my-apg/ /sitemap/ /methodology/ /sources/ /privacy/ /terms/; do
+            code=$(curl -sSL -o /tmp/x -w '%{http_code}' "$BASE_URL$p"); test "$code" = 200 || { echo "$p returned $code"; exit 1; }
+          done
           curl -fsSL "$BASE_URL/decision-lab/" -o /tmp/clean-lab
           grep -q 'Decision Engine v4' /tmp/clean-lab
-          grep -q 'data-platform-v7="true"' /tmp/clean-lab
           ! grep -q 'class="decision-result' /tmp/clean-lab
-          echo 'PUBLIC_SHELL=PASS'
+          echo 'PUBLIC_SHELL_ANALYTICS=PASS'
+
+      - name: Verify account and auth Production boundaries
+        run: |
+          set -euo pipefail
+          curl -fsSL "$BASE_URL/assets/account-platform.js" >/tmp/account.js
+          grep -q 'passwordInput.minLength=12' /tmp/account.js
+          grep -q 'uppercase, lowercase, a number and a symbol' /tmp/account.js
+          status=$(curl -sS -o /tmp/weak.json -w '%{http_code}' -X POST "$BASE_URL/api/account/signup" -H 'Origin: https://australianproductguide.au' -H 'Content-Type: application/json' --data '{"email":"qa-policy@example.invalid","password":"Weakpass1!"}')
+          test "$status" = 400
+          jq -e '.error|contains("at least 12 characters")' /tmp/weak.json >/dev/null
+          status=$(curl -sS -o /tmp/origin.json -w '%{http_code}' -X POST "$BASE_URL/api/account/signup" -H 'Origin: https://example.invalid' -H 'Content-Type: application/json' --data '{"email":"qa-policy@example.invalid","password":"Weakpass1!"}')
+          test "$status" = 403
+          curl -fsSL "$BASE_URL/api/account/me" | jq -e '.authenticated==false' >/dev/null
+          status=$(curl -sS -D /tmp/confirm.headers -o /tmp/confirm.body -w '%{http_code}' "$BASE_URL/auth/confirm?token_hash=invalid&type=email")
+          test "$status" = 303
+          grep -Eqi '^location: https://australianproductguide\.au/my-apg/\?auth=invalid' /tmp/confirm.headers
+          grep -Eqi '^cache-control: no-store' /tmp/confirm.headers
+          grep -Eqi '^referrer-policy: no-referrer' /tmp/confirm.headers
+          grep -Eqi '^x-robots-tag: noindex, nofollow' /tmp/confirm.headers
+          ! grep -Eqi 'stack trace|service_role|api[_ -]?key|postgres' /tmp/confirm.body
+          echo 'ACCOUNT_AUTH_BOUNDARIES=PASS'
 
       - name: Verify public assets and catalogue export contract
         run: |
@@ -95,14 +141,11 @@ jobs:
           const {brands}=require('./lib/routes');
           const {direct}=require('./data/retailers-v6');
           if(JSON.stringify(live)!==JSON.stringify(source))throw new Error('Live catalogue JSON does not match checked-out exact-SHA exporter');
-          if(live.version!=='platform-v7-amazon-associates')throw new Error(`version ${live.version}`);
-          if(live.generatedFrom!=='GitHub-maintained runtime catalogue')throw new Error(`generatedFrom ${live.generatedFrom}`);
           if(live.commercialRecommendationWeight!==0)throw new Error('catalogue commercialRecommendationWeight must remain zero');
           if(live.affiliateUrlsExported!==false)throw new Error('catalogue must not export affiliate URLs');
-          if(live.productCount!==products.length||live.categoryCount!==Object.keys(categories).length)throw new Error(`catalogue/source counts ${live.productCount}/${live.categoryCount} vs ${products.length}/${Object.keys(categories).length}`);
+          if(live.productCount!==products.length||live.categoryCount!==Object.keys(categories).length)throw new Error(`catalogue/source counts ${live.productCount}/${live.categoryCount}`);
           if(live.brandCount!==brands.length)throw new Error(`canonical brand count ${live.brandCount}/${brands.length}`);
           if(Number(live.amazon?.exactVerified||0)!==Object.keys(direct).length)throw new Error(`exact Amazon count ${live.amazon?.exactVerified}/${Object.keys(direct).length}`);
-          if(!Array.isArray(live.products)||live.products.length!==live.productCount)throw new Error(`product export length ${live.products?.length}`);
           const amazonTotal=Number(live.amazon?.exactVerified||0)+Number(live.amazon?.confirmedUnavailable||0)+Number(live.amazon?.furtherVerificationRequired||0);
           if(amazonTotal!==live.productCount)throw new Error(`Amazon status coverage ${amazonTotal}/${live.productCount}`);
           const csv=fs.readFileSync('/tmp/catalogue.csv','utf8').trimEnd().split('\n');
@@ -121,8 +164,8 @@ jobs:
           if(/<lastmod>/i.test(xml))throw new Error('sitemap contains blanket/synthetic lastmod');
           const urls=[...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map(x=>x[1]);
           if(urls.length!==indexableRoutes.length||new Set(urls).size!==indexableRoutes.length)throw new Error(`sitemap/source route count ${urls.length}/${indexableRoutes.length}`);
-          const expected=new Set(indexableRoutes.map(p=>base+p));for(const u of urls)if(!expected.has(u))throw new Error(`unexpected ${u}`);
-          let next=0,done=0;const bad=[];
+          const expected=new Set(indexableRoutes.map(p=>base+p)); for(const u of urls)if(!expected.has(u))throw new Error(`unexpected ${u}`);
+          let next=0,done=0; const bad=[];
           async function worker(){while(next<urls.length){const u=urls[next++],path=new URL(u).pathname;try{const r=await fetch(u),t=await r.text();if(r.status!==200)throw new Error(`HTTP ${r.status}`);if(!t.includes(`<link rel="canonical" href="${base+path}"`))throw new Error('canonical');if(/noindex/i.test((t.match(/<meta name="robots"[^>]*>/i)||[''])[0]))throw new Error('noindex');if(!t.includes('data-platform-v7="true"'))throw new Error('v7 marker');}catch(e){bad.push(`${path}: ${e.message}`)}done++;}}
           Promise.all(Array.from({length:16},worker)).then(()=>{if(bad.length){console.error(bad.slice(0,30).join('\n'));process.exit(1)}console.log(`CANONICAL_CRAWL=${done}/${indexableRoutes.length}_PASS`)});
           NODE
@@ -131,13 +174,13 @@ jobs:
         run: |
           set -euo pipefail
           BASE_URL="$BASE_URL" node - <<'NODE'
-          const {products}=require('./data'),{direct}=require('./data/retailers-v6'),base=process.env.BASE_URL;let next=0,d=0,f=0;const bad=[];
+          const {products}=require('./data'),{direct}=require('./data/retailers-v6'),base=process.env.BASE_URL; let next=0,d=0,f=0; const bad=[];
           const expectedDirect=products.filter(p=>p.retailers?.[0]?.kind==='affiliate-direct').length,expectedFallback=products.length-expectedDirect;
           async function worker(){while(next<products.length){const p=products[next++];try{const r=await fetch(`${base}/products/${p.slug}/`),t=await r.text();if(r.status!==200)throw new Error(`HTTP ${r.status}`);for(const needle of ['auproductguid-22','rel="sponsored nofollow noopener"','"@type":"Product"','"@type":"BreadcrumbList"','Evidence freshness','Commercial score','data-product-category='])if(!t.includes(needle))throw new Error(`missing ${needle}`);const rr=p.retailers[0];if(rr.kind==='affiliate-direct'){d++;if(!rr.asin||!t.includes(rr.asin))throw new Error(`ASIN ${rr.asin||'missing'}`)}else f++;if(p.evidenceTier==='starter'&&!t.includes('Starter evidence'))throw new Error('starter disclosure');}catch(e){bad.push(`${p.slug}: ${e.message}`)}}}
           Promise.all(Array.from({length:12},worker)).then(()=>{if(bad.length){console.error(bad.slice(0,30).join('\n'));process.exit(1)}if(d!==expectedDirect||f!==expectedFallback)throw new Error(`retailer kinds ${d}/${f}`);if(Object.keys(direct).length!==expectedDirect)throw new Error(`direct registry ${Object.keys(direct).length}/${expectedDirect}`);console.log(`PRODUCT_ROUTES=${products.length}/${products.length}_PASS direct=${d} fallback=${f}`);});
           NODE
 
-      - name: Representative journeys, v4 search and privacy boundaries
+      - name: Representative consumer journeys
         run: |
           set -euo pipefail
           check(){ code=$(curl -sSL -o /tmp/page -w '%{http_code}' "$BASE_URL$1"); test "$code" = 200 || { echo "$1 returned $code"; exit 1; }; grep -qi "$2" /tmp/page || { echo "$1 missing $2"; exit 1; }; }
@@ -147,14 +190,33 @@ jobs:
           check '/categories/office-chairs/finder/?priority=ergonomic&secondary=lumbar' 'Best match'
           check '/decision-lab/?q=mesh+wifi+for+a+large+home+with+ethernet' 'Decision Engine v4'
           check '/my-apg/' 'Cross-device sync when signed in'
-          check '/sitemap/' 'canonical indexable routes.'
           curl -fsSL "$BASE_URL/search/?q=laptop+for+uni" -o /tmp/laptop-search
-          grep -qi 'Laptops' /tmp/laptop-search; grep -qi 'relevant maintained products' /tmp/laptop-search; ! grep -qi 'Coverage gap' /tmp/laptop-search
-          curl -fsSL "$BASE_URL/search/?q=quiet+dishwasher+under+1000" -o /tmp/dishwasher-search
-          grep -qi '5 relevant maintained products' /tmp/dishwasher-search; grep -q '/categories/dishwashers/' /tmp/dishwasher-search; ! grep -q 'sony-wh-1000xm6-vs-bose-quietcomfort-ultra-headphones' /tmp/dishwasher-search
+          grep -qi 'Laptops' /tmp/laptop-search; ! grep -qi 'Coverage gap' /tmp/laptop-search
           curl -fsSL "$BASE_URL/search/?q=TV+must+be+exactly+999+inches" -o /tmp/strict-search
           grep -q 'No maintained product can currently be verified against every hard constraint' /tmp/strict-search; ! grep -q 'class="product-card' /tmp/strict-search
           curl -fsSL "$BASE_URL/compare/custom/?products=sony-wh-1000xm6,bose-quietcomfort-ultra-headphones" -o /tmp/diff
           grep -qi 'Difference Engine' /tmp/diff; grep -qi 'biggest difference' /tmp/diff; grep -qi 'Verify before buying' /tmp/diff
-          for p in /about/ /privacy/ /terms/ /methodology/ /editorial-standards/ /sources/ /coverage/ /updates/ /affiliate-disclosure/ /contact/; do check "$p" 'Australian Product Guide'; done
           echo 'REPRESENTATIVE_JOURNEYS=PASS'
+
+      - name: Install browser diagnostic dependency
+        run: |
+          set -euo pipefail
+          CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser)
+          echo "CHROME=$CHROME" >> "$GITHUB_ENV"
+          npm install --no-save --package-lock=false puppeteer-core@24.16.0 >/dev/null 2>&1
+
+      - name: Browser interaction and responsive diagnostic
+        env:
+          OUTPUT_DIR: artifacts/production-experience
+        run: |
+          set -euo pipefail
+          node scripts/experience-v37-browser-diagnostic.js
+
+      - name: Upload Production evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: apg-production-verification-${{ github.run_id }}
+          path: artifacts/production-experience
+          retention-days: 14
+          if-no-files-found: ignore

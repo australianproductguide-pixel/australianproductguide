@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 'use strict';
-const fs=require('fs');
 const assert=require('assert');
 const runtime=require('../lib/brand-conformity-v35');
+const {runtimeChainIncludes}=require('./runtime-chain-qa');
 
-const api=fs.readFileSync(require.resolve('../api/index.js'),'utf8');
-assert(api.includes("require('../lib/brand-conformity-v35')")||api.includes("require('../lib/brand-conformity-v351')")||api.includes("require('../lib/brand-conformity-v352')"),'api/index.js must activate v35 directly or through the governing v35.1/v35.2 wrapper chain');
+assert(runtimeChainIncludes('brand-conformity-v35'),'current API runtime chain must include v35');
 assert.strictEqual(runtime.VERSION,'35');
 assert(runtime.css.includes('--apg35-blue:#2563EB'));
 assert(runtime.css.includes('--apg35-navy:#0F172A'));
