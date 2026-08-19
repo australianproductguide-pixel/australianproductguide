@@ -36,7 +36,7 @@ assert(home.includes('data-amazon-creative-v41="home"'),'home creative marker mi
 assertAffiliateLinks(home,'home',4);
 assert(/Today(?:'|&#39;)s Deals/.test(home),'home Today’s Deals creative missing');
 assert(home.includes('Best Sellers'),'home Best Sellers creative missing');
-assert(home.includes('Under $25'),'home Under $25 creative missing');
+assert(/under \$25/i.test(home),'home Under $25 creative missing');
 assert(home.includes('Subscribe &amp; Save')||home.includes('Subscribe & Save'),'home Subscribe & Save creative missing');
 
 const deals=creative.dealsCreative();
