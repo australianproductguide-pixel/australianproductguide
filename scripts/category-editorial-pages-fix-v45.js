@@ -11,12 +11,14 @@ let s=fs.readFileSync(file,'utf8');
 
 const badMoney="const money=n=>n?`A${Number(n).toLocaleString('en-AU')}`:'Check current retailer';";
 const goodMoney="const money=n=>n?`A$${Number(n).toLocaleString('en-AU')}`:'Check current retailer';";
-if(s.includes(badMoney))s=s.replace(badMoney,goodMoney);
+// Use a replacement function so the literal "$${" sequence is not interpreted
+// as String.replace replacement syntax (where "$$" collapses to a single "$" ).
+if(s.includes(badMoney))s=s.replace(badMoney,()=>goodMoney);
 
 const brokenFallback='if(!image)return `${categoryHeroMedia(c)}`;';
 const heroArt='<div class="category-hero-art">${categoryIcon(c.icon,\'large\')}<strong>${c.products.length} maintained products</strong><span>Evidence + comparison + finder + retailer pathways</span></div>';
 const safeFallback='if(!image)return `'+heroArt+'`;';
-if(s.includes(brokenFallback))s=s.replace(brokenFallback,safeFallback);
+if(s.includes(brokenFallback))s=s.replace(brokenFallback,()=>safeFallback);
 
 const categoryStart=s.indexOf('function categoryPage(req,c,u)');
 if(categoryStart<0)throw new Error('categoryPage() not found');
