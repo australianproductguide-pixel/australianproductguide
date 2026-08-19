@@ -2,10 +2,11 @@ const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
 const scout=require('../lib/scout-concierge-v5');
+const runtime=require('../lib/scout-concierge-v5-runtime');
 const core=scout.core;
 const api=fs.readFileSync(path.join(__dirname,'..','api','index.js'),'utf8');
 
-assert(api.includes("require('../lib/scout-concierge-v5')"),'Scout v5 must be the active runtime');
+assert(api.includes("require('../lib/scout-concierge-v5-runtime')"),'Scout v5 session-guard runtime must be active');
 assert.strictEqual(core.routeAllowed('/methodology/'),true,'real APG route must be allowed');
 assert.strictEqual(core.routeAllowed('/our-methodology-2026/'),false,'invented route must be rejected');
 assert.strictEqual(core.sitePage('where is your methodology').url,'/methodology/','methodology navigation must use authoritative route');
@@ -77,5 +78,11 @@ assert(source.includes("user_id:userId"),'saved-product writes must bind server-
 assert(!source.includes('body.user_id'),'Scout must never accept a conversational user id for privileged actions');
 assert(source.includes("item_type:'saved_product'"),'Scout save action must be scoped to saved products');
 assert(source.includes("if(req.method==='POST'&&!allowedOrigin(req))"),'Scout account writes/messages must retain same-origin protection');
+assert.strictEqual(runtime.GUARD_PATH,'/assets/scout-session-guard-v5.js','session guard must have a first-party APG asset route');
+assert(runtime.guard.js.includes("sessionStorage.removeItem('apg_scout_v5_state')"),'account identity changes must clear structured Scout session state');
+assert(runtime.guard.js.includes('body.replaceChildren()'),'account identity changes must clear rendered Scout messages');
+assert(runtime.guard.js.includes('apg-workspace-synced'),'successful signed-in workspace transitions must invalidate the visible Scout session');
+assert(/login\|logout\|session\|delete/.test(runtime.guard.js),'auth lifecycle changes must invalidate the visible Scout session');
+assert(runtime.guard.js.includes('location.reload()'),'Scout must force a fresh authenticated bootstrap before reopening after an account identity change');
 
 console.log('APG Scout Concierge v5 QA passed');
