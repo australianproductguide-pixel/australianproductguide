@@ -49,9 +49,12 @@ const scoutBridge=fs.readFileSync(require.resolve('../public/assets/platform-coh
 new Function(scoutBridge);
 assert(scoutBridge.includes('if(panel.hidden){'),'Scout compatibility bridge must only open when Scout is still closed');
 assert(scoutBridge.includes("window.apgScout&&typeof window.apgScout.open==='function'"),'Scout compatibility bridge must prefer the current Scout API');
-assert(scoutBridge.includes('event.stopImmediatePropagation()'),'Scout click must be isolated from later document-level feature handlers');
+assert(scoutBridge.includes('event.stopImmediatePropagation()'),'Scout click must be isolated from later feature handlers');
+assert(scoutBridge.includes("document.addEventListener('click',event=>"),'Scout compatibility bridge must own the delegated click path');
+assert(scoutBridge.includes('  },true);'),'Scout compatibility bridge must capture the click before legacy target/bubble handlers can coerce it into Search input');
+assert(scoutBridge.includes('q=[object Object]'),'Scout bridge source must document the mobile regression being prevented');
 assert(!/if\(mobile\)mobile\.click\(\);\s*launcher\.click\(\);/.test(scoutBridge),'Scout bridge must never unconditionally double-toggle the launcher');
 const cohesionSource=fs.readFileSync(require.resolve('../lib/platform-cohesion-v26'),'utf8');
-assert(cohesionSource.includes("platform-cohesion-v26.js?v=26.2"),'isolated Scout bridge must be cache-busted');
+assert(cohesionSource.includes("platform-cohesion-v26.js?v=26.3"),'capture-phase Scout bridge must be cache-busted');
 
 console.log('APG interaction reliability v37 source QA passed');
