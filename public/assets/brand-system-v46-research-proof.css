@@ -1,7 +1,8 @@
 /* Australian Product Guide Brand System v46 — maintained research proof exception
  * Owner direction 20 Aug 2026: the homepage "Maintained Australian research"
  * proof banner deliberately retains APG's yellow heritage treatment with dark text.
- * Yellow is restricted to this research-proof surface; it is not a general APG UI colour.
+ * Yellow is restricted to this research-proof surface; the owner-approved companion
+ * decision-panel label below shares this same homepage heritage exception.
  */
 body[data-brand-system-v46="true"] .apg-proof-band-v19,
 body[data-brand-system-v46="true"] .apg-proof-band-v20{
@@ -33,3 +34,18 @@ body[data-brand-system-v46="true"][data-brand-fidelity-v323="true"] .apg-proof-b
   text-shadow:none!important;
 }
 /* Counter tiles intentionally remain black with white numerals via v19/v20 source CSS. */
+
+/* Owner-approved homepage companion accent.
+ * Restore the compact "A clearer path to the right product" label above
+ * "Start with your situation, not a generic winner" to the warm yellow treatment
+ * it used before the v46.5 blue-only cleanup. Keep the surrounding decision panel
+ * navy so the label reads as a deliberate highlight rather than a broader theme rollback.
+ * #F4BB45 is the current governed APG heritage gold already used in the proof band.
+ */
+body[data-brand-system-v46="true"][data-institutional-v9="true"] .institutional-home-v9 .apg-home-decision-panel-v9 .apg-home-panel-label-v9{
+  background:#F4BB45!important;
+  background-color:#F4BB45!important;
+  border-color:rgba(15,23,42,.18)!important;
+  color:#0F172A!important;
+  text-shadow:none!important;
+}
