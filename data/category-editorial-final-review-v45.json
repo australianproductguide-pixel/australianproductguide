@@ -10,10 +10,10 @@
   },
   "summary": {
     "categories": 90,
-    "manualCurated": 48,
-    "premiumAuto": 42,
+    "manualCurated": 54,
+    "premiumAuto": 36,
     "reviewRequired": 0,
-    "totalBytes": 18519764
+    "totalBytes": 18285946
   },
   "categories": [
     {
@@ -117,16 +117,16 @@
     {
       "slug": "blenders",
       "label": "Blenders",
-      "title": "Kitchen blender components.jpg",
-      "mode": "PREMIUM_AUTO",
-      "score": 201,
-      "reason": "Highest-quality licensed candidate cleared APG relevance, landscape, provenance, false-positive and visual-context gates.",
-      "license": "CC BY-SA 2.0",
-      "creator": "Paul Goyette",
-      "sourcePage": "https://commons.wikimedia.org/wiki/File%3AKitchen%20blender%20components.jpg",
+      "title": "Juice preparation featuring fresh fruits and a blender on a modern kitchen countertop in bright natural lighting.jpg",
+      "mode": "MANUAL_CURATED",
+      "score": null,
+      "reason": "Bright modern-kitchen lifestyle scene with the blender visible; replaces a technical components image.",
+      "license": "CC BY 2.0",
+      "creator": "Shixart1985",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File%3AJuice%20preparation%20featuring%20fresh%20fruits%20and%20a%20blender%20on%20a%20modern%20kitchen%20countertop%20in%20bright%20natural%20lighting.jpg",
       "width": 1280,
-      "height": 853,
-      "bytes": 177605
+      "height": 854,
+      "bytes": 124672
     },
     {
       "slug": "bluetooth-speakers",
@@ -467,16 +467,16 @@
     {
       "slug": "gaming-monitors",
       "label": "Gaming monitors",
-      "title": "Gaming-Monitor ausgestellt 20190202 185511 Kopie.jpg",
-      "mode": "PREMIUM_AUTO",
-      "score": 152,
-      "reason": "Highest-quality licensed candidate cleared APG relevance, landscape, provenance, false-positive and visual-context gates.",
-      "license": "CC BY 4.0",
-      "creator": "PantheraLeo1359531",
-      "sourcePage": "https://commons.wikimedia.org/wiki/File%3AGaming-Monitor%20ausgestellt%2020190202%20185511%20Kopie.jpg",
+      "title": "ABS PC and monitor setup.jpg",
+      "mode": "MANUAL_CURATED",
+      "score": null,
+      "reason": "Recent high-resolution gaming PC and monitor setup; replaces a trade-show display photograph.",
+      "license": "CC BY-SA 4.0",
+      "creator": "Masterandbeef",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File%3AABS%20PC%20and%20monitor%20setup.jpg",
       "width": 1280,
-      "height": 960,
-      "bytes": 301133
+      "height": 854,
+      "bytes": 224860
     },
     {
       "slug": "garment-steamers",
@@ -495,16 +495,16 @@
     {
       "slug": "hair-dryers",
       "label": "Hair dryers",
-      "title": "Hooded dryer for infrared hair drying at hair salon - shown from three perspectives.jpg",
-      "mode": "PREMIUM_AUTO",
-      "score": 140,
-      "reason": "Highest-quality licensed candidate cleared APG relevance, landscape, provenance, false-positive and visual-context gates.",
-      "license": "CC BY-SA 3.0",
-      "creator": "File:Hooded dryer for infrared hair drying at hair salon - combined side view and front view.jpg : * File:Hooded dryer for hair drying at hair salon.jpeg : Pittigrilli File:Hooded dryer for hair drying at hair salon 2.jpeg : Pittigrilli derivative work: Pittigrilli File:Hooded dryer for hair drying at hair salon, from 2010s.jpeg : Pittigrilli derivative work: Pittigrilli",
-      "sourcePage": "https://commons.wikimedia.org/wiki/File%3AHooded%20dryer%20for%20infrared%20hair%20drying%20at%20hair%20salon%20-%20shown%20from%20three%20perspectives.jpg",
+      "title": "Heat Products and Styling Hair.jpg",
+      "mode": "MANUAL_CURATED",
+      "score": null,
+      "reason": "Consumer hair-styling context with a handheld hair dryer and styled hair; replaces a technical salon hood-dryer montage.",
+      "license": "CC BY 2.0",
+      "creator": "geehairimages",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File%3AHeat%20Products%20and%20Styling%20Hair.jpg",
       "width": 1280,
-      "height": 801,
-      "bytes": 251844
+      "height": 853,
+      "bytes": 131325
     },
     {
       "slug": "hair-straighteners",
@@ -789,16 +789,16 @@
     {
       "slug": "portable-air-conditioners",
       "label": "Portable air conditioners",
-      "title": "Portable air conditioner at a school.jpg",
-      "mode": "PREMIUM_AUTO",
-      "score": 164,
-      "reason": "Highest-quality licensed candidate cleared APG relevance, landscape, provenance, false-positive and visual-context gates.",
+      "title": "Mobile-Klimaanlage-mit-Schlauch.jpg",
+      "mode": "MANUAL_CURATED",
+      "score": null,
+      "reason": "Landscape in-room portable air-conditioner context with exhaust hose; replaces an institutional school setting.",
       "license": "CC BY-SA 4.0",
-      "creator": "Curpharar",
-      "sourcePage": "https://commons.wikimedia.org/wiki/File%3APortable%20air%20conditioner%20at%20a%20school.jpg",
+      "creator": "Klimaanlagen-guru",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File%3AMobile-Klimaanlage-mit-Schlauch.jpg",
       "width": 1280,
-      "height": 960,
-      "bytes": 156406
+      "height": 856,
+      "bytes": 167521
     },
     {
       "slug": "portable-fridges",
@@ -859,16 +859,16 @@
     {
       "slug": "pressure-washers",
       "label": "Pressure washers",
-      "title": "US Navy 100910-N-9520G-011 Chief Aviation Electronics Technician (Sel.) John Thomson uses a power washer to clean the surface of the EA-6B Prowler.jpg",
-      "mode": "PREMIUM_AUTO",
-      "score": 177,
-      "reason": "Highest-quality licensed candidate cleared APG relevance, landscape, provenance, false-positive and visual-context gates.",
-      "license": "Public domain",
-      "creator": "U.S. Navy photo by Mass Communication Specialist 2nd Class Nardel Gervacio",
-      "sourcePage": "https://commons.wikimedia.org/wiki/File%3AUS%20Navy%20100910-N-9520G-011%20Chief%20Aviation%20Electronics%20Technician%20(Sel.)%20John%20Thomson%20uses%20a%20power%20washer%20to%20clean%20the%20surface%20of%20the%20EA-6B%20Prowler.jpg",
+      "title": "Car washing activity at a residential driveway.jpg",
+      "mode": "MANUAL_CURATED",
+      "score": null,
+      "reason": "Warm residential driveway scene with a pressure washer in use; replaces a military aircraft-maintenance image.",
+      "license": "CC BY 2.0",
+      "creator": "Shixart1985",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File%3ACar%20washing%20activity%20at%20a%20residential%20driveway.jpg",
       "width": 1280,
-      "height": 914,
-      "bytes": 129969
+      "height": 854,
+      "bytes": 148241
     },
     {
       "slug": "projectors",
@@ -1181,16 +1181,16 @@
     {
       "slug": "washing-machines",
       "label": "Washing machines",
-      "title": "SANYO DIQUA WASHING MACHINE DB8057ES (2).jpg",
-      "mode": "PREMIUM_AUTO",
-      "score": 152,
-      "reason": "Highest-quality licensed candidate cleared APG relevance, landscape, provenance, false-positive and visual-context gates.",
-      "license": "CC BY-SA 4.0",
-      "creator": "Dinkun Chen",
-      "sourcePage": "https://commons.wikimedia.org/wiki/File%3ASANYO%20DIQUA%20WASHING%20MACHINE%20DB8057ES%20(2).jpg",
+      "title": "Laundry room on main level.jpg",
+      "mode": "MANUAL_CURATED",
+      "score": null,
+      "reason": "Bright domestic laundry-room context; replaces an isolated branded washing-machine image.",
+      "license": "CC BY 2.0",
+      "creator": "LakeMartinVoice",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File%3ALaundry%20room%20on%20main%20level.jpg",
       "width": 1280,
-      "height": 515,
-      "bytes": 203935
+      "height": 853,
+      "bytes": 190455
     },
     {
       "slug": "water-filters",
