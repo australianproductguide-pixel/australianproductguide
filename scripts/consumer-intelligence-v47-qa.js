@@ -49,10 +49,10 @@ check('verified product-image registry remains rights and identity gated',()=>{
 
 check('verified multi-retailer Australian depth stays above the current release floor',()=>{
   const x=observability.retailerSnapshot();
-  assert.ok(x.exactOfferCount>=52,`expected >=52 exact destinations, got ${x.exactOfferCount}`);
-  assert.ok(x.productsWithExactOffers>=46,`expected >=46 products with exact destinations, got ${x.productsWithExactOffers}`);
-  assert.ok(x.verifiedRetailers>=20,`expected >=20 verified retailer/manufacturer sources, got ${x.verifiedRetailers}`);
-  assert.ok(x.independentOrDirectOfferCount>=52,'retailer participation must remain identity-controlled rather than inferred');
+  assert.ok(x.exactOfferCount>=57,`expected >=57 exact destinations, got ${x.exactOfferCount}`);
+  assert.ok(x.productsWithExactOffers>=51,`expected >=51 products with exact destinations, got ${x.productsWithExactOffers}`);
+  assert.ok(x.verifiedRetailers>=23,`expected >=23 verified retailer/manufacturer sources, got ${x.verifiedRetailers}`);
+  assert.ok(x.independentOrDirectOfferCount>=57,'retailer participation must remain identity-controlled rather than inferred');
 });
 
 check('hard constraints still dominate the exact 75-inch consumer benchmark',()=>{
@@ -131,7 +131,9 @@ check('consumer intelligence release snapshot preserves trust controls',()=>{
   assert.equal(x.categoryImagery.coveragePct,100);
   assert.equal(x.categoryImagery.finalReviewRequired,0);
   assert.equal(x.productImagery.invalid,0);
-  assert.ok(x.retailers.exactOfferCount>=52);
+  assert.ok(x.retailers.exactOfferCount>=57);
+  assert.ok(x.retailers.productsWithExactOffers>=51);
+  assert.ok(x.retailers.verifiedRetailers>=23);
   assert.equal(x.recommendation.commercialRecommendationWeight,0);
   assert.equal(x.continuousImprovement.productionSelfModification,false);
   assert.equal(x.continuousImprovement.rawSearchTextTelemetry,false);
