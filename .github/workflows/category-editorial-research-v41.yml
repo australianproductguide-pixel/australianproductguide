@@ -15,13 +15,21 @@ on:
       - scripts/category-editorial-materialise-v45.js
       - scripts/category-editorial-v45-qa.js
       - .github/workflows/category-editorial-research-v41.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - scripts/category-editorial-research-v45.js
+      - scripts/category-editorial-materialise-v45.js
+      - scripts/category-editorial-v45-qa.js
+      - .github/workflows/category-editorial-research-v41.yml
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: apg-category-editorial-research-${{ github.ref_name }}
+  group: apg-category-editorial-research-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -31,25 +39,27 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ github.head_ref || github.ref_name }}
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Research and materialise category imagery
         shell: bash
         run: |
-          if [ "${GITHUB_REF_NAME}" = "apg-category-editorial-images-v45-main" ]; then
+          branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          if [ "$branch" = "apg-category-editorial-images-v45-main" ]; then
             node scripts/category-editorial-research-v45.js
             node scripts/category-editorial-materialise-v45.js
             node -c lib/pages.js
             node -c lib/premium-css.js
             ALLOW_REVIEW_REQUIRED=1 node scripts/category-editorial-v45-qa.js
-          elif [ "${GITHUB_REF_NAME}" = "apg-category-editorial-images-v44" ]; then
+          elif [ "$branch" = "apg-category-editorial-images-v44" ]; then
             node scripts/category-editorial-research-v44.js || test -f data/category-editorial-selected-v44.json
           else
             node scripts/category-editorial-research-v42.js
           fi
       - name: Publish research and materialised assets to source branch
+        if: github.event_name == 'push'
         shell: bash
         run: |
           set -euo pipefail
@@ -107,6 +117,6 @@ jobs:
             echo "Research branch advanced during publish; retrying from latest remote head"
           done
       - name: Enforce final v45 curation gate
-        if: github.ref_name == 'apg-category-editorial-images-v45-main'
+        if: github.head_ref == 'apg-category-editorial-images-v45-main' || github.ref_name == 'apg-category-editorial-images-v45-main'
         shell: bash
         run: node scripts/category-editorial-v45-qa.js
