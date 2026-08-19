@@ -1,10 +1,11 @@
 'use strict';
 const fs=require('fs');
 const path=require('path');
-const puppeteer=require('puppeteer');
+const puppeteer=require('puppeteer-core');
 
 const BASE=(process.env.BASE_URL||'https://australianproductguide.au').replace(/\/$/,'');
 const OUT=process.env.OUTPUT_DIR||'artifacts/experience-v37';
+const CHROME=process.env.CHROME||'/usr/bin/google-chrome';
 fs.mkdirSync(OUT,{recursive:true});
 const report={base:BASE,startedAt:new Date().toISOString(),journeys:[],failures:[],browserErrors:[]};
 
@@ -65,7 +66,8 @@ async function runJourney(browser,name,viewport,fn){
 }
 
 (async()=>{
-  const browser=await puppeteer.launch({headless:true,args:['--no-sandbox','--disable-setuid-sandbox']});
+  assert(fs.existsSync(CHROME),`Chrome executable not found: ${CHROME}`);
+  const browser=await puppeteer.launch({headless:true,executablePath:CHROME,args:['--no-sandbox','--disable-setuid-sandbox']});
   const desktop={width:1440,height:950};
   const mobile={width:390,height:844,isMobile:true,hasTouch:true};
 
