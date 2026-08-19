@@ -1,5 +1,6 @@
-// APG Discoverability v1 governing runtime over Scout Concierge v5.
-// Temporary owner-approved release executor delegates every ordinary request to
-// the current entity-discovery runtime and exists only to verify the IndexNow POST.
+// APG Discoverability v1 is the preview governing runtime over Scout Concierge v5.
+// Keep the current Scout session-guard runtime explicitly loaded so its mandatory
+// release invariant remains visible and enforced while discovery, entity normalisation
+// and IndexNow verification are active.
 require('../lib/scout-concierge-v5-runtime');
-module.exports=require('../lib/indexnow-production-once-20260819');
+module.exports=require('../lib/entity-discovery-v1');
