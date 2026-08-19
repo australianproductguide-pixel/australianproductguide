@@ -11,9 +11,11 @@ assert.strictEqual(core.routeAllowed('/our-methodology-2026/'),false,'invented r
 assert.strictEqual(core.sitePage('where is your methodology').url,'/methodology/','methodology navigation must use authoritative route');
 assert.strictEqual(core.sitePage('where is Scout').url,null,'Scout must not fabricate a standalone page');
 
-const productContext=core.validatePageContext({path:'/products/sony-wh-1000xm6/'});
+const firstProduct=[...core.PRODUCT_BY_SLUG.values()][0];
+assert(firstProduct,'catalogue must contain a representative product');
+const productContext=core.validatePageContext({path:'/products/'+firstProduct.slug+'/'});
 assert.strictEqual(productContext.pageType,'product','product page must be recognised structurally');
-assert(productContext.productSlug,'known product path should resolve when present in catalogue');
+assert.strictEqual(productContext.productSlug,firstProduct.slug,'known product path must resolve to maintained product');
 const hostileContext=core.validatePageContext({path:'/products/not-a-real-product/',productSlug:'not-a-real-product'});
 assert.strictEqual(hostileContext.productSlug,null,'unknown supplied product context must be rejected');
 
@@ -41,11 +43,10 @@ assert(['product_recommendation','product_search'].includes(rec.intent),'recomme
 assert(rec.decisionState||rec.products||rec.actions,'recommendation should return structured decision output');
 if(rec.products)for(const p of rec.products){assert(core.PRODUCT_BY_SLUG.has(p.slug),'every Scout product card must be a maintained APG product');assert(core.routeAllowed(p.url),'every product card route must be valid');}
 
-const pageAware=core.buildResponse({text:'What do you think of this?',pageContext:{path:'/products/'+[...core.PRODUCT_BY_SLUG.keys()][0]+'/'}});
+const pageAware=core.buildResponse({text:'What do you think of this?',pageContext:{path:'/products/'+firstProduct.slug+'/'}});
 assert.strictEqual(pageAware.intent,'product_question','referential product question must use structured current-page context');
 assert(pageAware.products&&pageAware.products.length===1,'page-aware product answer must resolve the current maintained product');
 
-const firstTwo=[...core.PRODUCT_BY_SLUG.values()].filter((p,i,a)=>a.findIndex(x=>x.category===p.category)===0?false:true).slice(0,2);
 const sameCategory=(()=>{for(const p of core.PRODUCT_BY_SLUG.values()){const q=[...core.PRODUCT_BY_SLUG.values()].find(x=>x.category===p.category&&x.slug!==p.slug);if(q)return [p,q];}return [];})();
 assert.strictEqual(sameCategory.length,2,'catalogue needs a representative comparison pair');
 const comp=core.buildResponse({text:'Which one is better for value?',references:sameCategory.map(x=>x.slug)});
