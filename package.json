@@ -1,5 +1,8 @@
 {
   "name": "australian-product-guide",
   "version": "1.0.0",
-  "private": true
+  "private": true,
+  "scripts": {
+    "vercel-build": "node scripts/scout-v5-syntax-check.js && node scripts/scout-concierge-v5-qa.js && node scripts/scout-amazon-v5-qa.js"
+  }
 }
