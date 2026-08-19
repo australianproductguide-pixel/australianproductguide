@@ -19,14 +19,16 @@ assert(!robots.includes('Disallow: /categories/'),'public category pages must re
 
 const legacy=layer.urlset(indexableRoutes);
 assert(legacy.startsWith('<?xml version="1.0" encoding="UTF-8"?>'),'sitemap must be XML');
-assert(legacy.includes('<lastmod>'),'sitemap must carry evidence-derived lastmod values');
+assert(!/<lastmod>/i.test(legacy),'sitemap must not invent page modification dates from catalogue evidence dates');
+assert.strictEqual((legacy.match(/<loc>/g)||[]).length,indexableRoutes.length,'sitemap must retain every canonical route');
 for(const path of ['/','/categories/','/products/'+products[0].slug+'/'])assert(legacy.includes(`<loc>https://australianproductguide.au${path}</loc>`),`legacy sitemap missing ${path}`);
 
 const index=layer.sitemapIndex();
+assert(!/<lastmod>/i.test(index),'sitemap index must not invent group modification dates');
 for(const name of layer.GROUP_ORDER)assert(index.includes(`https://australianproductguide.au/sitemaps/${name}.xml`),`sitemap index missing ${name}`);
 
 const llms=layer.llmsText();
-for(const token of ['Australian Product Guide',`${products.length} products`,`${Object.keys(categories).length} categories`,`${brands.length} represented brands`,'zero recommendation points','desk-researched / specification-based','sitemap-index.xml'])assert(llms.includes(token),`llms.txt missing ${token}`);
+for(const token of ['Australian Product Guide',`${products.length} products`,`${Object.keys(categories).length} categories`,`${brands.length} represented brands`,'zero recommendation points','desk-researched / specification-based','sitemap-index.xml','route-specific material-change provenance'])assert(llms.includes(token),`llms.txt missing ${token}`);
 
 const manifest=layer.discoveryManifest();
 assert.strictEqual(manifest.canonicalUrl,'https://australianproductguide.au/');
@@ -38,6 +40,9 @@ assert.strictEqual(manifest.counts.brands,brands.length);
 assert.strictEqual(manifest.counts.indexableRoutes,indexableRoutes.length);
 assert.strictEqual(manifest.categories.length,Object.keys(categories).length);
 assert(manifest.categories.every(c=>/^https:\/\/australianproductguide\.au\/categories\/.+\/$/.test(c.url)),'manifest category URLs must be canonical AU URLs');
+assert(!Object.prototype.hasOwnProperty.call(manifest,'lastModified'),'discovery manifest must not present a catalogue batch date as a site modification date');
+assert(manifest.categories.every(c=>!Object.prototype.hasOwnProperty.call(c,'lastModified')),'manifest category entries must not invent modification dates');
+assert(/route-specific material-change provenance/i.test(manifest.principles.freshness),'manifest must explain the page-freshness policy');
 
 const sample='<html><head><title>Sample</title></head><body></body></html>';
 const indexed=layer.injectIndexingDirectives(sample,'/');
@@ -45,4 +50,4 @@ assert(indexed.includes('max-image-preview:large'),'indexable pages must expose 
 assert.strictEqual(layer.injectIndexingDirectives(sample,'/search/'),sample,'noindex/dynamic search surface must not receive index directives');
 assert.strictEqual(layer.injectIndexingDirectives('<html><head><meta name="robots" content="noindex,follow"></head></html>','/'),'<html><head><meta name="robots" content="noindex,follow"></head></html>','existing robots directives must never be overridden');
 
-console.log(`APG Discoverability v1 QA PASSED: ${indexableRoutes.length} canonical routes, ${products.length} products, ${Object.keys(categories).length} categories, ${brands.length} brands.`);
+console.log(`APG Discoverability v1 QA PASSED: ${indexableRoutes.length} canonical routes, ${products.length} products, ${Object.keys(categories).length} categories, ${brands.length} brands; synthetic lastmod=OFF.`);
