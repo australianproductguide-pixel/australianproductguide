@@ -5,7 +5,7 @@ const app=require('../api/index');
 const runtime=require('../lib/brand-conformity-v351');
 const {runtimeChainIncludes}=require('./runtime-chain-qa');
 
-function render(url){return new Promise((resolve,reject)=>{const headers={};const req={url,method:'GET',headers:{host:'australianproductguide.au'},on(){},destroy(){}};const res={statusCode:200,setHeader(k,v){headers[String(k).toLowerCase()]=v;},getHeader(k){return headers[String(k).toLowerCase()];},end(body=''){resolve({status:this.statusCode,headers,body:Buffer.isBuffer(body)?body:String(body||'')});}};try{const r=app(req,res);if(r&&typeof r.then==='function')r.catch(reject);}catch(e){reject(e);}});}
+function render(url){return new Promise((resolve,reject)=>{const headers={};const req={url,method:'GET',headers:{host:'australianproductguide.au'},on(){},destroy(){}};const res={statusCode:200,setHeader(k,v){headers[String(k).toLowerCase()]=v;},getHeader(k){return headers[String(k).toLowerCase()];},removeHeader(k){delete headers[String(k).toLowerCase()];},end(body=''){resolve({status:this.statusCode,headers,body:Buffer.isBuffer(body)?body:String(body||'')});}};try{const r=app(req,res);if(r&&typeof r.then==='function')r.catch(reject);}catch(e){reject(e);}});}
 
 (async()=>{
   assert.equal(runtime.VERSION,'35.1');

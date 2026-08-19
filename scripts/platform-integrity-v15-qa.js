@@ -4,7 +4,7 @@ const {categories}=require('../data');
 const {searchSite}=require('../lib/search');
 const {indexableRoutes,noindexRoutes}=require('../lib/routes');
 
-function render(url){return new Promise((resolve,reject)=>{const headers={};const req={url,method:'GET',headers:{host:'australianproductguide.au'},on(){},destroy(){}};const res={statusCode:200,setHeader(k,v){headers[String(k).toLowerCase()]=v;},getHeader(k){return headers[String(k).toLowerCase()];},end(body=''){resolve({status:this.statusCode,headers,body:String(body||'')});}};try{const r=app(req,res);if(r&&typeof r.then==='function')r.catch(reject);}catch(e){reject(e);}});}
+function render(url){return new Promise((resolve,reject)=>{const headers={};const req={url,method:'GET',headers:{host:'australianproductguide.au'},on(){},destroy(){}};const res={statusCode:200,setHeader(k,v){headers[String(k).toLowerCase()]=v;},getHeader(k){return headers[String(k).toLowerCase()];},removeHeader(k){delete headers[String(k).toLowerCase()];},end(body=''){resolve({status:this.statusCode,headers,body:String(body||'')});}};try{const r=app(req,res);if(r&&typeof r.then==='function')r.catch(reject);}catch(e){reject(e);}});}
 
 (async()=>{
   assert.ok(indexableRoutes.includes('/decision-lab/'),'clean Decision Lab must be indexable');
