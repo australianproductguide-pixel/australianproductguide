@@ -36,7 +36,10 @@ if(!pages.includes('function categoryHeroMedia(c)'))fail('Category hero helper m
 if(pages.includes('if(!image)return `${categoryHeroMedia(c)}`;'))fail('Category hero fallback is recursively wired');
 const categoryStart=pages.indexOf('function categoryPage(req,c,u)');
 if(categoryStart<0||!pages.slice(categoryStart).includes('${categoryHeroMedia(c)}'))fail('Category page does not render categoryHeroMedia(c)');
-if(!pages.includes("const money=n=>n?`A$${Number(n).toLocaleString('en-AU')}`:'Check current retailer';"))fail('Australian A$ price formatting regressed');
+const badMoney="const money=n=>n?`A${Number(n).toLocaleString('en-AU')}`:'Check current retailer';";
+const goodMoney="const money=n=>n?`A$${Number(n).toLocaleString('en-AU')}`:'Check current retailer';";
+if(pages.includes(badMoney))fail('Legacy A-without-dollar price formatting remains');
+if(!pages.includes(goodMoney))fail('Australian A$ price formatting regressed');
 if(!pages.includes('Editorial category image — not a reviewed product.'))fail('Consumer-facing non-product disclaimer missing');
 const css=fs.readFileSync(path.join(root,'lib','premium-css.js'),'utf8');
 for(const token of ['.category-hero-media{','.category-hero-media-shade{','.category-hero-media-overlay{','.category-hero-media figcaption{'])if(!css.includes(token))fail(`Missing editorial hero CSS ${token}`);
