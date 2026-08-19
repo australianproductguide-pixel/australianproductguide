@@ -5,5 +5,6 @@
 // Amazon shopping creative v41 remains the current APG-original shopping creative layer.
 // Brand System v46 remains the presentation foundation across every route and breakpoint.
 // Consumer Intelligence v47 is the final decision-continuity, explainability and release-gate layer.
+require('../lib/scout-concierge-v5-runtime');
 require('../lib/consumer-intelligence-v47-runtime');
 module.exports=require('../lib/consumer-intelligence-v47');
