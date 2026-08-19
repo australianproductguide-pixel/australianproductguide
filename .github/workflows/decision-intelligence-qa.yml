@@ -101,7 +101,7 @@ jobs:
         run: node scripts/decision-intelligence-v4-runtime-qa.js
       - name: Intelligence quality v4.1 release gate
         run: node scripts/intelligence-quality-report-v41.js --gate | tee intelligence-quality-v41.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: intelligence-quality-v41
           path: intelligence-quality-v41.json

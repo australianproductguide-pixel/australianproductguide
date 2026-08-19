@@ -78,7 +78,7 @@ jobs:
           set -euo pipefail
           current=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/commits/main" | jq -r '.sha')
           test "$current" = "$SHA" || { echo "main advanced to $current during v34.1 certification" >&2; exit 1; }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: apg-v341-brand-conformity-${{ github.run_id }}

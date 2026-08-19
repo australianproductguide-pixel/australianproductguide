@@ -37,7 +37,7 @@ jobs:
       - name: Run Amazon conversion controls
         run: node scripts/amazon-conversion-v29-qa.js
       - name: Upload Amazon AU mapping register
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: amazon-au-mapping-register-v33
           path: |

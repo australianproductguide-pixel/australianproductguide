@@ -31,7 +31,7 @@ jobs:
           set -euo pipefail
           node --check scripts/experience-v37-browser-diagnostic.js
           node scripts/experience-v37-browser-diagnostic.js
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: apg-experience-v37-pr-${{ github.run_id }}
