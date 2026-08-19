@@ -9,7 +9,8 @@ function render(url){return new Promise((resolve,reject)=>{const headers={};cons
 
 (async()=>{
   assert.equal(runtime.VERSION,'35.1');
-  assert(fs.readFileSync(require.resolve('../api/index.js'),'utf8').includes("require('../lib/brand-conformity-v351')"));
+  const api=fs.readFileSync(require.resolve('../api/index.js'),'utf8');
+  assert(api.includes("require('../lib/brand-conformity-v351')")||api.includes("require('../lib/brand-conformity-v352')"),'api/index.js must activate v35.1 directly or through the governing v35.2 wrapper');
   assert(runtime.css.includes('--apg351-blue:#2563EB'));
   assert(runtime.css.includes('.apg-account-head'));
   const ico=runtime.makeIco();
@@ -38,7 +39,7 @@ function render(url){return new Promise((resolve,reject)=>{const headers={};cons
 
   const missing=await render('/this-page-does-not-exist-brand-audit-v351/');
   assert.equal(missing.status,404,'404 status must remain 404');
-  assert.match(missing.body,/data-brand-conformity-v351="true"/,'404 must receive final governing marker');
+  assert.match(missing.body,/data-brand-conformity-v351="true"/,'404 must receive final v35.1 marker');
   assert.match(missing.body,/data-brand-conformity-v35="true"/,'404 must receive v35 chain');
   assert.match(missing.body,/data-brand-fidelity-v32="true"/,'404 must receive current identity transform');
   assert.match(missing.body,/apg-brand-v32-lockup/,'404 must use current APG logo');
