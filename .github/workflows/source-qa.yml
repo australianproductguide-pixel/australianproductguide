@@ -196,9 +196,12 @@ jobs:
           if(config.$schema!=='https://openapi.vercel.sh/vercel.json') throw new Error('Vercel schema declaration missing');
           if(JSON.stringify(config.regions)!==JSON.stringify(['syd1'])) throw new Error(`Expected Sydney function region, got ${JSON.stringify(config.regions)}`);
           if(!Array.isArray(config.rewrites)||config.rewrites.length!==1||config.rewrites[0].source!=='/(.*)'||config.rewrites[0].destination!=='/api') throw new Error('Unexpected Vercel rewrite contract');
-          for(const p of ['.github/CODEOWNERS','.github/PULL_REQUEST_TEMPLATE.md','docs/APG-OPERATIONS.md','.github/workflows/source-qa.yml','.github/workflows/production-smoke.yml','.github/workflows/catalogue-freshness-qa.yml','.github/workflows/codeql.yml','supabase/functions/delete-account/index.ts']) if(!fs.existsSync(p)) throw new Error(`Required governance file missing: ${p}`);
+          const authoritativeWorkflowFiles=['catalogue-freshness-qa.yml','codeql.yml','production-smoke.yml','source-qa.yml'].sort();
+          const supportWorkflowFiles=['category-editorial-research-v41.yml'].sort();
+          const allowedWorkflowFiles=[...authoritativeWorkflowFiles,...supportWorkflowFiles].sort();
+          for(const p of ['.github/CODEOWNERS','.github/PULL_REQUEST_TEMPLATE.md','docs/APG-OPERATIONS.md',...authoritativeWorkflowFiles.map(x=>`.github/workflows/${x}`),...supportWorkflowFiles.map(x=>`.github/workflows/${x}`),'supabase/functions/delete-account/index.ts']) if(!fs.existsSync(p)) throw new Error(`Required governance file missing: ${p}`);
           const workflowFiles=fs.readdirSync('.github/workflows').filter(x=>/\.ya?ml$/.test(x)).sort();
-          if(workflowFiles.length!==4) throw new Error(`Expected exactly 4 authoritative workflows, found ${workflowFiles.length}: ${workflowFiles.join(', ')}`);
+          if(JSON.stringify(workflowFiles)!==JSON.stringify(allowedWorkflowFiles)) throw new Error(`Workflow allowlist mismatch. Expected ${allowedWorkflowFiles.join(', ')}; found ${workflowFiles.join(', ')}`);
           const migrations=fs.readdirSync('supabase/migrations').filter(x=>x.endsWith('.sql')).sort();
           if(migrations.length!==7) throw new Error(`Expected 7 reconciled Supabase migrations, found ${migrations.length}`);
           const owners=fs.readFileSync('.github/CODEOWNERS','utf8'); if(!owners.includes('@australianproductguide-pixel')) throw new Error('APG code owner missing');
@@ -207,7 +210,7 @@ jobs:
           for(const dir of ['api','data','lib','scripts','docs']){
             const stack=[dir]; while(stack.length){const p=stack.pop(); for(const e of fs.readdirSync(p,{withFileTypes:true})){const f=`${p}/${e.name}`; if(e.isDirectory())stack.push(f); else if(/\.(js|md|json|yml|yaml)$/i.test(f)){const s=fs.readFileSync(f,'utf8'); if(/Australian Tradie Software Matcher|tradie-software|tradie matcher/i.test(s)&&f!=='docs/APG-OPERATIONS.md') throw new Error(`venture separation contamination: ${f}`);}}}
           }
-          console.log(`WORKFLOWS=${workflowFiles.length}`);
+          console.log(`WORKFLOWS=${workflowFiles.length} AUTHORITATIVE=${authoritativeWorkflowFiles.length} SUPPORT=${supportWorkflowFiles.length}`);
           console.log(`SUPABASE_MIGRATIONS=${migrations.length}`);
           console.log('GOVERNANCE=PASS');
           NODE
