@@ -3,6 +3,7 @@ name: APG Category Editorial Research v41
 on:
   push:
     branches:
+      - main
       - apg-category-editorial-imagery-v41
     paths:
       - scripts/category-editorial-research-v41.js
@@ -31,7 +32,7 @@ jobs:
           node-version: '22'
       - name: Research CC0 category imagery
         run: node scripts/category-editorial-research-v41.js
-      - name: Commit candidate register
+      - name: Commit candidate register to research branch
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
