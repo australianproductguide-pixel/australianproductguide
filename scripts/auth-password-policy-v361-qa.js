@@ -7,9 +7,9 @@ assert(policy.passwordPolicy('APG-Strong-2026!').ok,'strong password must pass')
 for(const weak of ['short1!A','alllowercase123!','ALLUPPERCASE123!','NoNumberPassword!','NoSymbolPassword123']){
   assert(!policy.passwordPolicy(weak).ok,`weak password must fail: ${weak}`);
 }
-const fixture='Password<input type="password" name="password" autocomplete="current-password" minlength="8" required></label> New password<input type="password" name="password" autocomplete="new-password" minlength="8" required></label> '+"q('[data-account-form] input[name=password]',root).autocomplete=mode==='signup'?'new-password':'current-password';";
+const fixture='<label>Password<input type="password" name="password" autocomplete="current-password" minlength="8" required></label> <label>New password<input type="password" name="password" autocomplete="new-password" minlength="8" required></label> '+"q('[data-account-form] input[name=password]',root).autocomplete=mode==='signup'?'new-password':'current-password';";
 const strengthened=policy.strengthenAccountAsset(fixture);
-assert(strengthened.includes('minlength="12"'),'new-password UI must require 12 characters');
+assert(strengthened.includes('autocomplete="new-password" minlength="12"'),'new-password UI must require 12 characters');
 assert(strengthened.includes("passwordInput.minLength=12"),'signup mode must upgrade the minimum to 12');
 assert(strengthened.includes("passwordInput.minLength=8"),'login mode must preserve existing-password compatibility');
 assert(strengthened.includes(policy.PASSWORD_RULE_MESSAGE),'consumer password guidance must be present');
