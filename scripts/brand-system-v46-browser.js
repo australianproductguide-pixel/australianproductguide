@@ -60,7 +60,8 @@ async function assertContrast(page,fgSelector,bgSelector,min,label){const pair=a
     await goto(page,'/search/?q=robot%20vacuum%20for%20pet%20hair');
     await page.waitForSelector('.apg-rv-v43',{timeout:10000});
     const kicker=await style(page,'.apg-rv-kicker-v43');assert(kicker.color==='rgb(29, 78, 216)',`Research View kicker is not APG blue: ${kicker.color}`);
-    const card=await style(page,'.apg-rv-card-v43');assert(card.backgroundColor==='rgb(255, 255, 255)',`Research View card is not white: ${card.backgroundColor}`);
+    const lead=await style(page,'.apg-rv-card-v43.is-lead');assert(/rgb\(239, 246, 255\)/.test(lead.backgroundImage),`Research View lead card is not APG blue-soft: ${lead.backgroundImage}`);
+    const card=await style(page,'.apg-rv-card-v43:not(.is-lead)');assert(card.backgroundColor==='rgb(255, 255, 255)',`Research View alternative card is not white: ${card.backgroundColor}`);
     await assertNoRetired(page,'.apg-rv-v43 *','Research View');
     await snap(page,'brand-search-research-desktop');
   });
@@ -74,10 +75,18 @@ async function assertContrast(page,fgSelector,bgSelector,min,label){const pair=a
     await snap(page,'brand-my-apg-login-desktop');
   });
 
-  await check('category/product surfaces use navy hero art and readable cards',async()=>{
+  await check('category/product surfaces use current imagery contrast or navy fallback with readable cards',async()=>{
     await goto(page,'/categories/coffee-machines/');
-    const art=await style(page,'.category-hero-art');assert(/rgb\(15, 23, 42\)/.test(art.backgroundImage),`category hero art does not use APG navy: ${art.backgroundImage}`);
-    const title=await style(page,'.category-hero-art strong');assert(title.color==='rgb(255, 255, 255)',`category hero art title is not white: ${title.color}`);
+    const media=await page.$('.category-hero-media');
+    if(media){
+      const frame=await style(page,'.category-hero-media');assert(frame.backgroundColor==='rgb(15, 23, 42)',`category editorial image frame is not APG navy: ${frame.backgroundColor}`);
+      const shade=await style(page,'.category-hero-media-shade');assert(/15, 23, 42/.test(shade.backgroundImage),`category editorial image scrim is not APG navy: ${shade.backgroundImage}`);
+      const title=await style(page,'.category-hero-media-overlay strong');assert(title.color==='rgb(255, 255, 255)',`category editorial image title is not white: ${title.color}`);
+      const caption=await style(page,'.category-hero-media figcaption');assert(/rgba\(15, 23, 42, 0\.9[7-9]/.test(caption.backgroundColor),`category editorial image caption is not near-opaque APG navy: ${caption.backgroundColor}`);
+    }else{
+      const art=await style(page,'.category-hero-art');assert(/rgb\(15, 23, 42\)/.test(art.backgroundImage),`category hero fallback does not use APG navy: ${art.backgroundImage}`);
+      const title=await style(page,'.category-hero-art strong');assert(title.color==='rgb(255, 255, 255)',`category hero fallback title is not white: ${title.color}`);
+    }
     const card=await style(page,'.product-card');assert(card.backgroundColor==='rgb(255, 255, 255)',`product card is not white: ${card.backgroundColor}`);
     await assertNoRetired(page,'.category-hero *, .product-card *, .feature-card *, .comparison-card *, .apg-amz-v41 *','category and product discovery');
     await snap(page,'brand-category-desktop');
