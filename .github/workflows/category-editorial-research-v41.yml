@@ -7,6 +7,12 @@ on:
     paths:
       - scripts/category-editorial-research-v41.js
       - .github/workflows/category-editorial-research-v41.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - scripts/category-editorial-research-v41.js
+      - .github/workflows/category-editorial-research-v41.yml
   workflow_dispatch:
 
 permissions:
