@@ -10,10 +10,10 @@
   },
   "summary": {
     "categories": 90,
-    "manualCurated": 54,
-    "premiumAuto": 36,
+    "manualCurated": 56,
+    "premiumAuto": 34,
     "reviewRequired": 0,
-    "totalBytes": 18285946
+    "totalBytes": 18270616
   },
   "categories": [
     {
@@ -84,7 +84,7 @@
       "sourcePage": "https://commons.wikimedia.org/wiki/File%3AFutterautomat%20mit%20RFID%20-%20pet%20feeder%2C%20cat%20feeder%2C%20RFID%20controlled.JPG",
       "width": 1280,
       "height": 857,
-      "bytes": 189822
+      "bytes": 189874
     },
     {
       "slug": "baby-monitors",
@@ -140,7 +140,7 @@
       "sourcePage": "https://commons.wikimedia.org/wiki/File%3AMusicCast%2050%20and%20MusicCast%2020%20at%20Eslite%20Xinyi%20Store%206F%2020220806.jpg",
       "width": 1280,
       "height": 851,
-      "bytes": 265526
+      "bytes": 265474
     },
     {
       "slug": "bluetooth-trackers",
@@ -196,7 +196,7 @@
       "sourcePage": "https://commons.wikimedia.org/wiki/File%3ACoffee%20grinder%20with%20freshly%20roasted%20beans%20in%20an%20artisan%20cafe%20setting.jpg",
       "width": 1280,
       "height": 854,
-      "bytes": 164425
+      "bytes": 164477
     },
     {
       "slug": "coffee-machines",
@@ -271,16 +271,16 @@
     {
       "slug": "dehumidifiers",
       "label": "Dehumidifiers",
-      "title": "Rental dehumidifier.jpg",
-      "mode": "PREMIUM_AUTO",
-      "score": 140,
-      "reason": "Highest-quality licensed candidate cleared APG relevance, landscape, provenance, false-positive and visual-context gates.",
+      "title": "SHARP DEHUMIDIFIER DW-CE15F-W (2).jpg",
+      "mode": "MANUAL_CURATED",
+      "score": null,
+      "reason": "Recent high-resolution landscape exact dehumidifier photograph; replaces a utilitarian rental-unit result.",
       "license": "CC BY-SA 4.0",
-      "creator": "DesiccantDryAir",
-      "sourcePage": "https://commons.wikimedia.org/wiki/File%3ARental%20dehumidifier.jpg",
+      "creator": "Dinkun Chen",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File%3ASHARP%20DEHUMIDIFIER%20DW-CE15F-W%20(2).jpg",
       "width": 1280,
-      "height": 960,
-      "bytes": 266349
+      "height": 917,
+      "bytes": 209067
     },
     {
       "slug": "dishwashers",
@@ -308,7 +308,7 @@
       "sourcePage": "https://commons.wikimedia.org/wiki/File%3AFujitsu%20ScanSnap%20fi-5100C%20duplex%20scanner%20open.jpeg",
       "width": 1280,
       "height": 1190,
-      "bytes": 353711
+      "bytes": 353659
     },
     {
       "slug": "e-readers",
@@ -327,16 +327,16 @@
     {
       "slug": "earbuds",
       "label": "Earbuds",
-      "title": "Yamaha TW-E3A Earbuds Customize, Japan; April 2021 (01).jpg",
+      "title": "Earbuds.jpg",
       "mode": "PREMIUM_AUTO",
-      "score": 156,
+      "score": 158,
       "reason": "Highest-quality licensed candidate cleared APG relevance, landscape, provenance, false-positive and visual-context gates.",
-      "license": "CC BY 2.0",
-      "creator": "MIKI Yoshihito. (#mikiyoshihito)",
-      "sourcePage": "https://commons.wikimedia.org/wiki/File%3AYamaha%20TW-E3A%20Earbuds%20Customize%2C%20Japan%3B%20April%202021%20(01).jpg",
+      "license": "CC BY-SA 4.0",
+      "creator": "Gausanchennai",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File%3AEarbuds.jpg",
       "width": 1280,
-      "height": 720,
-      "bytes": 105371
+      "height": 960,
+      "bytes": 157698
     },
     {
       "slug": "electric-kettles",
@@ -448,7 +448,7 @@
       "sourcePage": "https://commons.wikimedia.org/wiki/File%3ABluetooth%20game%20controller.jpg",
       "width": 1280,
       "height": 853,
-      "bytes": 130956
+      "bytes": 131008
     },
     {
       "slug": "gaming-headsets",
@@ -490,7 +490,7 @@
       "sourcePage": "https://commons.wikimedia.org/wiki/File%3AClothes%20Steamer%20(51012791483).jpg",
       "width": 1280,
       "height": 960,
-      "bytes": 128907
+      "bytes": 128855
     },
     {
       "slug": "hair-dryers",
@@ -593,16 +593,16 @@
     {
       "slug": "juicers",
       "label": "Juicers",
-      "title": "Fresh orange juice preparation in a cozy kitchen with modern appliances and vibrant colors.jpg",
+      "title": "U.S. Air Force Senior Airman Megan Stanton, a medic with the 366th Medical Operations Squadron, juices fruits and vegetables at her home in Mountain Home, Idaho, July 17, 2013 130717-F-NW635-288.jpg",
       "mode": "PREMIUM_AUTO",
-      "score": 180,
+      "score": 154,
       "reason": "Highest-quality licensed candidate cleared APG relevance, landscape, provenance, false-positive and visual-context gates.",
-      "license": "CC BY 2.0",
-      "creator": "Shixart1985",
-      "sourcePage": "https://commons.wikimedia.org/wiki/File%3AFresh%20orange%20juice%20preparation%20in%20a%20cozy%20kitchen%20with%20modern%20appliances%20and%20vibrant%20colors.jpg",
+      "license": "Public domain",
+      "creator": "TSgt Samuel Morse",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File%3AU.S.%20Air%20Force%20Senior%20Airman%20Megan%20Stanton%2C%20a%20medic%20with%20the%20366th%20Medical%20Operations%20Squadron%2C%20juices%20fruits%20and%20vegetables%20at%20her%20home%20in%20Mountain%20Home%2C%20Idaho%2C%20July%2017%2C%202013%20130717-F-NW635-288.jpg",
       "width": 1280,
-      "height": 854,
-      "bytes": 118723
+      "height": 976,
+      "bytes": 200675
     },
     {
       "slug": "kitchen-mixers",
@@ -915,16 +915,16 @@
     {
       "slug": "slow-cookers",
       "label": "Slow cookers",
-      "title": "Ideal Slow Cooker @ Richloam General Store.jpg",
-      "mode": "PREMIUM_AUTO",
-      "score": 202,
-      "reason": "Highest-quality licensed candidate cleared APG relevance, landscape, provenance, false-positive and visual-context gates.",
-      "license": "CC BY-SA 4.0",
-      "creator": "DanTD",
-      "sourcePage": "https://commons.wikimedia.org/wiki/File%3AIdeal%20Slow%20Cooker%20%40%20Richloam%20General%20Store.jpg",
+      "title": "6 quart Crock Pot slow cooker.jpg",
+      "mode": "MANUAL_CURATED",
+      "score": null,
+      "reason": "Clean exact slow-cooker category image; replaces the old-fashioned historic-store result.",
+      "license": "CC BY 2.0",
+      "creator": "Your Best Digs",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File%3A6%20quart%20Crock%20Pot%20slow%20cooker.jpg",
       "width": 1280,
-      "height": 960,
-      "bytes": 200735
+      "height": 844,
+      "bytes": 108304
     },
     {
       "slug": "smart-displays",
@@ -980,7 +980,7 @@
       "sourcePage": "https://commons.wikimedia.org/wiki/File%3AWemo%20Mini%20Smart%20Plug%20(3755).jpg",
       "width": 1280,
       "height": 713,
-      "bytes": 67619
+      "bytes": 67671
     },
     {
       "slug": "smart-scales",
@@ -1022,7 +1022,7 @@
       "sourcePage": "https://commons.wikimedia.org/wiki/File%3AA%20child%20wears%20a%20smartwatch%20on%20her%20wrist%20while%20picking%20grass.jpg",
       "width": 1280,
       "height": 854,
-      "bytes": 102573
+      "bytes": 102625
     },
     {
       "slug": "soundbars",
