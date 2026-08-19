@@ -1,4 +1,5 @@
 # v45 premium category imagery materialisation trigger
+# post-main-sync validation trigger: 2026-08-19
 name: APG Category Editorial Research
 
 on:
