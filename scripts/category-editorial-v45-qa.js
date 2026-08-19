@@ -6,6 +6,7 @@ function fail(msg){throw new Error(msg)}
 const registry=require('../data/category-editorial-images-v45');
 const finalReview=require('../data/category-editorial-final-review-v45.json');
 const {categories}=require('../data');
+const PROVENANCE_RISK=/\b(?:EFTA\d*|Jeffrey Epstein|Epstein Files|Little Saint James|DOJ disclosures|FBI raid on Epstein|2019 FBI raid on Epstein|Palm Beach Police[^.]{0,120}Epstein)\b/i;
 const slugs=Object.keys(categories).sort(),keys=Object.keys(registry).sort();
 if(slugs.length!==90)fail(`Expected 90 maintained categories, found ${slugs.length}`);
 if(keys.length!==90)fail(`Expected 90 category hero records, found ${keys.length}`);
@@ -17,6 +18,7 @@ for(const slug of slugs){
   if(srcs.has(x.src))fail(`Duplicate local hero src ${x.src}`);srcs.add(x.src);
   if(!String(x.sourcePage||'').startsWith('https://commons.wikimedia.org/wiki/'))fail(`Non-Commons provenance for ${slug}`);
   if(sources.has(x.sourcePage))fail(`Duplicate Commons source across categories: ${x.sourcePage}`);sources.add(x.sourcePage);
+  if(PROVENANCE_RISK.test(`${x.sourceTitle||''} ${x.sourcePage||''} ${x.creator||''}`))fail(`Inappropriate investigative/evidence provenance for ${slug}: ${x.sourceTitle||x.sourcePage}`);
   if(!x.creator||!x.license||!x.licenseUrl)fail(`Incomplete attribution metadata for ${slug}`);
   if(!/cc0|public domain|cc by/i.test(x.license))fail(`Unexpected licence label for ${slug}: ${x.license}`);
   if(x.purpose!=='Decorative category-level editorial context only; not evidence of a specific reviewed or recommended APG product.')fail(`Editorial-purpose statement missing for ${slug}`);
@@ -25,6 +27,7 @@ for(const slug of slugs){
 }
 if(bytes>60000000)fail(`Editorial asset bundle exceeds 60 MB: ${bytes}`);
 if(finalReview.summary?.categories!==90||finalReview.categories?.length!==90)fail('Final review register is incomplete');
+for(const row of finalReview.categories||[])if(PROVENANCE_RISK.test(`${row.title||''} ${row.sourcePage||''} ${row.creator||''}`))fail(`Final review contains inappropriate provenance for ${row.slug}: ${row.title}`);
 if((finalReview.summary?.reviewRequired||0)>0&&process.env.ALLOW_REVIEW_REQUIRED!=='1')fail(`${finalReview.summary.reviewRequired} category hero assets still require explicit curation before release`);
 const pages=fs.readFileSync(path.join(root,'lib','pages.js'),'utf8');
 if(!pages.includes("categoryEditorialImages=require('../data/category-editorial-images-v45')"))fail('Category image registry not wired into pages');
