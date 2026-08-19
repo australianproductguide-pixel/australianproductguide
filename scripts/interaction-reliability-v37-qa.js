@@ -26,6 +26,7 @@ for(const required of [
 ]) assert(js.includes(required),`missing reliability contract: ${required}`);
 assert(!js.includes('event.preventDefault()'),'v37 must preserve native link/form navigation');
 for(const required of [
+  '.apg-alternative-reason{display:block;margin-top:6px}',
   '@media(max-width:760px)',
   'form[data-search-shell] .search-suggestions',
   'position:absolute!important',
@@ -34,12 +35,14 @@ for(const required of [
   'transform:none!important',
   '.search-suggestions[hidden]{display:none!important}',
   'button[type="submit"]{position:relative!important;z-index:2!important}'
-]) assert(css.includes(required),`missing mobile Search geometry contract: ${required}`);
+]) assert(css.includes(required),`missing v37 CSS contract: ${required}`);
 assert(!/position:\s*fixed/i.test(css),'v37 autocomplete guard must never make Search suggestions viewport-fixed');
-const sample='<!doctype html><html><head></head><body><main>APG</main></body></html>';
+const sample='<!doctype html><html><head></head><body><span style="display:block;margin-top:6px"><strong>Alternative</strong></span></body></html>';
 const injected=handler.inject(sample);
 assert(injected.includes('/assets/interaction-reliability-v37.css?v=37'));
 assert(injected.includes('/assets/interaction-reliability-v37.js?v=37'));
+assert(injected.includes('class="apg-alternative-reason"'),'inline alternative style must become a CSP-safe class');
+assert(!injected.includes('style="display:block;margin-top:6px"'),'CSP-blocked alternative inline style must be removed');
 assert.equal(handler.inject(injected),injected,'asset injection must be idempotent');
 
 const scoutBridge=fs.readFileSync(require.resolve('../public/assets/platform-cohesion-v26.js'),'utf8');
