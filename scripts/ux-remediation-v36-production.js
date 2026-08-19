@@ -12,15 +12,30 @@ fs.mkdirSync(OUT,{recursive:true});
 function fail(message){failures.push(message);console.error('V36_FAIL',message);}
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 
+async function navigate(page,url){
+  let lastError=null;
+  for(let attempt=1;attempt<=2;attempt++){
+    try{return await page.goto(url,{waitUntil:'domcontentloaded',timeout:60000});}
+    catch(error){
+      lastError=error;
+      if(attempt===2)break;
+      console.warn(`V36_NAV_RETRY attempt=${attempt} url=${url} reason=${error.message}`);
+      await page.goto('about:blank',{waitUntil:'domcontentloaded',timeout:10000}).catch(()=>{});
+      await sleep(750);
+    }
+  }
+  throw lastError;
+}
 async function prepare(page,width,height,path){
   await page.setViewport({width,height,deviceScaleFactor:1});
   await page.setCacheEnabled(false);
+  page.setDefaultNavigationTimeout(60000);
   const pref=encodeURIComponent(JSON.stringify({version:'2026-08-17-v1',analytics:false,updated_at:new Date().toISOString()}));
   await page.setCookie({name:'apg_cookie_preferences',value:pref,url:BASE_URL+'/',secure:true,sameSite:'Lax'});
   const errors=[];
   page.on('pageerror',error=>errors.push(error.message));
-  const response=await page.goto(BASE_URL+path,{waitUntil:'domcontentloaded',timeout:30000});
-  await page.waitForSelector('body[data-brand-conformity-v351="true"]',{timeout:15000});
+  const response=await navigate(page,BASE_URL+path);
+  await page.waitForSelector('body[data-brand-conformity-v351="true"]',{timeout:20000});
   await page.waitForNetworkIdle({idleTime:300,timeout:7000}).catch(()=>{});
   return {response,errors};
 }
