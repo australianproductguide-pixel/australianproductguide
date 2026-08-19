@@ -4,7 +4,8 @@ const runtime=require('../lib/decision-lab-resilience-v50-runtime');
 const api=require('../api/index');
 const engine=require('../lib/decision-engine-v4');
 
-assert.equal(runtime.PATCH,'decision-lab-p0-2026-08-20-soft-nav');
+assert.equal(runtime.PATCH,'decision-lab-p0-2026-08-20-soft-nav-r2');
+assert.equal(runtime.VERSION,'50.1');
 assert.equal(runtime.ENGINE,'decision-engine-v4');
 assert.equal(api.PATCH,runtime.PATCH,'v50 must be the outer API runtime');
 new Function(runtime.clientJs);
@@ -15,6 +16,11 @@ for(const contract of [
   'event.stopImmediatePropagation()',
   'new AbortController()',
   'DEADLINE_MS=10000',
+  'deadlineExpired=true;controller.abort()',
+  "timeoutError.name='APGDecisionTimeout'",
+  "setDecisionState('timeout')",
+  "setDecisionState('error')",
+  "setDecisionState('validation')",
   "fetch(target.href,{method:'GET'",
   "headers:{Accept:'text/html','X-APG-Decision-Soft-Navigation':'1'}",
   "main.querySelector('.decision-result')",
@@ -31,7 +37,7 @@ assert(!runtime.clientJs.includes("data.get('q')"),'Decision Lab telemetry must 
 
 const sample='<!doctype html><html><head><script src="/assets/app.js?v=abc" defer></script></head><body><main id="main"><form class="decision-form" method="get" data-busy-form><button type="submit">Build my shortlist</button></form></main></body></html>';
 const injected=runtime.inject(sample);
-assert(injected.includes('/assets/decision-lab-resilience-v50.js?v=50'),'v50 client asset missing');
+assert(injected.includes('/assets/decision-lab-resilience-v50.js?v=50.1'),'v50.1 client asset missing');
 assert(injected.indexOf('/assets/decision-lab-resilience-v50.js')<injected.indexOf('/assets/app.js'),'v50 must register before legacy app.js');
 assert.equal((injected.match(/decision-lab-resilience-v50\.js/g)||[]).length,1,'v50 asset must be injected once');
 
@@ -84,4 +90,4 @@ assert(!shredderIntent.positiveTags.includes('anc'),'short alias ANC must not be
 const balancedCoffee=engine.interpretQuery('Coffee machine with balanced controls for flat whites.',{category:'coffee-machines'});
 assert(!balancedCoffee.positiveTags.includes('anc'),'ANC must not be inferred from a substring inside an unrelated word');
 
-console.log(`Decision Lab v50 source QA passed: ${cases.length} supported adversarial combinations + unsupported-category and phrase-boundary fallbacks + bounded soft-navigation contracts`);
+console.log(`Decision Lab v50.1 source QA passed: ${cases.length} supported adversarial combinations + unsupported-category and phrase-boundary fallbacks + explicit bounded timeout recovery contracts`);
