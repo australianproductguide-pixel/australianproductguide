@@ -1,0 +1,25 @@
+/* Australian Product Guide Brand System v46 — maintained research proof exception
+ * Owner direction 20 Aug 2026: the homepage "Maintained Australian research"
+ * proof banner deliberately retains APG's yellow heritage treatment with dark text.
+ * Yellow is restricted to this research-proof surface; it is not a general APG UI colour.
+ */
+body[data-brand-system-v46="true"] .apg-proof-band-v19,
+body[data-brand-system-v46="true"] .apg-proof-band-v20{
+  background:linear-gradient(90deg,#FFD65B,#F4BB45 62%,#F2B348)!important;
+  border-top:1px solid #E0A630!important;
+  border-bottom:1px solid #D89C24!important;
+  color:#0F172A!important;
+}
+body[data-brand-system-v46="true"] .apg-proof-band-v19::before,
+body[data-brand-system-v46="true"] .apg-proof-band-v19::after,
+body[data-brand-system-v46="true"] .apg-proof-band-v20::before,
+body[data-brand-system-v46="true"] .apg-proof-band-v20::after{background:rgba(255,255,255,.17)!important}
+body[data-brand-system-v46="true"] .apg-proof-spark-v19{background:#FFF7DA!important;border-color:rgba(15,23,42,.13)!important}
+body[data-brand-system-v46="true"] .apg-proof-spark-v19 svg{color:#2563EB!important}
+body[data-brand-system-v46="true"] .apg-proof-copy-v19,
+body[data-brand-system-v46="true"] .apg-proof-copy-v19 strong,
+body[data-brand-system-v46="true"] .apg-proof-sub-v19,
+body[data-brand-system-v46="true"] .apg-proof-kicker-v20,
+body[data-brand-system-v46="true"] .apg-proof-main-v20>strong,
+body[data-brand-system-v46="true"] .apg-proof-trust-v20{color:#0F172A!important;text-shadow:none!important}
+/* Counter tiles intentionally remain black with white numerals via v19/v20 source CSS. */
