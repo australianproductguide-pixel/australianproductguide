@@ -5,7 +5,9 @@ const handler=require('../lib/interaction-reliability-v37');
 
 assert.equal(handler.VERSION,'37');
 assert.equal(handler.ASSET_PATH,'/assets/interaction-reliability-v37.js');
+assert.equal(handler.CSS_PATH,'/assets/interaction-reliability-v37.css');
 const js=handler.clientJs;
+const css=handler.css;
 new Function(js);
 for(const required of [
   'form[data-search-shell]',
@@ -16,14 +18,27 @@ for(const required of [
   "localStorage.getItem('apgCompare')",
   "url.pathname!=='/api/account/scout'",
   'SCOUT_TIMEOUT_MS=15000',
+  'closeSearchSuggestions(form)',
   'window.addEventListener(\'submit\',guardCoreSubmit,true)',
   'window.addEventListener(\'click\',guardCoreLink,true)',
   'location.assign(target.href)',
   'window.addEventListener(\'pageshow\',restoreAfterHistory)'
 ]) assert(js.includes(required),`missing reliability contract: ${required}`);
 assert(!js.includes('event.preventDefault()'),'v37 must preserve native link/form navigation');
+for(const required of [
+  '@media(max-width:760px)',
+  'form[data-search-shell] .search-suggestions',
+  'position:absolute!important',
+  'top:calc(100% + 8px)!important',
+  'bottom:auto!important',
+  'transform:none!important',
+  '.search-suggestions[hidden]{display:none!important}',
+  'button[type="submit"]{position:relative!important;z-index:2!important}'
+]) assert(css.includes(required),`missing mobile Search geometry contract: ${required}`);
+assert(!/position:\s*fixed/i.test(css),'v37 autocomplete guard must never make Search suggestions viewport-fixed');
 const sample='<!doctype html><html><head></head><body><main>APG</main></body></html>';
 const injected=handler.inject(sample);
+assert(injected.includes('/assets/interaction-reliability-v37.css?v=37'));
 assert(injected.includes('/assets/interaction-reliability-v37.js?v=37'));
 assert.equal(handler.inject(injected),injected,'asset injection must be idempotent');
 
