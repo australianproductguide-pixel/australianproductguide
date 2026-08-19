@@ -5,6 +5,7 @@ const registry=require('../data/amazon-destinations-v39');
 const seasonal=require('../data/amazon-seasonal-events-v39');
 const shopping=require('../lib/amazon-shopping-discovery-v39');
 const shell=require('../lib/amazon-shopping-shell-v39');
+const finalShopping=require('../lib/amazon-shopping-final-v39');
 const scout=require('../lib/scout-amazon-v5');
 const routes=require('../lib/routes');
 const associates=require('../lib/amazon-associates');
@@ -48,6 +49,18 @@ assert(shellOut.includes('data-shopping-mega'),'Mega-menu shopping discovery mis
 assert(shellOut.includes('data-mobile-shopping'),'Mobile Deals section missing');
 assert(shellOut.includes('data-footer-shopping'),'Footer shopping discovery missing');
 
+const finalBase='<html><body>'+shellInput+'<main><p>Final runtime content</p></main></body></html>';
+const finalHome=finalShopping.finalShoppingHtml(finalBase,{url:'/'});
+assert(finalHome.includes('apg-shopping-home'),'Final response layer must preserve homepage shopping discovery');
+assert.strictEqual((finalHome.match(/apg-shopping-home/g)||[]).length,1,'Homepage shopping discovery must be idempotent');
+const finalCategory=finalShopping.finalShoppingHtml(finalBase,{url:'/categories/coffee-machines/'});
+assert(finalCategory.includes('apg-category-shopping'),'Final response layer must preserve category shopping discovery');
+assert(finalCategory.includes('k=coffee+machines'),'Final category route must remain product-specific');
+assert(finalCategory.includes('tag=auproductguid-22'),'Final category route lost Associates tag');
+const finalSearch=finalShopping.finalShoppingHtml(finalBase,{url:'/search/?q=amazon+deals'});
+assert(finalSearch.includes('apg-search-shopping'),'Final response layer must preserve search shopping intent');
+assert(finalSearch.includes('data-affiliate-destination="todayDeals"'),'Final search route lost governed destination');
+
 assert.strictEqual(scout.discoveryRecord('Are there any Amazon deals?').key,'todayDeals');
 assert.strictEqual(scout.discoveryRecord('Show me Amazon Best Sellers').key,'bestSellers');
 assert.strictEqual(scout.discoveryRecord('Where is Subscribe & Save?').key,'subscribeSave');
@@ -56,4 +69,4 @@ assert.strictEqual(scout.discoveryRecord('ordinary product advice'),null);
 assert(associates.amazonClientJs.includes('amazon_shopping_click'),'Shopping click analytics event missing');
 assert(associates.amazonClientJs.includes('destination_key'),'Shopping analytics destination dimension missing');
 
-console.log(`amazon-shopping-discovery-v39 QA passed: ${registry.activeDestinations().length} active governed destinations, ${Object.keys(registry.categoryTerms).length} category routes, zero live seasonal events.`);
+console.log(`amazon-shopping-discovery-v39 QA passed: ${registry.activeDestinations().length} active governed destinations, ${Object.keys(registry.categoryTerms).length} category routes, zero live seasonal events, final runtime persistence verified.`);
