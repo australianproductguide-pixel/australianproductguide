@@ -19,6 +19,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: apg-category-editorial-research-v42
+  cancel-in-progress: true
+
 jobs:
   research:
     runs-on: ubuntu-latest
@@ -32,14 +36,30 @@ jobs:
           node-version: '22'
       - name: Research CC0 category imagery
         run: node scripts/category-editorial-research-v42.js
-      - name: Commit candidate register to research branch
+      - name: Publish candidate register to research branch
         run: |
+          set -euo pipefail
+          branch='apg-category-editorial-research-v42-main'
+          candidate='data/category-editorial-candidates-v42.json'
+          snapshot="$(mktemp)"
+          cp "$candidate" "$snapshot"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/category-editorial-candidates-v42.json
-          if git diff --cached --quiet; then
-            echo "Candidate register unchanged"
-          else
+          for attempt in 1 2 3; do
+            git fetch origin "$branch"
+            git reset --hard "origin/$branch"
+            cp "$snapshot" "$candidate"
+            git add "$candidate"
+            if git diff --cached --quiet; then
+              echo "Candidate register unchanged"
+              exit 0
+            fi
             git commit -m "Generate category editorial image candidates v42 [skip ci]"
-            git push origin HEAD:apg-category-editorial-research-v42-main
-          fi
+            if git push origin "HEAD:$branch"; then
+              echo "Candidate register published on attempt $attempt"
+              exit 0
+            fi
+            echo "Research branch advanced during publish; retrying from the latest remote head"
+          done
+          echo 'Unable to publish the candidate register after 3 safe retries'
+          exit 1
