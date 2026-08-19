@@ -1,0 +1,39 @@
+/* Australian Product Guide — UX Remediation v36
+   Responsive Scout launcher rules aligned with APG's 920px mobile-navigation breakpoint.
+   Inner pages use the explicit Ask Scout mobile-menu action instead of a fixed overlay;
+   the homepage retains a compact direct launcher that never competes with the open menu. */
+
+@media (max-width:920px){
+  /* Inner shopping/research pages already expose Ask Scout in the mobile navigation.
+     Removing the fixed launcher here prevents it obscuring search suggestions, product
+     controls, comparison content and other decision surfaces. */
+  body[data-brand-conformity-v351="true"]:not([data-v26-page="home"]) .apg-assistant-launcher{
+    display:none!important;
+  }
+
+  /* Preserve direct one-tap Scout access on the homepage without the oversized tablet pill. */
+  body[data-brand-conformity-v351="true"][data-v26-page="home"] .apg-assistant-launcher{
+    width:56px!important;
+    height:56px!important;
+    min-width:56px!important;
+    max-width:56px!important;
+    min-height:56px!important;
+    padding:6px!important;
+    border-radius:50%!important;
+    right:14px!important;
+    bottom:max(14px,env(safe-area-inset-bottom))!important;
+    justify-content:center!important;
+  }
+  body[data-brand-conformity-v351="true"][data-v26-page="home"] .apg-assistant-launcher-copy{
+    display:none!important;
+  }
+  body[data-brand-conformity-v351="true"][data-v26-page="home"] .apg-assistant-launcher-icon{
+    margin:0!important;
+  }
+
+  /* The mobile menu has its own first-class Ask Scout action. Do not leave the floating
+     launcher visible behind the open navigation sheet. */
+  body[data-brand-conformity-v351="true"][data-v26-page="home"]:has(#mobileNav:not([hidden])) .apg-assistant-launcher{
+    display:none!important;
+  }
+}
