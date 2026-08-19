@@ -8,6 +8,7 @@ const root=path.join(__dirname,'..');
 const css=fs.readFileSync(path.join(root,'public/assets/brand-system-v46.css'),'utf8');
 const commerceCss=fs.readFileSync(path.join(root,'public/assets/brand-system-v46-commerce.css'),'utf8');
 const imageryCss=fs.readFileSync(path.join(root,'public/assets/brand-system-v46-imagery.css'),'utf8');
+const proofCss=fs.readFileSync(path.join(root,'public/assets/brand-system-v46-research-proof.css'),'utf8');
 const api=fs.readFileSync(path.join(root,'api/index.js'),'utf8');
 const wrapper=fs.readFileSync(path.join(root,'lib/brand-system-v46.js'),'utf8');
 
@@ -15,6 +16,8 @@ assert.equal(brand.VERSION,'46');
 assert.equal(brand.CSS_PATH,'/assets/brand-system-v46.css');
 assert.equal(brand.COMMERCE_CSS_PATH,'/assets/brand-system-v46-commerce.css');
 assert.equal(brand.IMAGERY_CSS_PATH,'/assets/brand-system-v46-imagery.css');
+assert.equal(brand.RESEARCH_PROOF_CSS_PATH,'/assets/brand-system-v46-research-proof.css');
+assert.equal(brand.RESEARCH_PROOF_VERSION,'46.1');
 assert(api.includes("require('../lib/brand-system-v46')"),'api/index.js must make v46 the final presentation layer');
 assert(wrapper.includes("require('./amazon-shopping-creative-final-v41')"),'v46 must preserve current Amazon shopping creative v41 downstream');
 
@@ -24,7 +27,6 @@ assert(css.includes('Inter,ui-sans-serif'),'Inter must remain the first-choice A
 for(const selector of [
   '.global-search','.search-suggestions','.suggest-item','.suggest-thumb',
   '.apg-account-shell','.apg-account-head','.apg-profile-hero-v24','.apg-profile-tabs-v24','.apg-verification-v24',
-  '.apg-proof-band-v19','.apg-proof-band-v20',
   '.apg-rv-v43','.apg-rv-card-v43','.apg-rv-compare-v43',
   '.apg-assistant-launcher','.apg-assistant-head','.scout-v5-bubble','.scout-v5-action.primary',
   '.apg-nav-v8 .apg-deals-link','.apg-mobile-account-v20','.apg-footer-v11',
@@ -38,12 +40,17 @@ for(const selector of [
   '.category-hero-media','.category-hero-media>img','.category-hero-media-shade','.category-hero-media-overlay',
   '.category-hero-photo-label','.category-hero-media-overlay strong','.category-hero-media figcaption','.category-hero-media figcaption a'
 ])assert(imageryCss.includes(selector),`v46 imagery reconciliation missing ${selector}`);
+for(const selector of ['.apg-proof-band-v19','.apg-proof-band-v20','.apg-proof-kicker-v20','.apg-proof-main-v20>strong','.apg-proof-trust-v20'])assert(proofCss.includes(selector),`research-proof exception missing ${selector}`);
 
 for(const retired of ['#082735','#087c76','#075e5a','#0b6f70','#0b3445','#08786f','#ffd95d','#f6bd45','#f3b548','#f4b548']){
   assert(!css.toLowerCase().includes(retired),`retired historical brand colour leaked into v46: ${retired}`);
   assert(!commerceCss.toLowerCase().includes(retired),`retired historical brand colour leaked into v46 commerce: ${retired}`);
   assert(!imageryCss.toLowerCase().includes(retired),`retired historical brand colour leaked into v46 imagery: ${retired}`);
+  assert(!proofCss.toLowerCase().includes(retired),`retired non-approved proof colour leaked into research-proof exception: ${retired}`);
 }
+for(const approved of ['#FFD65B','#F4BB45','#F2B348','#E0A630','#D89C24'])assert(proofCss.includes(approved),`approved maintained-research heritage colour missing: ${approved}`);
+assert(proofCss.includes('color:#0F172A!important'),'maintained-research proof text must remain dark APG navy/black for contrast');
+assert(proofCss.includes('Yellow is restricted to this research-proof surface'),'yellow exception must remain explicitly scoped and documented');
 
 const greenOccurrences=(css.match(/#10B981/gi)||[]).length;
 assert.equal(greenOccurrences,1,'master APG green should be declared once and used through semantic success states rather than as a general skin');
@@ -57,6 +64,8 @@ assert(once.includes('data-brand-system-v46="true"'),'v46 body marker missing');
 assert(once.includes('/assets/brand-system-v46.css?v=46'),'v46 master stylesheet link missing');
 assert(once.includes('/assets/brand-system-v46-commerce.css?v=46'),'v46 shopping stylesheet link missing');
 assert(once.includes('/assets/brand-system-v46-imagery.css?v=46'),'v46 imagery stylesheet link missing');
+assert(once.includes('/assets/brand-system-v46-research-proof.css?v=46.1'),'v46 research-proof exception stylesheet link missing');
+assert(once.indexOf('/assets/brand-system-v46-research-proof.css?v=46.1')>once.indexOf('/assets/brand-system-v46-imagery.css?v=46'),'research-proof exception must load last');
 assert.equal(twice,once,'v46 HTML injection must be idempotent');
 
 function rgb(hex){const h=hex.replace('#','');return[0,2,4].map(i=>parseInt(h.slice(i,i+2),16));}
@@ -66,7 +75,8 @@ for(const [fg,bg,label,min] of [
   ['#0F172A','#FFFFFF','navy on white',7],
   ['#FFFFFF','#2563EB','white on APG blue',4.5],
   ['#64748B','#FFFFFF','slate on white',4.5],
-  ['#FFFFFF','#0F172A','white on APG navy',7]
+  ['#FFFFFF','#0F172A','white on APG navy',7],
+  ['#0F172A','#F2B348','dark text on maintained-research gold',7]
 ])assert(contrast(fg,bg)>=min,`${label} contrast ${contrast(fg,bg).toFixed(2)} is below ${min}:1`);
 
 assert(css.includes('rgba(15,23,42,.94)'),'generic editorial-image hero must include a high-contrast navy scrim');
@@ -79,4 +89,4 @@ assert(css.includes('@media(max-width:640px)'),'v46 must explicitly govern compa
 assert(commerceCss.includes('@media(max-width:820px)'),'shopping discovery must retain responsive v46 coverage');
 assert(imageryCss.includes('@media(max-width:920px)')&&imageryCss.includes('@media(max-width:640px)'),'category imagery must retain tablet/mobile contrast governance');
 
-console.log('APG Brand System v46 source QA passed: palette=PASS typography=PASS account=PASS search=PASS scout=PASS research=PASS shopping-v39=PASS shopping-v41=PASS imagery=PASS contrast=PASS responsive=PASS');
+console.log('APG Brand System v46 source QA passed: palette=PASS typography=PASS account=PASS search=PASS scout=PASS research=PASS shopping-v39=PASS shopping-v41=PASS imagery=PASS maintained-research-yellow-exception=PASS contrast=PASS responsive=PASS');
