@@ -1,0 +1,52 @@
+'use strict';
+const assert=require('node:assert/strict');
+const catalogue=require('../lib/catalogue-intelligence-v48');
+const runtime=require('../lib/catalogue-decision-v48-runtime');
+const graph=require('../lib/product-intelligence-v48');
+const finalLayer=require('../lib/catalogue-intelligence-v48-final');
+const observability=require('../lib/intelligence-observability-v27');
+const images=require('../data/product-images');
+const {products,categories}=require('../data');
+
+let passed=0;
+function check(name,fn){try{fn();passed++;console.log('PASS',name);}catch(err){console.error('FAIL',name,'-',err.message);process.exitCode=1;}}
+
+check('catalogue truth remains 482 products across 90 categories',()=>{assert.equal(products.length,482);assert.equal(Object.keys(categories).length,90);assert.equal(new Set(products.map(p=>p.slug)).size,482);});
+check('all 482 products receive the same complete intelligence contract',()=>{
+  const summary=catalogue.summary();assert.equal(summary.catalogue.profiles,482);assert.equal(summary.catalogue.contractCoveragePct,100);
+  for(const p of products){const x=catalogue.profileFor(p);assert.ok(x?.completeness?.contractComplete,p.slug);for(const key of ['identity','decision','evidence','commerce','imagery','completeness'])assert.ok(x[key],`${p.slug}: missing ${key}`);assert.equal(x.decision.commercialRecommendationWeight,0);assert.equal(x.commerce.commercialRecommendationWeight,0);}
+});
+check('uniform contract does not falsely upgrade starter evidence',()=>{
+  const starter=products.filter(p=>!Object.keys(p.factEvidence||{}).length);assert.ok(starter.length>0);
+  for(const p of starter.slice(0,100)){const x=catalogue.profileFor(p);assert.notEqual(x.evidence.level,'fact-verified',`${p.slug} falsely upgraded to fact verified`);}
+  assert.equal(catalogue.summary().governance.equalEvidenceClaim,false);
+});
+check('all 90 maintained categories are represented completely in decision candidate pools',()=>{
+  for(const [slug,c] of Object.entries(categories)){const out=runtime.rankDecision('',{category:slug});assert.equal(out.ranked.length,c.products.length,`${slug}: candidate pool mismatch`);assert.ok(out.ranked.length>0,`${slug}: empty decision pool`);for(const row of out.ranked)assert.equal(row.p.category,slug,`${slug}: cross-category candidate leak`);}
+});
+check('v48 expands soft relevance beyond the finite v4 alias list',()=>{
+  const out=runtime.rankDecision('USB microphone for a desk setup',{category:'microphones'});assert.ok(out.catalogueIntelligence.genericSignals.includes('usb'),'USB should be recognised from maintained catalogue classifications');assert.ok(out.ranked.some(r=>(r.catalogueSignalsMatched||[]).includes('usb')),'at least one maintained microphone should carry the USB match');assert.equal(out.ranked[0].eligibility,'eligible');
+});
+check('every product intelligence node exposes profile and maintained alternatives',()=>{
+  for(const p of products){const n=graph.knowledgeNode(p.slug);assert.ok(n?.catalogueIntelligence,p.slug);assert.ok(n.catalogueIntelligence.alternatives?.comparableCount>=1,`${p.slug}: no maintained comparison pathway`);}
+});
+check('hard-constraint benchmark remains unchanged by catalogue soft relevance',()=>{
+  const d=runtime.publicDecision('TV must be exactly 75 inches for a bright living room, sport and Netflix under $2500',{category:'televisions'}),top=d.results?.[0];assert.equal(top?.slug,'hisense-75u6sau-75-inch-u6s-uled-miniled-tv');assert.equal(top?.hardConstraintStatus,'eligible');assert.equal(top?.criterionCoverage?.coveragePct,100);assert.equal(d.commercialRecommendationWeight,0);assert.equal(d.catalogueIntelligenceVersion,runtime.VERSION);
+});
+check('public decisions expose catalogue evidence retailer and image context',()=>{
+  const d=runtime.publicDecision('ergonomic office chair',{category:'office-chairs'});assert.ok(d.results?.length);for(const row of d.results){assert.ok(row.catalogueIntelligence);assert.ok(row.catalogueIntelligence.evidenceLevel);assert.equal(row.catalogueIntelligence.commercialRecommendationWeight,0);assert.ok(typeof row.catalogueIntelligence.currentExactAustralianDestinations==='number');assert.ok(row.catalogueIntelligence.productPhotographyStatus);}
+});
+check('current genuine product photography state remains rights-gated rather than fabricated',()=>{
+  const actual=products.filter(p=>{const r=images.imageFor(p);return !!r&&r.imageStatus==='verified'&&r.imageVerified&&images.validationErrors(p,r).length===0;}).length;const summary=catalogue.summary();assert.equal(summary.imagery.productsWithVerifiedPhotography,actual);assert.equal(summary.imagery.productsAwaitingAuthorisedPhotography,482-actual);
+});
+check('existing verified Australian retailer floor is preserved while 482-product gaps stay explicit',()=>{
+  const r=observability.retailerSnapshot(),s=catalogue.summary();assert.ok(r.exactOfferCount>=57);assert.ok(r.productsWithExactOffers>=51);assert.ok(r.verifiedRetailers>=23);assert.equal(s.commerce.exactAustralianDestinationCount,r.exactOfferCount);assert.ok(s.commerce.productsWithCurrentExactAustralianDestination<482,'must not falsely claim retailer completion');
+});
+check('all product pages receive the same v48 intelligence surface',()=>{
+  const shell='<!doctype html><html><head></head><body><main><h1>APG</h1></main></body></html>';
+  for(const slug of ['sony-wh-1000xm6','steelcase-series-2','r-de-nt-usb','anker-nano-power-bank-10000mah-30w','breville-the-searing-slow-cooker-lsc650']){const html=finalLayer.transform(shell,new URL(`https://australianproductguide.au/products/${slug}/`));assert.match(html,/data-catalogue-intelligence-v48="true"/);assert.match(html,/Catalogue Intelligence v48/);assert.match(html,/Evidence basis/);assert.match(html,/Australian retailer intelligence/);assert.match(html,/Product photography/);}
+});
+check('v48 release snapshot certifies contract coverage without claiming equal evidence',()=>{const x=finalLayer.snapshot();assert.equal(x.catalogue.products,482);assert.equal(x.catalogue.profiles,482);assert.equal(x.catalogue.contractCoveragePct,100);assert.equal(x.catalogue.categories,90);assert.equal(x.governance.equalEvidenceClaim,false);assert.equal(x.releaseGate.pass,true);assert.equal(x.decision.commercialRecommendationWeight,0);});
+
+if(process.exitCode)process.exit(process.exitCode);
+console.log(`CATALOGUE_INTELLIGENCE_V48_QA=${passed}_CHECKS_PASS`);
