@@ -3,6 +3,7 @@
 const assert=require('assert');
 const research=require('../lib/research-view-v44');
 const {searchSite}=require('../lib/search');
+const {categoryFromQuery}=require('../lib/category-match');
 const {products}=require('../data');
 
 const bySlug=new Map(products.map(p=>[p.slug,p]));
@@ -33,6 +34,32 @@ for(const query of ['Sony','Philips','robot vacuum for pet hair','TV under $2,00
   const payload=research.researchPayload(query);
   assert.notStrictEqual(payload.modelScoped,true,`${query}: broad/non-model query must not be forced into a model category`);
   report.push({query,modelScoped:false,mode:payload.mode,results:(payload.results||[]).slice(0,3).map(x=>x.slug)});
+}
+
+// Consumer typo regression: category parsing must never treat `phone` inside
+// `headphonez` as a Smartphones intent. One-edit recovery should resolve the
+// maintained `headphones` alias and keep the Research View like-for-like.
+{
+  const match=categoryFromQuery('headphonez');
+  const lexical=searchSite('headphonez');
+  const payload=research.researchPayload('headphonez');
+  assert.strictEqual(match?.slug,'wireless-headphones','headphonez: typo matcher should resolve Wireless headphones');
+  assert.strictEqual(payload.decisionState?.category,'wireless-headphones','headphonez: decision state must not resolve to Smartphones');
+  assert(lexical.products?.length,'headphonez: expected maintained headphone results');
+  assert(payload.results?.length,'headphonez: expected Research View results');
+  for(const product of lexical.products.slice(0,12))assert.strictEqual(product.category,'wireless-headphones',`headphonez: cross-category lexical result leaked: ${product.slug}`);
+  for(const result of payload.results)assert.strictEqual(bySlug.get(result.slug)?.category,'wireless-headphones',`headphonez: cross-category Research View result leaked: ${result.slug}`);
+  assert(!payload.results.some(result=>bySlug.get(result.slug)?.category==='smartphones'),'headphonez: smartphone result must never survive typo recovery');
+  report.push({query:'headphonez',category:payload.decisionState?.category,match:match?.match,results:payload.results.map(x=>x.slug)});
+}
+
+// Preserve legitimate whole-token category behaviour while removing substring collisions.
+for(const [query,expected] of [['headphones','wireless-headphones'],['smartphone','smartphones']]){
+  const match=categoryFromQuery(query);
+  const payload=research.researchPayload(query);
+  assert.strictEqual(match?.slug,expected,`${query}: expected ${expected} category`);
+  assert.strictEqual(payload.decisionState?.category,expected,`${query}: Decision Intelligence category regression`);
+  report.push({query,category:expected,match:match?.match,results:(payload.results||[]).slice(0,3).map(x=>x.slug)});
 }
 
 const comparison=research.researchPayload('Samsung vs LG');
