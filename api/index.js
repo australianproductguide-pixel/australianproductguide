@@ -6,10 +6,10 @@
 // Brand System v46 remains the presentation foundation across every route and breakpoint.
 // Consumer Intelligence v47 remains the hard/soft decision-continuity and explainability foundation.
 // Catalogue Intelligence v48 remains the universal 482-product contract and soft-relevance layer.
-// Catalogue Intelligence v49 adds the strict strong-product evidence benchmark and source-backed enrichment pass.
+// Catalogue Intelligence v49 adds the strict strong-product evidence benchmark and source-backed enrichment passes.
 require('../lib/scout-concierge-v5-runtime');
 require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/catalogue-intelligence-v49-pass6-runtime');
+module.exports=require('../lib/catalogue-intelligence-v49-pass7-runtime');
