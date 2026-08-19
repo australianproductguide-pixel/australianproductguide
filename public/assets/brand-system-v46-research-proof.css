@@ -16,10 +16,20 @@ body[data-brand-system-v46="true"] .apg-proof-band-v20::before,
 body[data-brand-system-v46="true"] .apg-proof-band-v20::after{background:rgba(255,255,255,.17)!important}
 body[data-brand-system-v46="true"] .apg-proof-spark-v19{background:#FFF7DA!important;border-color:rgba(15,23,42,.13)!important}
 body[data-brand-system-v46="true"] .apg-proof-spark-v19 svg{color:#2563EB!important}
-body[data-brand-system-v46="true"] .apg-proof-copy-v19,
-body[data-brand-system-v46="true"] .apg-proof-copy-v19 strong,
-body[data-brand-system-v46="true"] .apg-proof-sub-v19,
-body[data-brand-system-v46="true"] .apg-proof-kicker-v20,
-body[data-brand-system-v46="true"] .apg-proof-main-v20>strong,
-body[data-brand-system-v46="true"] .apg-proof-trust-v20{color:#0F172A!important;text-shadow:none!important}
+body[data-brand-system-v46="true"] .apg-proof-band-v19 .apg-proof-copy-v19,
+body[data-brand-system-v46="true"] .apg-proof-band-v19 .apg-proof-copy-v19 strong,
+body[data-brand-system-v46="true"] .apg-proof-band-v19 .apg-proof-sub-v19,
+body[data-brand-system-v46="true"] .apg-proof-band-v20 .apg-proof-kicker-v20,
+body[data-brand-system-v46="true"] .apg-proof-band-v20 .apg-proof-main-v20>strong,
+body[data-brand-system-v46="true"] .apg-proof-band-v20 .apg-proof-trust-v20{
+  color:#0F172A!important;
+  text-shadow:none!important;
+}
+/* The v32.3 independence-copy rule has three selector components and !important.
+ * Keep this final rule equally/more specific so the latest owner-approved dark text wins. */
+body[data-brand-system-v46="true"][data-brand-fidelity-v323="true"] .apg-proof-band-v20 .apg-proof-trust-v20{
+  color:#0F172A!important;
+  font-weight:800!important;
+  text-shadow:none!important;
+}
 /* Counter tiles intentionally remain black with white numerals via v19/v20 source CSS. */
