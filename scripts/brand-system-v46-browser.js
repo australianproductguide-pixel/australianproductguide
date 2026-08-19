@@ -24,16 +24,20 @@ async function assertContrast(page,fgSelector,bgSelector,min,label){const pair=a
 
 (async()=>{
   assert(fs.existsSync(CHROME),`Chrome executable not found: ${CHROME}`);
-  const browser=await puppeteer.launch({headless:true,executablePath:CHROME,args:['--no-sandbox','--disable-setuid-sandbox']});
+  const browser=await puppeteer.launch({headless:true,executablePath:CHROME,protocolTimeout:240000,args:['--no-sandbox','--disable-setuid-sandbox']});
   const page=await browser.newPage();
   await page.setViewport({width:1440,height:950});
 
-  await check('global v46 marker, typography and primary action',async()=>{
+  await check('global v46 marker, typography, primary action and yellow research-proof exception',async()=>{
     await goto(page,'/');
     const body=await style(page,'body');assert(/Inter/i.test(body.fontFamily),`Inter is not first-choice in computed font stack: ${body.fontFamily}`);
     const button=await style(page,'main .button:not(.secondary)');assert(button.backgroundColor==='rgb(37, 99, 235)',`primary action is not APG blue: ${button.backgroundColor}`);assert(button.color==='rgb(255, 255, 255)',`primary action text is not white: ${button.color}`);
     await assertContrast(page,'main .button:not(.secondary)','main .button:not(.secondary)',4.5,'primary action');
     const deals=await style(page,'.apg-nav-v8 .apg-deals-link');assert(!/255, 247, 232|138, 93, 25/.test(deals.backgroundColor+' '+deals.color),`Deals nav retained amber skin ${JSON.stringify(deals)}`);
+    const proofSelector=(await page.$('.apg-proof-band-v20'))?'.apg-proof-band-v20':'.apg-proof-band-v19';
+    const proof=await style(page,proofSelector);assert(/rgb\(255, 214, 91\)|rgb\(244, 187, 69\)|rgb\(242, 179, 72\)/.test(proof.backgroundImage),`maintained-research proof banner is not the approved yellow gradient: ${proof.backgroundImage}`);assert(proof.color==='rgb(15, 23, 42)',`maintained-research proof banner text is not dark: ${proof.color}`);
+    const proofText=await page.$(`${proofSelector} .apg-proof-main-v20>strong,${proofSelector} .apg-proof-copy-v19 strong`);assert(proofText,'maintained-research proof text missing');const proofTextColor=await proofText.evaluate(el=>getComputedStyle(el).color);assert(proofTextColor==='rgb(15, 23, 42)',`maintained-research proof copy is not dark: ${proofTextColor}`);
+    const proofTrust=await page.$(`${proofSelector} .apg-proof-trust-v20,${proofSelector} .apg-proof-sub-v19`);if(proofTrust){const c=await proofTrust.evaluate(el=>getComputedStyle(el).color);assert(c==='rgb(15, 23, 42)',`maintained-research trust copy is not dark: ${c}`);}
     await assertNoRetired(page,'.site-header *,main *','homepage core surfaces');
     const creative=await page.$('.apg-amz-v41-card');assert(creative,'Amazon creative v41 homepage card missing');
     const creativeStyle=await style(page,'.apg-amz-v41-card');assert(/rgb\(255, 255, 255\)|rgb\(239, 246, 255\)/.test(creativeStyle.backgroundImage),`v41 creative card is not governed by v46: ${creativeStyle.backgroundImage}`);
