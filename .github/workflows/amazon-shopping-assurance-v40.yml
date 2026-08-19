@@ -3,6 +3,8 @@ name: APG Amazon Shopping Assurance v40
 on:
   push:
     branches: [main, apg-amazon-shopping-assurance-v40]
+  pull_request:
+    branches: [main]
   schedule:
     - cron: '20 21 * * *'
   workflow_dispatch:
