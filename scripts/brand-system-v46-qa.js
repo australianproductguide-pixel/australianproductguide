@@ -8,6 +8,7 @@ const root=path.join(__dirname,'..');
 const css=fs.readFileSync(path.join(root,'public/assets/brand-system-v46.css'),'utf8');
 const commerceCss=fs.readFileSync(path.join(root,'public/assets/brand-system-v46-commerce.css'),'utf8');
 const imageryCss=fs.readFileSync(path.join(root,'public/assets/brand-system-v46-imagery.css'),'utf8');
+const finalCss=fs.readFileSync(path.join(root,'public/assets/brand-system-v46-final.css'),'utf8');
 const proofCss=fs.readFileSync(path.join(root,'public/assets/brand-system-v46-research-proof.css'),'utf8');
 const api=fs.readFileSync(path.join(root,'api/index.js'),'utf8');
 const wrapper=fs.readFileSync(path.join(root,'lib/brand-system-v46.js'),'utf8');
@@ -16,6 +17,8 @@ assert.equal(brand.VERSION,'46');
 assert.equal(brand.CSS_PATH,'/assets/brand-system-v46.css');
 assert.equal(brand.COMMERCE_CSS_PATH,'/assets/brand-system-v46-commerce.css');
 assert.equal(brand.IMAGERY_CSS_PATH,'/assets/brand-system-v46-imagery.css');
+assert.equal(brand.FINAL_CSS_PATH,'/assets/brand-system-v46-final.css');
+assert.equal(brand.FINAL_CSS_VERSION,'46.3');
 assert.equal(brand.RESEARCH_PROOF_CSS_PATH,'/assets/brand-system-v46-research-proof.css');
 assert.equal(brand.RESEARCH_PROOF_VERSION,'46.2');
 assert(api.includes("require('../lib/brand-system-v46')"),'api/index.js must make v46 the final presentation layer');
@@ -40,6 +43,7 @@ for(const selector of [
   '.category-hero-media','.category-hero-media>img','.category-hero-media-shade','.category-hero-media-overlay',
   '.category-hero-photo-label','.category-hero-media-overlay strong','.category-hero-media figcaption','.category-hero-media figcaption a'
 ])assert(imageryCss.includes(selector),`v46 imagery reconciliation missing ${selector}`);
+for(const selector of ['.mobile-power.apg-v325-decision-mobile','.mobile-power.apg-v26-scout-mobile','.apg-home-panel-label-v9','.apg-home-gold-button-v9'])assert(finalCss.includes(selector),`v46 final legacy-colour cleanup missing ${selector}`);
 for(const selector of ['.apg-proof-band-v19','.apg-proof-band-v20','.apg-proof-kicker-v20','.apg-proof-main-v20>strong','.apg-proof-trust-v20'])assert(proofCss.includes(selector),`research-proof exception missing ${selector}`);
 assert(proofCss.includes('body[data-brand-system-v46="true"][data-brand-fidelity-v323="true"] .apg-proof-band-v20 .apg-proof-trust-v20'),'latest proof exception must explicitly outrank the legacy v32.3 trust-copy selector');
 
@@ -47,11 +51,14 @@ for(const retired of ['#082735','#087c76','#075e5a','#0b6f70','#0b3445','#08786f
   assert(!css.toLowerCase().includes(retired),`retired historical brand colour leaked into v46: ${retired}`);
   assert(!commerceCss.toLowerCase().includes(retired),`retired historical brand colour leaked into v46 commerce: ${retired}`);
   assert(!imageryCss.toLowerCase().includes(retired),`retired historical brand colour leaked into v46 imagery: ${retired}`);
+  assert(!finalCss.toLowerCase().includes(retired),`retired historical brand colour leaked into v46 final cleanup: ${retired}`);
   assert(!proofCss.toLowerCase().includes(retired),`retired non-approved proof colour leaked into research-proof exception: ${retired}`);
 }
 for(const approved of ['#FFD65B','#F4BB45','#F2B348','#E0A630','#D89C24'])assert(proofCss.includes(approved),`approved maintained-research heritage colour missing: ${approved}`);
+for(const approved of ['#FFD65B','#F4BB45','#F2B348'])assert(!finalCss.includes(approved),`yellow must not leak into standard UI cleanup: ${approved}`);
 assert(proofCss.includes('color:#0F172A!important'),'maintained-research proof text must remain dark APG navy/black for contrast');
 assert(proofCss.includes('Yellow is restricted to this research-proof surface'),'yellow exception must remain explicitly scoped and documented');
+assert(finalCss.includes('sole approved yellow/gold'),'v46 final cleanup must document that the proof strip is the only yellow/gold exception');
 
 const greenOccurrences=(css.match(/#10B981/gi)||[]).length;
 assert.equal(greenOccurrences,1,'master APG green should be declared once and used through semantic success states rather than as a general skin');
@@ -65,8 +72,10 @@ assert(once.includes('data-brand-system-v46="true"'),'v46 body marker missing');
 assert(once.includes('/assets/brand-system-v46.css?v=46'),'v46 master stylesheet link missing');
 assert(once.includes('/assets/brand-system-v46-commerce.css?v=46'),'v46 shopping stylesheet link missing');
 assert(once.includes('/assets/brand-system-v46-imagery.css?v=46'),'v46 imagery stylesheet link missing');
+assert(once.includes('/assets/brand-system-v46-final.css?v=46.3'),'v46 final cleanup stylesheet link missing');
 assert(once.includes('/assets/brand-system-v46-research-proof.css?v=46.2'),'v46 research-proof exception stylesheet link missing');
-assert(once.indexOf('/assets/brand-system-v46-research-proof.css?v=46.2')>once.indexOf('/assets/brand-system-v46-imagery.css?v=46'),'research-proof exception must load last');
+assert(once.indexOf('/assets/brand-system-v46-final.css?v=46.3')>once.indexOf('/assets/brand-system-v46-imagery.css?v=46'),'final standard-UI cleanup must load after general imagery styling');
+assert(once.indexOf('/assets/brand-system-v46-research-proof.css?v=46.2')>once.indexOf('/assets/brand-system-v46-final.css?v=46.3'),'research-proof exception must remain the final stylesheet');
 assert.equal(twice,once,'v46 HTML injection must be idempotent');
 
 function rgb(hex){const h=hex.replace('#','');return[0,2,4].map(i=>parseInt(h.slice(i,i+2),16));}
@@ -90,4 +99,4 @@ assert(css.includes('@media(max-width:640px)'),'v46 must explicitly govern compa
 assert(commerceCss.includes('@media(max-width:820px)'),'shopping discovery must retain responsive v46 coverage');
 assert(imageryCss.includes('@media(max-width:920px)')&&imageryCss.includes('@media(max-width:640px)'),'category imagery must retain tablet/mobile contrast governance');
 
-console.log('APG Brand System v46 source QA passed: palette=PASS typography=PASS account=PASS search=PASS scout=PASS research=PASS shopping-v39=PASS shopping-v41=PASS imagery=PASS maintained-research-yellow-exception=PASS contrast=PASS responsive=PASS');
+console.log('APG Brand System v46 source QA passed: palette=PASS typography=PASS account=PASS search=PASS scout=PASS research=PASS shopping-v39=PASS shopping-v41=PASS imagery=PASS legacy-colour-cleanup=PASS maintained-research-yellow-exception=PASS contrast=PASS responsive=PASS');
