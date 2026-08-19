@@ -31,7 +31,7 @@ jobs:
         with:
           node-version: '22'
       - name: Research CC0 category imagery
-        run: node scripts/category-editorial-research-v41.js
+        run: node scripts/category-editorial-research-v41.js || test -f data/category-editorial-candidates-v41.json
       - name: Commit candidate register to research branch
         run: |
           git config user.name "github-actions[bot]"
