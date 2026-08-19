@@ -30,7 +30,12 @@ jobs:
           node --check scripts/experience-v37-browser-diagnostic.js
           node --check scripts/experience-v37-site-crawl.js
           node scripts/interaction-reliability-v37-qa.js
-          grep -q "interaction-reliability-v37" api/index.js
+          node - <<'NODE'
+          const app=require('./api/index');
+          if(app.ASSET_PATH!=='/assets/interaction-reliability-v37.js')throw new Error(`v37 reliability asset is not present in the composed runtime: ${app.ASSET_PATH||'missing'}`);
+          if(app.VERSION!=='37')throw new Error(`v37 reliability version is not present in the composed runtime: ${app.VERSION||'missing'}`);
+          console.log('APG_V37_COMPOSED_RUNTIME=PASS');
+          NODE
           grep -q "interaction-reliability-v37-qa.js" package.json
       - name: Wait for exact Production SHA
         env:
