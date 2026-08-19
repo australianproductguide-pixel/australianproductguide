@@ -1,18 +1,11 @@
-name: APG Category Editorial Research v42
+name: APG Category Editorial Research v44
 
 on:
   push:
     branches:
-      - main
-      - apg-category-editorial-research-v42-main
+      - apg-category-editorial-images-v44
     paths:
-      - scripts/category-editorial-research-v42.js
-      - .github/workflows/category-editorial-research-v41.yml
-  pull_request:
-    branches:
-      - main
-    paths:
-      - scripts/category-editorial-research-v42.js
+      - scripts/category-editorial-research-v44.js
       - .github/workflows/category-editorial-research-v41.yml
   workflow_dispatch:
 
@@ -22,24 +15,24 @@ permissions:
 jobs:
   research:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: apg-category-editorial-research-v42-main
+          ref: apg-category-editorial-images-v44
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
-      - name: Research CC0 category imagery
-        run: node scripts/category-editorial-research-v42.js
-      - name: Commit candidate register to research branch
+      - name: Research licensed Wikimedia Commons category imagery
+        run: node scripts/category-editorial-research-v44.js || test -f data/category-editorial-selected-v44.json
+      - name: Commit candidate and selected registers to release branch
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/category-editorial-candidates-v42.json
+          git add data/category-editorial-candidates-v44.json data/category-editorial-selected-v44.json
           if git diff --cached --quiet; then
-            echo "Candidate register unchanged"
+            echo "Editorial image registers unchanged"
           else
-            git commit -m "Generate category editorial image candidates v42 [skip ci]"
-            git push origin HEAD:apg-category-editorial-research-v42-main
+            git commit -m "Generate Wikimedia category editorial image register v44 [skip ci]"
+            git push origin HEAD:apg-category-editorial-images-v44
           fi
