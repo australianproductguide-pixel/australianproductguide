@@ -113,4 +113,18 @@ for(const [query,expected] of [['headphones','wireless-headphones'],['smartphone
   }
 }
 
+// A query with no recognised category, brand, model or decision signal must end in a
+// useful zero-result state. Never fill the space with unrelated catalogue products.
+{
+  const query='zzzxqv 123456789',lexical=searchSite(query),payload=research.researchPayload(query);
+  assert.strictEqual(lexical.zeroResult?.reason,'unrecognised-query',`${query}: expected unrecognised-query state`);
+  assert.strictEqual((lexical.products||[]).length,0,`${query}: lexical Search must not return unrelated products`);
+  assert.strictEqual((lexical.comparisons||[]).length,0,`${query}: Search must not manufacture comparison suggestions`);
+  assert.strictEqual(payload.mode,'no-match',`${query}: Research View must render an honest no-match state`);
+  assert.strictEqual((payload.results||[]).length,0,`${query}: Research View must not return arbitrary maintained products`);
+  assert.strictEqual((payload.compareSlugs||[]).length,0,`${query}: no-match state must not create a compare shortlist`);
+  assert((payload.followUps||[]).some(x=>x.url==='/categories/'),`${query}: no-match state should offer a useful next step`);
+  report.push({query,mode:payload.mode,zeroResult:lexical.zeroResult?.reason,followUps:payload.followUps});
+}
+
 console.log(JSON.stringify({status:'PASS',version:research.VERSION,cases:report},null,2));
