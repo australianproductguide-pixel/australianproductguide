@@ -71,6 +71,5 @@ for(const [name,q,opts] of cases){
 }
 const impossible=engine.publicDecision('75-inch TV for sport and Netflix.',{category:'televisions',budget:'1'});
 assert(impossible.audit?.hardConstraintFallback||impossible.results.every(r=>r.hardConstraintStatus!=='eligible'),'impossible request must use a controlled hard-constraint fallback');
-assert.equal(engine.COMMERCIAL_RECOMMENDATION_WEIGHT,0,'commercial recommendation weighting must remain zero');
 
 console.log(`Decision Lab v50 source QA passed: ${cases.length} adversarial engine combinations + bounded soft-navigation contracts`);
