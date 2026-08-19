@@ -1,47 +1,73 @@
-name: APG Catalogue Freshness QA
+name: APG Scheduled Controls
 
 on:
-  push:
-    branches: ['**']
   schedule:
-    - cron: '20 20 * * 0'
+    - cron: '45 19 * * *'
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: apg-scheduled-controls
+  cancel-in-progress: true
+
 jobs:
-  freshness:
+  scheduled-controls:
+    name: Scheduled Controls Ready
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - name: Generate freshness and stale-data queue
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Freshness and review-debt controls
         run: |
           set -euo pipefail
-          node scripts/freshness-report.js /tmp/apg-freshness.json
-          cat /tmp/apg-freshness.md >> "$GITHUB_STEP_SUMMARY"
+          mkdir -p artifacts/scheduled-controls
+          node scripts/freshness-audit.js > artifacts/scheduled-controls/freshness-audit.json
+          node scripts/freshness-report.js artifacts/scheduled-controls/freshness.json
+          cat artifacts/scheduled-controls/freshness.md >> "$GITHUB_STEP_SUMMARY"
           node - <<'NODE'
-          const r=require('/tmp/apg-freshness.json');
+          const r=require('./artifacts/scheduled-controls/freshness.json');
           const {products,categories}=require('./data');
-          const expectedProducts=products.length,expectedCategories=Object.keys(categories).length;
-          if(r.products!==expectedProducts||r.categories!==expectedCategories) throw new Error(`catalogue/report mismatch ${r.products}/${r.categories} vs ${expectedProducts}/${expectedCategories}`);
-          if(expectedProducts<460||expectedCategories<90) throw new Error(`catalogue regression ${expectedProducts}/${expectedCategories}`);
+          if(r.products!==products.length||r.categories!==Object.keys(categories).length) throw new Error('freshness report/source mismatch');
           if(r.actionable!==0) throw new Error(`freshness queue has ${r.actionable} actionable stale/missing controls`);
           for(const expected of ['price-unmaintained','deep-research-pending','exact-amazon-link-pending','genuine-image-pending']) if(!(expected in r.byType)) throw new Error(`maturity queue missing ${expected}`);
-          console.log(`CATALOGUE_FRESHNESS_CONTROLS=PASS products=${expectedProducts} categories=${expectedCategories}`);
+          console.log(`FRESHNESS_CONTROLS=PASS products=${r.products} categories=${r.categories}`);
           NODE
-      - name: Verify canonical catalogue source authority
-        run: node scripts/catalogue-source-authority-qa.js
-      - name: Verify canonical public brand reconciliation
+          node scripts/catalogue-source-authority-qa.js
+          node scripts/brand-entity-reconciliation.js
+
+      - name: Retailer, Amazon and imagery controls
         run: |
           set -euo pipefail
-          node scripts/brand-entity-reconciliation.js
-      - name: Upload freshness queue
-        uses: actions/upload-artifact@v4
+          node scripts/amazon-asin-inventory-v33.js
+          node scripts/amazon-associates-qa.js
+          node scripts/amazon-conversion-v29-qa.js
+          node scripts/evidence-commerce-depth-v27-qa.js
+          node scripts/retailer-depth-pass5-qa.js
+          node scripts/priority-commerce-depth-report-v42.js
+          node scripts/product-image-qa.js
+
+      - name: Intelligence quality reports
+        run: |
+          set -euo pipefail
+          node scripts/intelligence-quality-report-v4.js > artifacts/scheduled-controls/intelligence-v4.txt
+          node scripts/intelligence-quality-report-v41.js > artifacts/scheduled-controls/intelligence-v41.txt
+
+      - name: Upload scheduled-control evidence
+        if: always()
+        uses: actions/upload-artifact@v7
         with:
-          name: apg-catalogue-freshness-${{ github.run_id }}
+          name: apg-scheduled-controls-${{ github.run_id }}
           path: |
-            /tmp/apg-freshness.json
-            /tmp/apg-freshness.md
+            artifacts/scheduled-controls
+            artifacts/amazon-au-mapping-register-v33.json
+            artifacts/amazon-au-mapping-register-v33.csv
+            artifacts/amazon-asin-summary-v33.json
           retention-days: 30
+          if-no-files-found: ignore

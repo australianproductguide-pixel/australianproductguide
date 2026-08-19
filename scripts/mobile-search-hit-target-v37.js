@@ -29,8 +29,10 @@ async function exercise(page,{openMenu=false,label}){
   const before=page.url();const button=await form.$('button[type="submit"]');await button.click();
   await page.waitForFunction(old=>location.href!==old&&location.pathname==='/search/',{timeout:12000},before);
   assert((await page.evaluate(()=>new URL(location.href).searchParams.get('q')))==='robot vacuum for pet hair',`${label}: query was not preserved`);
-  assert(await page.$('main a[href^="/products/"]'),`${label}: results page has no product links`);
-  return state;
+  await page.waitForSelector('main a[href^="/products/"]',{timeout:12000});
+  const productLinks=await page.$$eval('main a[href^="/products/"]',links=>links.length);
+  assert(productLinks>0,`${label}: results page has no product links`);
+  return {...state,productLinks};
 }
 
 (async()=>{

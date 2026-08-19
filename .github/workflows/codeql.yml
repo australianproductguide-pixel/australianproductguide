@@ -7,10 +7,15 @@ on:
     branches: [main]
   schedule:
     - cron: '23 17 * * 1'
+  workflow_dispatch:
 
 permissions:
   contents: read
   security-events: write
+
+concurrency:
+  group: apg-codeql-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   analyse:
@@ -19,7 +24,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Initialise CodeQL
         uses: github/codeql-action/init@v4
