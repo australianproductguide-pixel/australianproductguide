@@ -2,7 +2,7 @@ name: APG Amazon Shopping Assurance v40
 
 on:
   push:
-    branches: [main]
+    branches: [main, apg-amazon-shopping-assurance-v40]
   schedule:
     - cron: '20 21 * * *'
   workflow_dispatch:
@@ -12,7 +12,7 @@ permissions:
   deployments: read
 
 concurrency:
-  group: apg-amazon-shopping-assurance-v40-${{ github.event_name }}
+  group: apg-amazon-shopping-assurance-v40-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -32,7 +32,7 @@ jobs:
           package-manager-cache: false
 
       - name: Wait for exact Production deployment
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -114,7 +114,7 @@ jobs:
           package-manager-cache: false
 
       - name: Wait for exact Production deployment
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
