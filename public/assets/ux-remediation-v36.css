@@ -37,3 +37,43 @@
     display:none!important;
   }
 }
+
+/* Component-level narrow-phone fixes found by manual screenshot inspection. These
+   deliberately address clipped content inside cards even when the document itself has
+   no horizontal overflow. */
+@media (max-width:620px){
+  /* Decision Lab: retailer-price context is a two-line hierarchy, not a squeezed inline label. */
+  body[data-brand-conformity-v351="true"] .decision-price{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:flex-start!important;
+    gap:2px!important;
+  }
+  body[data-brand-conformity-v351="true"] .decision-price .price-note{
+    display:block!important;
+    line-height:1.35!important;
+  }
+
+  /* Search/category comparison previews: stack product visuals instead of forcing two
+     desktop-style panels into a 390px card and clipping the second product. */
+  body[data-brand-conformity-v351="true"] .visual-comparison .comparison-visuals{
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:0!important;
+  }
+  body[data-brand-conformity-v351="true"] .visual-comparison .comparison-visuals>div{
+    min-width:0!important;
+    width:100%!important;
+  }
+  body[data-brand-conformity-v351="true"] .visual-comparison .comparison-visuals .vs-badge{
+    position:static!important;
+    left:auto!important;
+    top:auto!important;
+    transform:none!important;
+    justify-self:center!important;
+    margin:-7px 0!important;
+  }
+  body[data-brand-conformity-v351="true"] .visual-comparison .comparison-visuals .product-visual{
+    width:100%!important;
+    min-width:0!important;
+  }
+}
