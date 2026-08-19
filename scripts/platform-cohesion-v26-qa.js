@@ -20,17 +20,31 @@ check('catalogue baseline remains 482 products / 90 categories with broad brand 
   assert.ok(rawBrandStrings>=178,`expected at least 178 maintained raw brand labels, found ${rawBrandStrings}`);
 });
 
-check('cohesion transform injects state, CSS, JS and Scout entry points once',()=>{
-  const html='<!doctype html><html><head><title>APG</title></head><body><nav class="primary-nav"><div class="nav-inner"><a class="apg-power-link" href="/decision-lab/" data-decision-nav>Decision Lab</a></div></nav><nav id="mobileNav"><a class="mobile-power" href="/decision-lab/">Decision Lab <span aria-hidden="true">→</span></a></nav><main></main></body></html>';
+check('cohesion transform injects early Scout boundary, state, CSS, JS and entry points once',()=>{
+  const html='<!doctype html><html><head><script src="/assets/app.js" defer></script><title>APG</title></head><body><nav class="primary-nav"><div class="nav-inner"><a class="apg-power-link" href="/decision-lab/" data-decision-nav>Decision Lab</a></div></nav><nav id="mobileNav"><a class="mobile-power" href="/decision-lab/">Decision Lab <span aria-hidden="true">→</span></a></nav><main></main></body></html>';
   const once=cohesion.cohesionTransform(html,'https://australianproductguide.au/compare/');
   const twice=cohesion.cohesionTransform(once,'https://australianproductguide.au/compare/');
+  assert.match(once,/data-v26-scout-early="true"/);
   assert.match(once,/data-cohesion-v26="true"/);
   assert.match(once,/data-v26-page="compare"/);
   assert.match(once,/platform-cohesion-v26\.css\?v=26/);
-  assert.match(once,/platform-cohesion-v26\.js\?v=26/);
+  assert.match(once,/platform-cohesion-v26\.js\?v=26\.5/);
   assert.match(once,/data-v26-scout-open/);
+  assert.ok(once.indexOf('data-v26-scout-early="true"')<once.indexOf('/assets/app.js'),'Scout event guard must register before existing deferred app scripts');
+  assert.ok(once.indexOf('data-v26-scout-early="true"')<once.indexOf('</head>'),'Scout event guard must execute while the document head is being parsed');
+  assert.equal((twice.match(/data-v26-scout-early="true"/g)||[]).length,1);
   assert.equal((twice.match(/platform-cohesion-v26\.css/g)||[]).length,1);
   assert.equal((twice.match(/platform-cohesion-v26\.js/g)||[]).length,1);
+  assert.equal(twice,once,'cohesion transform must remain idempotent after early-bootstrap injection');
+});
+
+check('early Scout bootstrap owns activation before deferred runtime and queues safely',()=>{
+  const guard=cohesion.SCOUT_EARLY_GUARD;
+  assert.ok(guard.includes('window.__APG_SCOUT_EARLY_GUARD_V26__'),'early bootstrap must be idempotent');
+  assert.ok(guard.includes("window.addEventListener('click'"),'early bootstrap must own Scout clicks at window capture');
+  assert.ok(guard.includes('e.preventDefault();e.stopImmediatePropagation()'),'Scout click must never reach a legacy handler or native form/search path');
+  assert.ok(guard.includes("window.__apgScoutPendingV26=trigger"),'early bootstrap must queue the activation until the full bridge is ready');
+  assert.ok(guard.includes("'[data-v26-scout-open]'"),'early bootstrap must be tightly scoped to Scout entry points');
 });
 
 check('Research View activates on SSR search and stays affiliate-neutral',()=>{
