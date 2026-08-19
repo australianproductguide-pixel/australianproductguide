@@ -1,10 +1,8 @@
 const assert=require('assert');
-const fs=require('fs');
-const path=require('path');
 const policy=require('../lib/auth-password-policy-v361');
-const api=fs.readFileSync(path.join(__dirname,'..','api','index.js'),'utf8');
+const {runtimeChainIncludes}=require('./runtime-chain-qa');
 
-assert(api.includes("require('../lib/auth-password-policy-v361')"),'active runtime must use auth-password-policy-v361');
+assert(runtimeChainIncludes('auth-password-policy-v361'),'active runtime chain must include auth-password-policy-v361');
 assert(policy.passwordPolicy('APG-Strong-2026!').ok,'strong password must pass');
 for(const weak of ['short1!A','alllowercase123!','ALLUPPERCASE123!','NoNumberPassword!','NoSymbolPassword123']){
   assert(!policy.passwordPolicy(weak).ok,`weak password must fail: ${weak}`);
