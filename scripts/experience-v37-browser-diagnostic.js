@@ -18,7 +18,22 @@ async function go(page,p){const r=await duringNav(page,()=>page.goto(BASE+p,{wai
 async function visible(page,s){for(const h of await page.$$(s)){if(await h.evaluate(el=>{const r=el.getBoundingClientRect(),c=getComputedStyle(el);return r.width>0&&r.height>0&&c.display!=='none'&&c.visibility!=='hidden'}))return h}return null}
 async function navClick(page,h,p,t=12000){assert(h,'click target missing');const before=page.url();await duringNav(page,async()=>{await h.click();await page.waitForFunction((old,x)=>location.href!==old&&location.pathname===x,{timeout:t},before,p);await waitMain(page,t)})}
 async function submit(page,selector,fill,p){const form=await visible(page,selector);assert(form,`form missing ${selector}`);if(fill)await fill(form);const b=await form.$('button[type="submit"],input[type="submit"]');await navClick(page,b,p)}
-async function nativeSubmit(page,selector,fill,p,t=30000){const form=await visible(page,selector);assert(form,`form missing ${selector}`);if(fill)await fill(form);const b=await form.$('button[type="submit"],input[type="submit"]');assert(b,'submit control missing');await duringNav(page,async()=>{const navPromise=page.waitForNavigation({waitUntil:'domcontentloaded',timeout:t});await b.click();await navPromise});const u=new URL(page.url());assert(u.pathname===p,`native form navigated to ${u.pathname}, expected ${p}`);await page.waitForSelector('main',{timeout:12000});await dismiss(page)}
+async function nativeSubmit(page,selector,fill,p,t=15000){
+  const form=await visible(page,selector);assert(form,`form missing ${selector}`);if(fill)await fill(form);
+  const b=await form.$('button[type="submit"],input[type="submit"]');assert(b,'submit control missing');
+  await duringNav(page,async()=>{
+    await b.click();
+    const deadline=Date.now()+t;
+    while(Date.now()<deadline){
+      let u;try{u=new URL(page.url())}catch{}
+      if(u&&u.pathname===p)return;
+      await sleep(100);
+    }
+    throw new Error(`URL did not reach ${p} within ${t}ms; current=${page.url()}`);
+  });
+  const u=new URL(page.url());assert(u.pathname===p,`native form navigated to ${u.pathname}, expected ${p}`);
+  await page.waitForSelector('main',{timeout:12000});await dismiss(page);
+}
 async function scoutMenu(page){
   const before=new URL(page.url()),toggle=await visible(page,'[data-mobile-toggle]');assert(toggle,'mobile nav toggle missing');await toggle.click();await page.waitForSelector('#mobileNav:not([hidden])',{timeout:5000});
   const s=await visible(page,'#mobileNav [data-v26-scout-mobile]');assert(s,'mobile Scout missing');await s.click();await page.waitForSelector('#apgAssistantPanel:not([hidden]) .scout-v5-input',{timeout:7000});await settled(page,120);
