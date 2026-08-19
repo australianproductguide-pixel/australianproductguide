@@ -3,6 +3,7 @@ const fs=require('fs');
 const path=require('path');
 const root=path.join(__dirname,'..');
 function fail(msg){throw new Error(msg)}
+require('./category-editorial-pages-fix-v45');
 const registry=require('../data/category-editorial-images-v45');
 const finalReview=require('../data/category-editorial-final-review-v45.json');
 const {categories}=require('../data');
@@ -31,8 +32,12 @@ for(const row of finalReview.categories||[])if(PROVENANCE_RISK.test(`${row.title
 if((finalReview.summary?.reviewRequired||0)>0&&process.env.ALLOW_REVIEW_REQUIRED!=='1')fail(`${finalReview.summary.reviewRequired} category hero assets still require explicit curation before release`);
 const pages=fs.readFileSync(path.join(root,'lib','pages.js'),'utf8');
 if(!pages.includes("categoryEditorialImages=require('../data/category-editorial-images-v45')"))fail('Category image registry not wired into pages');
-if(!pages.includes('function categoryHeroMedia(c)')||!pages.includes('${categoryHeroMedia(c)}'))fail('Category hero renderer not wired');
+if(!pages.includes('function categoryHeroMedia(c)'))fail('Category hero helper missing');
+if(pages.includes('if(!image)return `${categoryHeroMedia(c)}`;'))fail('Category hero fallback is recursively wired');
+const categoryStart=pages.indexOf('function categoryPage(req,c,u)');
+if(categoryStart<0||!pages.slice(categoryStart).includes('${categoryHeroMedia(c)}'))fail('Category page does not render categoryHeroMedia(c)');
+if(!pages.includes("const money=n=>n?`A$${Number(n).toLocaleString('en-AU')}`:'Check current retailer';"))fail('Australian A$ price formatting regressed');
 if(!pages.includes('Editorial category image — not a reviewed product.'))fail('Consumer-facing non-product disclaimer missing');
 const css=fs.readFileSync(path.join(root,'lib','premium-css.js'),'utf8');
 for(const token of ['.category-hero-media{','.category-hero-media-shade{','.category-hero-media-overlay{','.category-hero-media figcaption{'])if(!css.includes(token))fail(`Missing editorial hero CSS ${token}`);
-console.log(JSON.stringify({version:'category-editorial-v45-qa',categories:90,uniqueSources:sources.size,selfHostedAssets:srcs.size,totalBytes:bytes,manualCurated:finalReview.summary.manualCurated,premiumAuto:finalReview.summary.premiumAuto,reviewRequired:finalReview.summary.reviewRequired,allowReviewRequired:process.env.ALLOW_REVIEW_REQUIRED==='1',failures:0},null,2));
+console.log(JSON.stringify({version:'category-editorial-v45-qa',categories:90,uniqueSources:sources.size,selfHostedAssets:srcs.size,totalBytes:bytes,manualCurated:finalReview.summary.manualCurated,premiumAuto:finalReview.summary.premiumAuto,reviewRequired:finalReview.summary.reviewRequired,allowReviewRequired:process.env.ALLOW_REVIEW_REQUIRED==='1',pageRenderWired:true,safeFallback:true,audPriceFormatting:true,failures:0},null,2));
