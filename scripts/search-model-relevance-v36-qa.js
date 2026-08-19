@@ -30,10 +30,26 @@ const report=[];
 report.push(checkModelQuery('Sony XM6'));
 report.push(checkModelQuery('Philips NA551'));
 
-for(const query of ['Sony','Philips','robot vacuum for pet hair','TV under $2,000']){
+for(const query of ['robot vacuum for pet hair','TV under $2,000']){
   const payload=research.researchPayload(query);
   assert.notStrictEqual(payload.modelScoped,true,`${query}: broad/non-model query must not be forced into a model category`);
   report.push({query,modelScoped:false,mode:payload.mode,results:(payload.results||[]).slice(0,3).map(x=>x.slug)});
+}
+
+// Exact maintained brand queries are discovery filters, not cross-category recommendation
+// prompts. All visible products and source labels must remain within the chosen brand.
+for(const query of ['Sony','Philips','Baratza']){
+  const lexical=searchSite(query),payload=research.researchPayload(query);
+  assert.strictEqual(payload.mode,'brand-discovery',`${query}: exact brand should use brand discovery mode`);
+  assert(lexical.products?.length,`${query}: expected maintained brand products`);
+  assert(payload.results?.length,`${query}: expected maintained brand discovery results`);
+  for(const product of lexical.products)assert.strictEqual(product.brand,query,`${query}: cross-brand lexical result leaked: ${product.slug}`);
+  for(const result of payload.results)assert.strictEqual(result.brand,query,`${query}: cross-brand Research View result leaked: ${result.slug}`);
+  assert.strictEqual((payload.compareSlugs||[]).length,0,`${query}: brand-only discovery must not create a cross-category compare shortlist`);
+  for(const source of payload.sources||[]){
+    assert(!String(source.product||'').startsWith(`${query} ${query} `),`${query}: source label duplicated the brand: ${source.product}`);
+  }
+  report.push({query,mode:payload.mode,results:payload.results.map(x=>x.slug),sources:(payload.sources||[]).map(x=>x.product)});
 }
 
 // Consumer typo regression: category parsing must never treat `phone` inside
