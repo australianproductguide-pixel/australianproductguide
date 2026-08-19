@@ -57,9 +57,14 @@
   }
 
   document.addEventListener('click',event=>{
-    const trigger=event.target.closest('[data-v26-scout-open]');
+    const trigger=event.target.closest&&event.target.closest('[data-v26-scout-open]');
     if(!trigger)return;
+    // Scout owns this interaction. Its direct target listener has already run by
+    // the time this document-level compatibility listener executes. Prevent any
+    // later document feature from reinterpreting the same click as Search,
+    // refinement or form input (which previously produced q=[object Object]).
     event.preventDefault();
+    event.stopImmediatePropagation();
     openScout(trigger);
   });
 
