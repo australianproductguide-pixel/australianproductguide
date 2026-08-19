@@ -57,6 +57,7 @@ const cases=[
   ['multi-priority','Laptop for uni, long battery, light weight, video calls, no gaming requirement.',{category:'laptops',budget:'1800'}],
   ['long but valid','headphones '+('quiet battery commute '.repeat(70)),{category:'wireless-headphones',budget:'800'}]
 ];
+const hardStatuses=new Set(['eligible','ineligible','unverified']);
 for(const [name,q,opts] of cases){
   const out=engine.publicDecision(q,opts);
   assert.equal(out.version,'decision-engine-v4',`${name}: wrong engine version`);
@@ -65,7 +66,7 @@ for(const [name,q,opts] of cases){
   assert(out.results.length>0,`${name}: no controlled shortlist/fallback`);
   for(const r of out.results){
     assert(r.url&&r.url.startsWith('/products/'),`${name}: non-canonical product route`);
-    assert(['eligible','conflict','unknown'].includes(r.hardConstraintStatus),`${name}: uncontrolled hard-constraint status`);
+    assert(hardStatuses.has(r.hardConstraintStatus),`${name}: uncontrolled hard-constraint status ${r.hardConstraintStatus}`);
   }
 }
 const impossible=engine.publicDecision('75-inch TV for sport and Netflix.',{category:'televisions',budget:'1'});
