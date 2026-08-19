@@ -27,7 +27,11 @@ for(const required of [
   'location.assign(target.href)',
   'window.addEventListener(\'pageshow\',restoreAfterHistory)'
 ]) assert(js.includes(required),`missing reliability contract: ${required}`);
-assert(!js.includes('event.preventDefault()'),'v37 must preserve native link/form navigation');
+assert(js.includes("if(isDecisionForm(form)){beginDecisionNavigation(event,form,target);return;}"),'Decision Lab must own a deterministic managed submission path');
+assert(js.includes("event.preventDefault();form.dataset.apgDecisionSubmitting='true'"),'Decision Lab managed submission must suppress the duplicate native request');
+assert(js.includes("form.dataset.apgDecisionSubmitting==='true'"),'Decision Lab must reject duplicate in-flight submits');
+const searchSubmit=js.slice(js.indexOf('function guardCoreSubmit'),js.indexOf("window.addEventListener('submit',guardCoreSubmit,true)"));
+assert(searchSubmit.includes('scheduleNavigation(target.href)'),'Search must retain native navigation with bounded fallback recovery');
 for(const required of [
   '.apg-alternative-reason{display:block;margin-top:6px}',
   '@media(max-width:760px)',
@@ -89,4 +93,5 @@ assert(desktopRestored.includes('class="apg-v26-scout-nav"'),'desktop Scout must
 assert.equal((desktopRestored.match(/data-v26-scout-mobile/g)||[]).length,1,'existing mobile Scout must not be duplicated while restoring desktop Scout');
 assert.equal(cohesion.addScoutNavigation(desktopRestored),desktopRestored,'Scout navigation reconciliation must remain idempotent');
 
+require('./decision-lab-v4-p0-source-qa');
 console.log('APG interaction reliability v37 source QA passed');
