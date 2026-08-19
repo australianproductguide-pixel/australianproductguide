@@ -6,9 +6,13 @@ on:
       - main
       - apg-category-editorial-research-v42-main
       - apg-category-editorial-images-v44
+      - apg-category-editorial-images-v45-main
     paths:
       - scripts/category-editorial-research-v42.js
       - scripts/category-editorial-research-v44.js
+      - scripts/category-editorial-research-v45.js
+      - scripts/category-editorial-materialise-v45.js
+      - scripts/category-editorial-v45-qa.js
       - .github/workflows/category-editorial-research-v41.yml
   workflow_dispatch:
 
@@ -22,7 +26,7 @@ concurrency:
 jobs:
   research:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v7
         with:
@@ -30,20 +34,31 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
-      - name: Research category imagery
+      - name: Research and materialise category imagery
         shell: bash
         run: |
-          if [ "${GITHUB_REF_NAME}" = "apg-category-editorial-images-v44" ]; then
+          if [ "${GITHUB_REF_NAME}" = "apg-category-editorial-images-v45-main" ]; then
+            node scripts/category-editorial-research-v45.js
+            node scripts/category-editorial-materialise-v45.js
+            node -c lib/pages.js
+            node -c lib/premium-css.js
+            ALLOW_REVIEW_REQUIRED=1 node scripts/category-editorial-v45-qa.js
+          elif [ "${GITHUB_REF_NAME}" = "apg-category-editorial-images-v44" ]; then
             node scripts/category-editorial-research-v44.js || test -f data/category-editorial-selected-v44.json
           else
             node scripts/category-editorial-research-v42.js
           fi
-      - name: Publish research register to source branch
+      - name: Publish research and materialised assets to source branch
         shell: bash
         run: |
           set -euo pipefail
           branch="${GITHUB_REF_NAME}"
-          if [ "$branch" = "apg-category-editorial-images-v44" ]; then
+          asset_dir=''
+          if [ "$branch" = "apg-category-editorial-images-v45-main" ]; then
+            files='data/category-editorial-candidates-v45.json data/category-editorial-selected-v45.json data/category-editorial-images-v45.js data/category-editorial-final-review-v45.json lib/pages.js lib/premium-css.js'
+            asset_dir='public/category-editorial'
+            message='Materialise premium category editorial imagery v45 [skip ci]'
+          elif [ "$branch" = "apg-category-editorial-images-v44" ]; then
             files='data/category-editorial-candidates-v44.json data/category-editorial-selected-v44.json'
             message='Generate Wikimedia category editorial image register v44 [skip ci]'
           else
@@ -55,23 +70,42 @@ jobs:
             mkdir -p "$snapshot/$(dirname "$candidate")"
             cp "$candidate" "$snapshot/$candidate"
           done
+          if [ -n "$asset_dir" ]; then
+            mkdir -p "$snapshot/public"
+            cp -R "$asset_dir" "$snapshot/public/"
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           for attempt in 1 2 3; do
             git fetch origin "$branch"
             git reset --hard "origin/$branch"
-            for candidate in $files; do cp "$snapshot/$candidate" "$candidate"; done
+            for candidate in $files; do
+              mkdir -p "$(dirname "$candidate")"
+              cp "$snapshot/$candidate" "$candidate"
+            done
+            if [ -n "$asset_dir" ]; then
+              rm -rf "$asset_dir"
+              mkdir -p public
+              cp -R "$snapshot/public/category-editorial" public/
+            fi
             git add $files
+            if [ -n "$asset_dir" ]; then git add "$asset_dir"; fi
             if git diff --cached --quiet; then
-              echo "Editorial image register unchanged"
-              exit 0
+              echo "Editorial image output unchanged"
+              break
             fi
             git commit -m "$message"
             if git push origin "HEAD:$branch"; then
-              echo "Editorial image register published on attempt $attempt"
-              exit 0
+              echo "Editorial image output published on attempt $attempt"
+              break
+            fi
+            if [ "$attempt" = "3" ]; then
+              echo 'Unable to publish editorial image output after 3 safe retries'
+              exit 1
             fi
             echo "Research branch advanced during publish; retrying from latest remote head"
           done
-          echo 'Unable to publish the editorial image register after 3 safe retries'
-          exit 1
+      - name: Enforce final v45 curation gate
+        if: github.ref_name == 'apg-category-editorial-images-v45-main'
+        shell: bash
+        run: node scripts/category-editorial-v45-qa.js
