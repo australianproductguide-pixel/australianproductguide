@@ -17,7 +17,7 @@ assert.equal(brand.CSS_PATH,'/assets/brand-system-v46.css');
 assert.equal(brand.COMMERCE_CSS_PATH,'/assets/brand-system-v46-commerce.css');
 assert.equal(brand.IMAGERY_CSS_PATH,'/assets/brand-system-v46-imagery.css');
 assert.equal(brand.RESEARCH_PROOF_CSS_PATH,'/assets/brand-system-v46-research-proof.css');
-assert.equal(brand.RESEARCH_PROOF_VERSION,'46.1');
+assert.equal(brand.RESEARCH_PROOF_VERSION,'46.2');
 assert(api.includes("require('../lib/brand-system-v46')"),'api/index.js must make v46 the final presentation layer');
 assert(wrapper.includes("require('./amazon-shopping-creative-final-v41')"),'v46 must preserve current Amazon shopping creative v41 downstream');
 
@@ -41,6 +41,7 @@ for(const selector of [
   '.category-hero-photo-label','.category-hero-media-overlay strong','.category-hero-media figcaption','.category-hero-media figcaption a'
 ])assert(imageryCss.includes(selector),`v46 imagery reconciliation missing ${selector}`);
 for(const selector of ['.apg-proof-band-v19','.apg-proof-band-v20','.apg-proof-kicker-v20','.apg-proof-main-v20>strong','.apg-proof-trust-v20'])assert(proofCss.includes(selector),`research-proof exception missing ${selector}`);
+assert(proofCss.includes('body[data-brand-system-v46="true"][data-brand-fidelity-v323="true"] .apg-proof-band-v20 .apg-proof-trust-v20'),'latest proof exception must explicitly outrank the legacy v32.3 trust-copy selector');
 
 for(const retired of ['#082735','#087c76','#075e5a','#0b6f70','#0b3445','#08786f','#ffd95d','#f6bd45','#f3b548','#f4b548']){
   assert(!css.toLowerCase().includes(retired),`retired historical brand colour leaked into v46: ${retired}`);
@@ -64,8 +65,8 @@ assert(once.includes('data-brand-system-v46="true"'),'v46 body marker missing');
 assert(once.includes('/assets/brand-system-v46.css?v=46'),'v46 master stylesheet link missing');
 assert(once.includes('/assets/brand-system-v46-commerce.css?v=46'),'v46 shopping stylesheet link missing');
 assert(once.includes('/assets/brand-system-v46-imagery.css?v=46'),'v46 imagery stylesheet link missing');
-assert(once.includes('/assets/brand-system-v46-research-proof.css?v=46.1'),'v46 research-proof exception stylesheet link missing');
-assert(once.indexOf('/assets/brand-system-v46-research-proof.css?v=46.1')>once.indexOf('/assets/brand-system-v46-imagery.css?v=46'),'research-proof exception must load last');
+assert(once.includes('/assets/brand-system-v46-research-proof.css?v=46.2'),'v46 research-proof exception stylesheet link missing');
+assert(once.indexOf('/assets/brand-system-v46-research-proof.css?v=46.2')>once.indexOf('/assets/brand-system-v46-imagery.css?v=46'),'research-proof exception must load last');
 assert.equal(twice,once,'v46 HTML injection must be idempotent');
 
 function rgb(hex){const h=hex.replace('#','');return[0,2,4].map(i=>parseInt(h.slice(i,i+2),16));}
