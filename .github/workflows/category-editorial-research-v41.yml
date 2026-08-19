@@ -12,6 +12,8 @@ on:
       - scripts/category-editorial-research-v42.js
       - scripts/category-editorial-research-v44.js
       - scripts/category-editorial-research-v45.js
+      - scripts/category-editorial-curation-v45.js
+      - scripts/category-editorial-fetch-backoff-v45.js
       - scripts/category-editorial-materialise-v45.js
       - scripts/category-editorial-v45-qa.js
       - .github/workflows/category-editorial-research-v41.yml
@@ -20,6 +22,8 @@ on:
       - main
     paths:
       - scripts/category-editorial-research-v45.js
+      - scripts/category-editorial-curation-v45.js
+      - scripts/category-editorial-fetch-backoff-v45.js
       - scripts/category-editorial-materialise-v45.js
       - scripts/category-editorial-v45-qa.js
       - .github/workflows/category-editorial-research-v41.yml
@@ -48,8 +52,9 @@ jobs:
         run: |
           branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
           if [ "$branch" = "apg-category-editorial-images-v45-main" ]; then
-            node scripts/category-editorial-research-v45.js
-            node scripts/category-editorial-materialise-v45.js
+            node -r ./scripts/category-editorial-fetch-backoff-v45.js scripts/category-editorial-research-v45.js
+            node scripts/category-editorial-curation-v45.js
+            node -r ./scripts/category-editorial-fetch-backoff-v45.js scripts/category-editorial-materialise-v45.js
             node -c lib/pages.js
             node -c lib/premium-css.js
             ALLOW_REVIEW_REQUIRED=1 node scripts/category-editorial-v45-qa.js
