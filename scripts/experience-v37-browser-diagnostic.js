@@ -71,6 +71,16 @@ async function submitVisibleForm(page,formSelector,fill,expectedPath,timeout=120
   const button=await form.$('button[type="submit"],input[type="submit"]');assert(button,`Submit control missing: ${formSelector}`);
   const before=page.url();await button.click();await waitForUrlChange(page,before,expectedPath,timeout);
 }
+async function openScoutFromMobileMenu(page){
+  const toggle=await visible(page,'[data-mobile-toggle]');assert(toggle,'Mobile navigation toggle missing');await toggle.click();
+  await page.waitForSelector('#mobileNav:not([hidden])',{timeout:5000});
+  const scout=await visible(page,'#mobileNav [data-v26-scout-mobile]');assert(scout,'Mobile navigation Ask Scout action missing');await scout.click();
+  await page.waitForSelector('#apgAssistantPanel:not([hidden]) .scout-v5-input',{timeout:7000});
+  const state=await page.evaluate(()=>({navHidden:document.getElementById('mobileNav')?.hidden,panelHidden:document.getElementById('apgAssistantPanel')?.hidden,expanded:document.getElementById('apgAssistantLauncher')?.getAttribute('aria-expanded')}));
+  assert(state.navHidden===true,`Mobile navigation stayed open behind Scout: ${JSON.stringify(state)}`);
+  assert(state.panelHidden===false&&state.expanded==='true',`Mobile menu Scout hand-off failed: ${JSON.stringify(state)}`);
+  return state;
+}
 async function runJourney(browser,name,viewport,fn){
   const page=await browser.newPage();await page.setViewport(viewport);attachDiagnostics(page,name);const started=Date.now();
   try{await fn(page);report.journeys.push({name,ok:true,durationMs:Date.now()-started});}
@@ -82,6 +92,7 @@ async function runJourney(browser,name,viewport,fn){
   assert(fs.existsSync(CHROME),`Chrome executable not found: ${CHROME}`);
   const browser=await puppeteer.launch({headless:true,executablePath:CHROME,args:['--no-sandbox','--disable-setuid-sandbox']});
   const desktop={width:1440,height:950};
+  const tablet={width:834,height:1112,isMobile:true,hasTouch:true};
   const mobile={width:390,height:844,isMobile:true,hasTouch:true};
 
   await runJourney(browser,'desktop-describe-what-you-need',desktop,async page=>{
@@ -130,13 +141,24 @@ async function runJourney(browser,name,viewport,fn){
     const main=await page.$eval('main',el=>el.innerText);assert(/compare|comparison|versus|vs/i.test(main),'Comparison workspace content missing');
   });
 
-  await runJourney(browser,'desktop-scout',desktop,async page=>{
+  await runJourney(browser,'desktop-scout-launcher-and-nav',desktop,async page=>{
     await goto(page,'/');
     const launcher=await visible(page,'#apgAssistantLauncher');assert(launcher,'Scout launcher missing');await launcher.click();
     await page.waitForSelector('#apgAssistantPanel:not([hidden]) .scout-v5-input',{timeout:10000});
     await page.type('.scout-v5-input','What is Australian Product Guide?');await page.click('.scout-v5-send');
     await page.waitForFunction(()=>{const b=document.getElementById('apgAssistantBody');return b&&b.getAttribute('aria-busy')!=='true'&&/Australian Product Guide|APG/i.test(b.innerText)&&!/checking APG…\s*$/.test(b.innerText);},{timeout:20000});
-    const text=await page.$eval('#apgAssistantBody',el=>el.innerText);assert(!/couldn[’']t load Scout/i.test(text),'Scout returned its failure state');
+    let text=await page.$eval('#apgAssistantBody',el=>el.innerText);assert(!/couldn[’']t load Scout/i.test(text),'Scout returned its failure state');
+    await page.click('[data-apg-assistant-close]');await page.waitForSelector('#apgAssistantPanel[hidden]',{timeout:5000});
+    const navScout=await visible(page,'.primary-nav [data-v26-scout-open]');assert(navScout,'Desktop navigation Ask Scout action missing');await navScout.click();
+    await page.waitForSelector('#apgAssistantPanel:not([hidden]) .scout-v5-input',{timeout:7000});
+    text=await page.$eval('#apgAssistantBody',el=>el.innerText);assert(/Scout|Australian Product Guide|APG/i.test(text),'Desktop navigation Scout hand-off lost its conversation');
+  });
+
+  await runJourney(browser,'tablet-menu-scout-handoff',tablet,async page=>{
+    await goto(page,'/search/?q=robot%20vacuum%20for%20pet%20hair');
+    await openScoutFromMobileMenu(page);
+    const panel=await page.$eval('#apgAssistantPanel',el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height,hidden:el.hidden}));
+    assert(!panel.hidden&&panel.w<=836&&panel.h<=1114,`Tablet Scout geometry invalid: ${JSON.stringify(panel)}`);
   });
 
   await runJourney(browser,'mobile-core-journeys',mobile,async page=>{
@@ -146,11 +168,11 @@ async function runJourney(browser,name,viewport,fn){
     await goto(page,'/');
     await submitVisibleForm(page,'form[data-search-shell]',async form=>{const input=await form.$('input[name="q"]');assert(input,'Mobile visible search input missing');await input.type('robot vacuum for pet hair');},'/search/');
     assert(await page.$('main a[href^="/products/"]'),'Mobile Search rendered no product links');
-    await goto(page,'/');
-    const launcher=await visible(page,'#apgAssistantLauncher');assert(launcher,'Mobile Scout launcher missing');await launcher.click();
-    await page.waitForSelector('#apgAssistantPanel:not([hidden]) .scout-v5-input',{timeout:10000});
+    await openScoutFromMobileMenu(page);
     const panel=await page.$eval('#apgAssistantPanel',el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height,hidden:el.hidden}));
     assert(!panel.hidden&&panel.w<=392&&panel.h<=846,`Mobile Scout geometry invalid: ${JSON.stringify(panel)}`);
+    await page.type('.scout-v5-input','How do recommendations work?');await page.click('.scout-v5-send');
+    await page.waitForFunction(()=>{const b=document.getElementById('apgAssistantBody');return b&&b.getAttribute('aria-busy')!=='true'&&b.innerText.length>100;},{timeout:20000});
   });
 
   await browser.close();
