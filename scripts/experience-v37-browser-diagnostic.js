@@ -7,7 +7,7 @@ const BASE=(process.env.BASE_URL||'https://australianproductguide.au').replace(/
 const OUT=process.env.OUTPUT_DIR||'artifacts/experience-v37';
 const CHROME=process.env.CHROME||'/usr/bin/google-chrome';
 fs.mkdirSync(OUT,{recursive:true});
-const report={base:BASE,startedAt:new Date().toISOString(),journeys:[],failures:[],browserErrors:[],network:[]};
+const report={base:BASE,startedAt:new Date().toISOString(),journeys:[],failures:[],browserErrors:[],network:[],debug:[]};
 
 function assert(ok,message){if(!ok)throw new Error(message);}
 function sameOrigin(url){try{return new URL(url).origin===new URL(BASE).origin}catch{return false}}
@@ -20,7 +20,7 @@ async function screenshot(page,name){try{await page.screenshot({path:path.join(O
 async function waitSettled(page,ms=250){await new Promise(r=>setTimeout(r,ms));await responsive(page,'settled');}
 function attachDiagnostics(page,scope){
   page.on('pageerror',err=>report.browserErrors.push({scope,type:'pageerror',message:String(err&&err.message||err)}));
-  page.on('console',msg=>{if(msg.type()==='error')report.browserErrors.push({scope,type:'console',message:msg.text()});});
+  page.on('console',msg=>{if(msg.type()==='error'){const loc=msg.location()||{};report.browserErrors.push({scope,type:'console',message:msg.text(),sourceUrl:loc.url||null,lineNumber:loc.lineNumber??null,columnNumber:loc.columnNumber??null});}});
   page.on('requestfailed',req=>{
     if(!sameOrigin(req.url()))return;
     const type=req.resourceType();
@@ -68,7 +68,15 @@ async function clickAndWait(page,handle,expectedPath,timeout=12000){
 async function submitVisibleForm(page,formSelector,fill,expectedPath,timeout=12000){
   const form=await visible(page,formSelector);assert(form,`Visible form missing: ${formSelector}`);
   if(fill)await fill(form);
+  await waitSettled(page,80);
   const button=await form.$('button[type="submit"],input[type="submit"]');assert(button,`Submit control missing: ${formSelector}`);
+  const geometry=await button.evaluate((b,selector)=>{
+    const rect=x=>{if(!x)return null;const r=x.getBoundingClientRect();return {left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height};};
+    const br=rect(b),x=br?br.left+br.width/2:0,y=br?br.top+br.height/2:0,hit=document.elementFromPoint(x,y),form=b.closest('form'),input=form?.querySelector('[data-site-search]'),box=form?.querySelector('[data-search-suggestions]');
+    return {selector,viewport:{width:innerWidth,height:innerHeight},button:br,input:rect(input),suggestions:rect(box),suggestionsHidden:box?.hidden??null,suggestionsDisplay:box?getComputedStyle(box).display:null,hit:{tag:hit?.tagName||null,id:hit?.id||null,className:typeof hit?.className==='string'?hit.className:null,href:hit?.closest?.('a')?.href||null,isSubmit:hit===b||b.contains(hit)},activeTag:document.activeElement?.tagName||null,activeId:document.activeElement?.id||null};
+  },formSelector);
+  report.debug.push({kind:'submit-hit-test',page:page.url(),geometry});
+  if(geometry.viewport.width<=480&&formSelector.includes('data-search-shell'))await screenshot(page,'mobile-search-preclick');
   const before=page.url();await button.click();await waitForUrlChange(page,before,expectedPath,timeout);
 }
 async function openScoutFromMobileMenu(page){
