@@ -341,9 +341,10 @@ jobs:
             '/api/decision?q=I%20need%20a%20robot%20vacuum%20under%20%241000%20for%20a%20house%20with%20pets%20and%20mostly%20hard%20floors.&category=robot-vacuums&budget=1000'; do
             curl -fsSL "$BASE_URL$url" | jq -e '.version=="decision-engine-v4" and .commercialRecommendationWeight==0 and (.results|length)>0' >/dev/null
           done
-          curl -fsSL "$BASE_URL/decision-lab/?q=quiet%20headphones%20for%20commuting" | grep -q 'decision-result'
-          curl -fsSL "$BASE_URL/decision-lab/?q=quiet%20headphones%20for%20commuting" | grep -q 'data-save-product'
-          curl -fsSL "$BASE_URL/decision-lab/?q=quiet%20headphones%20for%20commuting" | grep -q 'data-compare-product'
+          curl -fsSL "$BASE_URL/decision-lab/?q=quiet%20headphones%20for%20commuting" -o /tmp/decision-result.html
+          grep -q 'decision-result' /tmp/decision-result.html
+          grep -q 'data-save-product' /tmp/decision-result.html
+          grep -q 'data-compare-product' /tmp/decision-result.html
 
       - name: Install Decision Lab browser dependencies
         run: |
