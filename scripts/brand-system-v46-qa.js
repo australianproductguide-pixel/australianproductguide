@@ -19,7 +19,7 @@ assert.equal(brand.CSS_PATH,'/assets/brand-system-v46.css');
 assert.equal(brand.COMMERCE_CSS_PATH,'/assets/brand-system-v46-commerce.css');
 assert.equal(brand.IMAGERY_CSS_PATH,'/assets/brand-system-v46-imagery.css');
 assert.equal(brand.FINAL_CSS_PATH,'/assets/brand-system-v46-final.css');
-assert.equal(brand.FINAL_CSS_VERSION,'46.4');
+assert.equal(brand.FINAL_CSS_VERSION,'46.5');
 assert.equal(brand.RESEARCH_PROOF_CSS_PATH,'/assets/brand-system-v46-research-proof.css');
 assert.equal(brand.RESEARCH_PROOF_VERSION,'46.2');
 assert(api.includes("require('../lib/brand-system-v46')"),'api/index.js must preserve v46 as the presentation foundation in the current runtime chain');
@@ -33,7 +33,9 @@ for(const selector of ['.global-search','.search-suggestions','.suggest-item','.
 for(const selector of ['.apg-shopping-hero','.apg-shopping-principles','.apg-shopping-card','.apg-shopping-icon','.apg-shopping-bridge-shell','.apg-search-shopping-shell','.apg-amz-v41-card','.apg-amz-v41-eyebrow','.apg-amz-v41-cta','.apg-amz-v41-art','.apg-amz-v41-orbit','.apg-amz-v41-chip'])assert(commerceCss.includes(selector),`v46 shopping reconciliation missing ${selector}`);
 for(const selector of ['.category-hero-media','.category-hero-media>img','.category-hero-media-shade','.category-hero-media-overlay','.category-hero-photo-label','.category-hero-media-overlay strong','.category-hero-media figcaption','.category-hero-media figcaption a'])assert(imageryCss.includes(selector),`v46 imagery reconciliation missing ${selector}`);
 for(const selector of ['.mobile-power.apg-v325-decision-mobile','.mobile-power.apg-v26-scout-mobile','.apg-home-panel-label-v9','.apg-home-gold-button-v9'])assert(finalCss.includes(selector),`v46 final legacy-colour cleanup missing ${selector}`);
-assert(finalCss.includes('body[data-brand-system-v46="true"][data-institutional-v9="true"] .apg-home-panel-v9 .apg-home-panel-label-v9'),'homepage panel label override must explicitly outrank the legacy institutional v9 selector');
+assert(finalCss.includes('body[data-brand-system-v46="true"][data-institutional-v9="true"] .institutional-home-v9 .apg-home-decision-panel-v9 .apg-home-panel-label-v9'),'homepage panel label override must target the actual current institutional v9 decision-panel markup with authoritative specificity');
+assert(!finalCss.includes('.apg-home-panel-v9 .apg-home-panel-label-v9'),'homepage panel label override must not regress to the superseded non-existent .apg-home-panel-v9 parent');
+assert(finalCss.includes('background-color:rgba(37,99,235,.20)!important'),'homepage panel label must explicitly govern computed background colour');
 for(const selector of ['.apg-proof-band-v19','.apg-proof-band-v20','.apg-proof-kicker-v20','.apg-proof-main-v20>strong','.apg-proof-trust-v20'])assert(proofCss.includes(selector),`research-proof exception missing ${selector}`);
 for(const selector of ['.ci47-panel','.ci47-proof span','.ci47-actions a:first-child','.ci47-handoff','.ci47-handoff a'])assert(v47Source.includes(selector),`Consumer Intelligence v47 missing governed APG surface ${selector}`);
 assert(proofCss.includes('body[data-brand-system-v46="true"][data-brand-fidelity-v323="true"] .apg-proof-band-v20 .apg-proof-trust-v20'),'latest proof exception must explicitly outrank the legacy v32.3 trust-copy selector');
@@ -63,10 +65,10 @@ assert(once.includes('data-brand-system-v46="true"'),'v46 body marker missing');
 assert(once.includes('/assets/brand-system-v46.css?v=46'),'v46 master stylesheet link missing');
 assert(once.includes('/assets/brand-system-v46-commerce.css?v=46'),'v46 shopping stylesheet link missing');
 assert(once.includes('/assets/brand-system-v46-imagery.css?v=46'),'v46 imagery stylesheet link missing');
-assert(once.includes('/assets/brand-system-v46-final.css?v=46.4'),'v46 final cleanup stylesheet link missing');
+assert(once.includes('/assets/brand-system-v46-final.css?v=46.5'),'v46 final cleanup stylesheet link missing');
 assert(once.includes('/assets/brand-system-v46-research-proof.css?v=46.2'),'v46 research-proof exception stylesheet link missing');
-assert(once.indexOf('/assets/brand-system-v46-final.css?v=46.4')>once.indexOf('/assets/brand-system-v46-imagery.css?v=46'),'final standard-UI cleanup must load after general imagery styling');
-assert(once.indexOf('/assets/brand-system-v46-research-proof.css?v=46.2')>once.indexOf('/assets/brand-system-v46-final.css?v=46.4'),'research-proof exception must remain the final v46 stylesheet');assert.equal(twice,once,'v46 HTML injection must be idempotent');
+assert(once.indexOf('/assets/brand-system-v46-final.css?v=46.5')>once.indexOf('/assets/brand-system-v46-imagery.css?v=46'),'final standard-UI cleanup must load after general imagery styling');
+assert(once.indexOf('/assets/brand-system-v46-research-proof.css?v=46.2')>once.indexOf('/assets/brand-system-v46-final.css?v=46.5'),'research-proof exception must remain the final v46 stylesheet');assert.equal(twice,once,'v46 HTML injection must be idempotent');
 
 function rgb(hex){const h=hex.replace('#','');return[0,2,4].map(i=>parseInt(h.slice(i,i+2),16));}function lum(hex){const [r,g,b]=rgb(hex).map(v=>{const s=v/255;return s<=.03928?s/12.92:Math.pow((s+.055)/1.055,2.4)});return .2126*r+.7152*g+.0722*b;}function contrast(a,b){const x=lum(a),y=lum(b),hi=Math.max(x,y),lo=Math.min(x,y);return(hi+.05)/(lo+.05);}
 for(const [fg,bg,label,min] of [['#0F172A','#FFFFFF','navy on white',7],['#FFFFFF','#2563EB','white on APG blue',4.5],['#64748B','#FFFFFF','slate on white',4.5],['#FFFFFF','#0F172A','white on APG navy',7],['#0F172A','#F2B348','dark text on maintained-research gold',7]])assert(contrast(fg,bg)>=min,`${label} contrast ${contrast(fg,bg).toFixed(2)} is below ${min}:1`);
