@@ -196,7 +196,7 @@ jobs:
           if(config.$schema!=='https://openapi.vercel.sh/vercel.json') throw new Error('Vercel schema declaration missing');
           if(JSON.stringify(config.regions)!==JSON.stringify(['syd1'])) throw new Error(`Expected Sydney function region, got ${JSON.stringify(config.regions)}`);
           if(!Array.isArray(config.rewrites)||config.rewrites.length!==1||config.rewrites[0].source!=='/(.*)'||config.rewrites[0].destination!=='/api') throw new Error('Unexpected Vercel rewrite contract');
-          const authoritativeWorkflowFiles=['catalogue-freshness-qa.yml','codeql.yml','production-smoke.yml','source-qa.yml'].sort();
+          const authoritativeWorkflowFiles=['amazon-shopping-assurance-v40.yml','catalogue-freshness-qa.yml','codeql.yml','production-smoke.yml','source-qa.yml'].sort();
           const supportWorkflowFiles=['category-editorial-research-v41.yml'].sort();
           const allowedWorkflowFiles=[...authoritativeWorkflowFiles,...supportWorkflowFiles].sort();
           for(const p of ['.github/CODEOWNERS','.github/PULL_REQUEST_TEMPLATE.md','docs/APG-OPERATIONS.md',...authoritativeWorkflowFiles.map(x=>`.github/workflows/${x}`),...supportWorkflowFiles.map(x=>`.github/workflows/${x}`),'supabase/functions/delete-account/index.ts']) if(!fs.existsSync(p)) throw new Error(`Required governance file missing: ${p}`);
