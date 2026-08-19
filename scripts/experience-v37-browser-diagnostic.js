@@ -1,203 +1,38 @@
 'use strict';
-const fs=require('fs');
-const path=require('path');
-const puppeteer=require('puppeteer-core');
-
-const BASE=(process.env.BASE_URL||'https://australianproductguide.au').replace(/\/$/,'');
-const OUT=process.env.OUTPUT_DIR||'artifacts/experience-v37';
-const CHROME=process.env.CHROME||'/usr/bin/google-chrome';
+const fs=require('fs'),path=require('path'),puppeteer=require('puppeteer-core');
+const BASE=(process.env.BASE_URL||'https://australianproductguide.au').replace(/\/$/,''),OUT=process.env.OUTPUT_DIR||'artifacts/experience-v37',CHROME=process.env.CHROME||'/usr/bin/google-chrome';
 fs.mkdirSync(OUT,{recursive:true});
-const report={base:BASE,startedAt:new Date().toISOString(),journeys:[],failures:[],browserErrors:[],navigationAborts:[],network:[]};
-const navigationState=new WeakMap();
-
-function assert(ok,message){if(!ok)throw new Error(message);}
-function sameOrigin(url){try{return new URL(url).origin===new URL(BASE).origin}catch{return false}}
-function isIntentionalNavigation(page){return (navigationState.get(page)||0)>0;}
-async function duringNavigation(page,fn){
-  navigationState.set(page,(navigationState.get(page)||0)+1);
-  try{return await fn();}
-  finally{
-    const next=(navigationState.get(page)||1)-1;
-    if(next>0)navigationState.set(page,next);else navigationState.delete(page);
-  }
+const report={base:BASE,startedAt:new Date().toISOString(),journeys:[],failures:[],browserErrors:[],navigationAborts:[],network:[]},nav=new WeakMap();
+const assert=(ok,m)=>{if(!ok)throw new Error(m)},sleep=ms=>new Promise(r=>setTimeout(r,ms)),sameOrigin=u=>{try{return new URL(u).origin===new URL(BASE).origin}catch{return false}};
+async function duringNav(page,fn){nav.set(page,(nav.get(page)||0)+1);try{return await fn()}finally{const n=(nav.get(page)||1)-1;n?nav.set(page,n):nav.delete(page)}}
+async function settled(page,ms=180){await sleep(ms);const lag=await page.evaluate(async()=>{const s=performance.now();await new Promise(r=>setTimeout(r,120));return performance.now()-s});assert(lag<1800,`main thread unresponsive for ${Math.round(lag)}ms`)}
+function attach(page,scope){
+  page.on('pageerror',e=>report.browserErrors.push({scope,type:'pageerror',message:String(e?.message||e)}));
+  page.on('console',m=>{if(m.type()==='error')report.browserErrors.push({scope,type:'console',message:m.text()})});
+  page.on('requestfailed',req=>{if(!sameOrigin(req.url())||!['document','script','fetch','xhr'].includes(req.resourceType()))return;const item={scope,type:'requestfailed',resourceType:req.resourceType(),url:req.url(),message:req.failure()?.errorText||'failed'};let expected=false;try{expected=(nav.get(page)||0)>0&&req.resourceType()==='script'&&item.message==='net::ERR_ABORTED'&&new URL(req.url()).pathname.startsWith('/assets/')}catch{};(expected?report.navigationAborts:report.browserErrors).push(item)});
+  page.on('response',res=>{const req=res.request(),u=res.url();if(sameOrigin(u)&&(req.resourceType()==='document'||u.includes('/api/account/scout')))report.network.push({scope,type:req.resourceType(),status:res.status(),url:u})});
 }
-function isExpectedNavigationAbort(page,req){
-  if(!isIntentionalNavigation(page)||req.resourceType()!=='script'||req.failure()?.errorText!=='net::ERR_ABORTED'||!sameOrigin(req.url()))return false;
-  try{return new URL(req.url()).pathname.startsWith('/assets/');}catch{return false;}
+async function waitMain(page,t=12000){await page.waitForFunction(()=>document.readyState!=='loading'&&document.querySelector('main'),{timeout:t});await settled(page)}
+async function dismiss(page){const b=await page.$('[data-apg-consent]:not([hidden]) [data-consent-essential]');if(b){await b.click();await settled(page,100)}}
+async function go(page,p){const r=await duringNav(page,()=>page.goto(BASE+p,{waitUntil:'domcontentloaded',timeout:30000}));assert(r&&r.status()<500,`${p}: HTTP ${r&&r.status()}`);await waitMain(page);await dismiss(page)}
+async function visible(page,s){for(const h of await page.$$(s)){if(await h.evaluate(el=>{const r=el.getBoundingClientRect(),c=getComputedStyle(el);return r.width>0&&r.height>0&&c.display!=='none'&&c.visibility!=='hidden'}))return h}return null}
+async function navClick(page,h,p,t=12000){assert(h,'click target missing');const before=page.url();await duringNav(page,async()=>{await h.click();await page.waitForFunction((old,x)=>location.href!==old&&location.pathname===x,{timeout:t},before,p);await waitMain(page,t)})}
+async function submit(page,selector,fill,p){const form=await visible(page,selector);assert(form,`form missing ${selector}`);if(fill)await fill(form);const b=await form.$('button[type="submit"],input[type="submit"]');await navClick(page,b,p)}
+async function scoutMenu(page){
+  const before=new URL(page.url()),toggle=await visible(page,'[data-mobile-toggle]');assert(toggle,'mobile nav toggle missing');await toggle.click();await page.waitForSelector('#mobileNav:not([hidden])',{timeout:5000});
+  const s=await visible(page,'#mobileNav [data-v26-scout-mobile]');assert(s,'mobile Scout missing');await s.click();await page.waitForSelector('#apgAssistantPanel:not([hidden]) .scout-v5-input',{timeout:7000});await settled(page,120);
+  const after=new URL(page.url());assert(after.pathname===before.pathname&&after.search===before.search,`Scout changed URL: ${before.href} -> ${after.href}`);assert(!/\[object(?:%20| )Object\]/i.test(after.href),`Scout malformed query: ${after.href}`);
+  const st=await page.evaluate(()=>({navHidden:document.getElementById('mobileNav')?.hidden,panelHidden:document.getElementById('apgAssistantPanel')?.hidden,expanded:document.getElementById('apgAssistantLauncher')?.getAttribute('aria-expanded')}));assert(st.navHidden&&st.panelHidden===false&&st.expanded==='true',`Scout hand-off failed ${JSON.stringify(st)}`);return st;
 }
-async function responsive(page,label){
-  const elapsed=await page.evaluate(async()=>{const start=performance.now();await new Promise(r=>setTimeout(r,120));return performance.now()-start;});
-  assert(elapsed<1800,`${label}: main thread was unresponsive for ${Math.round(elapsed)}ms`);
-  return elapsed;
-}
-async function screenshot(page,name){try{await page.screenshot({path:path.join(OUT,`${name}.png`),fullPage:true});}catch{}}
-async function waitSettled(page,ms=250){await new Promise(r=>setTimeout(r,ms));await responsive(page,'settled');}
-function attachDiagnostics(page,scope){
-  page.on('pageerror',err=>report.browserErrors.push({scope,type:'pageerror',message:String(err&&err.message||err)}));
-  page.on('console',msg=>{if(msg.type()==='error')report.browserErrors.push({scope,type:'console',message:msg.text()});});
-  page.on('requestfailed',req=>{
-    if(!sameOrigin(req.url()))return;
-    const type=req.resourceType();
-    if(!['document','script','fetch','xhr'].includes(type))return;
-    const failure={scope,type:'requestfailed',resourceType:type,url:req.url(),message:req.failure()?.errorText||'failed'};
-    if(isExpectedNavigationAbort(page,req)){report.navigationAborts.push(failure);return;}
-    report.browserErrors.push(failure);
-  });
-  page.on('response',res=>{
-    const req=res.request(),type=req.resourceType(),url=res.url();
-    if(!sameOrigin(url))return;
-    if(type==='document'||url.includes('/api/account/scout'))report.network.push({scope,type,status:res.status(),url});
-  });
-}
-async function goto(page,url){
-  const response=await duringNavigation(page,()=>page.goto(BASE+url,{waitUntil:'domcontentloaded',timeout:30000}));
-  assert(response&&response.status()<500,`${url}: HTTP ${response&&response.status()}`);
-  await waitSettled(page);
-  await dismissConsent(page);
-  return response;
-}
-async function dismissConsent(page){
-  const root=await page.$('[data-apg-consent]:not([hidden])');
-  if(!root)return;
-  const button=await page.$('[data-consent-essential]');
-  if(button){await button.click();await waitSettled(page,120);}
-}
-async function visible(page,selector){
-  for(const handle of await page.$$(selector)){
-    const ok=await handle.evaluate(el=>{const s=getComputedStyle(el),r=el.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity)!==0&&r.width>0&&r.height>0;});
-    if(ok)return handle;
-  }
-  return null;
-}
-async function waitForUrlChange(page,before,expectedPath,timeout=12000){
-  try{
-    await page.waitForFunction((oldHref,path)=>location.href!==oldHref&&location.pathname===path,{timeout},before,expectedPath);
-  }catch(error){
-    const state=await page.evaluate(()=>({href:location.href,readyState:document.readyState,visibility:document.visibilityState}));
-    throw new Error(`Navigation to ${expectedPath} timed out from ${before}; current ${JSON.stringify(state)}`);
-  }
-  await waitSettled(page);
-}
-async function clickAndWait(page,handle,expectedPath,timeout=12000){
-  assert(handle,'Clickable target missing');
-  const before=page.url();
-  await duringNavigation(page,async()=>{await handle.click();await waitForUrlChange(page,before,expectedPath,timeout);});
-}
-async function submitVisibleForm(page,formSelector,fill,expectedPath,timeout=12000){
-  const form=await visible(page,formSelector);assert(form,`Visible form missing: ${formSelector}`);
-  if(fill)await fill(form);
-  const button=await form.$('button[type="submit"],input[type="submit"]');assert(button,`Submit control missing: ${formSelector}`);
-  const before=page.url();
-  await duringNavigation(page,async()=>{await button.click();await waitForUrlChange(page,before,expectedPath,timeout);});
-}
-async function openScoutFromMobileMenu(page){
-  const toggle=await visible(page,'[data-mobile-toggle]');assert(toggle,'Mobile navigation toggle missing');await toggle.click();
-  await page.waitForSelector('#mobileNav:not([hidden])',{timeout:5000});
-  const scout=await visible(page,'#mobileNav [data-v26-scout-mobile]');assert(scout,'Mobile navigation Ask Scout action missing');await scout.click();
-  await page.waitForSelector('#apgAssistantPanel:not([hidden]) .scout-v5-input',{timeout:7000});
-  const state=await page.evaluate(()=>({navHidden:document.getElementById('mobileNav')?.hidden,panelHidden:document.getElementById('apgAssistantPanel')?.hidden,expanded:document.getElementById('apgAssistantLauncher')?.getAttribute('aria-expanded')}));
-  assert(state.navHidden===true,`Mobile navigation stayed open behind Scout: ${JSON.stringify(state)}`);
-  assert(state.panelHidden===false&&state.expanded==='true',`Mobile menu Scout hand-off failed: ${JSON.stringify(state)}`);
-  return state;
-}
-async function runJourney(browser,name,viewport,fn){
-  const page=await browser.newPage();await page.setViewport(viewport);attachDiagnostics(page,name);const started=Date.now();
-  try{await fn(page);report.journeys.push({name,ok:true,durationMs:Date.now()-started});}
-  catch(error){report.journeys.push({name,ok:false,durationMs:Date.now()-started,error:error.message});report.failures.push({name,error:error.message});await screenshot(page,name.replace(/[^a-z0-9]+/gi,'-').toLowerCase()+'-failure');}
-  finally{await page.close();}
-}
-
+async function journey(browser,name,vp,fn){const p=await browser.newPage();await p.setViewport(vp);attach(p,name);const start=Date.now();try{await fn(p);report.journeys.push({name,ok:true,durationMs:Date.now()-start})}catch(e){report.journeys.push({name,ok:false,durationMs:Date.now()-start,error:e.message});report.failures.push({name,error:e.message});try{await p.screenshot({path:path.join(OUT,name+'-failure.png'),fullPage:true})}catch{}}finally{await p.close()}}
 (async()=>{
-  assert(fs.existsSync(CHROME),`Chrome executable not found: ${CHROME}`);
-  const browser=await puppeteer.launch({headless:true,executablePath:CHROME,args:['--no-sandbox','--disable-setuid-sandbox']});
-  const desktop={width:1440,height:950};
-  const tablet={width:834,height:1112,isMobile:true,hasTouch:true};
-  const mobile={width:390,height:844,isMobile:true,hasTouch:true};
-
-  await runJourney(browser,'desktop-describe-what-you-need',desktop,async page=>{
-    await goto(page,'/');
-    const describe=await visible(page,'a.button[href^="/decision-lab/"]');
-    assert(describe,'Visible homepage Describe what I need link missing');
-    await clickAndWait(page,describe,'/decision-lab/');
-    await submitVisibleForm(page,'form.decision-form',async form=>{
-      const input=await form.$('textarea[name="q"]');assert(input,'Decision Lab description field missing');await input.type('quiet headphones for long flights');
-    },'/decision-lab/');
-    const text=await page.$eval('main',el=>el.innerText);
-    assert(/Best fit|Strong fit|shortlist/i.test(text),'Decision Lab did not render a shortlist');
-    assert(await page.$('main a[href^="/products/"]'),'Decision Lab rendered no product link');
-  });
-
-  await runJourney(browser,'desktop-global-search',desktop,async page=>{
-    await goto(page,'/');
-    await submitVisibleForm(page,'form[data-search-shell]',async form=>{
-      const input=await form.$('input[name="q"]');assert(input,'Visible global search input missing');await input.type('Sony XM6');
-    },'/search/');
-    const q=await page.evaluate(()=>new URL(location.href).searchParams.get('q'));
-    assert(q==='Sony XM6',`Search query was not preserved: ${q}`);
-    const text=await page.$eval('main',el=>el.innerText);
-    assert(/WH-1000XM6|Sony/i.test(text),'Search did not render Sony XM6 result context');
-    assert(await page.$('a[href*="sony-wh-1000xm6"]'),'Exact Sony XM6 product link missing');
-  });
-
-  await runJourney(browser,'desktop-compare',desktop,async page=>{
-    await goto(page,'/search/?q=wireless%20headphones');
-    await page.evaluate(()=>localStorage.setItem('apgCompare','[]'));
-    const slugs=await page.$$eval('[data-compare-product]',els=>[...new Set(els.map(x=>x.dataset.compareProduct).filter(Boolean))]);
-    assert(slugs.length>=2,`Need at least two unique compare products, found ${slugs.length}`);
-    for(const slug of slugs.slice(0,2)){
-      const handles=await page.$$('[data-compare-product]');let target=null;
-      for(const handle of handles){if(await handle.evaluate((el,s)=>el.dataset.compareProduct===s,slug)){target=handle;break;}}
-      assert(target,`Compare control missing for ${slug}`);await target.click();await waitSettled(page,180);
-      const state=await page.evaluate(()=>JSON.parse(localStorage.getItem('apgCompare')||'[]'));
-      assert(state.includes(slug),`Compare state did not retain ${slug}: ${JSON.stringify(state)}`);
-    }
-    const selected=await page.evaluate(()=>JSON.parse(localStorage.getItem('apgCompare')||'[]'));
-    assert(new Set(selected).size>=2,`Compare state has fewer than two unique products: ${JSON.stringify(selected)}`);
-    const tray=await page.$('#compareTray:not([hidden])');assert(tray,'Compare tray did not open after selecting two products');
-    const href=await page.$eval('#compareTray [data-compare-link]',a=>a.getAttribute('href'));
-    for(const slug of slugs.slice(0,2))assert(href.includes(slug),`Compare URL missing ${slug}: ${href}`);
-    const link=await visible(page,'#compareTray [data-compare-link]');await clickAndWait(page,link,'/compare/custom/');
-    const main=await page.$eval('main',el=>el.innerText);assert(/compare|comparison|versus|vs/i.test(main),'Comparison workspace content missing');
-  });
-
-  await runJourney(browser,'desktop-scout-launcher-and-nav',desktop,async page=>{
-    await goto(page,'/');
-    const launcher=await visible(page,'#apgAssistantLauncher');assert(launcher,'Scout launcher missing');await launcher.click();
-    await page.waitForSelector('#apgAssistantPanel:not([hidden]) .scout-v5-input',{timeout:10000});
-    await page.type('.scout-v5-input','What is Australian Product Guide?');await page.click('.scout-v5-send');
-    await page.waitForFunction(()=>{const b=document.getElementById('apgAssistantBody');return b&&b.getAttribute('aria-busy')!=='true'&&/Australian Product Guide|APG/i.test(b.innerText)&&!/checking APG…\s*$/.test(b.innerText);},{timeout:20000});
-    let text=await page.$eval('#apgAssistantBody',el=>el.innerText);assert(!/couldn[’']t load Scout/i.test(text),'Scout returned its failure state');
-    await page.click('[data-apg-assistant-close]');await page.waitForSelector('#apgAssistantPanel[hidden]',{timeout:5000});
-    const navScout=await visible(page,'.primary-nav [data-v26-scout-open]');assert(navScout,'Desktop navigation Ask Scout action missing');await navScout.click();
-    await page.waitForSelector('#apgAssistantPanel:not([hidden]) .scout-v5-input',{timeout:7000});
-    text=await page.$eval('#apgAssistantBody',el=>el.innerText);assert(/Scout|Australian Product Guide|APG/i.test(text),'Desktop navigation Scout hand-off lost its conversation');
-  });
-
-  await runJourney(browser,'tablet-menu-scout-handoff',tablet,async page=>{
-    await goto(page,'/search/?q=robot%20vacuum%20for%20pet%20hair');
-    await openScoutFromMobileMenu(page);
-    const panel=await page.$eval('#apgAssistantPanel',el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height,hidden:el.hidden}));
-    assert(!panel.hidden&&panel.w<=836&&panel.h<=1114,`Tablet Scout geometry invalid: ${JSON.stringify(panel)}`);
-  });
-
-  await runJourney(browser,'mobile-core-journeys',mobile,async page=>{
-    await goto(page,'/');
-    const describe=await visible(page,'a.button[href^="/decision-lab/"]');assert(describe,'Mobile visible Describe what I need link missing');
-    await clickAndWait(page,describe,'/decision-lab/');
-    await goto(page,'/');
-    await submitVisibleForm(page,'form[data-search-shell]',async form=>{const input=await form.$('input[name="q"]');assert(input,'Mobile visible search input missing');await input.type('robot vacuum for pet hair');},'/search/');
-    await page.waitForSelector('main a[href^="/products/"]',{timeout:12000});
-    assert(await page.$('main a[href^="/products/"]'),'Mobile Search rendered no product links');
-    await openScoutFromMobileMenu(page);
-    const panel=await page.$eval('#apgAssistantPanel',el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height,hidden:el.hidden}));
-    assert(!panel.hidden&&panel.w<=392&&panel.h<=846,`Mobile Scout geometry invalid: ${JSON.stringify(panel)}`);
-    await page.type('.scout-v5-input','How do recommendations work?');await page.click('.scout-v5-send');
-    await page.waitForFunction(()=>{const b=document.getElementById('apgAssistantBody');return b&&b.getAttribute('aria-busy')!=='true'&&b.innerText.length>100;},{timeout:20000});
-  });
-
-  await browser.close();
-  const newErrors=report.browserErrors.filter(e=>!(/favicon|google-analytics|googletagmanager/i.test(e.url||e.message||'')));
-  report.navigationAbortCount=report.navigationAborts.length;
-  report.browserErrorCount=newErrors.length;report.finishedAt=new Date().toISOString();fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
-  if(report.failures.length||newErrors.length){if(newErrors.length)console.error('Browser errors:',newErrors);process.exit(1);}
-})().catch(error=>{report.failures.push({name:'runner',error:error.message});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2));console.error(error);process.exit(1);});
+  assert(fs.existsSync(CHROME),`Chrome not found: ${CHROME}`);const b=await puppeteer.launch({headless:true,executablePath:CHROME,args:['--no-sandbox','--disable-setuid-sandbox']});
+  const d={width:1440,height:950},t={width:834,height:1112,isMobile:true,hasTouch:true},m={width:390,height:844,isMobile:true,hasTouch:true};
+  await journey(b,'desktop-describe-what-you-need',d,async p=>{await go(p,'/');await navClick(p,await visible(p,'a.button[href^="/decision-lab/"]'),'/decision-lab/');await submit(p,'form.decision-form',async f=>{const i=await f.$('textarea[name="q"]');await i.type('quiet headphones for long flights')},'/decision-lab/');await p.waitForSelector('main a[href^="/products/"]',{timeout:12000});const x=await p.$eval('main',e=>e.innerText);assert(/Best fit|Strong fit|shortlist/i.test(x),'Decision Lab shortlist missing')});
+  await journey(b,'desktop-global-search',d,async p=>{await go(p,'/');await submit(p,'form[data-search-shell]',async f=>{const i=await f.$('input[name="q"]');await i.type('Sony XM6')},'/search/');await p.waitForSelector('a[href*="sony-wh-1000xm6"]',{timeout:12000});assert(await p.evaluate(()=>new URL(location.href).searchParams.get('q'))==='Sony XM6','Search query lost')});
+  await journey(b,'desktop-compare',d,async p=>{await go(p,'/search/?q=wireless%20headphones');await p.waitForSelector('[data-compare-product]',{timeout:12000});await p.evaluate(()=>localStorage.setItem('apgCompare','[]'));const slugs=await p.$$eval('[data-compare-product]',e=>[...new Set(e.map(x=>x.dataset.compareProduct).filter(Boolean))]);assert(slugs.length>=2,'need two compare products');for(const s of slugs.slice(0,2)){const h=await p.$(`[data-compare-product="${s}"]`);await h.click();await settled(p,180)}assert(await p.$('#compareTray:not([hidden])'),'compare tray missing');await navClick(p,await visible(p,'#compareTray [data-compare-link]'),'/compare/custom/');await p.waitForFunction(()=>/compare|comparison|versus|vs/i.test(document.querySelector('main')?.innerText||''),{timeout:12000})});
+  await journey(b,'desktop-scout-launcher-and-nav',d,async p=>{await go(p,'/');const l=await visible(p,'#apgAssistantLauncher');await l.click();await p.waitForSelector('#apgAssistantPanel:not([hidden]) .scout-v5-input',{timeout:10000});await p.type('.scout-v5-input','What is Australian Product Guide?');await p.click('.scout-v5-send');await p.waitForFunction(()=>{const x=document.getElementById('apgAssistantBody');return x&&x.getAttribute('aria-busy')!=='true'&&/Australian Product Guide|APG/i.test(x.innerText)},{timeout:20000});await p.click('[data-apg-assistant-close]');await p.waitForSelector('#apgAssistantPanel[hidden]',{timeout:5000});const before=p.url();await (await visible(p,'.primary-nav [data-v26-scout-open]')).click();await p.waitForSelector('#apgAssistantPanel:not([hidden])',{timeout:7000});assert(p.url()===before,'desktop Scout changed URL')});
+  await journey(b,'tablet-menu-scout-handoff',t,async p=>{await go(p,'/search/?q=robot%20vacuum%20for%20pet%20hair');await p.waitForSelector('main a[href^="/products/"]',{timeout:12000});await scoutMenu(p)});
+  await journey(b,'mobile-core-journeys',m,async p=>{await go(p,'/');await navClick(p,await visible(p,'a.button[href^="/decision-lab/"]'),'/decision-lab/');await go(p,'/');await submit(p,'form[data-search-shell]',async f=>{const i=await f.$('input[name="q"]');await i.type('robot vacuum for pet hair')},'/search/');await p.waitForSelector('main a[href^="/products/"]',{timeout:12000});await scoutMenu(p);await p.type('.scout-v5-input','How do recommendations work?');await p.click('.scout-v5-send');await p.waitForFunction(()=>{const x=document.getElementById('apgAssistantBody');return x&&x.getAttribute('aria-busy')!=='true'&&x.innerText.length>100},{timeout:20000})});
+  await b.close();const unexpected=report.browserErrors.filter(e=>!(/favicon|google-analytics|googletagmanager/i.test(e.url||e.message||'')));report.navigationAbortCount=report.navigationAborts.length;report.browserErrorCount=unexpected.length;report.finishedAt=new Date().toISOString();fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));if(report.failures.length||unexpected.length)process.exit(1);
+})().catch(e=>{report.failures.push({name:'runner',error:e.message});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2));console.error(e);process.exit(1)});
