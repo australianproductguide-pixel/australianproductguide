@@ -1,0 +1,1 @@
+revoke truncate, references, trigger on table public.apg_communication_preferences from authenticated;

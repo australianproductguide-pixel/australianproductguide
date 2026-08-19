@@ -1,0 +1,1 @@
+create policy "retailer_observations_no_client_access" on public.apg_retailer_observations for all to anon, authenticated using (false) with check (false);
