@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: apg-category-editorial-research-v42-main
       - uses: actions/setup-node@v7
@@ -40,6 +40,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "Candidate register unchanged"
           else
-            git commit -m "Generate category editorial image candidates v42 [skip ci]"
+            git commit -m "Generate refined category editorial image candidates v42 [skip ci]"
             git push origin HEAD:apg-category-editorial-research-v42-main
           fi
