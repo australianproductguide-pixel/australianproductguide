@@ -7,12 +7,14 @@ const brand=require('../lib/brand-system-v46');
 const root=path.join(__dirname,'..');
 const css=fs.readFileSync(path.join(root,'public/assets/brand-system-v46.css'),'utf8');
 const commerceCss=fs.readFileSync(path.join(root,'public/assets/brand-system-v46-commerce.css'),'utf8');
+const imageryCss=fs.readFileSync(path.join(root,'public/assets/brand-system-v46-imagery.css'),'utf8');
 const api=fs.readFileSync(path.join(root,'api/index.js'),'utf8');
 const wrapper=fs.readFileSync(path.join(root,'lib/brand-system-v46.js'),'utf8');
 
 assert.equal(brand.VERSION,'46');
 assert.equal(brand.CSS_PATH,'/assets/brand-system-v46.css');
 assert.equal(brand.COMMERCE_CSS_PATH,'/assets/brand-system-v46-commerce.css');
+assert.equal(brand.IMAGERY_CSS_PATH,'/assets/brand-system-v46-imagery.css');
 assert(api.includes("require('../lib/brand-system-v46')"),'api/index.js must make v46 the final presentation layer');
 assert(wrapper.includes("require('./amazon-shopping-creative-final-v41')"),'v46 must preserve current Amazon shopping creative v41 downstream');
 
@@ -32,10 +34,15 @@ for(const selector of [
   '.apg-shopping-hero','.apg-shopping-principles','.apg-shopping-card','.apg-shopping-icon','.apg-shopping-bridge-shell','.apg-search-shopping-shell',
   '.apg-amz-v41-card','.apg-amz-v41-eyebrow','.apg-amz-v41-cta','.apg-amz-v41-art','.apg-amz-v41-orbit','.apg-amz-v41-chip'
 ])assert(commerceCss.includes(selector),`v46 shopping reconciliation missing ${selector}`);
+for(const selector of [
+  '.category-hero-media','.category-hero-media>img','.category-hero-media-shade','.category-hero-media-overlay',
+  '.category-hero-photo-label','.category-hero-media-overlay strong','.category-hero-media figcaption','.category-hero-media figcaption a'
+])assert(imageryCss.includes(selector),`v46 imagery reconciliation missing ${selector}`);
 
 for(const retired of ['#082735','#087c76','#075e5a','#0b6f70','#0b3445','#08786f','#ffd95d','#f6bd45','#f3b548','#f4b548']){
   assert(!css.toLowerCase().includes(retired),`retired historical brand colour leaked into v46: ${retired}`);
   assert(!commerceCss.toLowerCase().includes(retired),`retired historical brand colour leaked into v46 commerce: ${retired}`);
+  assert(!imageryCss.toLowerCase().includes(retired),`retired historical brand colour leaked into v46 imagery: ${retired}`);
 }
 
 const greenOccurrences=(css.match(/#10B981/gi)||[]).length;
@@ -49,6 +56,7 @@ const once=brand.inject(sample),twice=brand.inject(once);
 assert(once.includes('data-brand-system-v46="true"'),'v46 body marker missing');
 assert(once.includes('/assets/brand-system-v46.css?v=46'),'v46 master stylesheet link missing');
 assert(once.includes('/assets/brand-system-v46-commerce.css?v=46'),'v46 shopping stylesheet link missing');
+assert(once.includes('/assets/brand-system-v46-imagery.css?v=46'),'v46 imagery stylesheet link missing');
 assert.equal(twice,once,'v46 HTML injection must be idempotent');
 
 function rgb(hex){const h=hex.replace('#','');return[0,2,4].map(i=>parseInt(h.slice(i,i+2),16));}
@@ -61,10 +69,14 @@ for(const [fg,bg,label,min] of [
   ['#FFFFFF','#0F172A','white on APG navy',7]
 ])assert(contrast(fg,bg)>=min,`${label} contrast ${contrast(fg,bg).toFixed(2)} is below ${min}:1`);
 
-assert(css.includes('rgba(15,23,42,.94)'),'editorial-image hero must include a high-contrast navy scrim');
-assert(css.includes('background-position:center'),'editorial-image hero must maintain controlled image framing');
+assert(css.includes('rgba(15,23,42,.94)'),'generic editorial-image hero must include a high-contrast navy scrim');
+assert(css.includes('background-position:center'),'generic editorial-image hero must maintain controlled image framing');
+assert(imageryCss.includes('rgba(15,23,42,.96)'),'actual category photo markup must include a high-contrast APG navy lower scrim');
+assert(imageryCss.includes('rgba(15,23,42,.97)'),'actual category photo attribution must use an APG navy caption surface');
+assert(imageryCss.includes('color:#FFFFFF!important'),'actual category photo overlay must force high-contrast white copy');
 assert(css.includes('@media(max-width:920px)'),'v46 must explicitly govern responsive/mobile presentation');
 assert(css.includes('@media(max-width:640px)'),'v46 must explicitly govern compact mobile controls');
 assert(commerceCss.includes('@media(max-width:820px)'),'shopping discovery must retain responsive v46 coverage');
+assert(imageryCss.includes('@media(max-width:920px)')&&imageryCss.includes('@media(max-width:640px)'),'category imagery must retain tablet/mobile contrast governance');
 
-console.log('APG Brand System v46 source QA passed: palette=PASS typography=PASS account=PASS search=PASS scout=PASS research=PASS shopping-v39=PASS shopping-v41=PASS contrast=PASS responsive=PASS');
+console.log('APG Brand System v46 source QA passed: palette=PASS typography=PASS account=PASS search=PASS scout=PASS research=PASS shopping-v39=PASS shopping-v41=PASS imagery=PASS contrast=PASS responsive=PASS');
