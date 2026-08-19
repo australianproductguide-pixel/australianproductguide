@@ -62,6 +62,27 @@ for(const [query,expected] of [['headphones','wireless-headphones'],['smartphone
   report.push({query,category:expected,match:match?.match,results:(payload.results||[]).slice(0,3).map(x=>x.slug)});
 }
 
+// Australian price-format regression: the comma in A$2,000 must not destroy the
+// hard ceiling or allow a known maintained A$2,299 product to be treated as eligible.
+{
+  const query='TV under $2,000';
+  const lexical=searchSite(query),payload=research.researchPayload(query);
+  assert.strictEqual(payload.decisionState?.category,'televisions',`${query}: category regression`);
+  assert.strictEqual(payload.decisionState?.budget?.amount,2000,`${query}: comma-formatted budget should parse to 2000`);
+  assert.strictEqual(payload.decisionState?.budget?.hard,true,`${query}: under should remain a hard ceiling`);
+  assert.strictEqual(payload.decisionState?.hardConstraints?.budgetCeiling,2000,`${query}: hard budget ceiling missing`);
+  assert(payload.results?.length,`${query}: expected maintained TV results`);
+  for(const result of payload.results){
+    if(Number(result.priceBasis)>0)assert(Number(result.priceBasis)<=2000,`${query}: known over-budget result presented as viable: ${result.slug} A$${result.priceBasis}`);
+    assert.notStrictEqual(result.status,'ineligible',`${query}: ineligible result leaked into Research View: ${result.slug}`);
+  }
+  for(const product of lexical.products){
+    const price=Number(product.price||0);
+    if(price>0)assert(price<=2000,`${query}: known over-budget lexical result leaked: ${product.slug} A$${price}`);
+  }
+  report.push({query,budget:payload.decisionState.budget,results:payload.results.map(x=>({slug:x.slug,priceBasis:x.priceBasis,status:x.status}))});
+}
+
 const comparison=research.researchPayload('Samsung vs LG');
 assert.notStrictEqual(comparison.modelScoped,true,'comparison query must retain comparison/discovery behaviour');
 report.push({query:'Samsung vs LG',modelScoped:false,mode:comparison.mode,results:(comparison.results||[]).slice(0,3).map(x=>x.slug)});
