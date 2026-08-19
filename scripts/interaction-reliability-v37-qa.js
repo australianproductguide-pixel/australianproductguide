@@ -5,6 +5,7 @@ const handler=require('../lib/interaction-reliability-v37');
 assert.equal(handler.VERSION,'37');
 assert.equal(handler.ASSET_PATH,'/assets/interaction-reliability-v37.js');
 const js=handler.clientJs;
+new Function(js);
 for(const required of [
   'form[data-search-shell]',
   'form.decision-form[data-busy-form]',
