@@ -1,0 +1,1072 @@
+{
+  "version": "category-editorial-candidates-v41",
+  "generatedAt": "2026-08-19T09:05:07.429Z",
+  "policy": {
+    "purpose": "Category-level editorial imagery only; never evidence of a specific reviewed product.",
+    "source": "StockSnap via Openverse",
+    "requiredLicence": "CC0",
+    "selection": "Human-reviewed before Production; self-host final selected assets.",
+    "upstreamVerification": "Verify landing page and licence before release."
+  },
+  "summary": {
+    "categories": 90,
+    "withCandidates": 3,
+    "withoutCandidates": 87
+  },
+  "categories": [
+    {
+      "slug": "action-cameras",
+      "label": "Action cameras",
+      "title": "Action cameras Australia",
+      "query": "action camera outdoor adventure travel",
+      "error": "Openverse 403 <!DOCTYPE html><html lang=\"en-US\"><head><title>Just a moment...</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\"><meta name=\"robots\" content=\"noindex,nofollow\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><meta http-equiv=\"content-security-policy\" content=\"default-src &#39;none&#39;; script-src &#39;nonce-NItOEHcu8FJhhpVaPht0z0&#39; &#39;unsafe-eval&#39; https://challenges.cloudflare.com; script-src-attr &#39;none&#39;; style-src &#39;unsafe-inline&#39;; img-src &#39;self&#39; https://challenges.cloudflare.com; connect-src &#39;self&#39; https://challenges.cloudflare.com; frame-src &#39;self&#39; https://challenges.cloudflare.com blob:; child-src &#39;self&#39; https://challenges.cloudflare.com blob:; worker-src blob:; form-action http: https:; base-uri &#39;self&#39;\"><style>*{box-sizing:border-box;margin:0;padding:0}html{line-height:1.15;-webkit-text-size-adjust:100%;color:#313131;font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,\"Noto Sans\",sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\",\"Segoe UI Symbol\",\"Noto Color Emoji\"}body{display:flex;flex-direction:column;height:100vh;min-height:100vh}.main-content{margin:8rem auto;padding-left:1.5rem;max-width:60rem}@media (width <= 720px){.main-content{margin-top:4rem}}#challenge-error-text{background-image:url(\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgZmlsbD0ibm9uZSI+PHBhdGggZmlsbD0iI0IyMEYwMyIgZD0iTTE2IDNhMTMgMTMgMCAxIDAgMTMgMTNBMTMuMDE1IDEzLjAxNSAwIDAgMCAxNiAzbTAgMjRhMTEgMTEgMCAxIDEgMTEtMTEgMTEuMDEgMTEuMDEgMCAwIDEtMTEgMTEiLz48cGF0aCBmaWxsPSIjQjIwRjAzIiBkPSJNMTcuMDM4IDE4LjYxNUgxNC44N0wxNC41NjMgOS41aDIuNzgzem0tMS4wODQgMS40MjdxLjY2IDAgMS4wNTcuMzg4LjQwNy4zODkuNDA3Ljk5NCAwIC41OTYtLjQwNy45ODQtLjM5Ny4zOS0xLjA1Ny4zODktLjY1IDAtMS4wNTYtLjM4OS0uMzk4LS4zODktLjM5OC0uOTg0IDAtLjU5Ny4zOTgtLjk4NS40MDYtLjM5NyAxLjA1Ni0uMzk3Ii8+PC9zdmc+\");background-repeat:no-repeat;background-size:contain;padding-left:34px}</style><meta http-equiv=\"refresh\" content=\"360\"></head><body><div class=\"main-wrapper\" role=\"main\"><div class=\"main-content\"><noscript><div class=\"h2\"><span id=\"challenge-error-text\">Enable JavaScript and cookies to continue</span></div></noscript></div></div><script nonce=\"NItOEHcu8FJhhpVaPht0z0\">(function(){window._cf_chl_opt = {cFPWv: 'g',cH: 'KpNI2zfqejmX9xwDWtscppgSafqFe8S9_K6qGUDYaww-1787130283-1.2.1.1-ZCxIUYHgiQtviKa6b2vSdCO49B851eu52x3axw83uh3VObMMCVRvyUCTPWU7Cx8n',cITimeS: '1787130283',cN: 'NItOEHcu8FJhhpVaPht0z0',cRay: 'a2d7fe0eade0c999',cTplB: '0',cTplC:0,cTplO:0,cTplV:5,cType: 'managed',cUPMDTk:\"/v1/images/?q=action+camera+outdoor+adventure+travel\\u0026source=stocksnap\\u0026license=cc0\\u0026category=photograph\\u0026page_size=20\\u0026__cf_chl_tk=Und4bdEB9TIVxC.J6PpyZ6dfUmAoDcgACk7cLR7hm_E-1787130283-1.0.1.1-wddqx0Drjj9HMUqxsOWhNTiKGe0mN_SZNuYVo0CLEVw\",cvId: '3',cZone: 'api.openverse.org',fa:\"/v1/images/?q=action+camera+outdoor+adventure+travel\\u0026source=stocksnap\\u0026license=cc0\\u0026category=photograph\\u0026page_size=20\\u0026__cf_chl_f_tk=Und4bdEB9TIVxC.J6PpyZ6dfUmAoDcgACk7cLR7hm_E-1787130283-1.0.1.1-wddqx0Drjj9HMUqxsOWhNTiKGe0mN_SZNuYVo0CLEVw\",md: 'wARrlCH8l7QfwMFU_wZfyhgn3tOayJ6t4ls1gEEPqfI-1787130283-1.2.1.1-W.J8AQ2gKQWJ5MlJFoHA34Wrtvdg4dO43snX_OzLKGcdN.JTMxyovTkWa0lAetph4NqsZT_TeRfdvTfsCBfSGAokLiLvWQwYz2_vDYGMwrhYb0bL5fd_QaNXpFmTh.UfgQ0b8.vd3ezTRPwYon4msP_sejrMtLrvDjSIseI9fIZ27CFnCS1Dw4IRmjDF2FBPgeKL.mmwjEKUDZ1zhgRHTWvoNrfdyDbVrZ_8tjJ9whg4Bx2BxOKBnlteITsuoE0lwqYrN9cPVn3SjFr1VxyzueiQ8asuSVvudjZbcPZ9f9uVPM6_8IR4e4mskoc7orO.lfEbCi0JtnbcjsbhSnCV2n7Ey0sasMVtOAoSoVCVJQLhgcwLIlKtl6c3CnoSoHgGdmBq_rw925ZKyzFSnaiRdsyqVdjVtT.eVx9DldwF3XYOTarrx6iE3XPwNakCizejY0szLRMblgDJ0ZgYXIf8lRHooTxH4jvA7i8J4hGJCX2ZcHvKRq2_5wo_v59OD5TYq5HcyfPgFDJe_ssWv9UQ8EG3EJLO1I7Oj2Qb8VMkuhjHvRrKxH5BZ40D0SiOU1q1Wwv0HCRdqWZGlrduCYdOnuZ6Fl43STIKu4De8C7b3uKK_P7h.vXbAiIkz4YpZYbfQ0qAc2B3ip6jakarDhL0kfMRSDJHG5BmGcDjXdvTFL9Dwt4QvfNMbcLH5O8T_DVTcZbiJpfOL8x9sydxYZF_kWpvGAizAi1Thz1J.mPnB0LBhjC3dGfvPNduu87xe96m0PG4Y2bQsLCVpAeKrgKy8peqP8fsQ4znuxu3a3jjyy1rebCNyep3dlJ5UYvWmvlQ8exJ1hmhcKB5Z98o8c3FjU6MnqoKjJ6JLb9tcgGqE8ekf4vKyk3RubEp4U5DcyQ7_lvtqm94mjbbS7Ge8JoZrB6ZWbUd90e1FGzb9cDowrQ.5RotULYCD9LvzXvpxjUwrUQIDL94A8F3Xi2pIGk8U1HaLSVDp4ib6nZCZTUHjXk8BgHvbOCDyn0uejH4.zz505B40IjnSxdWEpN5GDYM6eJxoaPLfWug2En4cFl_di6cI0vyROSMoeZgljYPWtwUSwCQRn1RAoBr9mE13ESPOYKD7OUQ7jesxsucYWq.NsRr6RtWLuTAZKo.24h8KehEKTdWi1AOFQTL_7LMf3kzGGFPPVrpqtgX7Ay8.ZdBsHgs_6Z_M74EpfRcVecaLTklt_YwCgstfLxAj4YElXtRi1erSePOrbeLUaWbQklAcYs6laq46wEawpuc1bVq9ZdIesJzwUNqLLjLLy.fOaneYq4aKhEjHIld2K4GwHooBWxaq280jGtIT6m2xJaLjFyppkOz9VWUJeNSwaD56wCw_RMWOJw_.w2jGN5sAXjFU8vg6pUhHMHJPFRZ6LbI8Mn0',mdrd: 'YV3ttQfv2IZzLHp5992jHHsVff8R0ZIYXML_H5T2PUk-1787130283-1.2.1.1-x_wbt7HWc7d8aWsljGV0NBMw_mSHglnrzXTkyWJu.ZoSrhFZwFdjdCi4JaUwL7RUsM4.H1cuMtdrDkQSSF_KfPZDCODzTJalbcfN.eoXNeNvrIBcrAsUgfvrIXerI8p9xEnbKqiphUd9n8AaMh7ImO65kx2HZn3jcYMDqxpVEUdCfMHIQ4rn4wHLP9O8lZlzqCgeO8shqiW6hTWLPw0GcJQ18hmV_VFrRa_8y7WOTw1wp._YS.havm_ZjBQZe_xoAUMJdeiEhHZjDmwOEBXSKQWr0sH2fmf0uHR8zNuS8_LZ17YFnH5MRreVct6OQiSZuVm6v4hEX0OgV4tUnv4GUF8F4_YKRfpzOO_24mbvWKQQqd.kIBN7IkJoYyTZiJM9PAGILJGZ0z8nGDH6mnkqnw',};var a = document.createElement('script');a.nonce = 'NItOEHcu8FJhhpVaPht0z0';a.src = '/cdn-cgi/challenge-platform/h/g/orchestrate/chl_page/v1?ray=a2d7fe0eade0c999';window._cf_chl_opt.cOgUHash = location.hash === '' && location.href.indexOf('#') !== -1 ? '#' : location.hash;window._cf_chl_opt.cOgUQuery = location.search === '' && location.href.slice(0, location.href.length - window._cf_chl_opt.cOgUHash.length).indexOf('?') !== -1 ? '?' : location.search;if (window.history && window.history.replaceState) {var ogU = location.pathname + window._cf_chl_opt.cOgUQuery + window._cf_chl_opt.cOgUHash;history.replaceState(null, null,\"/v1/images/?q=action+camera+outdoor+adventure+travel\\u0026source=stocksnap\\u0026license=cc0\\u0026category=photograph\\u0026page_size=20\\u0026__cf_chl_rt_tk=Und4bdEB9TIVxC.J6PpyZ6dfUmAoDcgACk7cLR7hm_E-1787130283-1.0.1.1-wddqx0Drjj9HMUqxsOWhNTiKGe0mN_SZNuYVo0CLEVw\"+ window._cf_chl_opt.cOgUHash);a.onload = function() {history.replaceState(null, null, ogU);}}document.getElementsByTagName('head')[0].appendChild(a);}());</script></body></html>",
+      "candidates": []
+    },
+    {
+      "slug": "air-fryers",
+      "label": "Air fryers",
+      "title": "Air Fryers Australia",
+      "query": "air fryer kitchen cooking",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "air-purifiers",
+      "label": "Air purifiers",
+      "title": "Air purifiers Australia",
+      "query": "air purifier modern living room clean air",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "automatic-litter-boxes",
+      "label": "Automatic litter boxes",
+      "title": "Automatic litter boxes Australia",
+      "query": "cat litter box modern home",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "automatic-pet-feeders",
+      "label": "Automatic pet feeders",
+      "title": "Automatic pet feeders Australia",
+      "query": "cat pet feeder home",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "baby-monitors",
+      "label": "Baby monitors",
+      "title": "Baby monitors Australia",
+      "query": "baby monitor nursery room",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "beard-trimmers",
+      "label": "Beard trimmers",
+      "title": "Beard trimmers Australia",
+      "query": "beard grooming trimmer bathroom",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "blenders",
+      "label": "Blenders",
+      "title": "Blenders Australia",
+      "query": "blender modern kitchen smoothie",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "bluetooth-speakers",
+      "label": "Bluetooth speakers",
+      "title": "Bluetooth speakers Australia",
+      "query": "portable speaker music lifestyle",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "bluetooth-trackers",
+      "label": "Bluetooth trackers",
+      "title": "Bluetooth trackers Australia",
+      "query": "key tracker luggage travel technology",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "bread-makers",
+      "label": "Bread makers",
+      "title": "Bread makers Australia",
+      "query": "bread maker fresh bread kitchen",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "car-jump-starters",
+      "label": "Car jump starters",
+      "title": "Car jump starters Australia",
+      "query": "car engine roadside emergency battery",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "coffee-grinders",
+      "label": "Coffee grinders",
+      "title": "Coffee Grinders Australia",
+      "query": "coffee grinder beans modern kitchen",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "coffee-machines",
+      "label": "Coffee machines",
+      "title": "Coffee Machines Australia",
+      "query": "espresso machine coffee kitchen",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "computer-mice",
+      "label": "Computer mice",
+      "title": "Computer mice Australia",
+      "query": "computer mouse modern desk workspace",
+      "error": "",
+      "candidates": [
+        {
+          "id": "dc572dcf-1d08-4b34-9801-0330d8bdc028",
+          "title": "Home Office",
+          "creator": "Design by Matt",
+          "creatorUrl": "https://mattbango.com",
+          "source": "stocksnap",
+          "provider": "stocksnap",
+          "licence": "cc0",
+          "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "landingUrl": "https://stocksnap.io/photo/home-office-XCEL7PRKMG",
+          "imageUrl": "https://cdn.stocksnap.io/img-thumbs/960w/XCEL7PRKMG.jpg",
+          "thumbnail": "https://api.openverse.org/v1/images/dc572dcf-1d08-4b34-9801-0330d8bdc028/thumb/",
+          "width": 3687,
+          "height": 2458,
+          "mature": false,
+          "tags": [
+            "apartment",
+            "computer",
+            "decor",
+            "design",
+            "desk",
+            "equipment",
+            "home",
+            "interior",
+            "keyboard",
+            "modern",
+            "monitor",
+            "mouse",
+            "objects",
+            "office",
+            "room",
+            "technology",
+            "workplace",
+            "workspace"
+          ],
+          "query": "computer mouse modern desk workspace",
+          "score": 17
+        },
+        {
+          "id": "183a1219-30c9-44d7-be3a-65fe749dd1aa",
+          "title": "Home Office",
+          "creator": "Design by Matt",
+          "creatorUrl": "https://mattbango.com",
+          "source": "stocksnap",
+          "provider": "stocksnap",
+          "licence": "cc0",
+          "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "landingUrl": "https://stocksnap.io/photo/home-office-QUU0AQABSN",
+          "imageUrl": "https://cdn.stocksnap.io/img-thumbs/960w/QUU0AQABSN.jpg",
+          "thumbnail": "https://api.openverse.org/v1/images/183a1219-30c9-44d7-be3a-65fe749dd1aa/thumb/",
+          "width": 3557,
+          "height": 2371,
+          "mature": false,
+          "tags": [
+            "apartment",
+            "computer",
+            "decor",
+            "design",
+            "desk",
+            "equipment",
+            "home",
+            "interior",
+            "keyboard",
+            "modern",
+            "monitor",
+            "mouse",
+            "objects",
+            "office",
+            "room",
+            "technology",
+            "workplace",
+            "workspace"
+          ],
+          "query": "computer mouse modern desk workspace",
+          "score": 17
+        }
+      ]
+    },
+    {
+      "slug": "computer-monitors",
+      "label": "Computer monitors",
+      "title": "Computer monitors Australia",
+      "query": "computer monitor modern desk workspace",
+      "error": "",
+      "candidates": [
+        {
+          "id": "21a2b35a-5b9d-4b5d-b324-bec9cfb497e7",
+          "title": "Home Office",
+          "creator": "Matt Bango",
+          "creatorUrl": "https://mattbango.photo",
+          "source": "stocksnap",
+          "provider": "stocksnap",
+          "licence": "cc0",
+          "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "landingUrl": "https://stocksnap.io/photo/home-office-TTSZNHYKJD",
+          "imageUrl": "https://cdn.stocksnap.io/img-thumbs/960w/TTSZNHYKJD.jpg",
+          "thumbnail": "https://api.openverse.org/v1/images/21a2b35a-5b9d-4b5d-b324-bec9cfb497e7/thumb/",
+          "width": 3861,
+          "height": 2574,
+          "mature": false,
+          "tags": [
+            "apartment",
+            "chair",
+            "city",
+            "computer",
+            "decor",
+            "design",
+            "desk",
+            "equipment",
+            "home",
+            "interior",
+            "keyboard",
+            "modern",
+            "monitor",
+            "objects",
+            "office",
+            "room",
+            "window",
+            "workplace"
+          ],
+          "query": "computer monitor modern desk workspace",
+          "score": 17
+        },
+        {
+          "id": "961de64f-834c-4225-a1de-de6059480608",
+          "title": "Home Office",
+          "creator": "Matt Bango",
+          "creatorUrl": "https://mattbango.photo",
+          "source": "stocksnap",
+          "provider": "stocksnap",
+          "licence": "cc0",
+          "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "landingUrl": "https://stocksnap.io/photo/home-office-BK73EFUAWY",
+          "imageUrl": "https://cdn.stocksnap.io/img-thumbs/960w/BK73EFUAWY.jpg",
+          "thumbnail": "https://api.openverse.org/v1/images/961de64f-834c-4225-a1de-de6059480608/thumb/",
+          "width": 3861,
+          "height": 2574,
+          "mature": false,
+          "tags": [
+            "apartment",
+            "chair",
+            "computer",
+            "decor",
+            "design",
+            "desk",
+            "equipment",
+            "home",
+            "interior",
+            "keyboard",
+            "modern",
+            "monitor",
+            "objects",
+            "office",
+            "room",
+            "workplace",
+            "workspace"
+          ],
+          "query": "computer monitor modern desk workspace",
+          "score": 17
+        },
+        {
+          "id": "dc572dcf-1d08-4b34-9801-0330d8bdc028",
+          "title": "Home Office",
+          "creator": "Design by Matt",
+          "creatorUrl": "https://mattbango.com",
+          "source": "stocksnap",
+          "provider": "stocksnap",
+          "licence": "cc0",
+          "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "landingUrl": "https://stocksnap.io/photo/home-office-XCEL7PRKMG",
+          "imageUrl": "https://cdn.stocksnap.io/img-thumbs/960w/XCEL7PRKMG.jpg",
+          "thumbnail": "https://api.openverse.org/v1/images/dc572dcf-1d08-4b34-9801-0330d8bdc028/thumb/",
+          "width": 3687,
+          "height": 2458,
+          "mature": false,
+          "tags": [
+            "apartment",
+            "computer",
+            "decor",
+            "design",
+            "desk",
+            "equipment",
+            "home",
+            "interior",
+            "keyboard",
+            "modern",
+            "monitor",
+            "mouse",
+            "objects",
+            "office",
+            "room",
+            "technology",
+            "workplace",
+            "workspace"
+          ],
+          "query": "computer monitor modern desk workspace",
+          "score": 17
+        },
+        {
+          "id": "183a1219-30c9-44d7-be3a-65fe749dd1aa",
+          "title": "Home Office",
+          "creator": "Design by Matt",
+          "creatorUrl": "https://mattbango.com",
+          "source": "stocksnap",
+          "provider": "stocksnap",
+          "licence": "cc0",
+          "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "landingUrl": "https://stocksnap.io/photo/home-office-QUU0AQABSN",
+          "imageUrl": "https://cdn.stocksnap.io/img-thumbs/960w/QUU0AQABSN.jpg",
+          "thumbnail": "https://api.openverse.org/v1/images/183a1219-30c9-44d7-be3a-65fe749dd1aa/thumb/",
+          "width": 3557,
+          "height": 2371,
+          "mature": false,
+          "tags": [
+            "apartment",
+            "computer",
+            "decor",
+            "design",
+            "desk",
+            "equipment",
+            "home",
+            "interior",
+            "keyboard",
+            "modern",
+            "monitor",
+            "mouse",
+            "objects",
+            "office",
+            "room",
+            "technology",
+            "workplace",
+            "workspace"
+          ],
+          "query": "computer monitor modern desk workspace",
+          "score": 17
+        },
+        {
+          "id": "ff86cff8-6a08-4b57-b5b9-dd8fd3a6dee9",
+          "title": "Home Office",
+          "creator": "Matt Bango",
+          "creatorUrl": "https://mattbango.photo",
+          "source": "stocksnap",
+          "provider": "stocksnap",
+          "licence": "cc0",
+          "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "landingUrl": "https://stocksnap.io/photo/home-office-YODJNTOBN9",
+          "imageUrl": "https://cdn.stocksnap.io/img-thumbs/960w/YODJNTOBN9.jpg",
+          "thumbnail": "https://api.openverse.org/v1/images/ff86cff8-6a08-4b57-b5b9-dd8fd3a6dee9/thumb/",
+          "width": 3325,
+          "height": 2217,
+          "mature": false,
+          "tags": [
+            "apartment",
+            "chair",
+            "city",
+            "computer",
+            "decor",
+            "design",
+            "desk",
+            "equipment",
+            "home",
+            "interior",
+            "keyboard",
+            "modern",
+            "monitor",
+            "objects",
+            "office",
+            "room",
+            "window",
+            "workplace"
+          ],
+          "query": "computer monitor modern desk workspace",
+          "score": 17
+        }
+      ]
+    },
+    {
+      "slug": "cordless-drills",
+      "label": "Cordless drills",
+      "title": "Cordless drills Australia",
+      "query": "cordless drill workshop DIY",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "dash-cameras",
+      "label": "Dash cameras",
+      "title": "Dash cameras Australia",
+      "query": "dashboard car road camera",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "dehumidifiers",
+      "label": "Dehumidifiers",
+      "title": "Dehumidifiers Australia",
+      "query": "modern home humidity room appliance",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "dishwashers",
+      "label": "Dishwashers",
+      "title": "Dishwashers Australia",
+      "query": "dishwasher modern kitchen interior",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "document-scanners",
+      "label": "Document scanners",
+      "title": "Document scanners Australia",
+      "query": "document scanner modern office desk",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "e-readers",
+      "label": "E-readers",
+      "title": "E-readers Australia",
+      "query": "ebook reader reading lifestyle",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "earbuds",
+      "label": "Earbuds",
+      "title": "Earbuds Australia",
+      "query": "wireless earbuds music lifestyle",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "electric-kettles",
+      "label": "Electric kettles",
+      "title": "Electric kettles Australia",
+      "query": "electric kettle modern kitchen tea",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "electric-shavers",
+      "label": "Electric shavers",
+      "title": "Electric shavers Australia",
+      "query": "electric shaver grooming bathroom",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "electric-toothbrushes",
+      "label": "Electric toothbrushes",
+      "title": "Electric toothbrushes Australia",
+      "query": "electric toothbrush modern bathroom",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "external-ssds",
+      "label": "External SSDs",
+      "title": "External SSDs Australia",
+      "query": "portable hard drive SSD desk laptop",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "fitness-trackers",
+      "label": "Fitness trackers",
+      "title": "Fitness trackers Australia",
+      "query": "fitness tracker running wrist",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "food-processors",
+      "label": "Food processors",
+      "title": "Food processors Australia",
+      "query": "food processor modern kitchen cooking",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "fridges",
+      "label": "Fridges",
+      "title": "Fridges Australia",
+      "query": "refrigerator modern kitchen interior",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "gaming-controllers",
+      "label": "Gaming controllers",
+      "title": "Gaming controllers Australia",
+      "query": "game controller gaming setup",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "gaming-headsets",
+      "label": "Gaming headsets",
+      "title": "Gaming headsets Australia",
+      "query": "gaming headset desk computer",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "gaming-monitors",
+      "label": "Gaming monitors",
+      "title": "Gaming monitors Australia",
+      "query": "gaming monitor desk setup",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "garment-steamers",
+      "label": "Garment steamers",
+      "title": "Garment steamers Australia",
+      "query": "clothing steamer wardrobe fashion",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "hair-dryers",
+      "label": "Hair dryers",
+      "title": "Hair dryers Australia",
+      "query": "hair dryer modern bathroom",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "hair-straighteners",
+      "label": "Hair straighteners",
+      "title": "Hair straighteners Australia",
+      "query": "hair straightener styling bathroom",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "home-fitness-equipment",
+      "label": "Home fitness equipment",
+      "title": "Home fitness equipment Australia",
+      "query": "home gym fitness equipment workout",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "home-printers",
+      "label": "Home printers",
+      "title": "Home Printers Australia",
+      "query": "home printer modern office desk",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "home-security-cameras",
+      "label": "Home security cameras",
+      "title": "Home security cameras Australia",
+      "query": "home security camera house exterior",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "ice-cream-makers",
+      "label": "Ice cream makers",
+      "title": "Ice cream makers Australia",
+      "query": "ice cream kitchen dessert making",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "instant-cameras",
+      "label": "Instant cameras",
+      "title": "Instant cameras Australia",
+      "query": "instant camera photography lifestyle",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "juicers",
+      "label": "Juicers",
+      "title": "Juicers Australia",
+      "query": "juicer fresh juice modern kitchen",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "kitchen-mixers",
+      "label": "Kitchen mixers",
+      "title": "Kitchen mixers Australia",
+      "query": "stand mixer modern kitchen baking",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "laptops",
+      "label": "Laptops",
+      "title": "Laptops Australia",
+      "query": "laptop modern workspace lifestyle",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "luggage",
+      "label": "Luggage",
+      "title": "Luggage Australia",
+      "query": "suitcase luggage travel airport",
+      "error": "",
+      "candidates": [
+        {
+          "id": "1dc13122-f6e8-4a69-bdbd-78b72590cf36",
+          "title": "Airport Terminal",
+          "creator": "Matt Moloney",
+          "creatorUrl": "https://mjmolo.com",
+          "source": "stocksnap",
+          "provider": "stocksnap",
+          "licence": "cc0",
+          "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "landingUrl": "https://stocksnap.io/photo/airport-terminal-4LNIPV0W8H",
+          "imageUrl": "https://cdn.stocksnap.io/img-thumbs/960w/4LNIPV0W8H.jpg",
+          "thumbnail": "https://api.openverse.org/v1/images/1dc13122-f6e8-4a69-bdbd-78b72590cf36/thumb/",
+          "width": 4000,
+          "height": 2667,
+          "mature": false,
+          "tags": [
+            "airport",
+            "arrival",
+            "backpack",
+            "bag",
+            "baggage",
+            "business",
+            "departure",
+            "flight",
+            "flying",
+            "indoor",
+            "journey",
+            "luggage",
+            "man",
+            "men",
+            "passenger",
+            "people",
+            "person",
+            "suitcase"
+          ],
+          "query": "suitcase luggage travel airport",
+          "score": 14
+        },
+        {
+          "id": "4ee06970-a27c-4a46-821f-fc4e9a3e59f2",
+          "title": "Airport People",
+          "creator": "Ashim%20D%u2019Silva",
+          "creatorUrl": "https://stocksnap.io/author/26772",
+          "source": "stocksnap",
+          "provider": "stocksnap",
+          "licence": "cc0",
+          "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "landingUrl": "https://stocksnap.io/photo/airport-people-55EAC841F9",
+          "imageUrl": "https://cdn.stocksnap.io/img-thumbs/960w/55EAC841F9.jpg",
+          "thumbnail": "https://api.openverse.org/v1/images/4ee06970-a27c-4a46-821f-fc4e9a3e59f2/thumb/",
+          "width": 3072,
+          "height": 2048,
+          "mature": false,
+          "tags": [
+            "airport",
+            "luggage",
+            "people",
+            "suitcase",
+            "transportation",
+            "travel",
+            "trip",
+            "windows"
+          ],
+          "query": "suitcase luggage travel airport",
+          "score": 14
+        }
+      ]
+    },
+    {
+      "slug": "massage-guns",
+      "label": "Massage guns",
+      "title": "Massage guns Australia",
+      "query": "massage gun fitness recovery",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "mechanical-keyboards",
+      "label": "Mechanical keyboards",
+      "title": "Mechanical keyboards Australia",
+      "query": "mechanical keyboard modern desk",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "mesh-wifi-systems",
+      "label": "Mesh Wi-Fi systems",
+      "title": "Mesh Wi-Fi systems Australia",
+      "query": "wifi router modern home technology",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "microphones",
+      "label": "Microphones",
+      "title": "Microphones Australia",
+      "query": "podcast microphone studio desk",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "microwave-ovens",
+      "label": "Microwave ovens",
+      "title": "Microwave ovens Australia",
+      "query": "microwave modern kitchen appliance",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "multicookers",
+      "label": "Multicookers",
+      "title": "Multicookers Australia",
+      "query": "pressure cooker multicooker modern kitchen",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "office-chairs",
+      "label": "Office chairs",
+      "title": "Office chairs Australia",
+      "query": "ergonomic office chair modern workspace",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "pet-water-fountains",
+      "label": "Pet water fountains",
+      "title": "Pet water fountains Australia",
+      "query": "cat water fountain pet home",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "photo-printers",
+      "label": "Portable photo printers",
+      "title": "Portable photo printers Australia",
+      "query": "photo printing desk photography",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "pizza-ovens",
+      "label": "Pizza ovens",
+      "title": "Pizza Ovens Australia",
+      "query": "outdoor pizza oven backyard",
+      "error": "Openverse 403 <!DOCTYPE html><html lang=\"en-US\"><head><title>Just a moment...</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\"><meta name=\"robots\" content=\"noindex,nofollow\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><meta http-equiv=\"content-security-policy\" content=\"default-src &#39;none&#39;; script-src &#39;nonce-gMxRVhlgrEdysDgN9ReBSu&#39; &#39;unsafe-eval&#39; https://challenges.cloudflare.com; script-src-attr &#39;none&#39;; style-src &#39;unsafe-inline&#39;; img-src &#39;self&#39; https://challenges.cloudflare.com; connect-src &#39;self&#39; https://challenges.cloudflare.com; frame-src &#39;self&#39; https://challenges.cloudflare.com blob:; child-src &#39;self&#39; https://challenges.cloudflare.com blob:; worker-src blob:; form-action http: https:; base-uri &#39;self&#39;\"><style>*{box-sizing:border-box;margin:0;padding:0}html{line-height:1.15;-webkit-text-size-adjust:100%;color:#313131;font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,\"Noto Sans\",sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\",\"Segoe UI Symbol\",\"Noto Color Emoji\"}body{display:flex;flex-direction:column;height:100vh;min-height:100vh}.main-content{margin:8rem auto;padding-left:1.5rem;max-width:60rem}@media (width <= 720px){.main-content{margin-top:4rem}}#challenge-error-text{background-image:url(\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgZmlsbD0ibm9uZSI+PHBhdGggZmlsbD0iI0IyMEYwMyIgZD0iTTE2IDNhMTMgMTMgMCAxIDAgMTMgMTNBMTMuMDE1IDEzLjAxNSAwIDAgMCAxNiAzbTAgMjRhMTEgMTEgMCAxIDEgMTEtMTEgMTEuMDEgMTEuMDEgMCAwIDEtMTEgMTEiLz48cGF0aCBmaWxsPSIjQjIwRjAzIiBkPSJNMTcuMDM4IDE4LjYxNUgxNC44N0wxNC41NjMgOS41aDIuNzgzem0tMS4wODQgMS40MjdxLjY2IDAgMS4wNTcuMzg4LjQwNy4zODkuNDA3Ljk5NCAwIC41OTYtLjQwNy45ODQtLjM5Ny4zOS0xLjA1Ny4zODktLjY1IDAtMS4wNTYtLjM4OS0uMzk4LS4zODktLjM5OC0uOTg0IDAtLjU5Ny4zOTgtLjk4NS40MDYtLjM5NyAxLjA1Ni0uMzk3Ii8+PC9zdmc+\");background-repeat:no-repeat;background-size:contain;padding-left:34px}</style><meta http-equiv=\"refresh\" content=\"360\"></head><body><div class=\"main-wrapper\" role=\"main\"><div class=\"main-content\"><noscript><div class=\"h2\"><span id=\"challenge-error-text\">Enable JavaScript and cookies to continue</span></div></noscript></div></div><script nonce=\"gMxRVhlgrEdysDgN9ReBSu\">(function(){window._cf_chl_opt = {cFPWv: 'g',cH: 'BQdS.D9jmwgD7BImfV2mHKM93ijJvshKp0nkDQ3.Lgk-1787130297-1.2.1.1-MaTW6cXGPl8hLdKoqi7sJKvp4bSKrE3HM0EaIFHn4cYna.sim.EWCFxUNfbN68WJ',cITimeS: '1787130297',cN: 'gMxRVhlgrEdysDgN9ReBSu',cRay: 'a2d7fe691fb48a7d',cTplB: '0',cTplC:0,cTplO:0,cTplV:5,cType: 'managed',cUPMDTk:\"/v1/images/?q=outdoor+pizza+oven+backyard\\u0026source=stocksnap\\u0026license=cc0\\u0026category=photograph\\u0026page_size=20\\u0026__cf_chl_tk=1P5b1hTMbaa1_T_Qg4xOAs8O9LS8.ZEVGxPPWJjWccI-1787130297-1.0.1.1-uvteu1TT4A2as4YQql8ZuF19Kgvdq9yr5xDjjCvaVKo\",cvId: '3',cZone: 'api.openverse.org',fa:\"/v1/images/?q=outdoor+pizza+oven+backyard\\u0026source=stocksnap\\u0026license=cc0\\u0026category=photograph\\u0026page_size=20\\u0026__cf_chl_f_tk=1P5b1hTMbaa1_T_Qg4xOAs8O9LS8.ZEVGxPPWJjWccI-1787130297-1.0.1.1-uvteu1TT4A2as4YQql8ZuF19Kgvdq9yr5xDjjCvaVKo\",md: 'umTaQlGG7vDgOnU6By0VsItzYsvICA06beSN6_asETQ-1787130297-1.2.1.1-5.0kKRVZ56TeeHO_Gwtjr8WQ0jIG_bl70QpePtMF_kwHJjmzAx0M6RQF9pdSSAFzeUVp.wlePz9Z.EQkJ41CSfIr6.4q4KYgTOmwfZVFyFZYiCzAIsmg6u65bJUDItF5FG9gtOsarA_3H0CHiOMqZo3x_UxUTNM7UCwYHSH8GTB4aKmg7DNvyk1yJo.G962tKtQp.v6_YACoTyF8RpiCMe0ihnW04ZL9AcXbZBPG6g.efq2IC_HOpKTvluhKSxTITv99ReVR2Asy4EVCYAR_llWxARZ3rQxEK_pLEAtEJrgv8SJKVAUtmBw6UKRZjasLXdku2OKv8.3TtGbdJOX84iXrOnrdAHPD3ff.ERAxWG81T7On5.HWphoKSB8JsnrV8Ex_yvNX2UJGvFMqa8VALBShfHtMN6Y4HFSi_s2KzI_csNNHfjDuAxhlFt5JvDgUbBNwtfM8kXnmwjwKbcBkjuTygm2klHiGbduDguIOgUX96CBU6rzyPVnRQPVpkex9YqUE8vytG7ecj7mpWe45kk2ZMh.mhAnlmDP_CT6wnB3eIMlpWanFvHHR2uhvw49sMbDZWOQ73Zwx1GATmeoQAW3vWIoUBWA0VNaiMLUncTWEPw9abTtlt5SUsUsBg3WagNg4938DwITbDy2t46BNmS.SYl9VxD_W3TYPhdX4iDKDWDbgXaMQqSzH4JQy6ypPHZ9YN5ndNz14_hisRZsGQo0NU2wTCdxJ5Ce_CoLIdqX2ZZdjbaAD9dc58DOdDTlPKP4_3tWL8SQCZTU3ygntMXIvTzzRMfl85bLocE9pUpwdExka9x908D.y8DHcWv1WcizH9HimpqPRHv4nTIIMG7m_AQo_qt9K.f978a0dxQVG44vChI92jzUJ6e3iIOler6ufiTpcXoEwyv_fqbf6Er9my6Qrun1bOMFXtOoGwhqN48NYp4MBmfnvOChoZOTUU.G5j.MPodCezcNGZ7keeecTADCBa4ofiGuNDvGLYsiYslRgjULZiqKb6Ut39K2oDuqQF6CL3hsZKTszPIfGSXtzu12e9ju5nSgtVN9dOjjnI1Aaxm5t78dNlA0thb3FOcS_LOsRvqE5Tbn415rvcRTIgL9oPttjYBengRElXRCzxO7yeVOQrRhHAelZRd64z_fum7WW8ALc3hOvFjJzbl.3iJjk.ukFPUdo3V1Xmadb3P_l2erCG3ic8fefYAA6J4LEgoB0.Vzb2cJa_6DFJSFg64pHb8V5KOV0J7dtYpQFcNWn0DYAiXJ3MpYVxZxjmFcs.4GHI9HAB4od9t1ymsifzNx1v8Q.HR.gF2SoKZ3IOC8UoB2eS1tdG9LYcf0tF.dfv1rVpEn8QmW6VzEYAw',mdrd: 'dsf2jQw.AJVQGi6zlD7S6JPRvlVok_Wxh3GElIzO4.8-1787130297-1.2.1.1-tnuP70d0Ygg4OrBFxBKxaZeKFaWLr4SUKSsOeegwOQRh1FxB9SecK7oek3EnlMvGBB__Roet9HjwBRKB5_VnCYlXJBXdH8.OWDE7G9YMPsqSFzxOYCRwnEWvNPJBXlZDuScvkl07ifZ7Sp6ShJiHZxWdVNCJ5I2bnxzdYw03tD2OuetjE0_HKJoqdFU63TgrBFb.gR.Fy6gCWnFWOMEz1_Vg4r4UELvQnsz6Zfb8u18z.xptlE6kbyVE5azmGXY6tCrDTYv1KuxAQrywJIRuyT3j7L7PDyOXDo3v0SH8QefG8GgONFuRNIBmxLrxTriT5RsoJREHDkXSGhEZ7W8SX7Ne5fFrB6nFV65jLajCKh3177xAWdN6C9ltPZoNjhDp_CJJeAurlUI.HvmVYaCU5w',};var a = document.createElement('script');a.nonce = 'gMxRVhlgrEdysDgN9ReBSu';a.src = '/cdn-cgi/challenge-platform/h/g/orchestrate/chl_page/v1?ray=a2d7fe691fb48a7d';window._cf_chl_opt.cOgUHash = location.hash === '' && location.href.indexOf('#') !== -1 ? '#' : location.hash;window._cf_chl_opt.cOgUQuery = location.search === '' && location.href.slice(0, location.href.length - window._cf_chl_opt.cOgUHash.length).indexOf('?') !== -1 ? '?' : location.search;if (window.history && window.history.replaceState) {var ogU = location.pathname + window._cf_chl_opt.cOgUQuery + window._cf_chl_opt.cOgUHash;history.replaceState(null, null,\"/v1/images/?q=outdoor+pizza+oven+backyard\\u0026source=stocksnap\\u0026license=cc0\\u0026category=photograph\\u0026page_size=20\\u0026__cf_chl_rt_tk=1P5b1hTMbaa1_T_Qg4xOAs8O9LS8.ZEVGxPPWJjWccI-1787130297-1.0.1.1-uvteu1TT4A2as4YQql8ZuF19Kgvdq9yr5xDjjCvaVKo\"+ window._cf_chl_opt.cOgUHash);a.onload = function() {history.replaceState(null, null, ogU);}}document.getElementsByTagName('head')[0].appendChild(a);}());</script></body></html>",
+      "candidates": []
+    },
+    {
+      "slug": "portable-air-conditioners",
+      "label": "Portable air conditioners",
+      "title": "Portable air conditioners Australia",
+      "query": "air conditioner modern living room summer",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "portable-fridges",
+      "label": "Portable fridges",
+      "title": "Portable fridges Australia",
+      "query": "camping fridge outdoors road trip",
+      "error": "Openverse 403 <!DOCTYPE html><html lang=\"en-US\"><head><title>Just a moment...</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\"><meta name=\"robots\" content=\"noindex,nofollow\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><meta http-equiv=\"content-security-policy\" content=\"default-src &#39;none&#39;; script-src &#39;nonce-tOSVHo1sUaqU1YTCuyWkwz&#39; &#39;unsafe-eval&#39; https://challenges.cloudflare.com; script-src-attr &#39;none&#39;; style-src &#39;unsafe-inline&#39;; img-src &#39;self&#39; https://challenges.cloudflare.com; connect-src &#39;self&#39; https://challenges.cloudflare.com; frame-src &#39;self&#39; https://challenges.cloudflare.com blob:; child-src &#39;self&#39; https://challenges.cloudflare.com blob:; worker-src blob:; form-action http: https:; base-uri &#39;self&#39;\"><style>*{box-sizing:border-box;margin:0;padding:0}html{line-height:1.15;-webkit-text-size-adjust:100%;color:#313131;font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,\"Noto Sans\",sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\",\"Segoe UI Symbol\",\"Noto Color Emoji\"}body{display:flex;flex-direction:column;height:100vh;min-height:100vh}.main-content{margin:8rem auto;padding-left:1.5rem;max-width:60rem}@media (width <= 720px){.main-content{margin-top:4rem}}#challenge-error-text{background-image:url(\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgZmlsbD0ibm9uZSI+PHBhdGggZmlsbD0iI0IyMEYwMyIgZD0iTTE2IDNhMTMgMTMgMCAxIDAgMTMgMTNBMTMuMDE1IDEzLjAxNSAwIDAgMCAxNiAzbTAgMjRhMTEgMTEgMCAxIDEgMTEtMTEgMTEuMDEgMTEuMDEgMCAwIDEtMTEgMTEiLz48cGF0aCBmaWxsPSIjQjIwRjAzIiBkPSJNMTcuMDM4IDE4LjYxNUgxNC44N0wxNC41NjMgOS41aDIuNzgzem0tMS4wODQgMS40MjdxLjY2IDAgMS4wNTcuMzg4LjQwNy4zODkuNDA3Ljk5NCAwIC41OTYtLjQwNy45ODQtLjM5Ny4zOS0xLjA1Ny4zODktLjY1IDAtMS4wNTYtLjM4OS0uMzk4LS4zODktLjM5OC0uOTg0IDAtLjU5Ny4zOTgtLjk4NS40MDYtLjM5NyAxLjA1Ni0uMzk3Ii8+PC9zdmc+\");background-repeat:no-repeat;background-size:contain;padding-left:34px}</style><meta http-equiv=\"refresh\" content=\"360\"></head><body><div class=\"main-wrapper\" role=\"main\"><div class=\"main-content\"><noscript><div class=\"h2\"><span id=\"challenge-error-text\">Enable JavaScript and cookies to continue</span></div></noscript></div></div><script nonce=\"tOSVHo1sUaqU1YTCuyWkwz\">(function(){window._cf_chl_opt = {cFPWv: 'g',cH: 'Wtvowi1nf4X4HD_pFy8OWn7kiS0JQdWYl_FVE_9.Ndg-1787130298-1.2.1.1-D5ioefPUxO1SDpdYzTF833JtdwqWphgBKoUuBX.YIZXZfUNE8agf6T2DiavTALrD',cITimeS: '1787130298',cN: 'tOSVHo1sUaqU1YTCuyWkwz',cRay: 'a2d7fe6c9dab057d',cTplB: '0',cTplC:0,cTplO:0,cTplV:5,cType: 'managed',cUPMDTk:\"/v1/images/?q=camping+fridge+outdoors+road+trip\\u0026source=stocksnap\\u0026license=cc0\\u0026category=photograph\\u0026page_size=20\\u0026__cf_chl_tk=ObUwlttsDyy6xvHrQiwJUZNvO36tyW.1qnynqaRr1e8-1787130298-1.0.1.1-lINlE7ece0b9kCuIRAQsWC.BQJrwLhw7TNT6kndlMAM\",cvId: '3',cZone: 'api.openverse.org',fa:\"/v1/images/?q=camping+fridge+outdoors+road+trip\\u0026source=stocksnap\\u0026license=cc0\\u0026category=photograph\\u0026page_size=20\\u0026__cf_chl_f_tk=ObUwlttsDyy6xvHrQiwJUZNvO36tyW.1qnynqaRr1e8-1787130298-1.0.1.1-lINlE7ece0b9kCuIRAQsWC.BQJrwLhw7TNT6kndlMAM\",md: 'csUWZ7u5SRB7evw5iS5YMxwATKX173mntcwm8ezR3kM-1787130298-1.2.1.1-Znq1eOkhBHEI1dpU7YGbMd38RLniBBAQfH6AVZ3o6yHVMn5YUNLQDndCsW34TLgwnYU773ibZB0IdA6WFjA60JfknjIhZcm.SucoO1IqM.xcfui5ap2BcVNVpxTPmwk9TPUiFf3syLyhfaA9DCD62JP8OAcm6ee4J9rk5BZMjXnHY64qiK8gbAQQYoCscJWuJljIFxjqwRYEl3XeyIiN6AZ9rYIAth5QSad7Up3cCW3wG61QufnN_Haclof4nxuhUkYhB_GSltXhJ_sha2gkgZnmeguas7eEePDQ.jhE67qcl4jDgN390aQ7xQhejKYfpwmAv2JHhCZzzY3tulRAix7A7rLRppvHrT7H6vqD8ApBEXJz4THuVjjUHBN7W_NTcYbA9MsBkyywXaLqoS9wvFMBNgGdiMHbdxPCByI227_6GRXRuu2LbksiV6Trkj_duW_ccs1ghi41GwY4SF5Xm_n5iHl_77ympIATAIWRXrDF9HIII.zaar0F2dcvFJdRgQ_jJVKG06fWyNqVx2FMBIZKSZ2u9cU45Kx_f6YEjoKrNJQH1Zj32Ufm4a8h5Ga5ufQ3C44WR1y_1vOdXr70W.SqmHVP8IS.4wZw3GYVJPNe7AYUvip6IlYZ9p5HQ61ylUYgPN4cB9B.eO5.o7TH2Pt7wGnkQsK3vevPyAhTy4_3V5fNb4KdkrbVas3ghOwVGpcRVXwzutzFHNlvVp2aGlUqMM36PjRupGa5WIzTkeH4w6Ww8SyZ3w8QM4ZavdRRDoyKgYpbEa.TpXRDlvEBx64r_9lmyHjfvEVOce3.kdbZzQWE5r9eZEoqrj7ctugtW9EeKjvGgame09E8acwNen8VDL1lsc5xRbMcWqOOpCVz04d_qZfbDk8PsvHzKbetoo.qVHjzYPZ9Oxrm9fNF4S4heNDywfLi2pBHEDbk5ECBLYOv42rhiUPWyFC2JU4fZOB7fgSkFv2dwECiOsVObHrmpcBr9otVziq9T3NwZlZLaBaTo5WwlU.WBCcCNFtEpGClIzvJnURMlzXG2.Ww3Kjt.6BDXiKjF.dF_PZ7ItSG.eQUnThGDsVXROByfSY.LNWsj7jo4CmD064qTKIjSlRkIxeogBg4h22j8IWICOhd0gMh7Jvlxx3eq_ObjY8BWdW8kaFheXEEcenwr0IfY9FpWHIloYJuiPRY6h5CeCDLkIzru2e.0krTzmScCmt9os.JPJKf5al475T0vRCWnMOhcGMI5JXGeqst2w6akMQF44Zw4K2ZFJMZq_Zdm1gSHDQyc84JBxkP81z9Pi78dVT55kpm6F9ZRnfoJICO35zrBphRESH56Tu6RpfPXuVfTUpIgr28F82bv4SdnSX2b7cRXWGZx_ffh02jATf2va0',mdrd: '6Hh16szFhKM3RqjrkM5yPUrXyC8UyjpWvqntdKxcHf0-1787130298-1.2.1.1-X6EoHDAD7ECB8z0H_TMlLCP31BhypJVocCEanALNnUCALDoqlE0_zWRVU8IHbiURUpZC75Lh3nVcBMkDbf8wXmQq5HjkqqFSWQw9c6YCfRXPCWCsJ3BDiYvLYnVtqqt8tlcEdl1pN9Hbi5jrxQ0mNe02QlIwH6cDRa6zDd0MhYgnVtdicO5qJY.gyn0j2UV3A8QecKpsn5FM76YWOC7042Da8B7PrqhrPlBQAVNN146ld9Y8SHhszyhJxoHsnVag4FLOmY5Zt3cYYUm45ghaWYwH81HpmIzDk9_3tfw8_xMCC5Ig9EucShRFiWgPhaaGbTNCth0q.CYZ_GuVnXZXiqlvDKtWbRE6xZKnJcbmWgKn71S2CulcKXGe4YrXywNwTn_o9WX9f4FI5_pe8yiO8g',};var a = document.createElement('script');a.nonce = 'tOSVHo1sUaqU1YTCuyWkwz';a.src = '/cdn-cgi/challenge-platform/h/g/orchestrate/chl_page/v1?ray=a2d7fe6c9dab057d';window._cf_chl_opt.cOgUHash = location.hash === '' && location.href.indexOf('#') !== -1 ? '#' : location.hash;window._cf_chl_opt.cOgUQuery = location.search === '' && location.href.slice(0, location.href.length - window._cf_chl_opt.cOgUHash.length).indexOf('?') !== -1 ? '?' : location.search;if (window.history && window.history.replaceState) {var ogU = location.pathname + window._cf_chl_opt.cOgUQuery + window._cf_chl_opt.cOgUHash;history.replaceState(null, null,\"/v1/images/?q=camping+fridge+outdoors+road+trip\\u0026source=stocksnap\\u0026license=cc0\\u0026category=photograph\\u0026page_size=20\\u0026__cf_chl_rt_tk=ObUwlttsDyy6xvHrQiwJUZNvO36tyW.1qnynqaRr1e8-1787130298-1.0.1.1-lINlE7ece0b9kCuIRAQsWC.BQJrwLhw7TNT6kndlMAM\"+ window._cf_chl_opt.cOgUHash);a.onload = function() {history.replaceState(null, null, ogU);}}document.getElementsByTagName('head')[0].appendChild(a);}());</script></body></html>",
+      "candidates": []
+    },
+    {
+      "slug": "portable-monitors",
+      "label": "Portable monitors",
+      "title": "Portable monitors Australia",
+      "query": "portable monitor laptop workspace",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "portable-power-stations",
+      "label": "Portable power stations",
+      "title": "Portable power stations Australia",
+      "query": "portable power camping outdoors",
+      "error": "Openverse 403 <!DOCTYPE html><html lang=\"en-US\"><head><title>Just a moment...</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\"><meta name=\"robots\" content=\"noindex,nofollow\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><meta http-equiv=\"content-security-policy\" content=\"default-src &#39;none&#39;; script-src &#39;nonce-aCcyOjCbs0uQw1Er8e1u8O&#39; &#39;unsafe-eval&#39; https://challenges.cloudflare.com; script-src-attr &#39;none&#39;; style-src &#39;unsafe-inline&#39;; img-src &#39;self&#39; https://challenges.cloudflare.com; connect-src &#39;self&#39; https://challenges.cloudflare.com; frame-src &#39;self&#39; https://challenges.cloudflare.com blob:; child-src &#39;self&#39; https://challenges.cloudflare.com blob:; worker-src blob:; form-action http: https:; base-uri &#39;self&#39;\"><style>*{box-sizing:border-box;margin:0;padding:0}html{line-height:1.15;-webkit-text-size-adjust:100%;color:#313131;font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,\"Noto Sans\",sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\",\"Segoe UI Symbol\",\"Noto Color Emoji\"}body{display:flex;flex-direction:column;height:100vh;min-height:100vh}.main-content{margin:8rem auto;padding-left:1.5rem;max-width:60rem}@media (width <= 720px){.main-content{margin-top:4rem}}#challenge-error-text{background-image:url(\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgZmlsbD0ibm9uZSI+PHBhdGggZmlsbD0iI0IyMEYwMyIgZD0iTTE2IDNhMTMgMTMgMCAxIDAgMTMgMTNBMTMuMDE1IDEzLjAxNSAwIDAgMCAxNiAzbTAgMjRhMTEgMTEgMCAxIDEgMTEtMTEgMTEuMDEgMTEuMDEgMCAwIDEtMTEgMTEiLz48cGF0aCBmaWxsPSIjQjIwRjAzIiBkPSJNMTcuMDM4IDE4LjYxNUgxNC44N0wxNC41NjMgOS41aDIuNzgzem0tMS4wODQgMS40MjdxLjY2IDAgMS4wNTcuMzg4LjQwNy4zODkuNDA3Ljk5NCAwIC41OTYtLjQwNy45ODQtLjM5Ny4zOS0xLjA1Ny4zODktLjY1IDAtMS4wNTYtLjM4OS0uMzk4LS4zODktLjM5OC0uOTg0IDAtLjU5Ny4zOTgtLjk4NS40MDYtLjM5NyAxLjA1Ni0uMzk3Ii8+PC9zdmc+\");background-repeat:no-repeat;background-size:contain;padding-left:34px}</style><meta http-equiv=\"refresh\" content=\"360\"></head><body><div class=\"main-wrapper\" role=\"main\"><div class=\"main-content\"><noscript><div class=\"h2\"><span id=\"challenge-error-text\">Enable JavaScript and cookies to continue</span></div></noscript></div></div><script nonce=\"aCcyOjCbs0uQw1Er8e1u8O\">(function(){window._cf_chl_opt = {cFPWv: 'g',cH: 'oZ_3Zj0nSCKHf5aBNVixnIrAHAcAfRSfJIikIfxI0Qo-1787130298-1.2.1.1-G999M7vzQu3p2TXvM2IgdnOF3PU9Hv9dybqVOUZB8Ac0H19ajwCsfBMSdFg0GzHr',cITimeS: '1787130298',cN: 'aCcyOjCbs0uQw1Er8e1u8O',cRay: 'a2d7fe7009b0a9d2',cTplB: '0',cTplC:0,cTplO:0,cTplV:5,cType: 'managed',cUPMDTk:\"/v1/images/?q=portable+power+camping+outdoors\\u0026source=stocksnap\\u0026license=cc0\\u0026category=photograph\\u0026page_size=20\\u0026__cf_chl_tk=rWtbOOnjz_R4vwf9RM5y4c0XZvH9ObfoDjSWVDm5mws-1787130298-1.0.1.1-Tf3cUEgCGlKibhaow1zUDyanY7.ynbD3lvzSgBptzt0\",cvId: '3',cZone: 'api.openverse.org',fa:\"/v1/images/?q=portable+power+camping+outdoors\\u0026source=stocksnap\\u0026license=cc0\\u0026category=photograph\\u0026page_size=20\\u0026__cf_chl_f_tk=rWtbOOnjz_R4vwf9RM5y4c0XZvH9ObfoDjSWVDm5mws-1787130298-1.0.1.1-Tf3cUEgCGlKibhaow1zUDyanY7.ynbD3lvzSgBptzt0\",md: 'QoMKIk93nwMPXSPZilOq.fyktQ3ZzT02IXq5k_xU4Tc-1787130298-1.2.1.1-ZLMGbSw265NEHIyf3TrE1aI5o9uSmhjQUMvHo6LDY0R8BJmdtjQF1fzNeJi_2KDwmNek_n.Q.NB67bwPBq7IAirxV2EWnTUD8SO9wVm7nXu0GHvn6VDcMvGGK_XkQlOmQ3nyztc6VmIC79yQkjUGXCCrqYTKfZPV5dcQPCZ5vsAtsgL74DO185AAtbodv6LPQOdjCFHD9du6dIRU7aUlULu8NVd4RH.HJr4jRkR6K4CJVYiCKj6PgMrXI.GsCuTxMCNbfbtHAXK8nQx499YmYzse1vs0Phc7W96O6YvHxsqr6hjC.D1x3x6R4aJRXHOArYvU3cPwvyLQOyviKMk0Rd5tngiTc3JX8tamqz5N.dqBN.Zb2HfDMXLhjqDYFTS1rRrQ6zjiRmlE8cKhxDAkjELXDEibkRgkVCzpZ3cBd_1opKMfKGqat36B7yL3.ObFziV1J7jSW0vSjeUwEkfQ6IqmoPCU6kuZw.Jh7CLYPTb6tTA4TKyjoWsl8CgNxIyHAHlPtiGinS99VomrkmuTVVhbEF7TZaOPydKUESWKCGvCekSngPF4OZw1.7JFTQmwhL3OxkENT3fLcLQ7xpK2.LlYdeCXfSu9hdw7RgOGvq8rbIWVMZObIrapeXwPterX7ptu5a1AuADU9jJFdlJAe5Os9m1YYF7q9mADIIgcvmZJUOlJRgtELhayRcUCTi3Rl1bnfMengJ1N3lRCsQem3lfkwjjMhj6TEEPIpnCtsFdohNR5hAlFyYm_I8qxwvKxaWdz7ACcHFEyeq20FPvnQ2ifn28p1gUnVGZ50Z34rjXxxbamGafrStAz5Wv9v5zc05hXN5EP.ccEJVTPpBdU.a.HFw53YJ72mcDB4k.OJ1FuFByU7Qz0BYyP1Bhutob9G9_9.JTJVqugFHUY1S.U5gcT3JyY4abXP74ilxub3YVmrCJbuyVSHH8OBgldjpPFgyLjJ0NQnwebp7J5q5h7REIBRffaZUm7eXfjFeO_53VsIjXO7HLSGiuS0UBJQ_Gft7hLoglPdCvL9w5ZCMl5BC7MOMMnrTrwCeTiOffjrjGVk840mMmWxAsRU6JYKcTgFSvrQd8Lujkpk0oZtHd4gsHXqhAfzcoBK9ZFg7W6ViVUIJ7960UdkdWW8yvN5F3viVkVlD_aB1xwcNA6YjXg768o3AEG5wyZ6Cr0v6v36MkSA4mvHBLSnbMBjy.Wneb8LE9sjy0pq.SXShhO_aBqwgbD0CkVv9gQFNO6g2XCA4WfVx0lCPsWFUXjkSCfdxV1ivvis1GW13jBVboVGdSFBGXBW.gHOZck4vqpXZ7s7PCakNCqTGJGKi6RCe38QWeH61NQVTgNds_1Z_HJrULjeA',mdrd: 'ukX03t2ld7qgsDNVysH6KV7yM0tkU3prXXiKzXY.yDY-1787130298-1.2.1.1-qpG2yahf2f9z6oaD7yovISrOCyKjwdLaonGO3Ke0BatrJiZ3x3WtN4xIrxYWrWkubRReUfrbvQcm_R.QVYOkAiRGWLYUS3_qgBYHsk1LIw5fbr_ZF2X_NsOpcCcyuaCRgMTHaoxBEyurhCYtxFTjJT0hfbaBfgpUcf5M2HJ_D_XR_S1D7eRjy3nK7KE21Icx1mdkb.5beJeD62eTV_xnTVqU0C0GSd8XUw_JaiOHC8ukCdl9Dig2WK2OXoBmiuUlSs7aPfe58IvmSTEHqUPtU5aUawgkgT_qncsWdyz4UO0FmbrGtWg_WKaiiVV43xbIdwWVH6OMdi1v7dMXGsz94FnSz4LPLUq4edMwtm627aLk8hhtvz1GDA9mr2CrSE9m5FfhwvfK9BhtHykk0ysCYg',};var a = document.createElement('script');a.nonce = 'aCcyOjCbs0uQw1Er8e1u8O';a.src = '/cdn-cgi/challenge-platform/h/g/orchestrate/chl_page/v1?ray=a2d7fe7009b0a9d2';window._cf_chl_opt.cOgUHash = location.hash === '' && location.href.indexOf('#') !== -1 ? '#' : location.hash;window._cf_chl_opt.cOgUQuery = location.search === '' && location.href.slice(0, location.href.length - window._cf_chl_opt.cOgUHash.length).indexOf('?') !== -1 ? '?' : location.search;if (window.history && window.history.replaceState) {var ogU = location.pathname + window._cf_chl_opt.cOgUQuery + window._cf_chl_opt.cOgUHash;history.replaceState(null, null,\"/v1/images/?q=portable+power+camping+outdoors\\u0026source=stocksnap\\u0026license=cc0\\u0026category=photograph\\u0026page_size=20\\u0026__cf_chl_rt_tk=rWtbOOnjz_R4vwf9RM5y4c0XZvH9ObfoDjSWVDm5mws-1787130298-1.0.1.1-Tf3cUEgCGlKibhaow1zUDyanY7.ynbD3lvzSgBptzt0\"+ window._cf_chl_opt.cOgUHash);a.onload = function() {history.replaceState(null, null, ogU);}}document.getElementsByTagName('head')[0].appendChild(a);}());</script></body></html>",
+      "candidates": []
+    },
+    {
+      "slug": "power-banks",
+      "label": "Power banks",
+      "title": "Power banks Australia",
+      "query": "power bank phone travel charging",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "pressure-washers",
+      "label": "Pressure washers",
+      "title": "Pressure washers Australia",
+      "query": "pressure washing outdoor cleaning patio",
+      "error": "Openverse 403 <!DOCTYPE html><html lang=\"en-US\"><head><title>Just a moment...</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\"><meta name=\"robots\" content=\"noindex,nofollow\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><meta http-equiv=\"content-security-policy\" content=\"default-src &#39;none&#39;; script-src &#39;nonce-GEcdiqVFS6HC3xAtoS0Is5&#39; &#39;unsafe-eval&#39; https://challenges.cloudflare.com; script-src-attr &#39;none&#39;; style-src &#39;unsafe-inline&#39;; img-src &#39;self&#39; https://challenges.cloudflare.com; connect-src &#39;self&#39; https://challenges.cloudflare.com; frame-src &#39;self&#39; https://challenges.cloudflare.com blob:; child-src &#39;self&#39; https://challenges.cloudflare.com blob:; worker-src blob:; form-action http: https:; base-uri &#39;self&#39;\"><style>*{box-sizing:border-box;margin:0;padding:0}html{line-height:1.15;-webkit-text-size-adjust:100%;color:#313131;font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,\"Noto Sans\",sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\",\"Segoe UI Symbol\",\"Noto Color Emoji\"}body{display:flex;flex-direction:column;height:100vh;min-height:100vh}.main-content{margin:8rem auto;padding-left:1.5rem;max-width:60rem}@media (width <= 720px){.main-content{margin-top:4rem}}#challenge-error-text{background-image:url(\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgZmlsbD0ibm9uZSI+PHBhdGggZmlsbD0iI0IyMEYwMyIgZD0iTTE2IDNhMTMgMTMgMCAxIDAgMTMgMTNBMTMuMDE1IDEzLjAxNSAwIDAgMCAxNiAzbTAgMjRhMTEgMTEgMCAxIDEgMTEtMTEgMTEuMDEgMTEuMDEgMCAwIDEtMTEgMTEiLz48cGF0aCBmaWxsPSIjQjIwRjAzIiBkPSJNMTcuMDM4IDE4LjYxNUgxNC44N0wxNC41NjMgOS41aDIuNzgzem0tMS4wODQgMS40MjdxLjY2IDAgMS4wNTcuMzg4LjQwNy4zODkuNDA3Ljk5NCAwIC41OTYtLjQwNy45ODQtLjM5Ny4zOS0xLjA1Ny4zODktLjY1IDAtMS4wNTYtLjM4OS0uMzk4LS4zODktLjM5OC0uOTg0IDAtLjU5Ny4zOTgtLjk4NS40MDYtLjM5NyAxLjA1Ni0uMzk3Ii8+PC9zdmc+\");background-repeat:no-repeat;background-size:contain;padding-left:34px}</style><meta http-equiv=\"refresh\" content=\"360\"></head><body><div class=\"main-wrapper\" role=\"main\"><div class=\"main-content\"><noscript><div class=\"h2\"><span id=\"challenge-error-text\">Enable JavaScript and cookies to continue</span></div></noscript></div></div><script nonce=\"GEcdiqVFS6HC3xAtoS0Is5\">(function(){window._cf_chl_opt = {cFPWv: 'g',cH: 'YY0Py68A9ZavMV6XfKtda2fjbyRq45cPMEN0rr7WiYM-1787130299-1.2.1.1-fOGoyffF_zByZ8EM.mVVa.JFAbeA.0ilXErb8Cg0N3nXuDqZDV9ODUP8TCUkfyao',cITimeS: '1787130299',cN: 'GEcdiqVFS6HC3xAtoS0Is5',cRay: 'a2d7fe736966d600',cTplB: '0',cTplC:0,cTplO:0,cTplV:5,cType: 'managed',cUPMDTk:\"/v1/images/?q=pressure+washing+outdoor+cleaning+patio\\u0026source=stocksnap\\u0026license=cc0\\u0026category=photograph\\u0026page_size=20\\u0026__cf_chl_tk=jtc_edLlqzNM.ELP2WRzm7yDgXsY1Pnt6__tyyABY0Y-1787130299-1.0.1.1-Dx4lt0tu2D60w0icS3ZZH.Si_o_pqHVDGxRCF6.Jx2E\",cvId: '3',cZone: 'api.openverse.org',fa:\"/v1/images/?q=pressure+washing+outdoor+cleaning+patio\\u0026source=stocksnap\\u0026license=cc0\\u0026category=photograph\\u0026page_size=20\\u0026__cf_chl_f_tk=jtc_edLlqzNM.ELP2WRzm7yDgXsY1Pnt6__tyyABY0Y-1787130299-1.0.1.1-Dx4lt0tu2D60w0icS3ZZH.Si_o_pqHVDGxRCF6.Jx2E\",md: 't_zjWRz4Ia2SKVYMf_xAtIob.AP4B.UyVnftMG8bfHg-1787130299-1.2.1.1-Dmy0ZS_ZuIsI1tT6zPRZ8AGc7YvAPnFui_FqWb6Mf3gWLXnDYM9VmH4oY_yJVk36pY_VNNJF9Utpcee98SGZIGD612gM1e4aM_L8hSz9fNkvBc9EOmALklxVwshf1D9RX8VuiDDyHQvFWlaLjdUru.0LoCQgrKHHaZktSFXXf8EQY2X12S5wmyU__dXgRDi5s.TuScg9l2D0POQDDSGaBSb8JlAlXiD7gHPUk3MHjzUlZt6RtFlFePRfFffmjE26xMrnYRU33DQWaWO9m7bFIz12UkmeqkMPv414GnOPE.EVf4dQu36se_HTevaUONaKmuGonDNW7ALjgiB7.aA3JL9wI1ohQqh7Xj0jN9UDEVcb3U6wMlJFwz.r1PkVpN0A_GbH.wRjZnUJcAClMaXlhh0iwED7xkjU54OkFoqsp3jOhNk1p4DdiixYIJ3VAfx4k2AUoTWE74213Zwo_vtb5MM46UjYPARxrgJbFsO5Q.vcnuP237rnN.NJDPHYoDsE6VGkrOIlDSfBGyJir6jJOE_qBX0NRub9QY1M.qnXk_aFhmO16BdfHM.qnDiwDT1.wEufppVmp1Jr7joVAX1SuYGyzf2N99eCMp3U1WUxVRiOEkAG8YI8Jqr0BJMmo1iOTYWrNNxZncUUC2K_mZ3R2FBptmUxlXijDYNF0gAvA9ifoXXhAYmmChwEXX7hXNFu5HV1.whSpyksG4q3TpMu3yExxy1gLmQZW87nxyIJWfN3V1pPKM9pDBBDn6p4TGcHn3xMDZSzjAcsIW94JtoGcrPFwjc4M7VPPb9bWrM_VgoKSAO2SLzmMOb94nv2CPdpqhoOtsfaBE0ujUXuBNW1zZ_AYYI8vf.ADlfmMLE7XAUO8PCbYSWgtyw5EVfpNGdrbwHg1NkAVJ.aFQptipJLnaTAa0NNgeJEm.8t.b9EEadGAV7OM.y3Ns97mrHiRnNEG2kB.DpsFwmoqVwOjtm1ranwqTGzDe6s5ueNfB198t9_lecYwmcMYZA9g2OgebFrA7nqhAXXgVEHDDWzdnhkxyIy1MIV1ztDZrxfGsGfYTYI5eLt73QNw8WbQHNW3o3JgXZ7sV_0VTGYcfKEYiUG7Tc18vJCi0W9QLaH88e8I_VBgInFJZQK_GXSjCZU.4wRw4jRFxAhtg8pksbLRZao4HBOqJQNvl90ipRzzHAmzR.sthTXFUNM3YUPcmBWu89k25P9B1__jvfKP7uVugnoJ74yXPDWY7vfO_eaBcndMjlYjRXfrgkihrW.ECI9MtdOdKUI_jqtIkSVWCuRUsYo8Pwn8SShhkiU.O97EmLp2KfoOfHEauTx_3ZQdN8E..dKaDySUn0.XFUJcQvnF1uOG_icWVioowEpDLJ4x2ZHtQo',mdrd: 'C03Ve_T5s7VezrubvaO.Q7fMbvcPsHgVnNp0lYrypR0-1787130299-1.2.1.1-W2xbpt5vG0MQS1akXWVcN3sKvdH1OrXO_vLZKxwbfR98zE1X28sVZlQSD9w2qLwTuCJ8z2JwavJ7m.LTen45jufNY7Pym9j2NEFsmGiACCAgOXR1h_809L_uPpdZxqE8TOSC3ldsg.Po4eZdz3Jwkx5pn0SG6uo5jz5p6V75AYkvQ66tuQ4afw4n5k4FzrYB1NyFTXzquP0peBwge9ElSIZm4C3MaTZV4mLgJbILfvkwgtvvgZ5DrrVEQaanrSAqHMVEdPTN5Zq5FRLA3GI62A8xyQR2kpkFKFhVLaEXnmwuF9asVl3HLCww394Ya6QlXxbOgmLxRIsnwfLJs3Yy3XPuV0f3FK1VacW60GscR5YGh8rHjFduMBECri3YxhDgYR1tAWwcR0Kyn2kJsf.iWg',};var a = document.createElement('script');a.nonce = 'GEcdiqVFS6HC3xAtoS0Is5';a.src = '/cdn-cgi/challenge-platform/h/g/orchestrate/chl_page/v1?ray=a2d7fe736966d600';window._cf_chl_opt.cOgUHash = location.hash === '' && location.href.indexOf('#') !== -1 ? '#' : location.hash;window._cf_chl_opt.cOgUQuery = location.search === '' && location.href.slice(0, location.href.length - window._cf_chl_opt.cOgUHash.length).indexOf('?') !== -1 ? '?' : location.search;if (window.history && window.history.replaceState) {var ogU = location.pathname + window._cf_chl_opt.cOgUQuery + window._cf_chl_opt.cOgUHash;history.replaceState(null, null,\"/v1/images/?q=pressure+washing+outdoor+cleaning+patio\\u0026source=stocksnap\\u0026license=cc0\\u0026category=photograph\\u0026page_size=20\\u0026__cf_chl_rt_tk=jtc_edLlqzNM.ELP2WRzm7yDgXsY1Pnt6__tyyABY0Y-1787130299-1.0.1.1-Dx4lt0tu2D60w0icS3ZZH.Si_o_pqHVDGxRCF6.Jx2E\"+ window._cf_chl_opt.cOgUHash);a.onload = function() {history.replaceState(null, null, ogU);}}document.getElementsByTagName('head')[0].appendChild(a);}());</script></body></html>",
+      "candidates": []
+    },
+    {
+      "slug": "projectors",
+      "label": "Projectors",
+      "title": "Projectors Australia",
+      "query": "home projector cinema living room",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "rice-cookers",
+      "label": "Rice cookers",
+      "title": "Rice cookers Australia",
+      "query": "rice cooker modern kitchen",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "robot-vacuums",
+      "label": "Robot vacuums",
+      "title": "Robot Vacuums Australia",
+      "query": "robot vacuum modern living room floor",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "slow-cookers",
+      "label": "Slow cookers",
+      "title": "Slow cookers Australia",
+      "query": "slow cooker kitchen cooking dinner",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "smart-displays",
+      "label": "Smart displays",
+      "title": "Smart displays Australia",
+      "query": "smart display modern kitchen home",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "smart-doorbells",
+      "label": "Smart doorbells",
+      "title": "Smart doorbells Australia",
+      "query": "video doorbell front door modern home",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "smart-light-bulbs",
+      "label": "Smart light bulbs",
+      "title": "Smart light bulbs Australia",
+      "query": "smart lighting modern home interior",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "smart-plugs",
+      "label": "Smart plugs",
+      "title": "Smart plugs Australia",
+      "query": "smart home power plug outlet",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "smart-scales",
+      "label": "Smart scales",
+      "title": "Smart scales Australia",
+      "query": "bathroom scale modern bathroom fitness",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "smartphones",
+      "label": "Smartphones",
+      "title": "Smartphones Australia",
+      "query": "smartphone modern lifestyle technology",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "smartwatches",
+      "label": "Smartwatches",
+      "title": "Smartwatches Australia",
+      "query": "smartwatch wrist fitness lifestyle",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "soundbars",
+      "label": "Soundbars",
+      "title": "Soundbars Australia",
+      "query": "soundbar television modern living room",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "standing-desks",
+      "label": "Standing desks",
+      "title": "Standing desks Australia",
+      "query": "standing desk modern home office",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "stick-vacuums",
+      "label": "Stick vacuums",
+      "title": "Stick vacuums Australia",
+      "query": "cordless vacuum modern home cleaning",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "streaming-devices",
+      "label": "Streaming devices",
+      "title": "Streaming devices Australia",
+      "query": "streaming television modern living room",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "tablets",
+      "label": "Tablets",
+      "title": "Tablets Australia",
+      "query": "tablet computer lifestyle desk",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "televisions",
+      "label": "Televisions",
+      "title": "Televisions Australia",
+      "query": "television modern living room interior",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "toasters",
+      "label": "Toasters",
+      "title": "Toasters Australia",
+      "query": "toaster modern kitchen breakfast",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "tyre-inflators",
+      "label": "Tyre inflators",
+      "title": "Tyre inflators Australia",
+      "query": "car tyre inflation garage",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "usb-c-chargers",
+      "label": "USB-C chargers",
+      "title": "USB-C chargers Australia",
+      "query": "phone charger USB C desk travel",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "usb-c-hubs-docks",
+      "label": "USB-C hubs and docks",
+      "title": "USB-C hubs and docks Australia",
+      "query": "USB hub laptop modern desk",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "vacuum-sealers",
+      "label": "Vacuum sealers",
+      "title": "Vacuum sealers Australia",
+      "query": "vacuum sealer food kitchen",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "washing-machines",
+      "label": "Washing machines",
+      "title": "Washing machines Australia",
+      "query": "washing machine modern laundry room",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "water-filters",
+      "label": "Water filters",
+      "title": "Water filters Australia",
+      "query": "filtered water jug modern kitchen",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "water-flossers",
+      "label": "Water flossers",
+      "title": "Water flossers Australia",
+      "query": "water flosser dental bathroom",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "webcams",
+      "label": "Webcams",
+      "title": "Webcams Australia",
+      "query": "webcam computer desk video call",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "wifi-routers",
+      "label": "Wi-Fi routers",
+      "title": "Wi-Fi routers Australia",
+      "query": "wifi router modern home desk",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "wireless-chargers",
+      "label": "Wireless chargers",
+      "title": "Wireless chargers Australia",
+      "query": "wireless charging phone modern desk",
+      "error": "",
+      "candidates": []
+    },
+    {
+      "slug": "wireless-headphones",
+      "label": "Wireless headphones",
+      "title": "Wireless Headphones Australia",
+      "query": "headphones music lifestyle desk",
+      "error": "",
+      "candidates": []
+    }
+  ]
+}
