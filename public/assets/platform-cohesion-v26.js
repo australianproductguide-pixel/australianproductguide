@@ -4,16 +4,27 @@
 
   function openScout(trigger){
     const launcher=q('#apgAssistantLauncher');
-    if(!launcher)return;
+    const panel=q('#apgAssistantPanel');
+    if(!launcher||!panel)return;
+
+    // Scout v5 binds directly to every data-v26-scout-open control. By the time
+    // this delegated compatibility handler runs, the v5 handler may already have
+    // opened the panel. Never click the launcher again in that state: doing so
+    // toggles Scout straight back closed (most visible from the mobile menu).
     const mobile=q('[data-mobile-toggle][aria-expanded="true"]');
     if(mobile)mobile.click();
-    launcher.click();
+    if(panel.hidden){
+      if(window.apgScout&&typeof window.apgScout.open==='function'){
+        try{void window.apgScout.open();}catch{launcher.click();}
+      }else launcher.click();
+    }
+
     window.setTimeout(()=>{
-      const panel=q('#apgAssistantPanel');
-      const focusable=panel&&q('input,button,[href],[tabindex]:not([tabindex="-1"])',panel);
-      if(focusable&&panel&&!panel.hidden)focusable.focus({preventScroll:true});
+      const current=q('#apgAssistantPanel');
+      const focusable=current&&q('input,button,[href],[tabindex]:not([tabindex="-1"])',current);
+      if(focusable&&current&&!current.hidden)focusable.focus({preventScroll:true});
     },40);
-    if(trigger)trigger.setAttribute('aria-expanded','true');
+    if(trigger)trigger.setAttribute('aria-expanded',String(!panel.hidden));
   }
 
   function labelComparisonTables(){
