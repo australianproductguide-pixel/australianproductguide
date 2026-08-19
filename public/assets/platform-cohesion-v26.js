@@ -1,6 +1,7 @@
 (()=>{
   const q=(s,r=document)=>r.querySelector(s);
   const qa=(s,r=document)=>[...r.querySelectorAll(s)];
+  const scoutTrigger=event=>event.target&&event.target.closest?event.target.closest('[data-v26-scout-open]'):null;
 
   function openScout(trigger){
     const launcher=q('#apgAssistantLauncher');
@@ -50,11 +51,24 @@
     });
   }
 
-  // Capture Scout before any legacy target/bubble handlers. Some older mobile feature
-  // listeners can otherwise misinterpret the button click as Search input and coerce
-  // the event object into q=[object Object], aborting the current Scout scripts.
-  document.addEventListener('click',event=>{
-    const trigger=event.target.closest&&event.target.closest('[data-v26-scout-open]');
+  // The exact-Production mobile journey proved document-level click capture was still
+  // too late: an older capture listener can see the Scout activation first and coerce
+  // the Event object into Search as q=[object Object]. Own Scout activation at the
+  // window capture boundary, before document/target/bubble listeners, and isolate the
+  // pointer/touch precursor events without cancelling their native click synthesis.
+  const stopScoutPreactivation=event=>{
+    if(!scoutTrigger(event))return;
+    event.stopImmediatePropagation();
+  };
+  ['pointerdown','mousedown','touchstart','pointerup','touchend'].forEach(type=>{
+    window.addEventListener(type,stopScoutPreactivation,true);
+  });
+  window.addEventListener('keydown',event=>{
+    if(!scoutTrigger(event)||(event.key!=='Enter'&&event.key!==' '))return;
+    event.stopImmediatePropagation();
+  },true);
+  window.addEventListener('click',event=>{
+    const trigger=scoutTrigger(event);
     if(!trigger)return;
     event.preventDefault();
     event.stopImmediatePropagation();
