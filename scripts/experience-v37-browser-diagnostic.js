@@ -7,10 +7,24 @@ const BASE=(process.env.BASE_URL||'https://australianproductguide.au').replace(/
 const OUT=process.env.OUTPUT_DIR||'artifacts/experience-v37';
 const CHROME=process.env.CHROME||'/usr/bin/google-chrome';
 fs.mkdirSync(OUT,{recursive:true});
-const report={base:BASE,startedAt:new Date().toISOString(),journeys:[],failures:[],browserErrors:[],network:[]};
+const report={base:BASE,startedAt:new Date().toISOString(),journeys:[],failures:[],browserErrors:[],navigationAborts:[],network:[]};
+const navigationState=new WeakMap();
 
 function assert(ok,message){if(!ok)throw new Error(message);}
 function sameOrigin(url){try{return new URL(url).origin===new URL(BASE).origin}catch{return false}}
+function isIntentionalNavigation(page){return (navigationState.get(page)||0)>0;}
+async function duringNavigation(page,fn){
+  navigationState.set(page,(navigationState.get(page)||0)+1);
+  try{return await fn();}
+  finally{
+    const next=(navigationState.get(page)||1)-1;
+    if(next>0)navigationState.set(page,next);else navigationState.delete(page);
+  }
+}
+function isExpectedNavigationAbort(page,req){
+  if(!isIntentionalNavigation(page)||req.resourceType()!=='script'||req.failure()?.errorText!=='net::ERR_ABORTED'||!sameOrigin(req.url()))return false;
+  try{return new URL(req.url()).pathname.startsWith('/assets/');}catch{return false;}
+}
 async function responsive(page,label){
   const elapsed=await page.evaluate(async()=>{const start=performance.now();await new Promise(r=>setTimeout(r,120));return performance.now()-start;});
   assert(elapsed<1800,`${label}: main thread was unresponsive for ${Math.round(elapsed)}ms`);
@@ -25,7 +39,9 @@ function attachDiagnostics(page,scope){
     if(!sameOrigin(req.url()))return;
     const type=req.resourceType();
     if(!['document','script','fetch','xhr'].includes(type))return;
-    report.browserErrors.push({scope,type:'requestfailed',resourceType:type,url:req.url(),message:req.failure()?.errorText||'failed'});
+    const failure={scope,type:'requestfailed',resourceType:type,url:req.url(),message:req.failure()?.errorText||'failed'};
+    if(isExpectedNavigationAbort(page,req)){report.navigationAborts.push(failure);return;}
+    report.browserErrors.push(failure);
   });
   page.on('response',res=>{
     const req=res.request(),type=req.resourceType(),url=res.url();
@@ -34,7 +50,7 @@ function attachDiagnostics(page,scope){
   });
 }
 async function goto(page,url){
-  const response=await page.goto(BASE+url,{waitUntil:'domcontentloaded',timeout:30000});
+  const response=await duringNavigation(page,()=>page.goto(BASE+url,{waitUntil:'domcontentloaded',timeout:30000}));
   assert(response&&response.status()<500,`${url}: HTTP ${response&&response.status()}`);
   await waitSettled(page);
   await dismissConsent(page);
@@ -63,13 +79,16 @@ async function waitForUrlChange(page,before,expectedPath,timeout=12000){
   await waitSettled(page);
 }
 async function clickAndWait(page,handle,expectedPath,timeout=12000){
-  assert(handle,'Clickable target missing');const before=page.url();await handle.click();await waitForUrlChange(page,before,expectedPath,timeout);
+  assert(handle,'Clickable target missing');
+  const before=page.url();
+  await duringNavigation(page,async()=>{await handle.click();await waitForUrlChange(page,before,expectedPath,timeout);});
 }
 async function submitVisibleForm(page,formSelector,fill,expectedPath,timeout=12000){
   const form=await visible(page,formSelector);assert(form,`Visible form missing: ${formSelector}`);
   if(fill)await fill(form);
   const button=await form.$('button[type="submit"],input[type="submit"]');assert(button,`Submit control missing: ${formSelector}`);
-  const before=page.url();await button.click();await waitForUrlChange(page,before,expectedPath,timeout);
+  const before=page.url();
+  await duringNavigation(page,async()=>{await button.click();await waitForUrlChange(page,before,expectedPath,timeout);});
 }
 async function openScoutFromMobileMenu(page){
   const toggle=await visible(page,'[data-mobile-toggle]');assert(toggle,'Mobile navigation toggle missing');await toggle.click();
@@ -177,6 +196,7 @@ async function runJourney(browser,name,viewport,fn){
 
   await browser.close();
   const newErrors=report.browserErrors.filter(e=>!(/favicon|google-analytics|googletagmanager/i.test(e.url||e.message||'')));
+  report.navigationAbortCount=report.navigationAborts.length;
   report.browserErrorCount=newErrors.length;report.finishedAt=new Date().toISOString();fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
   if(report.failures.length||newErrors.length){if(newErrors.length)console.error('Browser errors:',newErrors);process.exit(1);}
 })().catch(error=>{report.failures.push({name:'runner',error:error.message});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2));console.error(error);process.exit(1);});
