@@ -139,6 +139,7 @@ async function search(q){
   const j=await fetchSearch(q);
   return (j.results||[]).map(x=>normalise(x,q)).filter(x=>x.id&&x.landingUrl&&x.imageUrl&&!BAD.test(x.title+' '+x.keywords.join(' '))).map(x=>({...x,score:score(x,q)})).sort((a,b)=>b.score-a.score||b.downloads-a.downloads).slice(0,12);
 }
+function compact(x){return {id:x.id,title:x.title,creator:x.creator,landingUrl:x.landingUrl,imageUrl:x.imageUrl,source:x.source,licence:x.licence,query:x.query,score:x.score,editorialPurpose:'Category-level illustrative backdrop; not a photograph of a specific APG-reviewed product.',checkedAt:'2026-08-19'};}
 async function main(){
   const cats=Object.values(categories).sort((a,b)=>a.slug.localeCompare(b.slug));
   if(cats.length!==90)throw new Error(`Expected 90 categories, found ${cats.length}`);
@@ -155,11 +156,15 @@ async function main(){
   const used=new Set(),selection={};
   for(const row of results){
     const chosen=row.candidates.find(x=>!used.has(x.id))||row.candidates[0]||null;
-    if(chosen){used.add(chosen.id);selection[row.slug]={...chosen,editorialPurpose:'Category-level illustrative backdrop; not a photograph of a specific APG-reviewed product.',checkedAt:'2026-08-19'};}
+    if(chosen){used.add(chosen.id);selection[row.slug]=compact(chosen);}
   }
   const withCandidates=results.filter(x=>x.candidates.length).length;
-  const out={version:'category-editorial-candidates-v42.1',generatedAt:new Date().toISOString(),policy:{purpose:'Premium category-level editorial backdrops; never evidence of a specific APG product.',source:'StockSnap',licence:'CC0',delivery:'Self-host selected assets before Production where practicable.',verification:'Editorial scene query + relevance scoring + representative human visual review + upstream provenance checks.'},summary:{categories:90,withCandidates,withoutCandidates:90-withCandidates,selected:Object.keys(selection).length,uniqueSelected:new Set(Object.values(selection).map(x=>x.id)).size},selection,categories:results};
+  const summary={categories:90,withCandidates,withoutCandidates:90-withCandidates,selected:Object.keys(selection).length,uniqueSelected:new Set(Object.values(selection).map(x=>x.id)).size};
+  const out={version:'category-editorial-candidates-v42.2',generatedAt:new Date().toISOString(),policy:{purpose:'Premium category-level editorial backdrops; never evidence of a specific APG product.',source:'StockSnap',licence:'CC0',delivery:'Self-host selected assets before Production where practicable.',verification:'Editorial scene query + relevance scoring + representative human visual review + upstream provenance checks.'},summary,selection,categories:results};
+  const compactOut={version:'category-editorial-selection-v43',generatedAt:out.generatedAt,policy:out.policy,summary,selection};
   fs.writeFileSync(path.join(__dirname,'..','data','category-editorial-candidates-v42.json'),JSON.stringify(out,null,2)+'\n');
-  console.log(`Candidate coverage ${withCandidates}/90; selected ${Object.keys(selection).length}; unique ${out.summary.uniqueSelected}`);
+  fs.writeFileSync(path.join(__dirname,'..','data','category-editorial-selection-v43.json'),JSON.stringify(compactOut,null,2)+'\n');
+  fs.writeFileSync(path.join(__dirname,'..','data','category-editorial-summary-v43.json'),JSON.stringify({version:compactOut.version,generatedAt:compactOut.generatedAt,...summary},null,2)+'\n');
+  console.log(`Candidate coverage ${withCandidates}/90; selected ${summary.selected}; unique ${summary.uniqueSelected}`);
 }
 main().catch(e=>{console.error(e);process.exit(1);});
