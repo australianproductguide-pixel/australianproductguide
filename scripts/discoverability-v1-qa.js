@@ -13,7 +13,7 @@ assert.strictEqual(layer.sitemapGroups.categories.length,Object.keys(categories)
 assert.strictEqual(layer.sitemapGroups.brands.length,brands.length,'brand sitemap must contain every represented brand');
 
 const robots=layer.robotsText();
-for(const token of ['User-agent: *','User-agent: OAI-SearchBot','User-agent: ChatGPT-User','Disallow: /my-apg/','https://australianproductguide.au/sitemap.xml','https://australianproductguide.au/sitemap-index.xml'])assert(robots.includes(token),`robots.txt missing ${token}`);
+for(const token of ['User-agent: *','User-agent: Googlebot','User-agent: bingbot','User-agent: OAI-SearchBot','User-agent: ChatGPT-User','User-agent: PerplexityBot','User-agent: Perplexity-User','User-agent: Claude-SearchBot','User-agent: Claude-User','Disallow: /my-apg/','https://australianproductguide.au/sitemap.xml','https://australianproductguide.au/sitemap-index.xml'])assert(robots.includes(token),`robots.txt missing ${token}`);
 assert(!robots.includes('Disallow: /products/'),'public product pages must remain crawlable');
 assert(!robots.includes('Disallow: /categories/'),'public category pages must remain crawlable');
 
