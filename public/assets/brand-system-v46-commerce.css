@@ -1,0 +1,65 @@
+/* APG Brand System v46 — shopping/discovery surfaces.
+ * Keeps Amazon links commercial-transparent while presenting the APG-owned UI in APG colours.
+ */
+body[data-brand-system-v46="true"] .apg-shopping-hero{background:linear-gradient(135deg,#EFF6FF 0%,#F8FAFC 58%,#FFFFFF 100%)!important;border-color:#E2E8F0!important}
+body[data-brand-system-v46="true"] .apg-shopping-hero h1{color:#0F172A!important}
+body[data-brand-system-v46="true"] .apg-shopping-hero .lede{color:#64748B!important}
+body[data-brand-system-v46="true"] .apg-shopping-principles,
+body[data-brand-system-v46="true"] .apg-shopping-card,
+body[data-brand-system-v46="true"] .apg-shopping-bridge-shell,
+body[data-brand-system-v46="true"] .apg-shopping-governance-grid>div,
+body[data-brand-system-v46="true"] .apg-shopping-mini,
+body[data-brand-system-v46="true"] .apg-search-shopping-shell{background:#FFFFFF!important;border-color:#E2E8F0!important;color:#1E293B!important;box-shadow:0 14px 36px rgba(15,23,42,.07)!important}
+body[data-brand-system-v46="true"] .apg-shopping-principles strong,
+body[data-brand-system-v46="true"] .apg-shopping-card h2,
+body[data-brand-system-v46="true"] .apg-shopping-card strong,
+body[data-brand-system-v46="true"] .apg-shopping-bridge-shell h2,
+body[data-brand-system-v46="true"] .apg-shopping-governance-grid strong,
+body[data-brand-system-v46="true"] .apg-shopping-mini strong,
+body[data-brand-system-v46="true"] .apg-search-shopping-shell h2{color:#0F172A!important}
+body[data-brand-system-v46="true"] .apg-shopping-principles li,
+body[data-brand-system-v46="true"] .apg-shopping-card>p,
+body[data-brand-system-v46="true"] .apg-shopping-bridge-shell p,
+body[data-brand-system-v46="true"] .apg-shopping-governance-grid p,
+body[data-brand-system-v46="true"] .apg-shopping-mini small{color:#64748B!important}
+body[data-brand-system-v46="true"] .apg-shopping-verified,
+body[data-brand-system-v46="true"] .apg-shopping-state{background:#EFF6FF!important;color:#1D4ED8!important;border-color:#BFDBFE!important}
+body[data-brand-system-v46="true"] .apg-shopping-icon,
+body[data-brand-system-v46="true"] .apg-shopping-mini-icon{background:#EFF6FF!important;color:#2563EB!important;border:1px solid #BFDBFE!important}
+body[data-brand-system-v46="true"] .apg-shopping-note{background:#F8FAFC!important;color:#475569!important;border:1px solid #E2E8F0!important}
+body[data-brand-system-v46="true"] .apg-shopping-watch{background:#F8FAFC!important;border-color:#E2E8F0!important;color:#475569!important}
+body[data-brand-system-v46="true"] .apg-shopping-disclosure{background:#EFF6FF!important;border-color:#BFDBFE!important;color:#334155!important}
+body[data-brand-system-v46="true"] .apg-paid-label{color:#64748B!important}
+body[data-brand-system-v46="true"] .apg-shopping-mini:hover{background:#EFF6FF!important;border-color:#BFDBFE!important;box-shadow:0 14px 34px rgba(37,99,235,.10)!important}
+body[data-brand-system-v46="true"] .apg-shopping-home,
+body[data-brand-system-v46="true"] .apg-shopping-section,
+body[data-brand-system-v46="true"] .apg-shopping-bridge,
+body[data-brand-system-v46="true"] .apg-shopping-governance,
+body[data-brand-system-v46="true"] .apg-category-shopping,
+body[data-brand-system-v46="true"] .apg-search-shopping{border-color:#E2E8F0!important}
+
+/* Amazon shopping creative v41 is APG-owned artwork, so it follows the same master system. */
+body[data-brand-system-v46="true"] .apg-amz-v41-head h2,
+body[data-brand-system-v46="true"] .apg-amz-v41-copy strong{color:#0F172A!important}
+body[data-brand-system-v46="true"] .apg-amz-v41-head p,
+body[data-brand-system-v46="true"] .apg-amz-v41-copy>span:not(.apg-amz-v41-eyebrow):not(.apg-amz-v41-cta),
+body[data-brand-system-v46="true"] .apg-amz-v41-copy small{color:#64748B!important}
+body[data-brand-system-v46="true"] .apg-amz-v41-card,
+body[data-brand-system-v46="true"] .apg-amz-v41-card.is-feature{background:linear-gradient(135deg,#FFFFFF 0%,#EFF6FF 58%,#F8FAFC 100%)!important;border-color:#DBEAFE!important;color:#0F172A!important;box-shadow:0 18px 48px rgba(15,23,42,.09)!important}
+body[data-brand-system-v46="true"] .apg-amz-v41-card:hover{border-color:#93C5FD!important;box-shadow:0 22px 56px rgba(37,99,235,.13)!important}
+body[data-brand-system-v46="true"] .apg-amz-v41-eyebrow{background:#EFF6FF!important;border-color:#BFDBFE!important;color:#1D4ED8!important}
+body[data-brand-system-v46="true"] .apg-amz-v41-cta{background:#2563EB!important;color:#FFFFFF!important;border:1px solid #2563EB!important}
+body[data-brand-system-v46="true"] .apg-amz-v41-cta:hover{background:#1D4ED8!important;border-color:#1D4ED8!important}
+body[data-brand-system-v46="true"] .apg-amz-v41-art{color:#2563EB!important}
+body[data-brand-system-v46="true"] .apg-amz-v41-art svg,
+body[data-brand-system-v46="true"] .apg-amz-v41-glyph{background:rgba(255,255,255,.94)!important;color:#2563EB!important;box-shadow:0 14px 35px rgba(15,23,42,.11)!important}
+body[data-brand-system-v46="true"] .apg-amz-v41-orbit{border-color:rgba(37,99,235,.16)!important;background:rgba(239,246,255,.72)!important}
+body[data-brand-system-v46="true"] .apg-amz-v41-chip{background:#06B6D4!important;box-shadow:0 5px 16px rgba(6,182,212,.18)!important}
+body[data-brand-system-v46="true"] .apg-amz-v41-chip.chip-b{background:#2563EB!important;box-shadow:0 5px 16px rgba(37,99,235,.18)!important}
+
+@media(max-width:820px){
+  body[data-brand-system-v46="true"] .apg-shopping-hero{padding-top:34px!important}
+  body[data-brand-system-v46="true"] .apg-shopping-card{box-shadow:0 10px 28px rgba(15,23,42,.06)!important}
+  body[data-brand-system-v46="true"] .apg-amz-v41-card,
+  body[data-brand-system-v46="true"] .apg-amz-v41-card.is-feature{box-shadow:0 12px 30px rgba(15,23,42,.08)!important}
+}

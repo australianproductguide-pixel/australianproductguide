@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "vercel-build": "node scripts/scout-v5-syntax-check.js && node scripts/scout-concierge-v5-qa.js && node scripts/scout-amazon-v5-qa.js && node scripts/scout-mobile-layout-v5-qa.js && node scripts/discoverability-v1-qa.js && node scripts/indexnow-key-v1-qa.js && node scripts/entity-discovery-v1-qa.js && node scripts/interaction-reliability-v37-qa.js && node scripts/vercel-analytics-v38-qa.js && node scripts/rum-privacy-qa.js && node scripts/amazon-shopping-discovery-v39-qa.js && node scripts/amazon-shopping-creative-v41-qa.js"
+    "vercel-build": "node scripts/scout-v5-syntax-check.js && node scripts/scout-concierge-v5-qa.js && node scripts/scout-amazon-v5-qa.js && node scripts/scout-mobile-layout-v5-qa.js && node scripts/discoverability-v1-qa.js && node scripts/indexnow-key-v1-qa.js && node scripts/entity-discovery-v1-qa.js && node scripts/interaction-reliability-v37-qa.js && node scripts/vercel-analytics-v38-qa.js && node scripts/rum-privacy-qa.js && node scripts/amazon-shopping-discovery-v39-qa.js && node scripts/amazon-shopping-creative-v41-qa.js && node scripts/brand-system-v46-qa.js"
   }
 }

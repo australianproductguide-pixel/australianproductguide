@@ -218,6 +218,13 @@ jobs:
           set -euo pipefail
           node scripts/experience-v37-browser-diagnostic.js
 
+      - name: APG v46 brand and contrast browser certification
+        env:
+          OUTPUT_DIR: artifacts/production-experience/brand-v46
+        run: |
+          set -euo pipefail
+          node scripts/brand-system-v46-browser.js
+
       - name: Upload Production evidence
         if: always()
         uses: actions/upload-artifact@v7
