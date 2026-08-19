@@ -186,6 +186,7 @@ async function runJourney(browser,name,viewport,fn){
     await clickAndWait(page,describe,'/decision-lab/');
     await goto(page,'/');
     await submitVisibleForm(page,'form[data-search-shell]',async form=>{const input=await form.$('input[name="q"]');assert(input,'Mobile visible search input missing');await input.type('robot vacuum for pet hair');},'/search/');
+    await page.waitForSelector('main a[href^="/products/"]',{timeout:12000});
     assert(await page.$('main a[href^="/products/"]'),'Mobile Search rendered no product links');
     await openScoutFromMobileMenu(page);
     const panel=await page.$eval('#apgAssistantPanel',el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height,hidden:el.hidden}));
