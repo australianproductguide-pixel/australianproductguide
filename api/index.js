@@ -1,6 +1,4 @@
-// APG Interaction Reliability v37 is the governing runtime over discoverability and Scout.
-// Keep the current Scout session-guard runtime explicitly loaded so its mandatory
-// release invariant remains visible and enforced while the v37 navigation, comparison
-// and bounded Scout recovery controls protect core consumer journeys.
+// APG Interaction Reliability v37 remains the governing consumer runtime.
+// PageSpeed Certification v30 is a final-response accessibility/performance layer only.
 require('../lib/scout-concierge-v5-runtime');
-module.exports=require('../lib/interaction-reliability-v37');
+module.exports=require('../lib/pagespeed-certification-v30');
