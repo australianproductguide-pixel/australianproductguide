@@ -15,8 +15,9 @@ const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function navigate(page,url){
   let lastError=null;
   for(let attempt=1;attempt<=2;attempt++){
-    try{return await page.goto(url,{waitUntil:'domcontentloaded',timeout:60000});
-    catch(error){
+    try{
+      return await page.goto(url,{waitUntil:'domcontentloaded',timeout:60000});
+    }catch(error){
       lastError=error;
       if(attempt===2)break;
       console.warn(`V36_NAV_RETRY attempt=${attempt} url=${url} reason=${error.message}`);
