@@ -1,4 +1,4 @@
-/* Australian Product Guide Brand System v46.3 — final legacy-colour cleanup
+/* Australian Product Guide Brand System v46.4 — final legacy-colour cleanup
  * Current visual authority: blue/navy APG system across all standard UI.
  * The maintained Australian research proof band remains the sole approved yellow/gold
  * heritage exception and is applied by brand-system-v46-research-proof.css after this file.
@@ -25,7 +25,8 @@ body[data-brand-system-v46="true"] .mobile-power.apg-v324-scout-mobile:hover{
 }
 
 /* Homepage decision panel: replace historical gold label with blue-on-navy language. */
-body[data-brand-system-v46="true"] .apg-home-panel-label-v9{
+body[data-brand-system-v46="true"] .apg-home-panel-label-v9,
+body[data-brand-system-v46="true"][data-institutional-v9="true"] .apg-home-panel-v9 .apg-home-panel-label-v9{
   background:rgba(37,99,235,.20)!important;
   border-color:rgba(147,197,253,.42)!important;
   color:#DBEAFE!important;
@@ -33,14 +34,17 @@ body[data-brand-system-v46="true"] .apg-home-panel-label-v9{
 }
 
 /* The old v9 gold trust CTA is no longer a second yellow brand surface. */
-body[data-brand-system-v46="true"] .apg-home-gold-button-v9{
+body[data-brand-system-v46="true"] .apg-home-gold-button-v9,
+body[data-brand-system-v46="true"][data-institutional-v9="true"] .apg-home-panel-v9 .apg-home-gold-button-v9{
   background:#2563EB!important;
   border-color:#2563EB!important;
   color:#FFFFFF!important;
   box-shadow:0 8px 20px rgba(37,99,235,.20)!important;
 }
 body[data-brand-system-v46="true"] .apg-home-gold-button-v9:hover,
-body[data-brand-system-v46="true"] .apg-home-gold-button-v9:focus-visible{
+body[data-brand-system-v46="true"] .apg-home-gold-button-v9:focus-visible,
+body[data-brand-system-v46="true"][data-institutional-v9="true"] .apg-home-panel-v9 .apg-home-gold-button-v9:hover,
+body[data-brand-system-v46="true"][data-institutional-v9="true"] .apg-home-panel-v9 .apg-home-gold-button-v9:focus-visible{
   background:#1D4ED8!important;
   border-color:#1D4ED8!important;
   color:#FFFFFF!important;
