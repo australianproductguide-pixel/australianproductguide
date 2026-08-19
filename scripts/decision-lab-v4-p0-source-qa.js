@@ -58,12 +58,12 @@ const cases=[
 ];
 const hardStatuses=new Set(['eligible','ineligible','unverified']);
 for(const [name,q,opts] of cases){
-  const out=engine.publicDecision(q,opts);
+  const ranked=engine.rankDecision(q,opts),out=engine.publicDecision(q,opts);
   assert.equal(out.version,'decision-engine-v4',`${name}: wrong engine version`);
   assert.equal(out.commercialRecommendationWeight,0,`${name}: commercial weight changed`);
+  assert.equal(ranked.unsupportedCategory,false,`${name}: supported intent misclassified as unsupported`);
   assert(Array.isArray(out.results),`${name}: results missing`);
   assert(out.results.length>0,`${name}: no controlled shortlist/fallback`);
-  assert.equal(out.audit?.unsupportedCategory,false,`${name}: supported intent misclassified as unsupported`);
   for(const r of out.results){
     assert(r.url&&r.url.startsWith('/products/'),`${name}: non-canonical product route`);
     assert(hardStatuses.has(r.hardConstraintStatus),`${name}: uncontrolled hard-constraint status ${r.hardConstraintStatus}`);
@@ -73,8 +73,8 @@ const impossible=engine.publicDecision('75-inch TV for sport and Netflix.',{cate
 assert(impossible.audit?.hardConstraintFallback||impossible.results.every(r=>r.hardConstraintStatus!=='eligible'),'impossible request must use a controlled hard-constraint fallback');
 
 for(const q of ['Something useful for a tiny apartment but not expensive.','I need a quiet garden shredder for branches.']){
-  const out=engine.publicDecision(q,{});
-  assert.equal(out.audit?.unsupportedCategory,true,`unsupported intent must be explicit: ${q}`);
+  const ranked=engine.rankDecision(q,{}),out=engine.publicDecision(q,{});
+  assert.equal(ranked.unsupportedCategory,true,`unsupported intent must be explicit in governed ranker: ${q}`);
   assert.equal(out.results.length,0,`unsupported intent must not guess across unrelated categories: ${q}`);
   assert.equal(out.recommendation,null,`unsupported intent must not manufacture recommendation reasoning: ${q}`);
 }
