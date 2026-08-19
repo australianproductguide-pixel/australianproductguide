@@ -1,0 +1,175 @@
+name: APG Amazon Shopping Assurance v40
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '20 21 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: read
+
+concurrency:
+  group: apg-amazon-shopping-assurance-v40-${{ github.event_name }}
+  cancel-in-progress: true
+
+env:
+  BASE_URL: https://australianproductguide.au
+
+jobs:
+  visual-certification:
+    name: Deals visual certification
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Wait for exact Production deployment
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 90); do
+            d=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments?sha=$SHA")
+            id=$(echo "$d" | jq -r '[.[]|select(.environment=="Production" or .original_environment=="Production")][0].id//empty')
+            if [ -n "$id" ]; then
+              s=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments/$id/statuses")
+              state=$(echo "$s" | jq -r '.[0].state//empty')
+              echo "Production state=${state:-pending}"
+              if [ "$state" = failure ] || [ "$state" = error ]; then exit 1; fi
+              if [ "$state" = success ]; then break; fi
+            fi
+            sleep 5
+            if [ "$attempt" = 90 ]; then echo 'Timed out waiting for Vercel Production'; exit 1; fi
+          done
+          short=$(printf '%s' "$SHA" | cut -c1-16)
+          for attempt in $(seq 1 24); do
+            if curl -fsSL "$BASE_URL/deals/" -o /tmp/deals-sha.html && grep -q "v=$short" /tmp/deals-sha.html; then
+              echo "Exact Production SHA verified: $SHA"; exit 0
+            fi
+            sleep 5
+          done
+          echo "Canonical Production did not expose commit marker $short"; exit 1
+
+      - name: Install browser diagnostic dependency
+        run: |
+          set -euo pipefail
+          CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser)
+          test -n "$CHROME"
+          echo "CHROME=$CHROME" >> "$GITHUB_ENV"
+          npm install --no-save --package-lock=false puppeteer-core@24.16.0 >/dev/null 2>&1
+
+      - name: Certify Deals in real Chromium
+        env:
+          OUTPUT_DIR: artifacts/amazon-shopping-visual-v40
+        run: |
+          set -euo pipefail
+          node scripts/amazon-shopping-visual-cert-v40.js
+
+      - name: Publish visual certification summary
+        if: always()
+        run: |
+          if [ -f artifacts/amazon-shopping-visual-v40/report.json ]; then
+            node - <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          const fs=require('fs');
+          const r=JSON.parse(fs.readFileSync('artifacts/amazon-shopping-visual-v40/report.json','utf8'));
+          console.log('## Amazon Shopping visual certification v40');
+          console.log(`**Status:** ${r.status || 'UNKNOWN'}`);
+          console.log(`\n**Production:** ${r.base}`);
+          console.log(`\n**Viewports certified:** ${(r.viewports||[]).map(v=>`${v.label} (${v.viewport.width}×${v.viewport.height})`).join(', ') || 'none'}`);
+          console.log(`\n**Journeys:** ${(r.journeys||[]).filter(x=>x.ok).length}/${(r.journeys||[]).length} passed`);
+          console.log(`\n**Screenshot evidence:** ${(r.evidence||[]).join(', ') || 'none'}`);
+          if((r.failures||[]).length){console.log('\n### Failures');for(const f of r.failures)console.log(`- ${f.name}: ${f.error}`);}
+          NODE
+          fi
+
+      - name: Upload visual evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: amazon-shopping-visual-v40-${{ github.run_id }}
+          path: artifacts/amazon-shopping-visual-v40
+          retention-days: 30
+          if-no-files-found: error
+
+  destination-health:
+    name: Amazon destination health
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Wait for exact Production deployment
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 90); do
+            d=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments?sha=$SHA")
+            id=$(echo "$d" | jq -r '[.[]|select(.environment=="Production" or .original_environment=="Production")][0].id//empty')
+            if [ -n "$id" ]; then
+              s=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments/$id/statuses")
+              state=$(echo "$s" | jq -r '.[0].state//empty')
+              echo "Production state=${state:-pending}"
+              if [ "$state" = failure ] || [ "$state" = error ]; then exit 1; fi
+              if [ "$state" = success ]; then break; fi
+            fi
+            sleep 5
+            if [ "$attempt" = 90 ]; then echo 'Timed out waiting for Vercel Production'; exit 1; fi
+          done
+
+      - name: Verify governed and external Amazon destinations
+        env:
+          OUTPUT_DIR: artifacts/amazon-destination-health-v40
+        run: |
+          set -euo pipefail
+          node scripts/amazon-destination-health-v40.js
+
+      - name: Publish destination health summary
+        if: always()
+        run: |
+          if [ -f artifacts/amazon-destination-health-v40/report.json ]; then
+            node - <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          const fs=require('fs');
+          const r=JSON.parse(fs.readFileSync('artifacts/amazon-destination-health-v40/report.json','utf8'));
+          console.log('## Amazon destination health v40');
+          console.log(`**Status:** ${r.status || 'UNKNOWN'}`);
+          console.log(`\n**Checked:** ${r.checkedAt || 'unknown'}`);
+          const s=r.summary||{};
+          console.log(`\n- Active governed destinations: ${s.activeDestinations ?? 'n/a'}`);
+          console.log(`- Registry pass: ${s.registryPass ?? 'n/a'}`);
+          console.log(`- External pass: ${s.externalPass ?? 'n/a'}`);
+          console.log(`- External indeterminate: ${s.externalIndeterminate ?? 'n/a'}`);
+          console.log(`- External fail: ${s.externalFail ?? 'n/a'}`);
+          console.log(`- Hard failures: ${s.hardFailures ?? (r.hardFailures||[]).length}`);
+          console.log(`- Warnings: ${s.warnings ?? (r.warnings||[]).length}`);
+          if((r.warnings||[]).length){console.log('\n### Warnings / automated-check limitations');for(const w of r.warnings)console.log(`- ${w.message}`);}
+          if((r.hardFailures||[]).length){console.log('\n### Hard failures');for(const f of r.hardFailures)console.log(`- ${f.message}`);}
+          NODE
+          fi
+
+      - name: Upload destination health evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: amazon-destination-health-v40-${{ github.run_id }}
+          path: artifacts/amazon-destination-health-v40
+          retention-days: 30
+          if-no-files-found: error
