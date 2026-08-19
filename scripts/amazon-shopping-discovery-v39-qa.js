@@ -57,9 +57,17 @@ const finalCategory=finalShopping.finalShoppingHtml(finalBase,{url:'/categories/
 assert(finalCategory.includes('apg-category-shopping'),'Final response layer must preserve category shopping discovery');
 assert(finalCategory.includes('k=coffee+machines'),'Final category route must remain product-specific');
 assert(finalCategory.includes('tag=auproductguid-22'),'Final category route lost Associates tag');
-const finalSearch=finalShopping.finalShoppingHtml(finalBase,{url:'/search/?q=amazon+deals'});
+
+const rankedSearchBase='<html><body>'+shellInput+'<main id="main"><section class="search-groups"><p data-ordinary-product-ranking>Ordinary Amazon-branded product ranking</p></section></main></body></html>';
+const finalSearch=finalShopping.finalShoppingHtml(rankedSearchBase,{url:'/search/?q=amazon+deals'});
+assert(finalSearch.includes('data-shopping-search-intent="true"'),'Shopping-intent search must use the dedicated discovery main');
 assert(finalSearch.includes('apg-search-shopping'),'Final response layer must preserve search shopping intent');
 assert(finalSearch.includes('data-affiliate-destination="todayDeals"'),'Final search route lost governed destination');
+assert(!finalSearch.includes('data-ordinary-product-ranking'),'Promotional search intent must not be treated as ordinary product ranking');
+assert(finalSearch.includes('Recommendation independence'),'Shopping-intent search must explain recommendation separation');
+const finalRegularSearch=finalShopping.finalShoppingHtml(rankedSearchBase,{url:'/search/?q=robot+vacuum'});
+assert(finalRegularSearch.includes('data-ordinary-product-ranking'),'Ordinary product search must remain unchanged');
+assert(!finalRegularSearch.includes('data-shopping-search-intent="true"'),'Ordinary product search must not become a shopping-discovery page');
 
 assert.strictEqual(scout.discoveryRecord('Are there any Amazon deals?').key,'todayDeals');
 assert.strictEqual(scout.discoveryRecord('Show me Amazon Best Sellers').key,'bestSellers');
@@ -69,4 +77,4 @@ assert.strictEqual(scout.discoveryRecord('ordinary product advice'),null);
 assert(associates.amazonClientJs.includes('amazon_shopping_click'),'Shopping click analytics event missing');
 assert(associates.amazonClientJs.includes('destination_key'),'Shopping analytics destination dimension missing');
 
-console.log(`amazon-shopping-discovery-v39 QA passed: ${registry.activeDestinations().length} active governed destinations, ${Object.keys(registry.categoryTerms).length} category routes, zero live seasonal events, final runtime persistence verified.`);
+console.log(`amazon-shopping-discovery-v39 QA passed: ${registry.activeDestinations().length} active governed destinations, ${Object.keys(registry.categoryTerms).length} category routes, zero live seasonal events, final runtime persistence and shopping-intent search separation verified.`);
