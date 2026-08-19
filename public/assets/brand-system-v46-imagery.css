@@ -1,0 +1,57 @@
+/* APG Brand System v46 — editorial/category imagery contrast layer.
+ * Targets the current category editorial imagery v45 markup directly.
+ * Images remain editorial category context, never substitutes for verified product photography.
+ */
+body[data-brand-system-v46="true"] .category-hero-media{
+  background:#0F172A!important;
+  border:1px solid rgba(147,197,253,.20)!important;
+  box-shadow:0 22px 60px rgba(15,23,42,.18)!important;
+}
+body[data-brand-system-v46="true"] .category-hero-media>img{
+  object-position:center!important;
+  filter:saturate(.96) contrast(1.02)!important;
+}
+body[data-brand-system-v46="true"] .category-hero-media-shade{
+  background:linear-gradient(180deg,rgba(15,23,42,.08) 8%,rgba(15,23,42,.34) 48%,rgba(15,23,42,.96) 100%)!important;
+}
+body[data-brand-system-v46="true"] .category-hero-media-overlay{
+  color:#FFFFFF!important;
+}
+body[data-brand-system-v46="true"] .category-hero-photo-label{
+  background:rgba(15,23,42,.70)!important;
+  border-color:rgba(255,255,255,.46)!important;
+  color:#FFFFFF!important;
+  box-shadow:0 4px 16px rgba(15,23,42,.20)!important;
+}
+body[data-brand-system-v46="true"] .category-hero-media-overlay strong{
+  color:#FFFFFF!important;
+  text-shadow:0 2px 14px rgba(15,23,42,.72)!important;
+}
+body[data-brand-system-v46="true"] .category-hero-media-overlay>span:last-child{
+  color:#E2E8F0!important;
+  text-shadow:0 1px 8px rgba(15,23,42,.70)!important;
+}
+body[data-brand-system-v46="true"] .category-hero-media figcaption{
+  background:rgba(15,23,42,.97)!important;
+  color:#CBD5E1!important;
+  border-top:1px solid rgba(255,255,255,.10)!important;
+}
+body[data-brand-system-v46="true"] .category-hero-media figcaption a{
+  color:#FFFFFF!important;
+  text-decoration-color:#93C5FD!important;
+}
+body[data-brand-system-v46="true"] .category-hero-media figcaption a:hover{
+  color:#BFDBFE!important;
+}
+body[data-brand-system-v46="true"] .category-hero-media figcaption>span{
+  color:#CBD5E1!important;
+}
+@media(max-width:920px){
+  body[data-brand-system-v46="true"] .category-hero-media-shade{
+    background:linear-gradient(180deg,rgba(15,23,42,.12) 5%,rgba(15,23,42,.46) 48%,rgba(15,23,42,.97) 100%)!important;
+  }
+}
+@media(max-width:640px){
+  body[data-brand-system-v46="true"] .category-hero-media-overlay strong{font-size:19px!important}
+  body[data-brand-system-v46="true"] .category-hero-media figcaption{background:rgba(15,23,42,.985)!important}
+}
