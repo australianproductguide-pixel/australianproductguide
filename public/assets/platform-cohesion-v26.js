@@ -6,11 +6,6 @@
     const launcher=q('#apgAssistantLauncher');
     const panel=q('#apgAssistantPanel');
     if(!launcher||!panel)return;
-
-    // Scout v5 binds directly to every data-v26-scout-open control. By the time
-    // this delegated compatibility handler runs, the v5 handler may already have
-    // opened the panel. Never click the launcher again in that state: doing so
-    // toggles Scout straight back closed (most visible from the mobile menu).
     const mobile=q('[data-mobile-toggle][aria-expanded="true"]');
     if(mobile)mobile.click();
     if(panel.hidden){
@@ -18,7 +13,6 @@
         try{void window.apgScout.open();}catch{launcher.click();}
       }else launcher.click();
     }
-
     window.setTimeout(()=>{
       const current=q('#apgAssistantPanel');
       const focusable=current&&q('input,button,[href],[tabindex]:not([tabindex="-1"])',current);
@@ -57,9 +51,10 @@
   }
 
   document.addEventListener('click',event=>{
-    const trigger=event.target.closest('[data-v26-scout-open]');
+    const trigger=event.target.closest&&event.target.closest('[data-v26-scout-open]');
     if(!trigger)return;
     event.preventDefault();
+    event.stopImmediatePropagation();
     openScout(trigger);
   });
 
