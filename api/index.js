@@ -1,4 +1,4 @@
-// Scout Concierge v5 repair candidate runtime.
-// This branch is gated by syntax, conversation, security and Amazon mapping checks
-// before it may replace the recovered Production runtime.
+// Scout Concierge v5 is the current governing Production runtime.
+// Vercel must pass the Scout syntax/module-load, conversation/security and Amazon
+// mapping release gates before this runtime can deploy from main.
 module.exports=require('../lib/scout-concierge-v5-runtime');
