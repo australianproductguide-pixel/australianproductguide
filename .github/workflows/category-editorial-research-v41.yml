@@ -9,6 +9,7 @@ on:
       - apg-category-editorial-images-v44
       - apg-category-editorial-images-v45-main
     paths:
+      - data/category-editorial-overrides-v45.js
       - scripts/category-editorial-research-v42.js
       - scripts/category-editorial-research-v44.js
       - scripts/category-editorial-research-v45.js
@@ -21,6 +22,7 @@ on:
     branches:
       - main
     paths:
+      - data/category-editorial-overrides-v45.js
       - scripts/category-editorial-research-v45.js
       - scripts/category-editorial-curation-v45.js
       - scripts/category-editorial-fetch-backoff-v45.js
@@ -33,7 +35,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: apg-category-editorial-research-${{ github.event.pull_request.head.ref || github.ref_name }}
+  group: apg-category-editorial-research-${{ github.event_name }}-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
