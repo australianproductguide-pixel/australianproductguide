@@ -8,7 +8,7 @@ const OUT=process.env.OUTPUT_DIR||'artifacts/brand-system-v46';
 const CHROME=process.env.CHROME||'/usr/bin/google-chrome';
 fs.mkdirSync(OUT,{recursive:true});
 const report={base:BASE,startedAt:new Date().toISOString(),checks:[],failures:[]};
-const retired=['rgb(8, 39, 53)','rgb(8, 124, 118)','rgb(7, 94, 90)','rgb(11, 111, 112)','rgb(255, 217, 93)','rgb(246, 189, 69)','rgb(243, 181, 72)','rgb(244, 181, 72)'];
+const retired=['rgb(8, 39, 53)','rgb(8, 124, 118)','rgb(7, 94, 90)','rgb(11, 111, 112)','rgb(11, 52, 69)','rgb(8, 120, 111)','rgb(255, 217, 93)','rgb(246, 189, 69)','rgb(243, 181, 72)','rgb(244, 181, 72)'];
 
 function assert(ok,message){if(!ok)throw new Error(message);}
 function parseRgb(value){const m=String(value||'').match(/rgba?\((\d+)[, ]+(\d+)[, ]+(\d+)/);return m?[+m[1],+m[2],+m[3]]:null;}
@@ -19,7 +19,7 @@ async function dismissConsent(page){const b=await page.$('[data-apg-consent]:not
 async function goto(page,url){const r=await page.goto(BASE+url,{waitUntil:'domcontentloaded',timeout:30000});assert(r&&r.status()<500,`${url} HTTP ${r&&r.status()}`);await page.waitForSelector('body[data-brand-system-v46="true"]',{timeout:10000});await dismissConsent(page);return r;}
 async function check(name,fn){try{await fn();report.checks.push({name,ok:true});process.stdout.write(`PASS ${name}\n`);}catch(e){report.checks.push({name,ok:false,error:e.message});report.failures.push({name,error:e.message});process.stderr.write(`FAIL ${name}: ${e.message}\n`);}}
 async function style(page,selector){return page.$eval(selector,el=>{const s=getComputedStyle(el);return {color:s.color,backgroundColor:s.backgroundColor,backgroundImage:s.backgroundImage,borderColor:s.borderTopColor,fontFamily:s.fontFamily,display:s.display,visibility:s.visibility};});}
-async function assertNoRetired(page,selector,label){const hits=await page.$$eval(selector,(els,bad)=>{const out=[];for(const el of els.slice(0,800)){const s=getComputedStyle(el);for(const [prop,value] of [['color',s.color],['backgroundColor',s.backgroundColor],['borderColor',s.borderTopColor],['backgroundImage',s.backgroundImage]]){if(bad.some(x=>String(value).includes(x)))out.push({tag:el.tagName,className:String(el.className||''),prop,value});}}return out.slice(0,20);},retired);assert(!hits.length,`${label} still exposes retired visual colours: ${JSON.stringify(hits)}`);}
+async function assertNoRetired(page,selector,label){const hits=await page.$$eval(selector,(els,bad)=>{const out=[];for(const el of els.slice(0,1000)){const s=getComputedStyle(el);for(const [prop,value] of [['color',s.color],['backgroundColor',s.backgroundColor],['borderColor',s.borderTopColor],['backgroundImage',s.backgroundImage]]){if(bad.some(x=>String(value).includes(x)))out.push({tag:el.tagName,className:String(el.className||''),prop,value});}}return out.slice(0,20);},retired);assert(!hits.length,`${label} still exposes retired visual colours: ${JSON.stringify(hits)}`);}
 async function assertContrast(page,fgSelector,bgSelector,min,label){const pair=await page.evaluate((fgSel,bgSel)=>{const fg=getComputedStyle(document.querySelector(fgSel)),bg=getComputedStyle(document.querySelector(bgSel));return {fg:fg.color,bg:bg.backgroundColor};},fgSelector,bgSelector);const a=parseRgb(pair.fg),b=parseRgb(pair.bg);assert(a&&b,`${label} computed colours unavailable ${JSON.stringify(pair)}`);const ratio=contrast(a,b);assert(ratio>=min,`${label} contrast ${ratio.toFixed(2)} below ${min}:1 (${pair.fg} on ${pair.bg})`);return ratio;}
 
 (async()=>{
@@ -35,6 +35,9 @@ async function assertContrast(page,fgSelector,bgSelector,min,label){const pair=a
     await assertContrast(page,'main .button:not(.secondary)','main .button:not(.secondary)',4.5,'primary action');
     const deals=await style(page,'.apg-nav-v8 .apg-deals-link');assert(!/255, 247, 232|138, 93, 25/.test(deals.backgroundColor+' '+deals.color),`Deals nav retained amber skin ${JSON.stringify(deals)}`);
     await assertNoRetired(page,'.site-header *,main *','homepage core surfaces');
+    const creative=await page.$('.apg-amz-v41-card');assert(creative,'Amazon creative v41 homepage card missing');
+    const creativeStyle=await style(page,'.apg-amz-v41-card');assert(/rgb\(255, 255, 255\)|rgb\(239, 246, 255\)/.test(creativeStyle.backgroundImage),`v41 creative card is not governed by v46: ${creativeStyle.backgroundImage}`);
+    await assertNoRetired(page,'.apg-amz-v41 *','Amazon creative v41 homepage');
     await snap(page,'brand-home-desktop');
   });
 
@@ -72,16 +75,18 @@ async function assertContrast(page,fgSelector,bgSelector,min,label){const pair=a
     const art=await style(page,'.category-hero-art');assert(/rgb\(15, 23, 42\)/.test(art.backgroundImage),`category hero art does not use APG navy: ${art.backgroundImage}`);
     const title=await style(page,'.category-hero-art strong');assert(title.color==='rgb(255, 255, 255)',`category hero art title is not white: ${title.color}`);
     const card=await style(page,'.product-card');assert(card.backgroundColor==='rgb(255, 255, 255)',`product card is not white: ${card.backgroundColor}`);
-    await assertNoRetired(page,'.category-hero *, .product-card *, .feature-card *, .comparison-card *','category and product discovery');
+    await assertNoRetired(page,'.category-hero *, .product-card *, .feature-card *, .comparison-card *, .apg-amz-v41 *','category and product discovery');
     await snap(page,'brand-category-desktop');
   });
 
-  await check('shopping discovery is APG-owned blue/navy UI',async()=>{
+  await check('shopping discovery and creative v41 are APG-owned blue/navy UI',async()=>{
     await goto(page,'/deals/');
     const hero=await style(page,'.apg-shopping-hero');assert(/rgb\(239, 246, 255\)/.test(hero.backgroundImage),`shopping hero does not use APG blue-soft: ${hero.backgroundImage}`);
     const icon=await style(page,'.apg-shopping-icon');assert(icon.color==='rgb(37, 99, 235)',`shopping icon is not APG blue: ${icon.color}`);
     const card=await style(page,'.apg-shopping-card');assert(card.backgroundColor==='rgb(255, 255, 255)',`shopping card is not white: ${card.backgroundColor}`);
-    await assertNoRetired(page,'[class*="apg-shopping"] *','shopping discovery');
+    const creative=await style(page,'.apg-amz-v41-card');assert(creative.color==='rgb(15, 23, 42)',`Amazon v41 creative text is not APG navy: ${creative.color}`);
+    const cta=await style(page,'.apg-amz-v41-cta');assert(cta.backgroundColor==='rgb(37, 99, 235)'&&cta.color==='rgb(255, 255, 255)',`Amazon v41 CTA is not APG blue/white: ${JSON.stringify(cta)}`);
+    await assertNoRetired(page,'[class*="apg-shopping"] *, .apg-amz-v41 *','shopping discovery');
     await snap(page,'brand-deals-desktop');
   });
 
