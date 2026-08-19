@@ -22,6 +22,17 @@
     if(trigger)trigger.setAttribute('aria-expanded',String(!panel.hidden));
   }
 
+  // The head bootstrap owns Scout activation before deferred/body-end scripts can
+  // attach legacy capture handlers. Publish the real opener as soon as this bridge
+  // arrives, then honour any tap that the bootstrap safely queued during parsing.
+  window.__apgOpenScoutV26=openScout;
+  window.__APG_SCOUT_BRIDGE_READY_V26__=true;
+  const pendingScout=window.__apgScoutPendingV26;
+  if(pendingScout){
+    window.__apgScoutPendingV26=null;
+    window.setTimeout(()=>openScout(pendingScout),0);
+  }
+
   function labelComparisonTables(){
     let enhanced=false;
     qa('table.compare').forEach(table=>{
@@ -51,11 +62,8 @@
     });
   }
 
-  // The exact-Production mobile journey proved document-level click capture was still
-  // too late: an older capture listener can see the Scout activation first and coerce
-  // the Event object into Search as q=[object Object]. Own Scout activation at the
-  // window capture boundary, before document/target/bubble listeners, and isolate the
-  // pointer/touch precursor events without cancelling their native click synthesis.
+  // Full-runtime fallback for documents that pre-date the early head bootstrap.
+  // Current pages are intercepted earlier by the first-registered window listener.
   const stopScoutPreactivation=event=>{
     if(!scoutTrigger(event))return;
     event.stopImmediatePropagation();
