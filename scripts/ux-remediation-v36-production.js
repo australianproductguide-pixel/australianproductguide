@@ -15,7 +15,7 @@ const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function navigate(page,url){
   let lastError=null;
   for(let attempt=1;attempt<=2;attempt++){
-    try{return await page.goto(url,{waitUntil:'domcontentloaded',timeout:60000});}
+    try{return await page.goto(url,{waitUntil:'domcontentloaded',timeout:60000});
     catch(error){
       lastError=error;
       if(attempt===2)break;
@@ -62,6 +62,35 @@ async function state(page){
   });
 }
 
+async function comparisonState(page){
+  return page.evaluate(()=>[...document.querySelectorAll('.visual-comparison .comparison-visuals')].slice(0,6).map((el,index)=>{
+    const parent=el.getBoundingClientRect();
+    const products=[...el.children].filter(child=>!child.classList.contains('vs-badge')).map(child=>{
+      const r=child.getBoundingClientRect();
+      return {left:r.left,right:r.right,width:r.width,clipped:r.left<parent.left-1||r.right>parent.right+1};
+    });
+    return {index,gridTemplateColumns:getComputedStyle(el).gridTemplateColumns,parentWidth:parent.width,products};
+  }));
+}
+
+async function decisionPriceState(page){
+  return page.evaluate(()=>[...document.querySelectorAll('.decision-price')].slice(0,8).map((el,index)=>{
+    const strong=el.querySelector('.price');
+    const note=el.querySelector('.price-note');
+    const er=el.getBoundingClientRect();
+    const sr=strong?.getBoundingClientRect();
+    const nr=note?.getBoundingClientRect();
+    return {
+      index,
+      display:getComputedStyle(el).display,
+      direction:getComputedStyle(el).flexDirection,
+      noteDisplay:note?getComputedStyle(note).display:null,
+      stacked:!!(sr&&nr&&nr.top>=sr.bottom-1),
+      clipped:!!(nr&&(nr.left<er.left-1||nr.right>er.right+1))
+    };
+  }));
+}
+
 async function run(){
   if(!CHROME)throw new Error('CHROME executable is required');
   const browser=await puppeteer.launch({headless:true,executablePath:CHROME,args:['--no-sandbox','--disable-dev-shm-usage']});
@@ -104,6 +133,21 @@ async function run(){
       if(s.page!=='search')fail(`${name}: expected search marker, got ${s.page}`);
       if(s.launcherVisible)fail(`${name}: fixed Scout launcher must not obscure research controls at <=920px`);
       if(s.overflow)fail(`${name}: horizontal overflow detected`);
+
+      let comparisons=[];
+      if(name==='mobile-search'){
+        comparisons=await comparisonState(page);
+        if(!comparisons.length)fail('mobile-search: expected comparison preview cards');
+        for(const item of comparisons){
+          const columnCount=item.gridTemplateColumns.trim().split(/\s+/).filter(Boolean).length;
+          if(columnCount!==1)fail(`mobile-search: comparison ${item.index} must stack to one column, got ${item.gridTemplateColumns}`);
+          if(item.products.some(product=>product.clipped))fail(`mobile-search: comparison ${item.index} clips a product panel ${JSON.stringify(item)}`);
+        }
+        await page.evaluate(()=>document.querySelector('.visual-comparison .comparison-visuals')?.scrollIntoView({block:'center'}));
+        await sleep(250);
+        await page.screenshot({path:`${OUT}/mobile-search-comparisons.png`,fullPage:false});
+      }
+
       await page.screenshot({path:`${OUT}/${name}-closed.png`,fullPage:false});
       await page.click('[data-mobile-toggle]');
       await sleep(350);
@@ -115,14 +159,35 @@ async function run(){
       s=await state(page);
       if(!s.panelVisible)fail(`${name}: menu Ask Scout did not open Scout ${JSON.stringify(s)}`);
       await page.screenshot({path:`${OUT}/${name}-scout-open.png`,fullPage:false});
-      report.push({case:name,status:response?.status()||0,state:s,errors});
+      report.push({case:name,status:response?.status()||0,state:s,comparisons,errors});
+      await page.close();
+    }
+
+    // Decision Lab: price context must remain readable at phone width.
+    {
+      const page=await browser.newPage();
+      const {response,errors}=await prepare(page,390,844,'/decision-lab/?q=75+inch+TV+for+a+bright+room+under+%242500');
+      const s=await state(page);
+      const prices=await decisionPriceState(page);
+      if((response?.status()||0)!==200)fail(`mobile-decision: HTTP ${response?.status()||0}`);
+      if(errors.length)fail(`mobile-decision: page errors ${errors.join(' | ')}`);
+      if(s.overflow)fail('mobile-decision: horizontal overflow detected');
+      if(!prices.length)fail('mobile-decision: expected recommendation price contexts');
+      for(const item of prices){
+        if(item.display!=='flex'||item.direction!=='column')fail(`mobile-decision: price context ${item.index} must use a column layout ${JSON.stringify(item)}`);
+        if(item.noteDisplay!=='block'||!item.stacked||item.clipped)fail(`mobile-decision: price note ${item.index} is not cleanly stacked ${JSON.stringify(item)}`);
+      }
+      await page.evaluate(()=>document.querySelector('.decision-price')?.scrollIntoView({block:'center'}));
+      await sleep(250);
+      await page.screenshot({path:`${OUT}/mobile-decision-price.png`,fullPage:false});
+      report.push({case:'mobile-decision',status:response?.status()||0,state:s,prices,errors});
       await page.close();
     }
 
     // Desktop remains unchanged: the persistent launcher is still a first-class entry point.
     {
       const page=await browser.newPage();
-      const {response,errors}=await prepare(page,1440,1000,'/search/?q=Bose+vs+Sony');
+      const {response,errors}=await prepare(page,1440,1000,'/search/?q=Sony+XM6');
       const s=await state(page);
       if((response?.status()||0)!==200)fail(`desktop-search: HTTP ${response?.status()||0}`);
       if(errors.length)fail(`desktop-search: page errors ${errors.join(' | ')}`);
