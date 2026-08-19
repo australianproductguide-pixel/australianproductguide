@@ -49,8 +49,9 @@ const scoutBridge=fs.readFileSync(require.resolve('../public/assets/platform-coh
 new Function(scoutBridge);
 assert(scoutBridge.includes('if(panel.hidden){'),'Scout compatibility bridge must only open when Scout is still closed');
 assert(scoutBridge.includes("window.apgScout&&typeof window.apgScout.open==='function'"),'Scout compatibility bridge must prefer the current Scout API');
+assert(scoutBridge.includes('event.stopImmediatePropagation()'),'Scout click must be isolated from later document-level feature handlers');
 assert(!/if\(mobile\)mobile\.click\(\);\s*launcher\.click\(\);/.test(scoutBridge),'Scout bridge must never unconditionally double-toggle the launcher');
 const cohesionSource=fs.readFileSync(require.resolve('../lib/platform-cohesion-v26'),'utf8');
-assert(cohesionSource.includes("platform-cohesion-v26.js?v=26.1"),'repaired Scout bridge must be cache-busted');
+assert(cohesionSource.includes("platform-cohesion-v26.js?v=26.2"),'isolated Scout bridge must be cache-busted');
 
 console.log('APG interaction reliability v37 source QA passed');
