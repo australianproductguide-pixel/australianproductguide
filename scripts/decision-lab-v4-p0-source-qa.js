@@ -4,8 +4,8 @@ const runtime=require('../lib/decision-lab-resilience-v50-runtime');
 const api=require('../api/index');
 const engine=require('../lib/decision-engine-v4');
 
-assert.equal(runtime.PATCH,'decision-lab-p0-2026-08-20-soft-nav-r2');
-assert.equal(runtime.VERSION,'50.1');
+assert.equal(runtime.PATCH,'decision-lab-p0-2026-08-20-soft-nav-r3');
+assert.equal(runtime.VERSION,'50.2');
 assert.equal(runtime.ENGINE,'decision-engine-v4');
 assert.equal(api.PATCH,runtime.PATCH,'v50 must be the outer API runtime');
 new Function(runtime.clientJs);
@@ -30,14 +30,18 @@ for(const contract of [
   'decision_lab_timeout',
   'decision_lab_error',
   'button.disabled=false',
-  "form.dataset.apgDecisionV50Submitting==='true'"
+  "form.dataset.apgDecisionV50Submitting==='true'",
+  'scheduleOutcomeFocus(imported)',
+  "target.focus({preventScroll:true})"
 ]) assert(runtime.clientJs.includes(contract),`missing v50 client contract: ${contract}`);
 assert(!runtime.clientJs.includes('location.assign('),'Decision Lab v50 must not depend on full-document location.assign');
+assert(!runtime.clientJs.includes('scrollIntoView('),'Decision Lab result commit must not synchronously scroll a newly imported DOM tree');
+assert(!runtime.clientJs.includes("behavior:'smooth'"),'Decision Lab result commit must not trigger synchronous smooth scrolling');
 assert(!runtime.clientJs.includes("data.get('q')"),'Decision Lab telemetry must not copy the free-text brief');
 
 const sample='<!doctype html><html><head><script src="/assets/app.js?v=abc" defer></script></head><body><main id="main"><form class="decision-form" method="get" data-busy-form><button type="submit">Build my shortlist</button></form></main></body></html>';
 const injected=runtime.inject(sample);
-assert(injected.includes('/assets/decision-lab-resilience-v50.js?v=50.1'),'v50.1 client asset missing');
+assert(injected.includes('/assets/decision-lab-resilience-v50.js?v=50.2'),'v50.2 client asset missing');
 assert(injected.indexOf('/assets/decision-lab-resilience-v50.js')<injected.indexOf('/assets/app.js'),'v50 must register before legacy app.js');
 assert.equal((injected.match(/decision-lab-resilience-v50\.js/g)||[]).length,1,'v50 asset must be injected once');
 
@@ -90,4 +94,4 @@ assert(!shredderIntent.positiveTags.includes('anc'),'short alias ANC must not be
 const balancedCoffee=engine.interpretQuery('Coffee machine with balanced controls for flat whites.',{category:'coffee-machines'});
 assert(!balancedCoffee.positiveTags.includes('anc'),'ANC must not be inferred from a substring inside an unrelated word');
 
-console.log(`Decision Lab v50.1 source QA passed: ${cases.length} supported adversarial combinations + unsupported-category and phrase-boundary fallbacks + explicit bounded timeout recovery contracts`);
+console.log(`Decision Lab v50.2 source QA passed: ${cases.length} supported adversarial combinations + unsupported-category and phrase-boundary fallbacks + bounded timeout + renderer-safe result commit contracts`);
