@@ -35,8 +35,8 @@ async function waitForDecisionDocument(page,expect,trigger,timeout=20000){
  const response=await duringNav(page,async()=>{await trigger();return responsePromise});
  assert(response.status()<500,`Decision Lab result returned HTTP ${response.status()}`);
  await page.waitForFunction(exp=>{
-   const params=new URLSearchParams(location.search);
-   return location.pathname==='/decision-lab/'&&Object.entries(exp).every(([k,v])=>params.get(k)===String(v))&&document.readyState!=='loading'&&!!document.querySelector('form.decision-form');
+   const params=new URLSearchParams(location.search),expectedQuery=String(exp.q||'');
+   return location.pathname==='/decision-lab/'&&Object.entries(exp).every(([k,v])=>params.get(k)===String(v))&&document.readyState!=='loading'&&!!document.querySelector('form.decision-form')&&(!expectedQuery||document.body?.dataset.decisionQuery===expectedQuery);
  },{timeout:10000},expect);
  await dismissConsent(page);
  return new URL(page.url());
