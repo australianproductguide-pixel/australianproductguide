@@ -26,7 +26,7 @@ const index=layer.sitemapIndex();
 for(const name of layer.GROUP_ORDER)assert(index.includes(`https://australianproductguide.au/sitemaps/${name}.xml`),`sitemap index missing ${name}`);
 
 const llms=layer.llmsText();
-for(const token of ['Australian Product Guide',`${products.length} products`,`${Object.keys(categories).length} categories`,`${brands.length} represented brands`,'zero recommendation points','Desk-researched / specification-based','sitemap-index.xml'])assert(llms.includes(token),`llms.txt missing ${token}`);
+for(const token of ['Australian Product Guide',`${products.length} products`,`${Object.keys(categories).length} categories`,`${brands.length} represented brands`,'zero recommendation points','desk-researched / specification-based','sitemap-index.xml'])assert(llms.includes(token),`llms.txt missing ${token}`);
 
 const manifest=layer.discoveryManifest();
 assert.strictEqual(manifest.canonicalUrl,'https://australianproductguide.au/');
