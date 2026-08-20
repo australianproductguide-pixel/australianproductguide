@@ -17,9 +17,12 @@ assert(css.includes('.apg-nav-v8 .apg-v26-scout-nav'),'Ask Scout desktop nav mus
 assert(css.includes('.apg-nav-v8 .apg-deals-link'),'Deals desktop nav must be governed');
 assert(css.includes('min-height:40px!important'),'Ask Scout must use the standard primary-nav control height');
 assert(css.includes('padding:9px 13px!important'),'Ask Scout must use the standard primary-nav padding');
+assert(css.includes('font-size:14px!important'),'Ask Scout must use the standard desktop primary-nav font size');
+assert(css.includes('font-weight:780!important'),'Scout and Deals must use the same primary-nav weight as ordinary links');
 assert(css.includes('background:transparent!important'),'Scout and Deals must not ship with a permanent promotional fill');
 assert(css.includes('border:0!important'),'Scout and Deals must not ship as outlined pills');
-assert(css.includes('font-weight:inherit!important'),'Scout and Deals must inherit the primary navigation typography');
+assert(css.includes('@media (min-width:921px) and (max-width:1120px)'),'compact desktop parity must cover the existing navigation breakpoint');
+assert(css.includes('padding-inline:10px!important')&&css.includes('font-size:12.5px!important'),'Scout and Deals must match the compact desktop nav geometry');
 assert(css.includes('.apg-nav-v8 .nav-inner>a:hover'),'normal primary links must share the same hover language');
 assert(css.includes('.apg-nav-v8 .apg-v26-scout-nav:hover'),'Ask Scout must share the same hover language');
 assert(css.includes('background:#EFF6FF!important')&&css.includes('color:#1D4ED8!important'),'desktop primary-nav hover must use the current APG blue system');
@@ -37,4 +40,4 @@ assert.equal(brand.inject(out),out,'nav parity injection must remain idempotent'
 assert(proofCss.includes('#FFD65B')&&proofCss.includes('#F4BB45')&&proofCss.includes('#F2B348'),'maintained-research yellow proof treatment must remain intact');
 assert(decisionBadgeCss.toLowerCase().includes('#f3b548!important'),'homepage decision guidance badge must remain yellow');
 
-console.log('APG desktop nav parity v50 QA passed: Ask Scout=standard nav, Deals=standard nav, hover=blue system, mobile untouched, homepage yellow accents preserved.');
+console.log('APG desktop nav parity v50 QA passed: Ask Scout=standard nav, Deals=standard nav, compact desktop=PASS, hover=blue system, mobile untouched, homepage yellow accents preserved.');
