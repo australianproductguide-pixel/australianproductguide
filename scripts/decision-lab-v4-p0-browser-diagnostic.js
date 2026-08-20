@@ -8,7 +8,7 @@ const assert=(ok,m)=>{if(!ok)throw new Error(m)},sleep=ms=>new Promise(r=>setTim
 const sameOrigin=raw=>{try{return new URL(raw).origin===new URL(BASE).origin}catch{return false}};
 function attach(page,name){
  page.on('pageerror',e=>report.browserErrors.push({name,type:'pageerror',message:String(e?.message||e)}));
- page.on('console',m=>{if(m.type()==='error'&&!/google-analytics|googletagmanager/i.test(m.text()))report.browserErrors.push({name,type:'console',message:m.text()})});
+ page.on('console',m=>{if(m.type()!=='error'||/google-analytics|googletagmanager/i.test(m.text()))return;const item={name,type:'console',message:m.text()};const expected=name==='desktop-http-error-recovery'&&/503|service unavailable/i.test(m.text());(expected?report.expectedFailures:report.browserErrors).push(item)});
  page.on('requestfailed',r=>{if(!sameOrigin(r.url())||!['document','script','fetch','xhr'].includes(r.resourceType()))return;let expected=false;try{const u=new URL(r.url());expected=name.includes('timeout')&&r.resourceType()==='fetch'&&u.pathname==='/decision-lab/'&&u.searchParams.get('q')==='forced timeout recovery test'}catch{}const item={name,type:'requestfailed',resourceType:r.resourceType(),url:r.url(),message:r.failure()?.errorText||'failed'};(expected?report.expectedFailures:report.browserErrors).push(item)});
  page.on('response',r=>{try{const req=r.request();if(sameOrigin(r.url())&&['document','fetch','xhr'].includes(req.resourceType()))report.network.push({name,type:req.resourceType(),status:r.status(),url:r.url()})}catch{}});
 }
