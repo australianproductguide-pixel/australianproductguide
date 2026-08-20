@@ -66,10 +66,18 @@ function validateRegistryItem(item){
 function assertNoAmazonPrefetch(html){
   const links=String(html||'').match(/<link\b[^>]*>/gi)||[];
   for(const link of links){
-    if(!/amazon\.com\.au/i.test(link))continue;
+    if(!/(?:amazon\.com\.au|amzn\.to|amazon-adsystem\.com|ssl-images-amazon\.com|media-amazon\.com|images-amazon\.com)/i.test(link))continue;
     const rel=(link.match(/\brel=["']([^"']+)["']/i)||[])[1]||'';
-    if(/\b(prefetch|prerender)\b/i.test(rel))throw new Error(`Amazon ${rel} directive is prohibited in automated-rendered APG HTML`);
+    if(/\b(prefetch|prerender|preconnect|dns-prefetch)\b/i.test(rel))throw new Error(`Amazon ${rel} directive is prohibited in automated-rendered APG HTML`);
   }
+}
+
+function hasCurrentDesktopDealsNav(html){
+  const source=String(html||'');
+  const navIndex=source.indexOf('primary-nav');
+  if(navIndex<0)return false;
+  const window=source.slice(navIndex,navIndex+12000);
+  return /href=["']\/deals\/["'][^>]*>[^<]*Deals/i.test(window)||/>Deals<\/a>/i.test(window)&&/href=["']\/deals\/["']/i.test(window);
 }
 
 async function verifyLiveDealsPage(items){
@@ -82,7 +90,7 @@ async function verifyLiveDealsPage(items){
     if(!html.includes('Deals &amp; Shopping Discovery')&&!html.includes('Deals & Shopping Discovery'))throw new Error('Deals hub title missing');
     if(!html.includes('data-footer-shopping'))throw new Error('Deals footer shopping block missing');
     if(!html.includes('data-mobile-shopping'))throw new Error('mobile Deals navigation missing');
-    if(!html.includes('apg-deals-link'))throw new Error('desktop Deals navigation missing');
+    if(!hasCurrentDesktopDealsNav(html))throw new Error('desktop Deals navigation missing');
     assertNoAmazonPrefetch(html);
     for(const item of items){
       if(!html.includes(`data-affiliate-destination="${item.key}"`))throw new Error(`live Deals hub missing destination ${item.key}`);
@@ -90,7 +98,7 @@ async function verifyLiveDealsPage(items){
     const tagged=(html.match(/tag=auproductguid-22/g)||[]).length;
     if(tagged<items.length)throw new Error(`live Deals hub exposes only ${tagged} APG-tagged Amazon destinations for ${items.length} governed destinations`);
     result.taggedDestinationOccurrences=tagged;
-    result.checks.push('http-200','title','desktop-nav','mobile-nav','footer','all-governed-destinations','affiliate-tag','no-amazon-prefetch','same-origin-network-only');
+    result.checks.push('http-200','title','desktop-nav','mobile-nav','footer','all-governed-destinations','affiliate-tag','no-amazon-prefetch-or-preconnect','same-origin-network-only');
   }catch(error){
     result.status='FAIL';result.error=error.message;hard(`Production Deals hub: ${error.message}`);
   }
