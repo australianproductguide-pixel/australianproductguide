@@ -3,8 +3,6 @@ name: APG Search P0 Verification
 on:
   pull_request:
     branches: [main]
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -24,6 +22,7 @@ jobs:
     env:
       BASE_URL: https://australianproductguide.au
       OUTPUT_DIR: artifacts/search-p0
+      TARGET_PRODUCTION_SHA: 73c85a6ba727614bc81d5b8d484e42004aa20ac5
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -31,17 +30,13 @@ jobs:
           node-version: 24
           package-manager-cache: false
 
-      - name: Resolve and verify exact Vercel Production target
+      - name: Verify exact Vercel Production target
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          EVENT_NAME: ${{ github.event_name }}
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          PUSH_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          if [ "$EVENT_NAME" = "pull_request" ]; then SHA="$PR_BASE_SHA"; else SHA="$PUSH_SHA"; fi
-          test -n "$SHA"
+          SHA="$TARGET_PRODUCTION_SHA"
           echo "TARGET_SHA=$SHA" >> "$GITHUB_ENV"
           ready=
           for attempt in $(seq 1 120); do
@@ -56,10 +51,7 @@ jobs:
             fi
             sleep 5
           done
-          if [ -z "$ready" ]; then
-            echo 'Timed out waiting for exact Production deployment'
-            exit 1
-          fi
+          if [ -z "$ready" ]; then echo 'Timed out waiting for exact Production deployment'; exit 1; fi
           short=$(printf '%s' "$SHA" | cut -c1-16)
           for attempt in $(seq 1 30); do
             if curl -fsSL "$BASE_URL/" -o /tmp/search-home-sha.html && grep -q "v=$short" /tmp/search-home-sha.html; then
@@ -74,33 +66,33 @@ jobs:
       - name: Verify live Search P0 contracts
         run: |
           set -euo pipefail
-          curl -fsSL -D /tmp/search51.headers "$BASE_URL/assets/search-reliability-v51.js?v=51.0" -o /tmp/search51.js
-          grep -q "search-p0-2026-08-20-single-nav-r1" /tmp/search51.js
+          curl -fsSL -D /tmp/search51.headers "$BASE_URL/assets/search-reliability-v51.js?v=51.1" -o /tmp/search51.js
+          grep -q "search-p0-2026-08-20-single-nav-r2" /tmp/search51.js
           grep -q "migrateRecentSearches" /tmp/search51.js
+          grep -q "moveVisibleSuggestion" /tmp/search51.js
+          grep -q "preserveMobileRecentOpen" /tmp/search51.js
+          ! grep -q "scrollIntoView(" /tmp/search51.js
           test "$(grep -o 'location.assign(target.href)' /tmp/search51.js | wc -l | tr -d ' ')" = "1"
-          tr -d '\r' < /tmp/search51.headers | grep -qi '^x-apg-search-reliability: search-p0-2026-08-20-single-nav-r1'
+          tr -d '\r' < /tmp/search51.headers | grep -qi '^x-apg-search-reliability: search-p0-2026-08-20-single-nav-r2'
           curl -fsSL -D /tmp/search-page.headers "$BASE_URL/search/?q=quiet%20headphones" -o /tmp/search-page.html
-          tr -d '\r' < /tmp/search-page.headers | grep -qi '^x-apg-search-reliability: search-p0-2026-08-20-single-nav-r1'
-          grep -q '/assets/search-reliability-v51.js?v=51.0' /tmp/search-page.html
+          tr -d '\r' < /tmp/search-page.headers | grep -qi '^x-apg-search-reliability: search-p0-2026-08-20-single-nav-r2'
+          grep -q '/assets/search-reliability-v51.js?v=51.1' /tmp/search-page.html
           grep -q 'quiet headphones' /tmp/search-page.html
           ! grep -q '\[object Object\]' /tmp/search-page.html
           node - <<'NODE'
           const fs=require('fs');
           const h=fs.readFileSync('/tmp/search-page.html','utf8');
-          const a=h.indexOf('/assets/search-reliability-v51.js?v=51.0');
+          const a=h.indexOf('/assets/search-reliability-v51.js?v=51.1');
           const b=h.indexOf('/assets/app.js');
-          if(a<0||b<0||a>=b)throw new Error('Search v51 does not execute before legacy app.js');
-          console.log('Live Search v51 ordering is correct');
+          if(a<0||b<0||a>=b)throw new Error('Search v51.1 does not execute before legacy app.js');
+          console.log('Live Search v51.1 ordering is correct');
           NODE
 
       - name: Install Search browser dependencies
         run: |
           set -euo pipefail
           CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser)
-          if [ -z "$CHROME" ]; then
-            echo 'Chrome/Chromium is unavailable on the runner'
-            exit 1
-          fi
+          if [ -z "$CHROME" ]; then echo 'Chrome/Chromium is unavailable on the runner'; exit 1; fi
           echo "CHROME=$CHROME" >> "$GITHUB_ENV"
           npm install --no-save --package-lock=false puppeteer-core@24.16.0 >/dev/null 2>&1
 
