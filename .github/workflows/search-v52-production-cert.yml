@@ -1,0 +1,113 @@
+name: APG Search v52 Temporary Production Certificate
+
+on:
+  push:
+    branches: [apg/search-v52-production-cert-20260820]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: read
+  statuses: write
+
+concurrency:
+  group: apg-search-v52-temp-cert
+  cancel-in-progress: true
+
+jobs:
+  search-v52-production-cert:
+    name: Search v52 exact Production certificate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BASE_URL: https://australianproductguide.au
+      OUTPUT_DIR: artifacts/search-v52-p0
+      EXPECTED_SHA: 0ef2d504e12b27fed05eb8c881c84bb663c801f2
+      EXPECTED_SHORT: 0ef2d504e12b27fe
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Verify exact public Production release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          ready=
+          for attempt in $(seq 1 60); do
+            deployments=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments?sha=$EXPECTED_SHA")
+            id=$(echo "$deployments" | jq -r '[.[]|select(.environment=="Production" or .original_environment=="Production")][0].id//empty')
+            if [ -n "$id" ]; then
+              statuses=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments/$id/statuses")
+              state=$(echo "$statuses" | jq -r '.[0].state//empty')
+              echo "Exact Production deployment state=${state:-pending}"
+              if [ "$state" = failure ] || [ "$state" = error ]; then exit 1; fi
+              if [ "$state" = success ]; then ready=1; break; fi
+            fi
+            sleep 5
+          done
+          test -n "$ready"
+          for attempt in $(seq 1 30); do
+            curl -fsSL "$BASE_URL/search/?q=sony%20xm6" -D /tmp/sony.headers -o /tmp/sony.html
+            if grep -q "v=$EXPECTED_SHORT" /tmp/sony.html && tr -d '\r' < /tmp/sony.headers | grep -qi '^x-apg-search-reliability: search-p0-2026-08-20-isolated-json-r3'; then
+              grep -q '/assets/search-reliability-v52.js?v=52.0' /tmp/sony.html
+              grep -Eq 'WH-1000XM6|Sony' /tmp/sony.html
+              echo "Canonical Production exposes exact Search v52 build $EXPECTED_SHORT"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo 'Canonical Production did not expose the exact Search v52 build'
+          exit 1
+
+      - name: Install Chromium diagnostic dependency
+        run: |
+          set -euo pipefail
+          CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser)
+          if [ -z "$CHROME" ]; then
+            echo 'Chrome/Chromium is unavailable on the runner'
+            exit 1
+          fi
+          echo "CHROME=$CHROME" >> "$GITHUB_ENV"
+          npm install --no-save --package-lock=false puppeteer-core@24.16.0 >/dev/null 2>&1
+
+      - name: Run exact public Search v52 matrix
+        run: |
+          set -euo pipefail
+          node scripts/search-v52-p0-browser-diagnostic.js
+          node - <<'NODE'
+          const fs=require('fs');
+          const r=JSON.parse(fs.readFileSync('artifacts/search-v52-p0/report.json','utf8'));
+          const required=['desktop-normal-search-submit','desktop-model-search-sony-xm6','desktop-previous-search-sony-xm6','desktop-recent-object-migration','desktop-recent-keyboard-enter','desktop-repeated-search-and-back','desktop-zero-result-bounded','mobile-previous-search-click','desktop-direct-sony-xm6','desktop-duplicate-submit-single-fetch','desktop-http-error-recovery','desktop-forced-timeout-recovery'];
+          if(!r.ok)throw new Error('Search v52 report is not clean: '+JSON.stringify(r,null,2));
+          if(r.browserErrors?.length)throw new Error('Search v52 browser errors: '+JSON.stringify(r.browserErrors));
+          for(const name of required)if(!r.journeys?.some(x=>x.name===name&&x.ok))throw new Error('Missing passing Search v52 journey: '+name);
+          console.log('SEARCH_V52_EXACT_PRODUCTION_CERT=PASS');
+          NODE
+
+      - name: Upload exact Production evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: apg-search-v52-exact-production-${{ github.run_id }}
+          path: artifacts/search-v52-p0
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Publish exact main status
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          state=success
+          if [ "$JOB_STATUS" != success ]; then state=failure; fi
+          payload=$(jq -n --arg state "$state" --arg context 'Search v52 P0 Verification' --arg description "Search v52 exact Production: $JOB_STATUS" --arg target_url "https://github.com/$REPO/actions/runs/$RUN_ID" '{state:$state,context:$context,description:$description,target_url:$target_url}')
+          curl -fsSL -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/statuses/$EXPECTED_SHA" -d "$payload" >/dev/null
