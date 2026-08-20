@@ -1,5 +1,5 @@
 // APG Interaction Reliability v37 remains the legacy site-wide fallback runtime.
-// Decision Lab Resilience v50.5 owns interactive Decision Lab rendering; v50.4 remains the isolated JSON transport.
+// Decision Lab Resilience v50.6 owns interactive Decision Lab rendering and result navigation; v50.4 remains the isolated JSON transport.
 // Search Reliability v52 owns Search isolated JSON rendering, direct-result simplification and recent-query recovery.
 // PageSpeed Certification v30 remains the underlying accessibility/performance layer.
 // Vercel Analytics v38 remains the privacy-hardened telemetry layer.
