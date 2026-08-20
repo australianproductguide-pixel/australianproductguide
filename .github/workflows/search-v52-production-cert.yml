@@ -3,6 +3,8 @@ name: APG Search v52 Temporary Production Certificate
 on:
   push:
     branches: [apg/search-v52-production-cert-20260820]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
