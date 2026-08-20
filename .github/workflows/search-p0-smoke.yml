@@ -1,6 +1,8 @@
 name: APG Search P0 Verification
 
 on:
+  pull_request:
+    branches: [main]
   push:
     branches: [main]
   workflow_dispatch:
@@ -11,7 +13,7 @@ permissions:
   statuses: write
 
 concurrency:
-  group: apg-search-p0-production
+  group: apg-search-p0-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -29,13 +31,18 @@ jobs:
           node-version: 24
           package-manager-cache: false
 
-      - name: Wait for exact Vercel Production deployment
+      - name: Resolve and verify exact Vercel Production target
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          SHA: ${{ github.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
+          if [ "$EVENT_NAME" = "pull_request" ]; then SHA="$PR_BASE_SHA"; else SHA="$PUSH_SHA"; fi
+          test -n "$SHA"
+          echo "TARGET_SHA=$SHA" >> "$GITHUB_ENV"
           ready=
           for attempt in $(seq 1 120); do
             deployments=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments?sha=$SHA")
@@ -43,7 +50,7 @@ jobs:
             if [ -n "$id" ]; then
               statuses=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments/$id/statuses")
               state=$(echo "$statuses" | jq -r '.[0].state//empty')
-              echo "Search Production state=${state:-pending}"
+              echo "Search Production state=${state:-pending} target=$SHA"
               if [ "$state" = failure ] || [ "$state" = error ]; then exit 1; fi
               if [ "$state" = success ]; then ready=1; break; fi
             fi
@@ -56,7 +63,7 @@ jobs:
           short=$(printf '%s' "$SHA" | cut -c1-16)
           for attempt in $(seq 1 30); do
             if curl -fsSL "$BASE_URL/" -o /tmp/search-home-sha.html && grep -q "v=$short" /tmp/search-home-sha.html; then
-              echo "Canonical Production now exposes commit marker $short"
+              echo "Canonical Production exposes exact commit marker $short"
               exit 0
             fi
             sleep 5
@@ -124,7 +131,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          SHA: ${{ github.sha }}
           RUN_ID: ${{ github.run_id }}
           JOB_STATUS: ${{ job.status }}
         run: |
@@ -132,4 +138,4 @@ jobs:
           state=success
           if [ "$JOB_STATUS" != success ]; then state=failure; fi
           payload=$(jq -n --arg state "$state" --arg context 'Search P0 Verification' --arg description "Search recent-query P0 Production: $JOB_STATUS" --arg target_url "https://github.com/$REPO/actions/runs/$RUN_ID" '{state:$state,context:$context,description:$description,target_url:$target_url}')
-          curl -fsSL -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/statuses/$SHA" -d "$payload" >/dev/null
+          curl -fsSL -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/statuses/$TARGET_SHA" -d "$payload" >/dev/null
