@@ -6,7 +6,7 @@
 
 ## Control objective
 
-APG must not use automated QA, crawlers, browser tests, health checks or scheduled jobs to request, click, follow, prefetch or prerender Amazon Australia affiliate destinations. Automated testing must not create Amazon shopping sessions or activity that could be confused with genuine consumer referrals.
+APG must not use automated QA, crawlers, browser tests, health checks or scheduled jobs to request, click, follow, prefetch, prerender or preconnect to Amazon Australia affiliate destinations. Automated testing must not create Amazon shopping sessions or activity that could be confused with genuine consumer referrals.
 
 This control is deliberately conservative. Consumer-facing Amazon links remain available to genuine users, but APG automation validates them without navigating to Amazon.
 
@@ -22,7 +22,7 @@ Automation may validate, without requesting Amazon:
 - APG placement/context analytics markers;
 - commercial recommendation weight fixed at zero;
 - rendered APG pages and same-origin APG routes;
-- absence of Amazon prefetch/prerender directives;
+- absence of Amazon prefetch, prerender, preconnect or DNS-prefetch directives;
 - outbound Amazon href values by DOM inspection only.
 
 ## Prohibited automated behaviour
@@ -34,7 +34,7 @@ APG automation must not:
 - use `fetch`, HTTP clients, `curl`, `wget` or equivalent tools against Amazon affiliate destinations;
 - use Puppeteer/Chromium to navigate to an Amazon affiliate URL;
 - click or tap an Amazon affiliate CTA during browser QA;
-- prefetch or prerender Amazon destinations;
+- prefetch, prerender, preconnect or DNS-prefetch Amazon destinations;
 - reintroduce automated external destination probing under another job or script name.
 
 ## Enforcement
@@ -43,7 +43,7 @@ APG automation must not:
 
 The gate also runs at the start of the Amazon Shopping Assurance workflow. The link-integrity job uses an APG-origin-only network allowlist and records external Amazon checks as `NOT_REQUESTED`.
 
-The existing browser visual certification is inspection-only: it may confirm that an Amazon CTA has the expected href, tracking tag, relationship attributes and target behaviour, but it must not activate that CTA.
+The browser visual certification is inspection-only: it may confirm that an Amazon CTA has the expected href, tracking tag, relationship attributes and target behaviour, but it must not activate that CTA. Its Chromium session enables request interception and blocks Amazon marketplace and common Amazon advertising/media hosts if the rendered APG page attempts to request them.
 
 ## Live retailer verification
 
