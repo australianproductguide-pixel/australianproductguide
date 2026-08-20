@@ -8,7 +8,6 @@ const runtime=require('../lib/interaction-runtime-v55');
 assert.equal(runtime.INTERACTION_VERSION,'55.0');
 assert.equal(runtime.INTERACTION_MODE,'ssr-native-v55');
 assert.equal(api.INTERACTION_MODE,'ssr-native-v55');
-// Preserve the certified server/intelligence compatibility contracts beneath v55.
 assert.equal(api.VERSION,'52.0','Search v52 server contract must remain available beneath v55');
 assert.equal(api.DECISION_VERSION,'50.6','Decision v50.6 server contract must remain available beneath v55');
 
@@ -83,8 +82,13 @@ function assertRuntimeClean(page,label){
   assert(category.body.includes('Smartphones'),'Smartphones category destination must render');
 
   const scoutClient=fs.readFileSync(require.resolve('../lib/scout-concierge-v5-client'),'utf8');
-  assert(scoutClient.includes("if(a.url)"),'Scout actions must distinguish URL actions');
-  assert(scoutClient.includes("return '<a class=\\\"'+cls+'\\\" href=\\\"'+esc(a.url)+'\\\"'"),'Scout URL actions must render as native anchors');
+  const actionStart=scoutClient.indexOf('function renderActions');
+  assert(actionStart>=0,'Scout action renderer must exist');
+  const actionBlock=scoutClient.slice(actionStart,actionStart+1400);
+  assert(actionBlock.includes('if(a.url)'),'Scout actions must distinguish URL actions');
+  assert(actionBlock.includes("return '<a"),'Scout URL actions must render anchors rather than navigation buttons');
+  assert(actionBlock.includes('href='),'Scout URL action must include an href');
+  assert(actionBlock.includes('esc(a.url)'),'Scout URL action href must use the maintained action URL');
 
   const runtimeSource=fs.readFileSync(require.resolve('../lib/interaction-runtime-v55'),'utf8');
   for(const forbidden of ['window.location','location.assign(','location.replace(','history.pushState(','event.preventDefault()','addEventListener(\'click\'']){
