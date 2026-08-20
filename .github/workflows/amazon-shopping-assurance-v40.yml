@@ -1,4 +1,4 @@
-name: APG Amazon Shopping Assurance v40
+name: APG Amazon Shopping Assurance v51
 
 on:
   push:
@@ -14,15 +14,29 @@ permissions:
   deployments: read
 
 concurrency:
-  group: apg-amazon-shopping-assurance-v40-${{ github.event_name }}-${{ github.ref }}
+  group: apg-amazon-shopping-assurance-v51-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
   BASE_URL: https://australianproductguide.au
 
 jobs:
+  compliance-guard:
+    name: Amazon automation compliance guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Prohibit automated Amazon affiliate requests
+        run: node scripts/amazon-automation-compliance-v51-qa.js
+
   visual-certification:
-    name: Deals visual certification
+    name: Deals visual certification (inspect only)
+    needs: compliance-guard
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -71,7 +85,7 @@ jobs:
           echo "CHROME=$CHROME" >> "$GITHUB_ENV"
           npm install --no-save --package-lock=false puppeteer-core@24.16.0 >/dev/null 2>&1
 
-      - name: Certify Deals in real Chromium
+      - name: Certify APG Deals in real Chromium without outbound clicks
         env:
           OUTPUT_DIR: artifacts/amazon-shopping-visual-v40
         run: |
@@ -85,9 +99,10 @@ jobs:
             node - <<'NODE' >> "$GITHUB_STEP_SUMMARY"
           const fs=require('fs');
           const r=JSON.parse(fs.readFileSync('artifacts/amazon-shopping-visual-v40/report.json','utf8'));
-          console.log('## Amazon Shopping visual certification v40');
+          console.log('## Amazon Shopping visual certification — inspect only');
           console.log(`**Status:** ${r.status || 'UNKNOWN'}`);
           console.log(`\n**Production:** ${r.base}`);
+          console.log('\n**Outbound Amazon navigation:** prohibited by v51 compliance control');
           console.log(`\n**Viewports certified:** ${(r.viewports||[]).map(v=>`${v.label} (${v.viewport.width}×${v.viewport.height})`).join(', ') || 'none'}`);
           console.log(`\n**Journeys:** ${(r.journeys||[]).filter(x=>x.ok).length}/${(r.journeys||[]).length} passed`);
           console.log(`\n**Screenshot evidence:** ${(r.evidence||[]).join(', ') || 'none'}`);
@@ -99,13 +114,14 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: amazon-shopping-visual-v40-${{ github.run_id }}
+          name: amazon-shopping-visual-v51-${{ github.run_id }}
           path: artifacts/amazon-shopping-visual-v40
           retention-days: 30
           if-no-files-found: error
 
   destination-health:
-    name: Amazon destination health
+    name: Amazon link integrity (no outbound Amazon requests)
+    needs: compliance-guard
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -137,41 +153,41 @@ jobs:
             if [ "$attempt" = 90 ]; then echo 'Timed out waiting for Vercel Production'; exit 1; fi
           done
 
-      - name: Verify governed and external Amazon destinations
+      - name: Validate governed Amazon links without requesting Amazon
         env:
-          OUTPUT_DIR: artifacts/amazon-destination-health-v40
+          OUTPUT_DIR: artifacts/amazon-link-integrity-v51
         run: |
           set -euo pipefail
           node scripts/amazon-destination-health-v40.js
 
-      - name: Publish destination health summary
+      - name: Publish link-integrity summary
         if: always()
         run: |
-          if [ -f artifacts/amazon-destination-health-v40/report.json ]; then
+          if [ -f artifacts/amazon-link-integrity-v51/report.json ]; then
             node - <<'NODE' >> "$GITHUB_STEP_SUMMARY"
           const fs=require('fs');
-          const r=JSON.parse(fs.readFileSync('artifacts/amazon-destination-health-v40/report.json','utf8'));
-          console.log('## Amazon destination health v40');
+          const r=JSON.parse(fs.readFileSync('artifacts/amazon-link-integrity-v51/report.json','utf8'));
+          console.log('## Amazon link integrity v51');
           console.log(`**Status:** ${r.status || 'UNKNOWN'}`);
           console.log(`\n**Checked:** ${r.checkedAt || 'unknown'}`);
+          console.log(`\n**Network policy:** ${r.networkPolicy || 'unknown'}`);
           const s=r.summary||{};
           console.log(`\n- Active governed destinations: ${s.activeDestinations ?? 'n/a'}`);
           console.log(`- Registry pass: ${s.registryPass ?? 'n/a'}`);
-          console.log(`- External pass: ${s.externalPass ?? 'n/a'}`);
-          console.log(`- External indeterminate: ${s.externalIndeterminate ?? 'n/a'}`);
-          console.log(`- External fail: ${s.externalFail ?? 'n/a'}`);
+          console.log(`- External Amazon checks intentionally not requested: ${s.externalNotRequested ?? 'n/a'}`);
+          console.log(`- Automated Amazon requests: ${s.automatedAmazonRequests ?? 'n/a'}`);
           console.log(`- Hard failures: ${s.hardFailures ?? (r.hardFailures||[]).length}`);
           console.log(`- Warnings: ${s.warnings ?? (r.warnings||[]).length}`);
-          if((r.warnings||[]).length){console.log('\n### Warnings / automated-check limitations');for(const w of r.warnings)console.log(`- ${w.message}`);}
+          if((r.warnings||[]).length){console.log('\n### Warnings');for(const w of r.warnings)console.log(`- ${w.message}`);}
           if((r.hardFailures||[]).length){console.log('\n### Hard failures');for(const f of r.hardFailures)console.log(`- ${f.message}`);}
           NODE
           fi
 
-      - name: Upload destination health evidence
+      - name: Upload link-integrity evidence
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: amazon-destination-health-v40-${{ github.run_id }}
-          path: artifacts/amazon-destination-health-v40
+          name: amazon-link-integrity-v51-${{ github.run_id }}
+          path: artifacts/amazon-link-integrity-v51
           retention-days: 30
           if-no-files-found: error
