@@ -1,8 +1,6 @@
 name: APG Release Gate
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -26,12 +24,11 @@ jobs:
           node-version: '24'
           package-manager-cache: false
 
-      - name: Syntax, build and runtime-chain contract
+      - name: Full source and contract gate
         run: |
           set -euo pipefail
           for f in api/*.js data/*.js lib/*.js scripts/*.js; do node --check "$f"; done
-          npm run vercel-build
-          node scripts/runtime-javascript-syntax.js
+          npm run qa:full
           node scripts/runtime-chain-qa.js \
             vercel-analytics-v38 \
             pagespeed-certification-v30 \
@@ -42,21 +39,7 @@ jobs:
             brand-fidelity-v325 \
             brand-fidelity-v32
 
-      - name: Current platform, brand and UX controls
-        run: |
-          set -euo pipefail
-          node scripts/platform-integrity-v15-qa.js
-          node scripts/mobile-menu-polish-v21-qa.js
-          node scripts/site-surface-polish-v22-qa.js
-          node scripts/platform-cohesion-v26-qa.js
-          node scripts/mobile-category-visual-overflow-qa.js
-          node scripts/brand-conformity-v35-qa.js
-          node scripts/brand-conformity-v351-qa.js
-          node scripts/brand-conformity-v352-qa.js
-          node scripts/interaction-reliability-v37-qa.js
-          node scripts/vercel-analytics-v38-qa.js
-
-      - name: Account, auth, search, decision and Scout controls
+      - name: Account, search, recommendation and trust controls
         run: |
           set -euo pipefail
           node scripts/account-profile-v24-qa.js
@@ -64,23 +47,7 @@ jobs:
           node scripts/account-governance-v25-qa.js
           node scripts/auth-hardening-v23-qa.js
           node scripts/auth-password-policy-v361-qa.js
-          node scripts/decision-intelligence-v4-runtime-qa.js
           node scripts/search-model-relevance-v36-qa.js
-          node scripts/scout-v5-syntax-check.js
-          node scripts/scout-concierge-v5-qa.js
-          node scripts/scout-amazon-v5-qa.js
-          node scripts/scout-mobile-layout-v5-qa.js
-
-      - name: Catalogue, freshness, Amazon, imagery and trust controls
-        run: |
-          set -euo pipefail
-          mkdir -p artifacts/release-gate
-          node scripts/freshness-report.js artifacts/release-gate/freshness.json
-          node - <<'NODE'
-          const r=require('./artifacts/release-gate/freshness.json');
-          if(r.actionable!==0) throw new Error(`freshness queue has ${r.actionable} actionable stale/missing controls`);
-          console.log(`FRESHNESS=PASS products=${r.products} categories=${r.categories}`);
-          NODE
           node scripts/catalogue-source-authority-qa.js
           node scripts/brand-entity-reconciliation.js
           node scripts/amazon-asin-inventory-v33.js
@@ -88,131 +55,31 @@ jobs:
           node scripts/amazon-conversion-v29-qa.js
           node scripts/evidence-commerce-depth-v27-qa.js
           node scripts/product-image-qa.js
-          node scripts/retailer-depth-pass5-qa.js
           node scripts/editorial-compliance-qa.js
           node scripts/trust-infrastructure-v28-qa.js
 
-      - name: Catalogue, search, recommendation and export invariants
-        run: |
-          set -euo pipefail
-          node - <<'NODE'
-          const {products,pathways,categories}=require('./data');
-          const {brands,pairPages,indexableRoutes}=require('./lib/routes');
-          const {direct,CREATORS_API,AMAZON_IMAGE_CHANNELS}=require('./data/retailers-v6');
-          const {catalogueCsv,catalogueJson,headers}=require('./lib/catalogue-export');
-          const {imageStatus}=require('./data/image-provenance');
-          const {searchSite,searchIndex}=require('./lib/search');
-          const {rankDecision,publicDecision}=require('./lib/decision-engine');
-          const runtime=require('./lib/platform-v3-runtime');
-          const content=require('./lib/content');
-          const expect=(ok,msg)=>{if(!ok)throw new Error(msg)};
-          const productCount=products.length,categoryCount=Object.keys(categories).length,directCount=Object.keys(direct).length;
-          const directProducts=products.filter(p=>p.retailers?.[0]?.kind==='affiliate-direct').length;
-          const fallbackProducts=products.filter(p=>p.retailers?.[0]?.kind==='affiliate-search').length;
-          expect(productCount>=460,`catalogue regression ${productCount}`);
-          expect(categoryCount>=90,`category regression ${categoryCount}`);
-          expect(pathways.length===categoryCount&&!pathways.some(x=>!x.maintained),'pathway/category mismatch or empty pathway');
-          expect(brands.length>=170,`brand coverage regression ${brands.length}`);
-          expect(pairPages.length>=210,`comparison coverage regression ${pairPages.length}`);
-          expect(indexableRoutes.length>=1200,`indexable route regression ${indexableRoutes.length}`);
-          expect(indexableRoutes.includes('/decision-lab/'),'Decision Lab missing from indexable routes');
-          const deep=products.filter(x=>x.evidenceTier==='deep'),starter=products.filter(x=>x.evidenceTier==='starter');
-          expect(deep.length+starter.length===productCount,'unexpected evidence tier outside deep/starter');
-          expect(deep.length>=37,'deep evidence coverage regressed');
-          for(const p of products){
-            for(const k of ['firstResearched','lastSourceVerification','lastRetailerCheck','lastImageVerification','nextReviewDue','freshnessStatus','evidenceTier']) expect(p[k]!=null,`${p.slug} missing ${k}`);
-            if(p.evidenceTier==='starter'){
-              expect(p.lastSubstantiveReview===null,`${p.slug} fake substantive review`);
-              expect(p.price===null,`${p.slug} fake price`);
-            }
-            const r=p.retailers?.[0];
-            expect(r&&r.retailer==='Amazon Australia',`${p.slug} retailer missing`);
-            const u=r.affiliateUrl||r.url;
-            expect(u.includes('amazon.com.au'),`${p.slug} non-Amazon URL`);
-            expect(u.includes('tag=auproductguid-22'),`${p.slug} affiliate tag missing`);
-            if(r.kind==='affiliate-direct') expect(r.asin&&r.exactUrl&&r.productIdentifier,`${p.slug} direct metadata incomplete`);
-            const image=imageStatus(p);
-            if(image.productPhotography){
-              expect(image.status==='verified',`${p.slug} product photography is not verified`);
-              expect(image.displayUrl&&image.sourceType&&image.rights&&image.reviewed,`${p.slug} verified product image provenance incomplete`);
-              expect(image.matchStatus&&image.matchStatus!=='unverified',`${p.slug} verified product image match unresolved`);
-              if(image.amazonProgramContent){
-                expect(image.asin&&image.imageLinkUrl,`${p.slug} Amazon Program Content metadata incomplete`);
-                expect(image.imageLinkUrl.includes('amazon.com.au')&&image.imageLinkUrl.includes('tag=auproductguid-22'),`${p.slug} Amazon Program Content destination invalid`);
-              }
-            }else expect(!image.displayUrl&&!image.amazonProgramContent,`${p.slug} unverified product image escaped provenance gate`);
-          }
-          expect(directProducts===directCount,`exact Amazon registry/product mismatch ${directCount}/${directProducts}`);
-          expect(directCount>=20,'exact Amazon coverage regressed below established baseline');
-          expect(directProducts+fallbackProducts===productCount,'Amazon direct/fallback taxonomy mismatch');
-          expect(CREATORS_API.status==='credentials-required'&&CREATORS_API.active===false,'Creators API must remain inactive until authorised credentials are configured');
-          expect(AMAZON_IMAGE_CHANNELS.manualApproved?.active===true,'approved manual Amazon image pathway missing');
-          const json=catalogueJson(),csv=catalogueCsv();
-          expect(headers.length===33,'33 export columns after excluding Amazon Special Links');
-          expect(json.products.length===productCount&&json.categoryCount===categoryCount&&json.commercialRecommendationWeight===0,'JSON export');
-          expect(json.affiliateUrlsExported===false,'public catalogue must exclude affiliate URLs');
-          expect(!headers.includes('Affiliate URL')&&!headers.includes('Exact Amazon URL'),'Special Link columns excluded');
-          expect(json.amazon.exactVerified===directCount&&json.amazon.confirmedUnavailable===0&&json.amazon.furtherVerificationRequired===fallbackProducts,'Amazon verification taxonomy');
-          expect(csv.trimEnd().split('\n').length===productCount+1,'CSV export row count');
-          const tests=[['best coffee machine under $800','coffee-machines'],['robot vacuum for pet hair','robot-vacuums'],['quiet headphones for long flights','wireless-headphones'],['mesh wifi for a large home','mesh-wifi-systems'],['ergonomic office chair with lumbar support','office-chairs'],['power bank for a laptop','power-banks'],['portable air conditioner for a bedroom','portable-air-conditioners'],['laptop for uni','laptops'],['quiet dishwasher under 1000','dishwashers']];
-          for(const [q,cat] of tests){
-            const r=searchSite(q); expect(r.products.length&&r.products.every(p=>p.category===cat),`search/category containment ${q}`);
-            const d=rankDecision(q); expect(d.intent.categorySlug===cat||cat==='coffee-machines',`decision category ${q}`);
-          }
-          const gap=searchSite('desktop computer for office'); expect(gap.coverageGap&&!gap.products.length,'unsupported category coverage gap');
-          expect(searchIndex().length>=550,'search index too small');
-          const brandCompare=searchSite('Breville vs DeLonghi'); expect(!brandCompare.directCompare,'brand-only comparison must not select arbitrary cross-category products');
-          const pub=publicDecision('mesh wifi for a large home with ethernet'); expect(pub.version==='decision-engine-v3'&&pub.commercialRecommendationWeight===0&&!pub.results.some(x=>'score' in x),'public decision contract');
-          const safe=runtime.safeSharePath('/decision-lab/',new URL('https://x/decision-lab/?q=robot+vacuum&category=robot-vacuums&_vercel_share=SECRET&utm_source=qa')); expect(!/_vercel_share|utm_source|SECRET/.test(safe),'share sanitisation');
-          for(const slug of ['about','privacy','terms','affiliate-disclosure','methodology','editorial-standards','sources','corrections-policy','coverage','updates','contact']) expect(content[slug]?.body,`trust page ${slug}`);
-          console.log(`CATALOGUE=${productCount} CATEGORIES=${categoryCount} BRANDS=${brands.length} COMPARISONS=${pairPages.length}`);
-          console.log(`AMAZON_DIRECT=${directCount} AMAZON_FALLBACK=${fallbackProducts}`);
-          console.log('CATALOGUE_SEARCH_RECOMMENDATION_EXPORT=PASS');
-          NODE
-
-      - name: Coffee recommendation regressions
-        run: |
-          set -euo pipefail
-          node - <<'NODE'
-          const {categories}=require('./data'); const {score}=require('./lib/coffee-finder'); const coffee=categories['coffee-machines'];
-          const profiles=[
-            [{workflow:'one-touch',drink:'milk',learning:'almost',budget:'1500',speed:'high',space:'normal',beans:'rarely'},'delonghi-magnifica-start-with-milk-ecam22063b'],
-            [{workflow:'guided',drink:'milk',learning:'some',budget:'2000',speed:'medium',space:'normal',beans:'sometimes'},'breville-barista-touch-bes880'],
-            [{workflow:'guided',drink:'black',learning:'some',budget:'700',speed:'medium',space:'normal',beans:'rarely'},'sunbeam-barista-max-em5300s'],
-            [{workflow:'manual',drink:'mixed',learning:'control',budget:'1500',speed:'low',space:'any',beans:'often'},'delonghi-la-specialista-opera-ec9555m'],
-            [{workflow:'one-touch',drink:'mixed',learning:'almost',budget:'1500',speed:'high',space:'compact',beans:'sometimes'},'delonghi-magnifica-evo-ecam29083tb'],
-            [{workflow:'guided',drink:'cold',learning:'some',budget:'2000',speed:'medium',space:'normal',beans:'rarely'},'breville-barista-touch-impress-bes881'],
-            [{workflow:'one-touch',drink:'mixed',learning:'almost',budget:'1500',speed:'high',space:'normal',beans:'often'},'delonghi-rivelia-auto-milk-exam44055b']];
-          for(const [q,want] of profiles){const got=coffee.products.map(p=>score(p,q)).filter(x=>x.eligible).sort((a,b)=>b.score-a.score||a.price-b.price)[0]?.slug;if(got!==want)throw new Error(`${want} got ${got}`)}
-          console.log('COFFEE_REGRESSIONS=7/7_PASS');
-          NODE
-
-      - name: Infrastructure, Supabase source and governance invariants
+      - name: Infrastructure and governance invariants
         run: |
           set -euo pipefail
           node - <<'NODE'
           const fs=require('fs');
           const config=JSON.parse(fs.readFileSync('vercel.json','utf8'));
-          if(config.$schema!=='https://openapi.vercel.sh/vercel.json') throw new Error('Vercel schema declaration missing');
-          if(JSON.stringify(config.regions)!==JSON.stringify(['syd1'])) throw new Error(`Expected Sydney function region, got ${JSON.stringify(config.regions)}`);
-          if(!Array.isArray(config.rewrites)||config.rewrites.length!==1||config.rewrites[0].source!=='/(.*)'||config.rewrites[0].destination!=='/api') throw new Error('Unexpected Vercel rewrite contract');
+          const expect=(ok,msg)=>{if(!ok)throw new Error(msg)};
+          expect(config.$schema==='https://openapi.vercel.sh/vercel.json','Vercel schema declaration missing');
+          expect(JSON.stringify(config.regions)===JSON.stringify(['syd1']),`Expected Sydney function region, got ${JSON.stringify(config.regions)}`);
+          expect(Array.isArray(config.routes)&&config.routes.length===2,'Expected filesystem-first routing plus API fallback');
+          expect(config.routes[0].handle==='filesystem','Static filesystem routing must run before the API fallback');
+          expect(config.routes[1].src==='/(.*)'&&config.routes[1].dest==='/api','Unexpected dynamic fallback route');
+          const deploymentEnabled=config.git?.deploymentEnabled||{};
+          expect(deploymentEnabled['apg/*']===false&&deploymentEnabled['apg-*']===false,'Routine APG feature branches must not auto-deploy');
           const authoritativeWorkflowFiles=['amazon-shopping-assurance-v40.yml','catalogue-freshness-qa.yml','codeql.yml','production-smoke.yml','source-qa.yml'].sort();
           const supportWorkflowFiles=['category-editorial-research-v41.yml'].sort();
-          const allowedWorkflowFiles=[...authoritativeWorkflowFiles,...supportWorkflowFiles].sort();
-          for(const p of ['.github/CODEOWNERS','.github/PULL_REQUEST_TEMPLATE.md','docs/APG-OPERATIONS.md',...authoritativeWorkflowFiles.map(x=>`.github/workflows/${x}`),...supportWorkflowFiles.map(x=>`.github/workflows/${x}`),'supabase/functions/delete-account/index.ts']) if(!fs.existsSync(p)) throw new Error(`Required governance file missing: ${p}`);
-          const workflowFiles=fs.readdirSync('.github/workflows').filter(x=>/\.ya?ml$/.test(x)).sort();
-          if(JSON.stringify(workflowFiles)!==JSON.stringify(allowedWorkflowFiles)) throw new Error(`Workflow allowlist mismatch. Expected ${allowedWorkflowFiles.join(', ')}; found ${workflowFiles.join(', ')}`);
-          const migrations=fs.readdirSync('supabase/migrations').filter(x=>x.endsWith('.sql')).sort();
-          if(migrations.length!==7) throw new Error(`Expected 7 reconciled Supabase migrations, found ${migrations.length}`);
-          const owners=fs.readFileSync('.github/CODEOWNERS','utf8'); if(!owners.includes('@australianproductguide-pixel')) throw new Error('APG code owner missing');
-          const pr=fs.readFileSync('.github/PULL_REQUEST_TEMPLATE.md','utf8'); for(const token of ['APG Release Gate','Vercel Preview','APG Production Verification','Australian Tradie Software Matcher']) if(!pr.includes(token)) throw new Error(`PR release control missing: ${token}`);
-          const ops=fs.readFileSync('docs/APG-OPERATIONS.md','utf8'); for(const token of ['Source-of-truth hierarchy','Affiliate relationships, retailer availability and commission contribute **zero recommendation points**','APG Release Gate','APG Production Verification','07 – QA, Releases & Production Evidence','Australian Tradie Software Matcher']) if(!ops.includes(token)) throw new Error(`Operating control missing: ${token}`);
-          for(const dir of ['api','data','lib','scripts','docs']){
-            const stack=[dir]; while(stack.length){const p=stack.pop(); for(const e of fs.readdirSync(p,{withFileTypes:true})){const f=`${p}/${e.name}`; if(e.isDirectory())stack.push(f); else if(/\.(js|md|json|yml|yaml)$/i.test(f)){const s=fs.readFileSync(f,'utf8'); if(/Australian Tradie Software Matcher|tradie-software|tradie matcher/i.test(s)&&f!=='docs/APG-OPERATIONS.md') throw new Error(`venture separation contamination: ${f}`);}}}
-          }
-          console.log(`WORKFLOWS=${workflowFiles.length} AUTHORITATIVE=${authoritativeWorkflowFiles.length} SUPPORT=${supportWorkflowFiles.length}`);
-          console.log(`SUPABASE_MIGRATIONS=${migrations.length}`);
-          console.log('GOVERNANCE=PASS');
+          const allowed=[...authoritativeWorkflowFiles,...supportWorkflowFiles].sort();
+          const actual=fs.readdirSync('.github/workflows').filter(x=>/\.ya?ml$/.test(x)).sort();
+          expect(JSON.stringify(actual)===JSON.stringify(allowed),`Workflow allowlist mismatch: ${actual.join(', ')}`);
+          const ops=fs.readFileSync('docs/APG-OPERATIONS.md','utf8');
+          for(const token of ['Source-of-truth hierarchy','Affiliate relationships, retailer availability and commission contribute **zero recommendation points**','APG Release Gate','APG Production Verification','07 – QA, Releases & Production Evidence','Australian Tradie Software Matcher']) expect(ops.includes(token),`Operating control missing: ${token}`);
+          console.log('INFRASTRUCTURE_GOVERNANCE=PASS');
           NODE
 
       - name: Upload release-control evidence

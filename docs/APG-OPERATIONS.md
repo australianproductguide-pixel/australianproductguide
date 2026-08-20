@@ -19,7 +19,7 @@ When sources conflict, investigate and resolve them in this order:
 5. Vercel deployment/configuration state;
 6. superseded Venture Lab history.
 
-Volatile facts such as deployment SHAs, prices, catalogue counts, retailer coverage and API/program requirements must be freshly verified when material.
+Volatile facts such as deployment SHAs, prices, catalogue counts, retailer coverage, infrastructure usage and API/program requirements must be freshly verified when material.
 
 ## 3. Authoritative systems
 
@@ -59,6 +59,8 @@ Avoid opaque bundles, unnecessary frameworks, client-only rendering and infrastr
 
 GitHub `main` remains the authoritative Production source. Vercel deploys from GitHub; it must not become a parallel source repository. Supabase database changes must use named migrations and be reconciled to GitHub, and deployed Edge Function source must remain aligned with the repository copy.
 
+Static files present in `public/` should be served by Vercel's filesystem/CDN layer before the dynamic SSR fallback. The serverless runtime should be reserved for pages, generated assets and API operations that genuinely require application logic.
+
 ## 6. Evidence and product controls
 
 For material product claims, prefer:
@@ -92,8 +94,8 @@ APG-authored decision visuals may be used where genuine product photography righ
 
 APG uses a deliberately small set of authoritative GitHub Actions. **Green means the relevant acceptance criteria passed; red means the release or control genuinely requires investigation.** Do not recreate version-specific standalone workflows for historical layers.
 
-1. **APG Release Gate** — the primary pre-release source gate for pull requests and `main`. It covers syntax/build integrity, current runtime-chain reachability, catalogue/search/recommendation invariants, account/auth controls, affiliate and imagery controls, trust/governance controls and selected regression suites.
-2. **APG Production Verification** — the post-merge Production certification. It waits for the exact GitHub SHA to reach Vercel Production, verifies the canonical domain is serving that SHA, then validates public routes, catalogue exports, account/auth boundaries, analytics, canonical crawl, product/Amazon contracts and representative browser journeys.
+1. **APG Release Gate** — the primary pre-release source gate for pull requests. It runs the full source, catalogue, recommendation, account/auth, affiliate, imagery, trust and governance assurance suite on GitHub infrastructure before merge.
+2. **APG Production Verification** — a deliberately lightweight post-merge Production smoke test. It waits for the exact GitHub SHA to reach Vercel Production and checks the canonical domain, critical public routes, catalogue/decision neutrality and auth boundaries. The heavyweight browser/accessibility certification is available by explicit manual dispatch when a major release warrants it.
 3. **APG Scheduled Controls** — time-driven freshness, review-debt, catalogue authority, retailer/Amazon, imagery and decision-quality monitoring. It creates evidence artefacts without auto-publishing product facts.
 4. **APG CodeQL Security** — JavaScript/TypeScript security analysis on pull requests, `main` and a weekly schedule.
 
@@ -109,12 +111,12 @@ Preferred engineering flow:
 2. create a focused branch from the current `main` SHA;
 3. make the smallest coherent change;
 4. require **APG Release Gate** (and CodeQL where triggered) to pass;
-5. inspect Vercel Preview and affected journeys;
-6. merge only after Preview/source checks are acceptable;
+5. create/review a Vercel Preview only when a stable candidate needs browser or environment-specific verification — routine `apg/*` and `apg-*` micro-commits must not auto-deploy;
+6. merge only after source checks and any intentionally requested Preview are acceptable;
 7. verify Vercel Production is READY;
 8. verify Production SHA equals GitHub `main`;
-9. require **APG Production Verification** to pass;
-10. verify public runtime and representative key journeys;
+9. require the lightweight **APG Production Verification** smoke test to pass;
+10. invoke full manual Production certification for major releases or material UX/runtime changes where the added assurance is justified;
 11. reconcile material release evidence or decisions in Drive.
 
 A deployment is **not complete** merely because Vercel says READY.
@@ -130,16 +132,33 @@ Release acceptance should cover, where relevant:
 - affiliate/retailer identity controls;
 - imagery provenance;
 - search, compare and Help Me Choose journeys;
-- mobile/desktop presentation and accessibility;
+- mobile/desktop presentation and accessibility where changed;
 - canonicals, robots, sitemap and structured data;
 - trust/legal routes;
 - public anonymous access and account/auth security boundaries;
-- Vercel Analytics/public telemetry presence without leaking private My APG URL data;
+- Vercel Analytics/public telemetry without leaking private My APG URL data;
 - Supabase source/migration reconciliation where database changes occur;
 - absence of unrelated Venture Lab/Tradie contamination;
 - exact GitHub `main` -> Vercel Production SHA alignment.
 
-## 12. Incident and rollback approach
+## 12. Infrastructure cost and telemetry controls
+
+APG is operated as a mature site, not a continuous-build experiment. Infrastructure controls therefore include:
+
+- Production continues to deploy from `main`;
+- routine APG feature-branch pushes do not create automatic Vercel Preview builds;
+- Vercel's deploy-time QA is a small release-safety gate, while the full source suite runs on GitHub before merge;
+- routine post-merge Production verification is intentionally low-volume;
+- heavyweight browser/sitewide certification is deliberate rather than automatic;
+- genuine files in `public/` are served before the serverless SSR fallback;
+- automated browser sessions are excluded from consumer Web Analytics;
+- field RUM remains privacy-minimised and sparsely sampled, with automated browser sessions excluded;
+- Vercel usage, especially Build CPU, Observability Events, Function Invocations and Origin Transfer, should be reviewed when anomalous;
+- account-level Vercel budgets/alerts should be configured conservatively so unexpected usage cannot accumulate unnoticed.
+
+Cost reduction must not change recommendation neutrality, materially weaken security controls or silently reduce consumer functionality.
+
+## 13. Incident and rollback approach
 
 If Production is materially degraded:
 
@@ -149,21 +168,12 @@ If Production is materially degraded:
 4. re-run APG Production Verification after recovery;
 5. document the cause, impact, fix and prevention action in `07 – QA, Releases & Production Evidence` when material.
 
-## 13. Automation principles
+## 14. Automation principles
 
-Automate repetitive controls where the inputs and acceptance criteria can be made explicit, including:
+Automate repetitive controls where the inputs and acceptance criteria can be made explicit, including source freshness, retailer/variant verification queues, imagery provenance, structured-data validation, route/link/SEO QA, deployment/SHA reconciliation, release reporting and analytics anomaly detection once sufficient traffic history exists.
 
-- source freshness checks;
-- retailer/variant verification queues;
-- imagery provenance checks;
-- structured-data validation;
-- route/link/SEO QA;
-- deployment/SHA reconciliation;
-- release reporting;
-- analytics anomaly detection once sufficient traffic history exists.
+Automation must preserve provenance, validation and human oversight for consequential recommendation, compliance and commercial decisions. Avoid duplicate workflows that test the same contract independently with different assumptions, because noisy false failures weaken the control environment and can create unnecessary infrastructure spend.
 
-Automation must preserve provenance, validation and human oversight for consequential recommendation, compliance and commercial decisions. Avoid duplicate workflows that test the same contract independently with different assumptions, because noisy false failures weaken the control environment.
-
-## 14. Separation requirement
+## 15. Separation requirement
 
 APG must remain operationally separate from unrelated ventures, especially Australian Tradie Software Matcher. Do not share code, data, credentials, affiliate records, customer data or public identities without an explicit decision and appropriate controls.

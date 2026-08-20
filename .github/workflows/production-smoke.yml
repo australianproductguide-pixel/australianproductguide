@@ -4,6 +4,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      full_certification:
+        description: Run the heavyweight browser and accessibility certification
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -15,13 +21,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  production-ready:
+  production-smoke:
+    name: Production Smoke
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 12
     env:
       BASE_URL: https://australianproductguide.au
-      OUTPUT_DIR: artifacts/interaction-v37
-      V46_OUTPUT_DIR: artifacts/brand-v46
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -44,225 +49,47 @@ jobs:
               statuses=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments/$id/statuses")
               state=$(echo "$statuses" | jq -r '.[0].state//empty')
               echo "Production state=${state:-pending}"
-              if [ "$state" = failure ] || [ "$state" = error ]; then
-                exit 1
-              fi
-              if [ "$state" = success ]; then
-                ready=1
-                break
-              fi
+              if [ "$state" = failure ] || [ "$state" = error ]; then exit 1; fi
+              if [ "$state" = success ]; then ready=1; break; fi
             fi
             sleep 5
           done
-          if [ -z "$ready" ]; then
-            echo 'Timed out waiting for the exact Production deployment'
-            exit 1
-          fi
+          test -n "$ready"
           short=$(printf '%s' "$SHA" | cut -c1-16)
           for attempt in $(seq 1 30); do
-            if curl -fsSL "$BASE_URL/" -o /tmp/home-sha.html && grep -q "v=$short" /tmp/home-sha.html; then
-              echo "Canonical Production now exposes commit marker $short"
+            if curl -fsSL "$BASE_URL/" -o /tmp/home.html && grep -q "v=$short" /tmp/home.html; then
+              echo "Canonical Production exposes commit marker $short"
               exit 0
             fi
-            echo "Waiting for canonical hostname to expose commit marker $short (attempt $attempt/30)"
             sleep 5
           done
           echo "Canonical Production did not expose commit marker $short"
           exit 1
 
-      - name: Verify source authority and recommendation neutrality
+      - name: Verify critical public journeys
         run: |
           set -euo pipefail
-          test "$(node -p "require('./lib/decision-engine-v4').ENGINE_VERSION")" = "decision-engine-v4"
-          test "$(node -p "require('./lib/decision-engine-v4').POLICY_VERSION")" = "decision-policy-v4.0"
-          test "$(node -p "require('./lib/decision-engine-v4').COMMERCIAL_RECOMMENDATION_WEIGHT")" = "0"
-          test "$(node -p "require('./lib/scout-engine-v5').SCOUT_VERSION")" = "scout-engine-v5"
-          test "$(node -p "require('./lib/scout-engine-v5').SCOUT_POLICY_VERSION")" = "scout-policy-v5.0"
-          test "$(node -p "require('./lib/scout-engine-v5').SCOUT_COMMERCIAL_RECOMMENDATION_WEIGHT")" = "0"
-          grep -q "GitHub main -> Vercel Production" docs/archive/certification/evidence-pack/index.html
-          grep -q "Affiliate availability and commission contribute zero points" docs/archive/certification/evidence-pack/index.html
-
-      - name: Verify public shell, core routes and auth boundaries
-        run: |
-          set -euo pipefail
-          for path in / /search/ /decision-lab/ /my-apg/ /account/ /login/ /signup/ /forgot-password/ /reset-password/ /methodology/ /sources/ /affiliate-disclosure/ /privacy/ /terms/ /editorial-policy/ /corrections/ /how-we-use-ai/ /vercel-insights/ /compare/custom/?products=apple-airpods-max%2Cbose-quietcomfort-ultra-headphones; do
-            curl -fsSL "$BASE_URL$path" >/tmp/page.html
-            grep -q '<!doctype html>' /tmp/page.html
+          for path in / /search/ /decision-lab/ /methodology/ /sources/ /affiliate-disclosure/; do
+            curl -fsSL "$BASE_URL$path" -o /tmp/page.html
+            grep -qi '<!doctype html>' /tmp/page.html
           done
-          curl -fsSL "$BASE_URL/" | grep -Eq '/decision-lab/|Decision Lab|Describe what you need'
-          curl -fsSL "$BASE_URL/vercel-insights/" | grep -q 'Vercel is the deployment platform'
-          curl -fsSL "$BASE_URL/affiliate-disclosure/" | grep -q 'commission contributes zero points'
-          curl -fsSL "$BASE_URL/how-we-use-ai/" | grep -q 'Decision Engine V4'
-          curl -si "$BASE_URL/account/" | grep -q '^HTTP/.* 303'
-          curl -si "$BASE_URL/api/account/profile" | grep -q '^HTTP/.* 401'
-          curl -si "$BASE_URL/api/account/history" | grep -q '^HTTP/.* 401'
-          curl -si "$BASE_URL/api/account/scout" | grep -q '^HTTP/.* 401'
-
-      - name: Verify public assets and catalogue export contract
-        run: |
-          set -euo pipefail
-          curl -fsSL "$BASE_URL/api/catalogue.json" -o /tmp/catalogue-production.json
-          NOW_MS=$(date +%s%3N) node - <<'NODE'
-          const fs=require('fs');
-          const {productCount}=require('./lib/data-utils');
-          const {catalogueJson}=require('./lib/catalogue-export');
-          if(productCount()!==185)throw new Error('source product count drift');
-          const source=catalogueJson();
-          const live=JSON.parse(fs.readFileSync('/tmp/catalogue-production.json','utf8'));
-          if(JSON.stringify(live)!==JSON.stringify(source))throw new Error('live catalogue export does not exactly match checked-out catalogue exporter');
-          if(live.productCount!==185)throw new Error('public catalogue count drift');
-          const broken=live.products.filter(p=>!(p.editorialUrl||'').startsWith('/products/')||!(p.affiliateUrl||'').includes('tag=auproductguid-22'));
-          if(broken.length)throw new Error('catalogue export route/affiliate contract failure: '+broken.slice(0,10).map(x=>x.slug).join(', '));
-          console.log(JSON.stringify({productCount:live.productCount,first:live.products[0].slug,last:live.products.at(-1).slug},null,2));
-          NODE
-          curl -fsSL "$BASE_URL/api/catalogue.csv" -o /tmp/catalogue-production.csv
-          grep -q '^slug,name,model,category' /tmp/catalogue-production.csv
-          curl -fsSL "$BASE_URL/api/brand-events?event=decision_lab_started" -o /tmp/brand-event.json
-          curl -fsSL "$BASE_URL/api/consumer-events?event=decision_lab_started" -o /tmp/consumer-event.json
-          curl -fsSL "$BASE_URL/api/catalogue-events?event=catalogue_page_view" -o /tmp/catalogue-event.json
-          grep -q '"event":"decision_lab_started"' /tmp/brand-event.json
-          grep -q '"event":"decision_lab_started"' /tmp/consumer-event.json
-          grep -q '"event":"catalogue_page_view"' /tmp/catalogue-event.json
-          # v37 reliability assets must be first-party, reachable and non-HTML.
-          for asset in /assets/client.js /assets/account.js /assets/scout-v5.js /assets/scout-amazon-v5.js /assets/scout-concierge-v5.js /assets/scout-mobile-layout-v5.js /assets/platform-cohesion-v26.js /assets/entity-discovery-v1.css /assets/entity-discovery-v1.js /assets/discoverability-v1.js /assets/interaction-reliability-v37.css /assets/interaction-reliability-v37.js /assets/amazon-shopping-discovery-v39.css /assets/amazon-shopping-discovery-v39.js /assets/amazon-shopping-creative-v41.css /assets/amazon-shopping-creative-v41.js /assets/brand-system-v46.css /assets/brand-system-v46.js /assets/consumer-intelligence-v47.css /assets/consumer-intelligence-v47.js /assets/catalogue-intelligence-v48.css /assets/catalogue-intelligence-v48.js /assets/catalogue-intelligence-v49.css /assets/catalogue-intelligence-v49.js; do
-            curl -fsSL "$BASE_URL$asset" -o /tmp/asset
-            if grep -qi '<!doctype html>' /tmp/asset; then
-              echo "Asset unexpectedly returned HTML: $asset"
-              exit 1
-            fi
-          done
-          curl -fsSL "$BASE_URL/assets/platform-cohesion-v26.js?v=26.5" -o /tmp/cohesion26.js
-          curl -fsSL "$BASE_URL/assets/interaction-reliability-v37.js?v=37" -o /tmp/reliability37.js
-          grep -q "window.__APG_PLATFORM_COHESION_V26__" /tmp/cohesion26.js
-          grep -q "window.__APG_INTERACTION_RELIABILITY_V37__" /tmp/reliability37.js
-
-      - name: Check account session boundary
-        env:
-          COOKIE_NAME: ${{ secrets.APG_SESSION_COOKIE_NAME }}
-        run: |
-          set -euo pipefail
-          cookie_name=${COOKIE_NAME:-apg_session}
-          curl -fsSL -c /tmp/apg-cookies.txt "$BASE_URL/api/account/csrf" -o /tmp/csrf.json
-          grep -Eq '"csrfToken":"[^"]+"' /tmp/csrf.json
-          awk -v name="$cookie_name" 'BEGIN{ok=0} $6==name {ok=1} END{exit !ok}' /tmp/apg-cookies.txt
-
-      - name: Install diagnostic dependencies
-        run: |
-          set -euo pipefail
-          CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser)
-          if [ -z "$CHROME" ]; then
-            echo 'Chrome/Chromium is unavailable on the runner'
-            exit 1
-          fi
-          echo "CHROME=$CHROME" >> "$GITHUB_ENV"
-          npm install --no-save --package-lock=false puppeteer-core@24.16.0 >/dev/null 2>&1
-
-      - name: Core journey production-backend contracts
-        run: |
-          set -euo pipefail
-          node scripts/core-journey-production-smoke.js
-
-      - name: Exercise desktop and mobile journeys in a real browser
-        run: |
-          set -euo pipefail
-          node scripts/experience-v37-browser-diagnostic.js
-
-      - name: Run production accessibility spot checks
-        run: |
-          set -euo pipefail
-          node scripts/accessibility-spot-qa-v26.js --base-url "$BASE_URL" --output-dir artifacts/accessibility-v26
-          node scripts/accessibility-sitewide-qa-v26.js --base-url "$BASE_URL" --output-dir artifacts/accessibility-v26-sitewide
-
-      - name: Verify Amazon discovery and disclosure
-        run: |
-          set -euo pipefail
-          curl -fsSL "$BASE_URL/buy/sony-wh-1000xm6/" | grep -q 'Continue to Amazon Australia'
-          curl -fsSL "$BASE_URL/buy/sony-wh-1000xm6/" | grep -q 'tag=auproductguid-22'
-          curl -fsSL "$BASE_URL/affiliate-disclosure/" | grep -q 'transparent fallback'
-          curl -fsSL "$BASE_URL/sources/" | grep -q 'automated check on 17 March 2026'
-          for path in / /decision-lab/?q=quiet%20headphones /about/ /search/; do
-            html=$(curl -fsSL "$BASE_URL$path")
-            echo "$html" | grep -q 'data-app-v47-root'
-            echo "$html" | grep -q 'Shop Amazon Australia'
-            echo "$html" | grep -q 'trim recently viewed automatically'
-          done
-
-      - name: Verify content discovery surfaces
-        run: |
-          set -euo pipefail
-          curl -fsSL "$BASE_URL/sitemap-product-categories.xml" | grep -q '/headphones/'
-          curl -fsSL "$BASE_URL/sitemap-products.xml" | grep -q '/products/sony-wh-1000xm6/'
-          curl -fsSL "$BASE_URL/search/?q=sony%20xm6" | grep -q '/products/sony-wh-1000xm6/'
-          curl -fsSL "$BASE_URL/search/?q=robot%20vacuum%20for%20pet%20hair" | grep -q 'decision-shortcut'
-          curl -fsSL "$BASE_URL/search/?category=headphones&view=list" | grep -q 'search-view-list'
-          curl -fsSL "$BASE_URL/search/?category=headphones&view=compact" | grep -q 'search-view-compact'
-          curl -fsSL "$BASE_URL/search/?category=headphones&view=grid" | grep -q 'search-results'
-          curl -fsSL "$BASE_URL/categories/" | grep -q '/headphones/'
-          curl -fsSL "$BASE_URL/headphones/" | grep -q 'Shop our picks'
-          curl -fsSL "$BASE_URL/products/sony-wh-1000xm6/" | grep -q 'category-editorial-v41.css'
-          curl -fsSL "$BASE_URL/search/?q=sony%20xm6" | grep -q 'consumer-intelligence-v47.css'
-          curl -fsSL "$BASE_URL/search/?q=robot%20vacuum%20for%20pet%20hair" | grep -q 'consumer-intelligence-v47.js'
-          curl -fsSL "$BASE_URL/decision-lab/?q=quiet%20headphones" | grep -q 'consumer-intelligence-v47.css'
-          curl -fsSL "$BASE_URL/decision-lab/?q=quiet%20headphones" | grep -q 'data-v47-decision-role'
-          curl -fsSL "$BASE_URL/search/?q=sony%20xm6" | grep -q 'catalogue-intelligence-v48.css'
-          curl -fsSL "$BASE_URL/decision-lab/?q=quiet%20headphones" | grep -q 'catalogue-intelligence-v48.js'
-          curl -fsSL "$BASE_URL/headphones/" | grep -q 'brand-system-v46.css'
-          curl -fsSL "$BASE_URL/decision-lab/?q=quiet%20headphones" | grep -q 'brand-system-v46.js'
-
-      - name: Inspect console, network and server logs
-        env:
-          VERCEL_BEARER_TOKEN: ${{ secrets.VERCEL_AUTOMATION_TOKEN }}
-          VERCEL_PROJECT_ID: prj_KmUnUxAtCOQ69gStvziKn1Sg8BH4
-          VERCEL_TEAM_ID: team_zGIRua77B1DaZtNTBRvzY3nd
-        run: |
-          set -euo pipefail
-          if [ ! -s "$OUTPUT_DIR/report.json" ]; then
-            echo 'Browser diagnostic report missing'
-            exit 1
-          fi
+          curl -fsSL "$BASE_URL/assets/brand-system-v46.css" -o /tmp/brand.css
+          grep -q 'brand' /tmp/brand.css
+          curl -fsSL "$BASE_URL/api/catalogue.json" -o /tmp/catalogue.json
           node - <<'NODE'
-          const fs=require('fs');
-          const r=JSON.parse(fs.readFileSync('artifacts/interaction-v37/report.json','utf8'));
-          if(r.failures?.length) throw new Error('browser failures: '+JSON.stringify(r.failures));
-          if(r.browserErrorCount) throw new Error('browser errors: '+JSON.stringify(r.browserErrors));
-          if((r.navigationAbortCount||0)>12) throw new Error('unexpected volume of benign navigation aborts: '+r.navigationAbortCount);
-          console.log('Browser/network report is clean');
+          const c=require('/tmp/catalogue.json');
+          if(Number(c.productCount)<460) throw new Error('catalogue count regression');
+          if(Number(c.commercialRecommendationWeight)!==0) throw new Error('commercial recommendation weight changed');
+          console.log(`CATALOGUE_SMOKE=PASS products=${c.productCount}`);
           NODE
-          mkdir -p "$OUTPUT_DIR"
-          NOW_MS=$(date +%s%3N)
-          START_MS=$((NOW_MS-3600000))
-          if [ -n "${VERCEL_BEARER_TOKEN:-}" ]; then
-            curl -fsSL -H "Authorization: Bearer $VERCEL_BEARER_TOKEN" \
-              "https://api.vercel.com/v1/projects/$VERCEL_PROJECT_ID/deployments?limit=1&target=production&teamId=$VERCEL_TEAM_ID" \
-              -o "$OUTPUT_DIR/vercel-production-deployment.json"
-            PROD_ID=$(jq -r '.deployments[0].uid//empty' "$OUTPUT_DIR/vercel-production-deployment.json")
-            if [ -z "$PROD_ID" ]; then
-              echo 'Could not resolve current Production deployment for log inspection'
-              exit 1
-            fi
-            curl -fsSL -H "Authorization: Bearer $VERCEL_BEARER_TOKEN" \
-              "https://api.vercel.com/v1/runtime-logs?projectId=$VERCEL_PROJECT_ID&deploymentId=$PROD_ID&startDate=$START_MS&endDate=$NOW_MS&limit=100&direction=backward" \
-              -o "$OUTPUT_DIR/vercel-runtime-logs.ndjson"
-            if grep -Eiq '"statusCode":5[0-9][0-9]|FUNCTION_INVOCATION_FAILED|UnhandledPromiseRejection|TypeError|ReferenceError' "$OUTPUT_DIR/vercel-runtime-logs.ndjson"; then
-              echo 'Meaningful Production runtime error found'
-              cat "$OUTPUT_DIR/vercel-runtime-logs.ndjson"
-              exit 1
-            fi
-          else
-            echo 'VERCEL_AUTOMATION_TOKEN unavailable; exact deployment/browser/private API checks remain authoritative for this run.'
-          fi
-
-      - name: Upload Production evidence
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: apg-production-verification-${{ github.run_id }}
-          path: |
-            artifacts/interaction-v37
-            artifacts/accessibility-v26
-            artifacts/accessibility-v26-sitewide
-          retention-days: 30
-          if-no-files-found: warn
+          curl -fsSL "$BASE_URL/api/decision?q=quiet%20headphones%20for%20commuting" -o /tmp/decision.json
+          node - <<'NODE'
+          const d=require('/tmp/decision.json');
+          if(d.version!=='decision-engine-v4') throw new Error('Decision Engine V4 missing');
+          if(Number(d.commercialRecommendationWeight)!==0) throw new Error('decision neutrality changed');
+          console.log('DECISION_SMOKE=PASS');
+          NODE
+          curl -si "$BASE_URL/api/account/profile" | grep -q '^HTTP/.* 401'
 
       - name: Publish Production verification status
         if: always()
@@ -276,17 +103,18 @@ jobs:
           set -euo pipefail
           state=success
           if [ "$JOB_STATUS" != success ]; then state=failure; fi
-          description="Production verification: $JOB_STATUS"
-          payload=$(jq -n --arg state "$state" --arg context 'APG Production Verification' --arg description "$description" --arg target_url "https://github.com/$REPO/actions/runs/$RUN_ID" '{state:$state,context:$context,description:$description,target_url:$target_url}')
+          payload=$(jq -n --arg state "$state" --arg context 'APG Production Verification' --arg description "Production smoke: $JOB_STATUS" --arg target_url "https://github.com/$REPO/actions/runs/$RUN_ID" '{state:$state,context:$context,description:$description,target_url:$target_url}')
           curl -fsSL -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/statuses/$SHA" -d "$payload" >/dev/null
 
-  decision-lab-p0-production:
-    name: Decision Lab P0 Verification
+  full-certification:
+    name: Manual Full Certification
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.full_certification }}
+    needs: production-smoke
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     env:
       BASE_URL: https://australianproductguide.au
-      OUTPUT_DIR: artifacts/decision-lab-v4-p0
+      OUTPUT_DIR: artifacts/interaction-v37
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -294,102 +122,44 @@ jobs:
           node-version: 24
           package-manager-cache: false
 
-      - name: Wait for exact Vercel Production deployment
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          SHA: ${{ github.sha }}
+      - name: Run full source assurance on GitHub infrastructure
         run: |
           set -euo pipefail
-          ready=
-          for attempt in $(seq 1 120); do
-            deployments=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments?sha=$SHA")
-            id=$(echo "$deployments" | jq -r '[.[]|select(.environment=="Production" or .original_environment=="Production")][0].id//empty')
-            if [ -n "$id" ]; then
-              statuses=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments/$id/statuses")
-              state=$(echo "$statuses" | jq -r '.[0].state//empty')
-              echo "Decision Lab Production state=${state:-pending}"
-              if [ "$state" = failure ] || [ "$state" = error ]; then exit 1; fi
-              if [ "$state" = success ]; then ready=1; break; fi
-            fi
-            sleep 5
-          done
-          if [ -z "$ready" ]; then
-            echo 'Timed out waiting for the exact Production deployment'
-            exit 1
-          fi
-          short=$(printf '%s' "$SHA" | cut -c1-16)
-          for attempt in $(seq 1 30); do
-            if curl -fsSL "$BASE_URL/" -o /tmp/decision-home-sha.html && grep -q "v=$short" /tmp/decision-home-sha.html; then
-              echo "Canonical Production now exposes commit marker $short"
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "Canonical Production did not expose Decision Lab certification commit marker $short"
-          exit 1
+          npm run qa:full
+          node scripts/account-profile-v24-qa.js
+          node scripts/account-governance-v25-qa.js
+          node scripts/auth-hardening-v23-qa.js
+          node scripts/search-model-relevance-v36-qa.js
+          node scripts/catalogue-source-authority-qa.js
+          node scripts/amazon-associates-qa.js
+          node scripts/product-image-qa.js
+          node scripts/editorial-compliance-qa.js
+          node scripts/trust-infrastructure-v28-qa.js
 
-      - name: Verify live Decision Lab P0 contracts
-        run: |
-          set -euo pipefail
-          curl -fsSL -D /tmp/decision-reliability.headers "$BASE_URL/assets/interaction-reliability-v37.js?v=37" -o /tmp/decision-reliability.js
-          grep -q 'decision-lab-p0-2026-08-20' /tmp/decision-reliability.js
-          tr -d '\r' < /tmp/decision-reliability.headers | grep -qi '^x-apg-decision-lab-reliability: decision-lab-p0-2026-08-20'
-          for url in \
-            '/api/decision?q=I%20need%20headphones%20for%20commuting.' \
-            '/api/decision?q=I%20want%20a%20TV%20under%20%242000&category=televisions&budget=2000' \
-            '/api/decision?q=I%20need%20a%20robot%20vacuum%20under%20%241000%20for%20a%20house%20with%20pets%20and%20mostly%20hard%20floors.&category=robot-vacuums&budget=1000'; do
-            curl -fsSL "$BASE_URL$url" | jq -e '.version=="decision-engine-v4" and .commercialRecommendationWeight==0 and (.results|length)>0' >/dev/null
-          done
-          curl -fsSL "$BASE_URL/decision-lab/?q=quiet%20headphones%20for%20commuting" -o /tmp/decision-result.html
-          grep -q 'decision-result' /tmp/decision-result.html
-          grep -q 'data-save-product' /tmp/decision-result.html
-          grep -q 'data-compare-product' /tmp/decision-result.html
-
-      - name: Install Decision Lab browser dependencies
+      - name: Install browser diagnostic dependency
         run: |
           set -euo pipefail
           CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser)
-          if [ -z "$CHROME" ]; then
-            echo 'Chrome/Chromium is unavailable on the runner'
-            exit 1
-          fi
+          test -n "$CHROME"
           echo "CHROME=$CHROME" >> "$GITHUB_ENV"
           npm install --no-save --package-lock=false puppeteer-core@24.16.0 >/dev/null 2>&1
 
-      - name: Certify Decision Lab desktop and mobile journeys
+      - name: Run representative browser and accessibility certification
         run: |
           set -euo pipefail
+          node scripts/core-journey-production-smoke.js
+          node scripts/experience-v37-browser-diagnostic.js
           node scripts/decision-lab-v4-p0-browser-diagnostic.js
-          node - <<'NODE'
-          const fs=require('fs');
-          const r=JSON.parse(fs.readFileSync('artifacts/decision-lab-v4-p0/report.json','utf8'));
-          if(!r.ok) throw new Error('Decision Lab P0 report is not clean: '+JSON.stringify(r,null,2));
-          if(r.journeys?.some(x=>!x.ok)) throw new Error('Decision Lab journey failure: '+JSON.stringify(r.journeys));
-          if(r.browserErrors?.length) throw new Error('Decision Lab browser/network errors: '+JSON.stringify(r.browserErrors));
-          console.log('Decision Lab P0 public browser certification is clean');
-          NODE
+          node scripts/accessibility-spot-qa-v26.js --base-url "$BASE_URL" --output-dir artifacts/accessibility-v26
 
-      - name: Upload Decision Lab P0 evidence
+      - name: Upload manual certification evidence
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: apg-decision-lab-v4-p0-${{ github.run_id }}
-          path: artifacts/decision-lab-v4-p0
+          name: apg-full-certification-${{ github.run_id }}
+          path: |
+            artifacts/interaction-v37
+            artifacts/decision-lab-v4-p0
+            artifacts/accessibility-v26
           retention-days: 30
           if-no-files-found: warn
-
-      - name: Publish Decision Lab P0 verification status
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          SHA: ${{ github.sha }}
-          RUN_ID: ${{ github.run_id }}
-          JOB_STATUS: ${{ job.status }}
-        run: |
-          set -euo pipefail
-          state=success
-          if [ "$JOB_STATUS" != success ]; then state=failure; fi
-          payload=$(jq -n --arg state "$state" --arg context 'Decision Lab P0 Verification' --arg description "Decision Lab V4 P0 Production: $JOB_STATUS" --arg target_url "https://github.com/$REPO/actions/runs/$RUN_ID" '{state:$state,context:$context,description:$description,target_url:$target_url}')
-          curl -fsSL -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/statuses/$SHA" -d "$payload" >/dev/null
