@@ -10,13 +10,14 @@ const CHROME=process.env.CHROME||'/usr/bin/google-chrome';
 fs.mkdirSync(OUT,{recursive:true});
 
 const report={
-  version:'v40',
+  version:'v51',
   base:BASE,
   startedAt:new Date().toISOString(),
   viewports:[],
   journeys:[],
   failures:[],
   browserErrors:[],
+  blockedAmazonRequests:[],
   evidence:[]
 };
 
@@ -24,6 +25,25 @@ function assert(ok,message){if(!ok)throw new Error(message);}
 function sameOrigin(url){try{return new URL(url).origin===new URL(BASE).origin}catch{return false}}
 function safeName(value){return String(value).replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').toLowerCase();}
 async function wait(page,ms=250){await new Promise(r=>setTimeout(r,ms));}
+
+function isAmazonNetworkHost(hostname){
+  const host=String(hostname||'').toLowerCase();
+  return host==='amazon.com.au'||host.endsWith('.amazon.com.au')||host==='amzn.to'||host.endsWith('.amazon-adsystem.com')||host.endsWith('.ssl-images-amazon.com')||host.endsWith('.media-amazon.com')||host.endsWith('.images-amazon.com');
+}
+
+async function installAmazonNetworkBlock(page,scope){
+  await page.setRequestInterception(true);
+  page.on('request',request=>{
+    let blocked=false;
+    try{blocked=isAmazonNetworkHost(new URL(request.url()).hostname);}catch{}
+    if(blocked){
+      report.blockedAmazonRequests.push({scope,type:request.resourceType(),url:request.url()});
+      request.abort('blockedbyclient');
+      return;
+    }
+    request.continue();
+  });
+}
 
 async function dismissConsent(page){
   const root=await page.$('[data-apg-consent]:not([hidden])');
@@ -77,7 +97,7 @@ async function pageGeometry(page,label){
       cards,
       buttons,
       h1:(document.querySelector('.apg-shopping-hero h1')||{}).innerText||'',
-      dealsNavVisible:(()=>{const el=document.querySelector('.primary-nav .apg-deals-link');if(!el)return false;const s=getComputedStyle(el),r=el.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0;})(),
+      dealsNavVisible:(()=>{const el=document.querySelector('.primary-nav a[href="/deals/"]');if(!el)return false;const s=getComputedStyle(el),r=el.getBoundingClientRect();return /deals/i.test(el.textContent||'')&&s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0;})(),
       mobileToggleVisible:(()=>{const el=document.querySelector('[data-mobile-toggle]');if(!el)return false;const s=getComputedStyle(el),r=el.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0;})()
     };
   });
@@ -99,6 +119,7 @@ async function pageGeometry(page,label){
 async function certifyDeals(browser,label,viewport){
   const page=await browser.newPage();
   await page.setViewport(viewport);
+  await installAmazonNetworkBlock(page,label);
   attachDiagnostics(page,label);
   const started=Date.now();
   try{
@@ -128,6 +149,7 @@ async function certifyDesktopMega(browser){
   const label='desktop-mega';
   const page=await browser.newPage();
   await page.setViewport({width:1440,height:1000});
+  await installAmazonNetworkBlock(page,label);
   attachDiagnostics(page,label);
   const started=Date.now();
   try{
@@ -159,6 +181,7 @@ async function certifyMobileMenu(browser){
   const label='mobile-menu';
   const page=await browser.newPage();
   await page.setViewport({width:390,height:844,isMobile:true,hasTouch:true});
+  await installAmazonNetworkBlock(page,label);
   attachDiagnostics(page,label);
   const started=Date.now();
   try{
@@ -211,6 +234,7 @@ async function certifyMobileMenu(browser){
   fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2));
   console.log(`APG_AMAZON_SHOPPING_VISUAL_CERT=${report.status}`);
   console.log(`VIEWPORTS_CERTIFIED=${report.viewports.map(x=>x.label).join(',')}`);
+  console.log(`AMAZON_NETWORK_REQUESTS_BLOCKED=${report.blockedAmazonRequests.length}`);
   console.log(`SCREENSHOT_EVIDENCE=${report.evidence.join(',')}`);
   console.log(JSON.stringify(report,null,2));
   if(report.status!=='PASS')process.exit(1);
