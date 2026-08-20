@@ -7,7 +7,8 @@ const engine=require('../lib/decision-engine-v4');
 assert.equal(runtime.PATCH,'decision-lab-p0-2026-08-20-stable-shell-r4');
 assert.equal(runtime.VERSION,'50.4');
 assert.equal(runtime.ENGINE,'decision-engine-v4');
-assert.equal(api.PATCH,runtime.PATCH,'v50.4 must be the outer API runtime');
+assert.equal(api.VERSION,'51.0','Search v51 must be the outer API runtime while Decision Lab v50.4 remains downstream');
+assert.equal(require('../lib/search-reliability-v51-runtime').VERSION,'51.0');
 new Function(runtime.clientJs);
 
 for(const contract of [
@@ -63,4 +64,4 @@ const cases=[
 ];
 for(const [name,q,opts] of cases){const out=engine.publicDecision(q,opts);assert.equal(out.version,'decision-engine-v4',name);assert.equal(out.commercialRecommendationWeight,0,name);assert(Array.isArray(out.results)&&out.results.length>0,`${name}: controlled outcome missing`);for(const r of out.results)assert(r.url&&r.url.startsWith('/products/'),`${name}: canonical product route missing`)}
 
-console.log(`Decision Lab v50.4 source QA passed: isolated JSON transport + bounded stable-shell rendering + ${cases.length} supported decision combinations`);
+console.log(`Decision Lab v50.4 source QA passed under Search v51 outer runtime: isolated JSON transport + bounded stable-shell rendering + ${cases.length} supported decision combinations`);
