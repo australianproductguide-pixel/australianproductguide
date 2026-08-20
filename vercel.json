@@ -5,7 +5,11 @@
     "deploymentEnabled": {
       "apg/*": false,
       "apg-*": false,
-      "cost-control-*": false
+      "cost-control-*": false,
+      "hotfix/*": false,
+      "fix/*": false,
+      "feature/*": false,
+      "chore/*": false
     }
   },
   "routes": [
