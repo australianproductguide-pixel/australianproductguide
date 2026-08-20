@@ -4,15 +4,16 @@ const fs=require('fs');
 const path=require('path');
 
 const ROOT=path.resolve(__dirname,'..');
-const LIB=path.join(ROOT,'lib');
 const MIGRATIONS=path.join(ROOT,'supabase','migrations');
 const FUNCTIONS=path.join(ROOT,'supabase','functions');
 const JS_EXT=new Set(['.js','.cjs','.mjs','.ts']);
+const SKIP_DIRS=new Set(['.git','node_modules','.vercel','artifacts']);
 
 function rel(file){return path.relative(ROOT,file).split(path.sep).join('/');}
 function walk(dir,out=[]){
   if(!fs.existsSync(dir))return out;
   for(const entry of fs.readdirSync(dir,{withFileTypes:true})){
+    if(SKIP_DIRS.has(entry.name))continue;
     const file=path.join(dir,entry.name);
     if(entry.isDirectory())walk(file,out);else out.push(file);
   }
@@ -33,7 +34,7 @@ function requires(file){
   return [...new Set(out)];
 }
 function reachable(entry){
-  const files=walk(LIB).filter(file=>JS_EXT.has(path.extname(file)));
+  const files=walk(ROOT).filter(file=>['.js','.cjs','.mjs'].includes(path.extname(file)));
   const graph=new Map(files.map(file=>[file,requires(file)]));
   const seen=new Set(),stack=[entry];
   while(stack.length){const file=stack.pop();if(!file||seen.has(file))continue;seen.add(file);for(const next of graph.get(file)||[])stack.push(next)}
@@ -48,6 +49,7 @@ for(const file of migrationFiles){
   for(let m;(m=re.exec(source));){tableNames.add(m[1])}
 }
 const apiEntry=path.join(ROOT,'api','index.js');
+if(!fs.existsSync(apiEntry))throw new Error('SUPABASE_RUNTIME_MAP_V57 missing api/index.js');
 const serverFiles=reachable(apiEntry);
 const functionFiles=walk(FUNCTIONS).filter(file=>JS_EXT.has(path.extname(file)));
 const inspectFiles=[...new Set([...serverFiles,...functionFiles])];
@@ -60,6 +62,7 @@ const unreferenced=Object.entries(refs).filter(([,files])=>!files.length).map(([
 
 const report={
   version:'supabase-runtime-map-v57',
+  serverGraphFiles:serverFiles.size,
   migrationTables:[...tableNames].sort(),
   serverOrEdgeReferenced:serverReferenced,
   unreferencedCandidates:unreferenced,
