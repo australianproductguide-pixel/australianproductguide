@@ -1,7 +1,10 @@
-// APG Interaction Reliability v37 remains the legacy site-wide fallback runtime.
-// Decision Lab Resilience v50.6 owns interactive Decision Lab rendering and result navigation; v50.4 remains the isolated JSON transport.
-// Search Reliability v52 owns Search isolated JSON rendering, direct-result simplification and recent-query recovery.
-// Navigation Isolation v54.1 keeps Search-product and Compare-tray clicks on one native navigation path.
+// APG Interaction Runtime v55 is the current browser reliability contract.
+// Core consumer journeys are SSR-first and use native GET/link navigation; the
+// overlapping Search v52, Decision v50/v50.6, Interaction v37 and Navigation
+// Isolation v54.1 browser controllers are retained only as superseded history /
+// server compatibility beneath the final v55 response reconciler.
+// Scout v5 remains the conversational decision assistant; its destination
+// actions use ordinary maintained APG links.
 // PageSpeed Certification v30 remains the underlying accessibility/performance layer.
 // Vercel Analytics v38 remains the privacy-hardened telemetry layer.
 // Amazon shopping discovery v39 remains the governed shopping/destination shell.
@@ -15,4 +18,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/navigation-isolation-v541-runtime');
+module.exports=require('../lib/interaction-runtime-v55');
