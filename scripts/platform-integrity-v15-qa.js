@@ -35,9 +35,9 @@ function render(url){return new Promise((resolve,reject)=>{const headers={};cons
 
   const search=await render('/search/?q=quiet+dishwasher+under+1000');
   assert.equal(search.status,200,'dishwasher search status');
-  assert.match(search.body,/5 relevant maintained products/,'dishwasher search should retain the five maintained product results');
-  assert.doesNotMatch(search.body,/product-art art-headphones/,'dishwasher search surfaces must not render authority products as headphones');
-  assert.match(search.body,/data-v15-category="dishwashers"/,'dishwasher search should use dishwasher semantic visuals');
+  assert.match(search.body,new RegExp(`${dishwasher.products.length} maintained match${dishwasher.products.length===1?'':'es'}`,'i'),'dishwasher Search should retain the maintained result count in the lightweight renderer');
+  assert.doesNotMatch(search.body,/product-art art-headphones/,'dishwasher Search must not render unrelated headphone visuals');
+  for(const p of dishwasher.products.slice(0,5))assert.match(search.body,new RegExp(`/products/${p.slug}/`),`lightweight Search must preserve canonical dishwasher product ${p.slug}`);
   assert.doesNotMatch(search.body,/sony-wh-1000xm6-vs-bose-quietcomfort-ultra-headphones/,'dishwasher search must not surface the unrelated headphones comparison');
 
   const cleanDecision=await render('/decision-lab/');
@@ -74,5 +74,5 @@ function render(url){return new Promise((resolve,reject)=>{const headers={};cons
   assert.equal(sitemap.status,200,'sitemap status');
   assert.match(sitemap.body,/https:\/\/australianproductguide\.au\/decision-lab\//,'sitemap should include clean Decision Lab');
 
-  console.log(`PLATFORM_INTEGRITY_V15_QA=PASS products=${dishwasher.products.length} comparisons=${dishwasher.comparisons.length} compareFilter=PASS decisionIndexing=PASS semanticVisuals=PASS htmlErrorStates=PASS`);
+  console.log(`PLATFORM_INTEGRITY_V15_QA=PASS products=${dishwasher.products.length} comparisons=${dishwasher.comparisons.length} compareFilter=PASS decisionIndexing=PASS lightweightSearch=PASS semanticVisuals=PASS htmlErrorStates=PASS`);
 })().catch(e=>{console.error(e.stack||e);process.exit(1);});

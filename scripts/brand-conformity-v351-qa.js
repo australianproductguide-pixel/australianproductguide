@@ -28,8 +28,12 @@ function render(url){return new Promise((resolve,reject)=>{const headers={};cons
 
   const search=await render('/search/?q=robot+vacuum+for+pet+hair');
   assert.equal(search.status,200);
-  assert.match(search.body,/data-brand-conformity-v351="true"/);
-  assert.match(search.body,/apg-rv-v43/);
+  assert.match(search.body,/data-brand-conformity-v351="true"/,'lightweight Search must retain the current APG brand shell');
+  assert.match(search.body,/research-view-v43\.css\?v=43/,'Search must retain the governed Research View asset even though v52 replaces the heavy result main');
+  assert.match(search.body,/search-reliability-v52\.js\?v=52\.0/,'Search v52 reliability controller must be present');
+  assert.match(search.body,/Affiliate availability and commission contribute zero recommendation points\./,'lightweight Search must preserve commercial-neutrality disclosure');
+  assert.match(search.body,/\/products\//,'lightweight Search must preserve canonical APG product-guide links');
+  assert.doesNotMatch(search.body,/\[object Object\]/,'Search must not leak malformed recent-search state into the rendered page');
 
   const account=await render('/my-apg/');
   assert.equal(account.status,200);

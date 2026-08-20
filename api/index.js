@@ -1,6 +1,6 @@
 // APG Interaction Reliability v37 remains the governing site-wide fallback runtime.
 // Decision Lab Resilience v50 owns Decision Lab JSON submission and bounded recovery.
-// Search Reliability v51 owns Search submission/recent-query navigation and recovery.
+// Search Reliability v52 owns Search isolated JSON rendering, direct-result simplification and recent-query recovery.
 // PageSpeed Certification v30 remains the underlying accessibility/performance layer.
 // Vercel Analytics v38 remains the privacy-hardened telemetry layer.
 // Amazon shopping discovery v39 remains the governed shopping/destination shell.
@@ -14,4 +14,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/search-reliability-v51-runtime');
+module.exports=require('../lib/search-reliability-v52-runtime');
