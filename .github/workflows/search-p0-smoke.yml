@@ -1,0 +1,135 @@
+name: APG Search P0 Verification
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: read
+  statuses: write
+
+concurrency:
+  group: apg-search-p0-production
+  cancel-in-progress: true
+
+jobs:
+  search-p0-production:
+    name: Search P0 Verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      BASE_URL: https://australianproductguide.au
+      OUTPUT_DIR: artifacts/search-p0
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Wait for exact Vercel Production deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          ready=
+          for attempt in $(seq 1 120); do
+            deployments=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments?sha=$SHA")
+            id=$(echo "$deployments" | jq -r '[.[]|select(.environment=="Production" or .original_environment=="Production")][0].id//empty')
+            if [ -n "$id" ]; then
+              statuses=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments/$id/statuses")
+              state=$(echo "$statuses" | jq -r '.[0].state//empty')
+              echo "Search Production state=${state:-pending}"
+              if [ "$state" = failure ] || [ "$state" = error ]; then exit 1; fi
+              if [ "$state" = success ]; then ready=1; break; fi
+            fi
+            sleep 5
+          done
+          if [ -z "$ready" ]; then
+            echo 'Timed out waiting for exact Production deployment'
+            exit 1
+          fi
+          short=$(printf '%s' "$SHA" | cut -c1-16)
+          for attempt in $(seq 1 30); do
+            if curl -fsSL "$BASE_URL/" -o /tmp/search-home-sha.html && grep -q "v=$short" /tmp/search-home-sha.html; then
+              echo "Canonical Production now exposes commit marker $short"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Canonical Production did not expose Search certification commit marker $short"
+          exit 1
+
+      - name: Verify live Search P0 contracts
+        run: |
+          set -euo pipefail
+          curl -fsSL -D /tmp/search51.headers "$BASE_URL/assets/search-reliability-v51.js?v=51.0" -o /tmp/search51.js
+          grep -q "search-p0-2026-08-20-single-nav-r1" /tmp/search51.js
+          grep -q "migrateRecentSearches" /tmp/search51.js
+          test "$(grep -o 'location.assign(target.href)' /tmp/search51.js | wc -l | tr -d ' ')" = "1"
+          tr -d '\r' < /tmp/search51.headers | grep -qi '^x-apg-search-reliability: search-p0-2026-08-20-single-nav-r1'
+          curl -fsSL -D /tmp/search-page.headers "$BASE_URL/search/?q=quiet%20headphones" -o /tmp/search-page.html
+          tr -d '\r' < /tmp/search-page.headers | grep -qi '^x-apg-search-reliability: search-p0-2026-08-20-single-nav-r1'
+          grep -q '/assets/search-reliability-v51.js?v=51.0' /tmp/search-page.html
+          grep -q 'quiet headphones' /tmp/search-page.html
+          ! grep -q '\[object Object\]' /tmp/search-page.html
+          node - <<'NODE'
+          const fs=require('fs');
+          const h=fs.readFileSync('/tmp/search-page.html','utf8');
+          const a=h.indexOf('/assets/search-reliability-v51.js?v=51.0');
+          const b=h.indexOf('/assets/app.js');
+          if(a<0||b<0||a>=b)throw new Error('Search v51 does not execute before legacy app.js');
+          console.log('Live Search v51 ordering is correct');
+          NODE
+
+      - name: Install Search browser dependencies
+        run: |
+          set -euo pipefail
+          CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser)
+          if [ -z "$CHROME" ]; then
+            echo 'Chrome/Chromium is unavailable on the runner'
+            exit 1
+          fi
+          echo "CHROME=$CHROME" >> "$GITHUB_ENV"
+          npm install --no-save --package-lock=false puppeteer-core@24.16.0 >/dev/null 2>&1
+
+      - name: Certify Search and previous-search journeys
+        run: |
+          set -euo pipefail
+          node scripts/search-p0-browser-diagnostic.js
+          node - <<'NODE'
+          const fs=require('fs');
+          const r=JSON.parse(fs.readFileSync('artifacts/search-p0/report.json','utf8'));
+          if(!r.ok)throw new Error('Search P0 report is not clean: '+JSON.stringify(r,null,2));
+          if(r.journeys?.some(x=>!x.ok))throw new Error('Search P0 journey failure: '+JSON.stringify(r.journeys));
+          if(r.browserErrors?.length)throw new Error('Search P0 browser/network errors: '+JSON.stringify(r.browserErrors));
+          console.log('Search P0 public browser certification is clean');
+          NODE
+
+      - name: Upload Search P0 evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: apg-search-p0-${{ github.run_id }}
+          path: artifacts/search-p0
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Publish Search P0 verification status
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          state=success
+          if [ "$JOB_STATUS" != success ]; then state=failure; fi
+          payload=$(jq -n --arg state "$state" --arg context 'Search P0 Verification' --arg description "Search recent-query P0 Production: $JOB_STATUS" --arg target_url "https://github.com/$REPO/actions/runs/$RUN_ID" '{state:$state,context:$context,description:$description,target_url:$target_url}')
+          curl -fsSL -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/statuses/$SHA" -d "$payload" >/dev/null
