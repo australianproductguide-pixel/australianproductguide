@@ -1,57 +1,64 @@
 'use strict';
 const assert=require('assert');
-const fs=require('fs');
-const runtime=require('../lib/search-reliability-v51-runtime');
+const runtime=require('../lib/search-reliability-v52-runtime');
 const decision=require('../lib/decision-lab-resilience-v50-runtime');
 const api=require('../api/index');
 
-assert.equal(runtime.VERSION,'51.1');
-assert.equal(runtime.PATCH,'search-p0-2026-08-20-single-nav-r2');
-assert.equal(api.VERSION,'51.1','Search v51.1 must remain the outer API runtime');
-assert.equal(api.PATCH,runtime.PATCH,'outer API marker must be Search v51.1');
-assert.equal(decision.VERSION,'50.4','Decision Lab v50.4 must remain directly beneath Search v51');
+assert.equal(runtime.VERSION,'52.0');
+assert.equal(runtime.PATCH,'search-p0-2026-08-20-isolated-json-r3');
+assert.equal(runtime.SEARCH_VERSION,'search-ranking-v4');
+assert.equal(api.VERSION,'52.0','Search v52 must be the outer API runtime');
+assert.equal(api.PATCH,runtime.PATCH,'outer API marker must be Search v52');
+assert.equal(decision.VERSION,'50.4','Decision Lab v50.4 must remain directly beneath Search v52');
 assert.equal(decision.ENGINE,'decision-engine-v4');
 new Function(runtime.clientJs);
 
 for(const contract of [
-  "window.__APG_SEARCH_RELIABILITY_V51__",
-  "const BUSY_TIMEOUT_MS=10000",
-  "event.preventDefault()",
-  "event.stopImmediatePropagation()",
+  "window.__APG_SEARCH_RELIABILITY_V52__",
+  'new AbortController()',
+  'DEADLINE_MS=10000',
+  "Accept:'application/json'",
+  "'X-APG-Search-JSON':'1'",
+  'response.json()',
+  "payload.version!=='search-ranking-v4'",
+  'payload.commercialRecommendationWeight!==0',
+  'main.innerHTML=payload.bodyHtml',
+  "history.pushState({apgSearchV52:true}",
   "form.matches('form[data-search-shell]')",
-  "location.assign(target.href)",
-  "window.stop()",
-  "window.addEventListener('pageshow',restore)",
-  "[data-search-suggestions]",
-  "aria-activedescendant",
-  "entry.q||entry.query||entry.value||entry.label",
-  "migrateRecentSearches()",
-  "localStorage.setItem(SEARCH_KEY,JSON.stringify(rows.slice(0,10)))",
-  "moveVisibleSuggestion(event,input,1)",
-  "moveVisibleSuggestion(event,input,-1)",
-  "[data-apg-history-show]",
-  "document.addEventListener('click',preserveMobileRecentOpen)"
-]) assert(runtime.clientJs.includes(contract),`missing Search P0 contract: ${contract}`);
+  'event?.preventDefault()',
+  'event?.stopImmediatePropagation()',
+  'migrateRecentSearches()',
+  'moveRecent(event,input,1)',
+  'moveRecent(event,input,-1)',
+  '[data-apg-history-show]',
+  "window.addEventListener('popstate'",
+  "window.addEventListener('pagehide'"
+]) assert(runtime.clientJs.includes(contract),`missing Search v52 client contract: ${contract}`);
 
-assert.equal((runtime.clientJs.match(/location\.assign\(target\.href\)/g)||[]).length,1,'Search must have exactly one controlled location.assign path');
-assert(!runtime.clientJs.includes('scheduleNavigation('),'Search v51 must not add a second fallback navigation');
-assert(!runtime.clientJs.includes('location.href=active.href'),'active recent Search must use the same controlled navigator');
-assert(!runtime.clientJs.includes('scrollIntoView('),'Search v51 keyboard path must not synchronously scroll suggestions');
+for(const forbidden of ['location.assign(','location.href=','scrollIntoView(','DOMParser(','document.importNode('])assert(!runtime.clientJs.includes(forbidden),`Search v52 interactive path must not use ${forbidden}`);
+assert(runtime.searchBody(runtime.searchPayload(new URL('https://australianproductguide.au/search/?q=sony+xm6'))).includes('WH-1000XM6'),'Sony XM6 lightweight result must render a maintained product');
 
-const html='<html><head><script src="/assets/app.js?v=test" defer></script></head><body><form data-search-shell></form></body></html>';
-const transformed=runtime.inject(html);
-const v51=transformed.indexOf('/assets/search-reliability-v51.js?v=51.1');
-const app=transformed.indexOf('/assets/app.js');
-assert(v51>=0&&app>=0&&v51<app,'Search v51.1 must load before the legacy app Search handlers');
-assert.equal((transformed.match(/search-reliability-v51\.js/g)||[]).length,1,'Search v51 asset must be injected once');
+const sample='<html><head><script src="/assets/app.js?v=test" defer></script></head><body><main id="main"><section class="heavy-old-search">legacy</section></main></body></html>';
+const injected=runtime.inject(sample);
+assert(injected.includes('/assets/search-reliability-v52.js?v=52.0'),'Search v52 client asset missing');
+assert(injected.indexOf('/assets/search-reliability-v52.js')<injected.indexOf('/assets/app.js'),'Search v52 must register before legacy app.js');
+assert.equal((injected.match(/search-reliability-v52\.js/g)||[]).length,1,'Search v52 asset must be injected once');
 
-const legacyMobile=fs.readFileSync(require.resolve('../lib/mobile-history-ux-v16'),'utf8');
-assert(legacyMobile.includes("SEARCH_KEY='apgRecentSearches'"),'mobile history must still consume the shared recent-search key');
-assert(runtime.clientJs.indexOf('migrateRecentSearches()')<runtime.clientJs.indexOf("window.addEventListener('submit',captureSubmit,true)"),'recent storage must be normalised before Search handlers activate');
+function jsonFor(raw){let body='',status=0,headers={};const req={method:'GET'},res={setHeader:(k,v)=>{headers[String(k).toLowerCase()]=v},end:v=>{body=String(v||'')},set statusCode(v){status=v},get statusCode(){return status}};runtime.sendSearchJson(req,res,new URL(raw,'https://australianproductguide.au'));assert.equal(status,200);assert(/application\/json/.test(headers['content-type']));assert.equal(headers['x-apg-search-mode'],'isolated-json-v52');return JSON.parse(body)}
+for(const raw of [
+ '/search/?q=sony+xm6',
+ '/search/?q=quiet+headphones+for+commuting',
+ '/search/?q=robot+vacuum+for+pet+hair',
+ '/search/?q=coffee+machine+for+flat+whites',
+ '/search/?q=zzzz+unsupported+product+constellation+999999'
+]){const out=jsonFor(raw);assert.equal(out.version,'search-ranking-v4');assert.equal(out.commercialRecommendationWeight,0);assert.equal(typeof out.bodyHtml,'string');assert(out.bodyHtml.includes('data-search-shell'));assert(!out.bodyHtml.includes('[object Object]'))}
+const sony=jsonFor('/search/?q=sony+xm6');assert(sony.products.some(p=>p.slug==='sony-wh-1000xm6'),'Sony XM6 JSON must resolve maintained Sony WH-1000XM6');
+const zero=jsonFor('/search/?q=zzzz+unsupported+product+constellation+999999');assert.equal(zero.products.length,0,'unsupported query must not invent product results');
 
-const decisionHtml='<html><head><script src="/assets/app.js" defer></script></head><body></body></html>';
-const nested=runtime.inject(decision.inject(decisionHtml));
-assert(nested.indexOf('/assets/decision-lab-resilience-v50.js')<nested.indexOf('/assets/app.js'),'Decision Lab v50.4 must remain before app.js');
-assert(nested.indexOf('/assets/search-reliability-v51.js')<nested.indexOf('/assets/app.js'),'Search v51.1 must remain before app.js');
+const simplified=runtime.simplifySearchHtml(sample,new URL('https://australianproductguide.au/search/?q=sony+xm6'));
+assert(!simplified.includes('heavy-old-search'),'direct Search result HTML must remove the transformed legacy result main');
+assert(simplified.includes('WH-1000XM6'),'direct Search result HTML must retain a useful lightweight maintained result');
+assert(simplified.includes('Affiliate availability and commission contribute zero recommendation points.'),'lightweight Search must preserve recommendation neutrality disclosure');
+assert.equal(runtime.simplifySearchHtml(sample,new URL('https://australianproductguide.au/search/')),sample,'blank Search page should retain the established discovery shell');
 
-console.log('Search P0 v51.1 source contracts passed');
+console.log('Search P0 v52 source contracts passed: isolated JSON + lightweight direct Search rendering + bounded recovery');
