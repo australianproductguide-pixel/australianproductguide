@@ -29,11 +29,15 @@ assert.ok(destination.includes('target.origin!==BASE_ORIGIN'),'destination-healt
 assert.ok(destination.includes('Automated external retailer requests are prohibited'),'destination-health must fail closed for external retailer automation');
 assert.ok(destination.includes('automatedAmazonRequests:0'),'destination-health report must prove zero automated Amazon requests');
 assert.ok(destination.includes("status:'NOT_REQUESTED'"),'external Amazon destination checks must remain intentionally not requested');
+assert.ok(destination.includes('preconnect|dns-prefetch'),'destination-health must reject Amazon prefetch/prerender/preconnect hints');
 assert.ok(!/\bprobeAmazon\s*\(/.test(destination),'legacy automated Amazon probing must not return');
 assert.ok(!/fetchWithTimeout\s*\(\s*item\.(?:affiliate_url|destination_url)/.test(destination),'tagged Amazon destinations must never be passed to the network client');
 
 const visual=read(VISUAL_CERT);
 assert.ok(visual.includes("firstLink=await page.$eval"),'visual certification must inspect the Amazon CTA rather than navigate it');
+assert.ok(visual.includes('page.setRequestInterception(true)'),'visual certification must enable request interception before loading APG');
+assert.ok(visual.includes('isAmazonNetworkHost'),'visual certification must identify and block Amazon network hosts');
+assert.ok(visual.includes("request.abort('blockedbyclient')"),'visual certification must abort Amazon network requests');
 assert.ok(!/page\.goto\s*\([^\n;]{0,240}(?:amazon\.com\.au|firstLink\.href|affiliate_url|affiliateUrl)/i.test(visual),'visual certification must not navigate to Amazon or an affiliate href');
 assert.ok(!/page\.(?:click|tap)\s*\([^\n;]{0,240}(?:amazon|affiliate)/i.test(visual),'visual certification must not click an Amazon/affiliate target');
 
@@ -66,4 +70,4 @@ for(const file of executable){
 }
 assert.deepEqual(violations,[],`Amazon automation compliance violations:\n${violations.join('\n')}`);
 
-console.log(`Amazon automation compliance v51 QA passed across ${executable.length} executable scripts/workflows: automated Amazon affiliate requests are prohibited; Amazon links are validated statically and browser QA inspects without clicking.`);
+console.log(`Amazon automation compliance v51 QA passed across ${executable.length} executable scripts/workflows: automated Amazon affiliate requests are prohibited; Amazon links are validated statically; browser QA inspects without clicking and blocks Amazon network hosts.`);
