@@ -72,7 +72,7 @@ jobs:
           expect(config.routes[1].src==='/(.*)'&&config.routes[1].dest==='/api','Unexpected dynamic fallback route');
           const deploymentEnabled=config.git?.deploymentEnabled||{};
           expect(deploymentEnabled['apg/*']===false&&deploymentEnabled['apg-*']===false,'Routine APG feature branches must not auto-deploy');
-          const authoritativeWorkflowFiles=['amazon-shopping-assurance-v40.yml','catalogue-freshness-qa.yml','codeql.yml','production-smoke.yml','source-qa.yml'].sort();
+          const authoritativeWorkflowFiles=['amazon-shopping-assurance-v40.yml','catalogue-freshness-qa.yml','codeql.yml','indexnow.yml','production-smoke.yml','source-qa.yml'].sort();
           const supportWorkflowFiles=['category-editorial-research-v41.yml'].sort();
           const allowed=[...authoritativeWorkflowFiles,...supportWorkflowFiles].sort();
           const actual=fs.readdirSync('.github/workflows').filter(x=>/\.ya?ml$/.test(x)).sort();

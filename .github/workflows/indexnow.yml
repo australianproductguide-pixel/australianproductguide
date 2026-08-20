@@ -1,0 +1,82 @@
+name: APG IndexNow
+
+on:
+  # One-time bootstrap: creating this workflow on main triggers the initial full submission.
+  # Normal source/content pushes do NOT resubmit the entire site.
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/indexnow.yml'
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: 'Submit all indexable routes or selected URLs/paths'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - urls
+      urls:
+        description: 'For scope=urls: newline-separated canonical APG URLs or paths'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apg-indexnow
+  cancel-in-progress: false
+
+jobs:
+  submit:
+    name: Submit APG URLs to IndexNow
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Verify APG IndexNow key and route contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected='apg-20260819-discoverability-v1'
+          actual="$(curl --fail --silent --show-error --retry 3 'https://australianproductguide.au/apg-20260819-discoverability-v1.txt')"
+          test "$actual" = "$expected"
+          node --check scripts/indexnow-submit-v1.js
+          node - <<'NODE'
+          const {indexableRoutes}=require('./lib/routes');
+          const {CANONICAL_ORIGIN}=require('./lib/discoverability-v1');
+          const {INDEXNOW_KEY,INDEXNOW_KEY_PATH}=require('./lib/indexnow-key-v1');
+          if(CANONICAL_ORIGIN!=='https://australianproductguide.au') throw new Error(`Unexpected canonical origin: ${CANONICAL_ORIGIN}`);
+          if(INDEXNOW_KEY!=='apg-20260819-discoverability-v1') throw new Error(`Unexpected IndexNow key: ${INDEXNOW_KEY}`);
+          if(INDEXNOW_KEY_PATH!==`/${INDEXNOW_KEY}.txt`) throw new Error(`Unexpected key path: ${INDEXNOW_KEY_PATH}`);
+          if(!indexableRoutes.length || indexableRoutes.length>10000) throw new Error(`Unexpected IndexNow batch size: ${indexableRoutes.length}`);
+          if(new Set(indexableRoutes).size!==indexableRoutes.length) throw new Error('Duplicate indexable routes detected');
+          console.log(`INDEXNOW_PREFLIGHT=PASS routes=${indexableRoutes.length} keyLocation=${CANONICAL_ORIGIN}${INDEXNOW_KEY_PATH}`);
+          NODE
+
+      - name: Submit to IndexNow
+        shell: bash
+        env:
+          APG_INDEXNOW_SUBMIT: CONFIRM
+          APG_INDEXNOW_SCOPE: ${{ github.event_name == 'workflow_dispatch' && inputs.scope || 'all' }}
+          APG_INDEXNOW_URLS: ${{ github.event_name == 'workflow_dispatch' && inputs.urls || '' }}
+        run: |
+          set -euo pipefail
+          if [[ "$APG_INDEXNOW_SCOPE" == 'urls' ]]; then
+            mapfile -t urls < <(printf '%s\n' "$APG_INDEXNOW_URLS" | sed '/^[[:space:]]*$/d')
+            if (( ${#urls[@]} == 0 )); then
+              echo 'scope=urls requires at least one URL or path' >&2
+              exit 2
+            fi
+            node scripts/indexnow-submit-v1.js "${urls[@]}"
+          else
+            node scripts/indexnow-submit-v1.js --all
+          fi
