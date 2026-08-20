@@ -89,7 +89,7 @@ assert(cohesionSource.includes("if(!out.includes('apg-v26-scout-nav'))"),'deskto
 assert(cohesionSource.includes("if(!out.includes('data-v26-scout-mobile'))"),'mobile Scout presence must be checked independently from the desktop trigger');
 const mobileAlreadyPresent='<!doctype html><html><head></head><body><nav class="primary-nav"><a class="apg-power-link" href="/decision-lab/" data-decision-nav>Decision Lab</a></nav><nav id="mobileNav"><a class="mobile-power" href="/decision-lab/">Decision Lab <span aria-hidden="true">→</span></a><button type="button" class="mobile-power apg-v26-scout-mobile" data-v26-scout-open data-v26-scout-mobile>Ask Scout</button></nav></body></html>';
 const desktopRestored=cohesion.addScoutNavigation(mobileAlreadyPresent);
-assert(desktopRestored.includes('class="apg-v26-scout-nav"'),'desktop Scout must still be added when mobile Scout already exists');
+assert(desktopRestored.includes('class="nav-trigger apg-v26-scout-nav"'),'desktop Scout must still be added when mobile Scout already exists and must inherit native desktop nav styling');
 assert.equal((desktopRestored.match(/data-v26-scout-mobile/g)||[]).length,1,'existing mobile Scout must not be duplicated while restoring desktop Scout');
 assert.equal(cohesion.addScoutNavigation(desktopRestored),desktopRestored,'Scout navigation reconciliation must remain idempotent');
 

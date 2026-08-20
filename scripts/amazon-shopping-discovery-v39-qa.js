@@ -44,7 +44,8 @@ assert(search.includes('data-affiliate-destination="todayDeals"'),'Search shoppi
 
 const shellInput='<nav class="primary-nav apg-nav-v8" aria-label="Primary"><div class="wrap nav-inner"><a href="/retailers/">Retailers</a><a class="nav-trust" href="/methodology/">How we compare</a></div></nav><div class="apg-mega-footer"><nav aria-label="More product research"><a href="/compare/">Compare products</a></nav></div><nav id="mobileNav"><div><details class="mobile-section"><summary>Popular products</summary></details></div></nav><footer class="apg-footer-v11"><div class="footer-v11-group"><h3>Connect</h3><a href="/search/">Search APG</a></div></footer>';
 const shellOut=shell.enhance(shellInput);
-assert(shellOut.includes('class="apg-deals-link"'),'Desktop Deals nav missing');
+assert(shellOut.includes('data-shopping-primary'),'Desktop Deals nav missing');
+assert(!shellOut.includes('class="apg-deals-link"'),'Desktop Deals must use native primary-nav styling');
 assert(shellOut.includes('data-shopping-mega'),'Mega-menu shopping discovery missing');
 assert(shellOut.includes('data-mobile-shopping'),'Mobile Deals section missing');
 assert(shellOut.includes('data-footer-shopping'),'Footer shopping discovery missing');
