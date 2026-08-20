@@ -13,6 +13,7 @@ try{
   assert(injected.includes('/_vercel/insights/script.js'),'default Vercel Analytics script path missing');
   assert(injected.includes("url.search='';url.hash=''"),'query/hash redaction missing');
   assert(injected.includes("url.pathname==='/my-apg/'"),'private My APG exclusion missing');
+  assert(injected.includes('navigator.webdriver'),'automated browser analytics exclusion missing');
   assert.strictEqual((injected.match(/data-sdkn="@vercel\/analytics\/apg-ssr"/g)||[]).length,1,'analytics injected more than once');
   assert.strictEqual(analytics.inject(injected),injected,'analytics injection is not idempotent');
 
@@ -33,7 +34,7 @@ try{
   process.env.VERCEL_OBSERVABILITY_CLIENT_CONFIG=JSON.stringify({analytics:{scriptSrc:'https://evil.example/script.js'}});
   assert.strictEqual(analytics.observabilityConfig().scriptSrc,'/_vercel/insights/script.js','external script source must be rejected');
 
-  console.log('Vercel Analytics v38 QA passed');
+  console.log('Vercel Analytics v38 QA passed with automation exclusion');
 }finally{
   if(original===undefined)delete process.env.VERCEL_OBSERVABILITY_CLIENT_CONFIG;
   else process.env.VERCEL_OBSERVABILITY_CLIENT_CONFIG=original;

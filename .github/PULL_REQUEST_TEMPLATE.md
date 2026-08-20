@@ -20,7 +20,7 @@
 ## Release checks
 - [ ] **APG Release Gate** passes.
 - [ ] **APG CodeQL Security** passes where triggered.
-- [ ] Vercel Preview is READY and reviewed before merge.
+- [ ] A Vercel Preview was intentionally created and reviewed if this stable candidate requires environment/browser verification; routine micro-commits do not require automatic Preview deployment.
 - [ ] Representative desktop and mobile journeys were checked where presentation changed.
 - [ ] Search, compare and Help Me Choose remain decision-focused where affected.
 - [ ] Canonicals, structured data, robots/sitemap and indexability remain intentional where affected.
@@ -31,9 +31,13 @@
 After merge, Production is not considered complete until:
 - [ ] Vercel Production is READY.
 - [ ] Production deployment SHA matches GitHub `main`.
-- [ ] **APG Production Verification** passes.
+- [ ] Lightweight **APG Production Verification** passes.
+- [ ] Full manual certification is run when the change is major enough to justify heavyweight browser/accessibility testing.
 - [ ] Public Production returns expected content and key journeys work.
 - [ ] Any material operating records are reconciled in the APG Drive workspace.
+
+## Cost-control check
+- [ ] The change does not introduce unnecessary Vercel Preview builds, serverless handling for genuine static assets, duplicate telemetry or heavyweight Production certification on routine releases.
 
 ## Notes / residual risk
 Describe any known limitation, temporary state, follow-up or rollback consideration.
