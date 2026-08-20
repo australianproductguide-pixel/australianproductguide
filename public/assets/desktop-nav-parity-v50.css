@@ -16,7 +16,8 @@
     color:inherit!important;
     box-shadow:none!important;
     font:inherit!important;
-    font-weight:inherit!important;
+    font-size:14px!important;
+    font-weight:780!important;
     line-height:normal!important;
     text-decoration:none!important;
     white-space:nowrap!important;
@@ -28,7 +29,7 @@
     border:0!important;
     color:inherit!important;
     box-shadow:none!important;
-    font-weight:inherit!important;
+    font-weight:780!important;
   }
 
   body[data-brand-system-v46="true"] .apg-nav-v8 .nav-inner>a:hover,
@@ -41,5 +42,13 @@
     background:#EFF6FF!important;
     color:#1D4ED8!important;
     text-decoration:none!important;
+  }
+}
+
+@media (min-width:921px) and (max-width:1120px){
+  body[data-brand-system-v46="true"] .apg-nav-v8 .apg-v26-scout-nav,
+  body[data-brand-system-v46="true"] .apg-nav-v8 .apg-deals-link{
+    padding-inline:10px!important;
+    font-size:12.5px!important;
   }
 }
