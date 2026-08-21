@@ -28,6 +28,8 @@ The current request path starts at `api/index.js` and composes the maintained se
 - **My APG / account platform** — local-first workspace with optional Supabase-backed account sync, communication preferences and self-service account deletion.
 - **Catalogue Intelligence v48/v49** — cumulative maintained evidence, product, retailer and research overlays used by the current runtime.
 
+**Evidence & Commerce Depth v27** remains an active lower-level evidence/retailer/governance dependency inside the cumulative server chain; it is retained because the dependency audit proves it is still reachable, not because v27 is the current top-level application version.
+
 Historical version numbers remain in some filenames because APG evolved through additive, tested releases. A versioned filename is not automatically obsolete. `npm run qa:architecture` verifies the live `api/index.js` dependency graph and identifies genuinely unreferenced candidates before source removal.
 
 ## Maintained consumer scope
