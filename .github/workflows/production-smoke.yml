@@ -98,9 +98,9 @@ jobs:
           grep -q 'Find X9' /tmp/compare.html
           grep -q 'Galaxy S26' /tmp/compare.html
 
-          # Decision Lab must produce a server-rendered shortlist from a real brief.
+          # Decision Lab must produce the current explainable server-rendered shortlist contract.
           curl -fsSL --get --data-urlencode 'q=headphones under $500 for commuting' "$BASE_URL/decision-lab/" -o /tmp/decision-lab.html
-          grep -q 'Your shortlist' /tmp/decision-lab.html
+          grep -q 'Explainable shortlist' /tmp/decision-lab.html
 
           # Scout remains a live deterministic APG capability with no paid model call.
           curl -fsSL "$BASE_URL/api/account/scout" -o /tmp/scout.json
