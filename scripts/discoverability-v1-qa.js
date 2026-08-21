@@ -29,6 +29,14 @@ for(const name of layer.GROUP_ORDER)assert(index.includes(`https://australianpro
 
 const llms=layer.llmsText();
 for(const token of ['Australian Product Guide',`${products.length} products`,`${Object.keys(categories).length} categories`,`${brands.length} represented brands`,'zero recommendation points','desk-researched / specification-based','sitemap-index.xml','route-specific material-change provenance'])assert(llms.includes(token),`llms.txt missing ${token}`);
+assert.strictEqual((llms.match(/^# /gm)||[]).length,1,'llms.txt must contain one H1 title');
+assert(/^> .+/m.test(llms),'llms.txt must include the recommended summary blockquote');
+for(const heading of ['## Best entry points','## Trust and methodology','## Machine-readable discovery'])assert(llms.includes(heading),`llms.txt missing section ${heading}`);
+for(const link of ['[Product categories](','[Product comparison](','[Buying guides](','[Decision Lab](','[Methodology](','[Sources](','[Complete sitemap](','[Public catalogue data]('])assert(llms.includes(link),`llms.txt missing recommended Markdown link ${link}`);
+assert(!/^- [^\[][^\n]*:\s+https?:\/\//m.test(llms),'llms.txt list entries must use Markdown links rather than label-colon bare URLs');
+const listLines=llms.split('\n').filter(line=>line.startsWith('- '));
+assert(listLines.length>0,'llms.txt must expose linked resources');
+assert(listLines.every(line=>/^- \[[^\]]+\]\(https:\/\/australianproductguide\.au\/[^)]*\):\s+\S/.test(line)),'every llms.txt list item must be a canonical Markdown link followed by a useful description');
 
 const manifest=layer.discoveryManifest();
 assert.strictEqual(manifest.canonicalUrl,'https://australianproductguide.au/');
@@ -50,4 +58,4 @@ assert(indexed.includes('max-image-preview:large'),'indexable pages must expose 
 assert.strictEqual(layer.injectIndexingDirectives(sample,'/search/'),sample,'noindex/dynamic search surface must not receive index directives');
 assert.strictEqual(layer.injectIndexingDirectives('<html><head><meta name="robots" content="noindex,follow"></head></html>','/'),'<html><head><meta name="robots" content="noindex,follow"></head></html>','existing robots directives must never be overridden');
 
-console.log(`APG Discoverability v1 QA PASSED: ${indexableRoutes.length} canonical routes, ${products.length} products, ${Object.keys(categories).length} categories, ${brands.length} brands; synthetic lastmod=OFF.`);
+console.log(`APG Discoverability v1 QA PASSED: ${indexableRoutes.length} canonical routes, ${products.length} products, ${Object.keys(categories).length} categories, ${brands.length} brands; synthetic lastmod=OFF; llms.txt agent guidance=SPEC-COMPLIANT.`);
