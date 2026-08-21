@@ -69,16 +69,61 @@ jobs:
       - name: Verify critical public journeys
         run: |
           set -euo pipefail
-          for path in / /search/ /decision-lab/ /methodology/ /sources/ /affiliate-disclosure/; do
+
+          # High-value HTML routes: keep this deliberately small so routine Production
+          # verification does not recreate the historical high-request QA cost profile.
+          for path in \
+            / \
+            /search/ \
+            /decision-lab/ \
+            /categories/smartphones/ \
+            /products/oppo-find-x9/ \
+            /my-apg/ \
+            /methodology/ \
+            /sources/ \
+            /affiliate-disclosure/ \
+            /privacy/ \
+            /terms/; do
             curl -fsSL "$BASE_URL$path" -o /tmp/page.html
             grep -qi '<!doctype html>' /tmp/page.html
           done
-          curl -fsSL "$BASE_URL/assets/brand-system-v46.css" -o /tmp/brand.css
-          grep -q 'brand' /tmp/brand.css
+
+          # SSR-native interaction ownership must remain current on a representative
+          # dynamic page; this catches accidental reactivation of retired browser routers.
+          curl -fsSI "$BASE_URL/categories/smartphones/" -o /tmp/headers.txt
+          grep -qi '^x-apg-interaction-runtime: ssr-native-v55' /tmp/headers.txt
+
+          # Compare must render the actual selected maintained products server-side.
+          curl -fsSL "$BASE_URL/compare/custom/?products=oppo-find-x9,samsung-galaxy-s26" -o /tmp/compare.html
+          grep -q 'Find X9' /tmp/compare.html
+          grep -q 'Galaxy S26' /tmp/compare.html
+
+          # Decision Lab must produce a server-rendered shortlist from a real brief.
+          curl -fsSL --get --data-urlencode 'q=headphones under $500 for commuting' "$BASE_URL/decision-lab/" -o /tmp/decision-lab.html
+          grep -q 'Your shortlist' /tmp/decision-lab.html
+
+          # Scout remains a live deterministic APG capability with no paid model call.
+          curl -fsSL "$BASE_URL/api/account/scout" -o /tmp/scout.json
+          node - <<'NODE'
+          const s=require('/tmp/scout.json');
+          if(!Array.isArray(s.capabilities)||!s.capabilities.includes('product-search')) throw new Error('Scout capability contract missing');
+          if(s.account?.authenticated!==false) throw new Error('anonymous Scout account boundary changed');
+          console.log('SCOUT_SMOKE=PASS');
+          NODE
+          curl -fsSL -H 'Content-Type: application/json' -H 'Origin: https://australianproductguide.au' \
+            -d '{"text":"phone"}' "$BASE_URL/api/account/scout" -o /tmp/scout-answer.json
+          node - <<'NODE'
+          const s=require('/tmp/scout-answer.json');
+          if(!s.message) throw new Error('Scout response missing');
+          if(!Array.isArray(s.actions)) throw new Error('Scout actions missing');
+          console.log('SCOUT_RESPONSE_SMOKE=PASS');
+          NODE
+
+          # Catalogue and decision APIs preserve current product truth and commercial neutrality.
           curl -fsSL "$BASE_URL/api/catalogue.json" -o /tmp/catalogue.json
           node - <<'NODE'
           const c=require('/tmp/catalogue.json');
-          if(Number(c.productCount)<460) throw new Error('catalogue count regression');
+          if(Number(c.productCount)!==482) throw new Error('catalogue count regression');
           if(Number(c.commercialRecommendationWeight)!==0) throw new Error('commercial recommendation weight changed');
           console.log(`CATALOGUE_SMOKE=PASS products=${c.productCount}`);
           NODE
@@ -89,7 +134,19 @@ jobs:
           if(Number(d.commercialRecommendationWeight)!==0) throw new Error('decision neutrality changed');
           console.log('DECISION_SMOKE=PASS');
           NODE
+
+          # Public assets, SEO control files and signed-out account boundaries.
+          curl -fsSL "$BASE_URL/assets/brand-system-v46.css" -o /tmp/brand.css
+          grep -q 'brand' /tmp/brand.css
+          curl -fsSL "$BASE_URL/robots.txt" -o /tmp/robots.txt
+          grep -qi 'sitemap' /tmp/robots.txt
+          curl -fsSL "$BASE_URL/sitemap.xml" -o /tmp/sitemap.xml
+          grep -qi '<urlset\|<sitemapindex' /tmp/sitemap.xml
           curl -si "$BASE_URL/api/account/profile" | grep -q '^HTTP/.* 401'
+
+          # Genuine missing routes must remain genuine 404s rather than soft-200 pages.
+          code=$(curl -sS -o /tmp/not-found.html -w '%{http_code}' "$BASE_URL/__apg-production-smoke-missing-route__")
+          test "$code" = 404
 
       - name: Publish Production verification status
         if: always()
