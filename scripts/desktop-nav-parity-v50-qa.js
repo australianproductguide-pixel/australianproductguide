@@ -31,8 +31,8 @@ const brandSample='<!doctype html><html><head><title>APG</title></head><body><ma
 const branded=brand.inject(brandSample);
 assert.equal(brand.NAV_PARITY_CSS_PATH,undefined,'retired nav override must not remain exported');
 assert(!branded.includes('/assets/desktop-nav-parity-v50.css'),'retired nav override stylesheet must not be injected');
-const finalIndex=branded.indexOf('/assets/brand-system-v46-final.css?v=46.5');
-const proofIndex=branded.indexOf('/assets/brand-system-v46-research-proof.css?v=46.2');
+const finalIndex=branded.indexOf(`/assets/brand-system-v46-final.css?v=${brand.FINAL_CSS_VERSION}`);
+const proofIndex=branded.indexOf(`/assets/brand-system-v46-research-proof.css?v=${brand.RESEARCH_PROOF_VERSION}`);
 assert(finalIndex>=0&&proofIndex>finalIndex,'maintained-research proof exception must remain after the normal v46 presentation layer');
 assert.equal(brand.inject(branded),branded,'brand injection must remain idempotent');
 
