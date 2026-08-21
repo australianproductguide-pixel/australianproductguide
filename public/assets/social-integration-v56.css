@@ -1,0 +1,23 @@
+/* Australian Product Guide social profile integration v56 */
+.apg-social-v56{margin-top:28px;padding-top:22px;border-top:1px solid rgba(148,163,184,.24)}
+.apg-social-v56 h3,.apg-mobile-social-v56 strong,.apg-social-about-v56 h2{margin:0 0 8px}
+.apg-social-v56 p,.apg-social-about-v56 p{margin:0 0 14px;color:#94a3b8;font-size:.92rem;line-height:1.55}
+.apg-social-v56-list,.apg-mobile-social-v56-list{display:flex;flex-wrap:wrap;gap:9px}
+.apg-social-v56-link,.apg-mobile-social-v56-link{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:8px 11px;border:1px solid rgba(148,163,184,.3);border-radius:999px;text-decoration:none;font-weight:700;line-height:1;color:inherit;background:rgba(255,255,255,.035)}
+.apg-social-v56-link:hover,.apg-social-v56-link:focus-visible,.apg-mobile-social-v56-link:hover,.apg-mobile-social-v56-link:focus-visible{border-color:#60a5fa;background:rgba(37,99,235,.12);outline:none}
+.apg-social-v56-glyph{display:grid;place-items:center;width:24px;height:24px;border-radius:7px;background:#fff;color:#0f172a;font-size:12px;font-weight:900;letter-spacing:-.03em;flex:0 0 24px}
+.apg-social-v56-glyph.is-x{background:#0f172a;color:#fff;border:1px solid rgba(255,255,255,.26);font-size:14px}
+.apg-social-v56-glyph.is-pinterest{color:#b91c1c;font-family:Georgia,serif;font-size:16px}
+.apg-social-v56-glyph.is-linkedin{background:#0a66c2;color:#fff}
+.apg-social-v56-glyph.is-instagram{background:#fff;color:#7c3aed}
+.apg-social-v56-glyph.is-threads{background:#111827;color:#fff;font-size:15px}
+.apg-social-v56-note{display:block;margin-top:10px;color:#94a3b8;font-size:.78rem}
+.apg-mobile-social-v56{padding:18px 0 4px;border-top:1px solid rgba(148,163,184,.28)}
+.apg-mobile-social-v56>span{display:block;margin:2px 0 12px;color:#64748b;font-size:.84rem}
+.apg-mobile-social-v56-list{gap:8px}
+.apg-mobile-social-v56-link{min-height:44px;padding:9px 12px}
+.apg-social-about-v56{margin:34px 0 10px;padding:22px;border:1px solid #dbe4ef;border-radius:18px;background:#f8fafc}
+.apg-social-about-v56 p{color:#475569}
+.apg-social-about-v56 .apg-social-v56-list{margin-top:14px}
+.apg-social-about-v56 .apg-social-v56-link{color:#0f172a;background:#fff;border-color:#cbd5e1}
+@media(max-width:640px){.apg-social-v56{margin-top:22px}.apg-social-v56-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.apg-social-v56-link{border-radius:12px;justify-content:flex-start}.apg-social-about-v56{padding:18px}.apg-social-about-v56 .apg-social-v56-list{grid-template-columns:1fr}}
