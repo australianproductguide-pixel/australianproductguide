@@ -11,7 +11,7 @@ const e28=products.find(p=>p.slug==='eufy-robot-vacuum-omni-e28');
 assert(e28,'E28 product fixture must exist');
 assert.strictEqual(seo.productDisplayName(e28),'eufy Robot Vacuum Omni E28','product display name must add the official eufy brand styling');
 
-const sample='<html><head><title>Robot Vacuum Omni E28 Australia | Decision Guide & Comparison</title><meta property="og:title" content="Old"><meta property="og:image" content="https://australianproductguide.au/assets/apg-social-card.png"></head><body><div id="where-to-buy" class="wrap"></div></body></html>';
+const sample='<html><head><title>Robot Vacuum Omni E28 Australia | Decision Guide & Comparison</title><meta property="og:title" content="Old"><meta property="og:image" content="https://australianproductguide.au/assets/apg-social-card.png"><meta property="og:image:url" content="https://australianproductguide.au/assets/legacy-social-card.jpg"></head><body><div id="where-to-buy" class="wrap"></div></body></html>';
 const productHtml=seo.optimiseHtml(sample,'/products/eufy-robot-vacuum-omni-e28/');
 assert(productHtml.includes('<title>eufy Robot Vacuum Omni E28 Australia | Decision Guide &amp; Comparison</title>'),'product title must include brand');
 assert(productHtml.includes('name="twitter:title"'),'product pages must expose a Twitter/X title');
@@ -30,8 +30,10 @@ assert(categoryHtml.includes('og:image:alt'),'category OG image must expose desc
 
 const globalShareHtml=shareCard.patchShareMetadata(sample);
 assert(globalShareHtml.includes(shareCard.SHARE_IMAGE_URL),'owner-approved APG social artwork must remain the global fallback');
+assert(!globalShareHtml.includes('property="og:image:url"'),'global share-card layer must not emit the redundant Open Graph image URL alias');
 const categoryAfterFallback=seo.optimiseHtml(globalShareHtml,'/categories/robot-vacuums/');
 assert(categoryAfterFallback.includes(categoryImage.src),'category SEO metadata must override the global card with relevant provenance-backed category imagery');
+assert(!categoryAfterFallback.includes(shareCard.SHARE_IMAGE_URL),'category-specific social metadata must not retain a conflicting generic APG image declaration');
 const productAfterFallback=seo.optimiseHtml(globalShareHtml,'/products/eufy-robot-vacuum-omni-e28/');
 assert(productAfterFallback.includes(shareCard.SHARE_IMAGE_URL),'product pages without verified exact imagery must retain the approved APG fallback card');
 
@@ -55,4 +57,4 @@ assert(socialHtml.includes('Comparisons, buying tips and fresh product research'
 assert(socialHtml.includes('M18.263 11.097'),'Threads must use the current recognisable fill mark rather than the old approximation');
 assert(socialHtml.includes('M12.017 0C5.396'),'Pinterest must use the recognisable circular Pinterest mark');
 
-console.log(`APG SEO v58 QA PASSED: branded product titles, route-specific lastmod, semantic internal links, category OG imagery, approved global social fallback, social copy/marks and comparison caps (${pairPages.length}/${MAX_TOTAL_COMPARISONS}).`);
+console.log(`APG SEO v58 QA PASSED: branded product titles, route-specific lastmod, semantic internal links, category OG imagery, conflict-free approved social fallback, social copy/marks and comparison caps (${pairPages.length}/${MAX_TOTAL_COMPARISONS}).`);
