@@ -1,5 +1,6 @@
-/* Australian Product Guide Brand System v46.5 — final legacy-colour cleanup
+/* Australian Product Guide Brand System v46.6 — final legacy-colour cleanup
  * Current visual authority: blue/navy APG system across all standard UI.
+ * Green is reserved for genuine semantic success states only.
  * The maintained Australian research proof band remains the sole approved yellow/gold
  * heritage exception and is applied by brand-system-v46-research-proof.css after this file.
  */
@@ -24,10 +25,7 @@ body[data-brand-system-v46="true"] .mobile-power.apg-v324-scout-mobile:hover{
   color:#FFFFFF!important;
 }
 
-/* Homepage decision panel: replace historical gold label with blue-on-navy language.
- * The v46.4 precedence selector referenced a superseded .apg-home-panel-v9 parent.
- * Current SSR markup uses .apg-home-decision-panel-v9, so this exact high-specificity
- * selector is the authoritative rule over institutional-v9 and earlier theme layers. */
+/* Homepage decision panel: replace historical gold label with blue-on-navy language. */
 body[data-brand-system-v46="true"] .apg-home-panel-label-v9,
 body[data-brand-system-v46="true"][data-institutional-v9="true"] .institutional-home-v9 .apg-home-decision-panel-v9 .apg-home-panel-label-v9{
   background:rgba(37,99,235,.20)!important;
@@ -52,4 +50,56 @@ body[data-brand-system-v46="true"][data-institutional-v9="true"] .institutional-
   background:#1D4ED8!important;
   border-color:#1D4ED8!important;
   color:#FFFFFF!important;
+}
+
+/* Homepage "What are you trying to improve?": decision-link accents use APG blue. */
+body[data-brand-system-v46="true"] .apg-v12-copy b{
+  color:#2563EB!important;
+}
+body[data-brand-system-v46="true"] .apg-v12-card:hover .apg-v12-copy b,
+body[data-brand-system-v46="true"] .apg-v12-card:focus-within .apg-v12-copy b{
+  color:#1D4ED8!important;
+}
+
+/* Homepage major buying decisions: evidence + maintained-model accents use APG blue. */
+body[data-brand-system-v46="true"] .apg-national-card>span,
+body[data-brand-system-v46="true"] .apg-national-card>b{
+  color:#2563EB!important;
+}
+body[data-brand-system-v46="true"] .apg-national-card:hover>span,
+body[data-brand-system-v46="true"] .apg-national-card:hover>b,
+body[data-brand-system-v46="true"] .apg-national-card:focus-visible>span,
+body[data-brand-system-v46="true"] .apg-national-card:focus-visible>b{
+  color:#1D4ED8!important;
+}
+
+/* Search/autocomplete previews: remove residual green/teal from all search surfaces. */
+body[data-brand-system-v46="true"] .search-suggestions{
+  border-color:#BFDBFE!important;
+}
+body[data-brand-system-v46="true"] .search-suggestions .suggest-label{
+  color:#1D4ED8!important;
+  background:#EFF6FF!important;
+}
+body[data-brand-system-v46="true"] .search-suggestions .suggest-thumb,
+body[data-brand-system-v46="true"] .search-suggestions .suggest-thumb[class*="type-"]{
+  color:#2563EB!important;
+  background:#EFF6FF!important;
+  border-color:#BFDBFE!important;
+}
+body[data-brand-system-v46="true"] .search-suggestions .suggest-item{
+  color:#0F172A!important;
+  background:#FFFFFF!important;
+}
+body[data-brand-system-v46="true"] .search-suggestions .suggest-item:hover,
+body[data-brand-system-v46="true"] .search-suggestions .suggest-item.active{
+  color:#0F172A!important;
+  background:#EFF6FF!important;
+  box-shadow:inset 3px 0 0 #2563EB!important;
+}
+body[data-brand-system-v46="true"] .search-suggestions .suggest-item>span:last-child{
+  color:#2563EB!important;
+}
+body[data-brand-system-v46="true"] .search-suggestions .suggest-item small{
+  color:#64748B!important;
 }
