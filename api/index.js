@@ -1,11 +1,10 @@
-// APG Social Integration v56 is the current outer response contract.
-// It wraps Interaction Runtime v55 without changing its SSR/native-navigation
-// reliability model and adds only verified official social-profile surfaces,
-// Organization sameAs entity data, About/mobile/footer cross-linking and a
-// machine-readable social-profile registry endpoint.
-// Facebook remains active-but-unpublished until its exact public Page URL is
-// independently verified; APG never guesses external profile destinations.
+// APG Social Share Card v57 is the current outer response contract.
+// It wraps Social Integration v56 without changing its SSR/native-navigation,
+// verified social-profile, Organization sameAs or decision-intelligence model.
+// v57 only makes the owner-approved APG campaign artwork the canonical Open Graph
+// and large social-preview image across site pages.
 //
+// Social Integration v56 remains the official social-profile layer.
 // Interaction Runtime v55 remains the browser reliability contract.
 // Core consumer journeys are SSR-first and use native GET/link navigation; the
 // overlapping Search v52, Decision v50/v50.6, Interaction v37 and Navigation
@@ -25,4 +24,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/social-integration-v56-runtime');
+module.exports=require('../lib/social-share-card-v57-runtime');
