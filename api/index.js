@@ -1,10 +1,10 @@
-// APG SEO Optimisation v58 is the final public response contract.
-// It wraps Social Integration v56 and adds governed product-title enrichment,
-// semantic internal-link reconciliation and page-specific social imagery where
-// APG already holds suitable provenance. Product social imagery remains gated by
-// exact identity and rights verification.
+// APG Social Share Card v57 is the current outer response contract.
+// It wraps Social Integration v56 without changing its SSR/native-navigation,
+// verified social-profile, Organization sameAs or decision-intelligence model.
+// v57 only makes the owner-approved APG campaign artwork the canonical Open Graph
+// and large social-preview image across site pages.
 //
-// Social Integration v56 remains the verified social-profile entity and UI layer.
+// Social Integration v56 remains the official social-profile layer.
 // Interaction Runtime v55 remains the browser reliability contract.
 // Core consumer journeys are SSR-first and use native GET/link navigation; the
 // overlapping Search v52, Decision v50/v50.6, Interaction v37 and Navigation
@@ -24,4 +24,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/seo-optimisation-v58-runtime');
+module.exports=require('../lib/social-share-card-v57-runtime');
