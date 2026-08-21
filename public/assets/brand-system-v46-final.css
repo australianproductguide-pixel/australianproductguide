@@ -1,4 +1,4 @@
-/* Australian Product Guide Brand System v46.6 — final legacy-colour cleanup
+/* Australian Product Guide Brand System v46.7 — final legacy-colour cleanup
  * Current visual authority: blue/navy APG system across all standard UI.
  * Green is reserved for genuine semantic success states only.
  * The maintained Australian research proof band remains the sole approved yellow/gold
@@ -61,15 +61,17 @@ body[data-brand-system-v46="true"] .apg-v12-card:focus-within .apg-v12-copy b{
   color:#1D4ED8!important;
 }
 
-/* Homepage major buying decisions: evidence + maintained-model accents use APG blue. */
-body[data-brand-system-v46="true"] .apg-national-card>span,
-body[data-brand-system-v46="true"] .apg-national-card>b{
+/* Homepage Major Australian Buying Decisions: force the resting card evidence label
+ * and maintained-model CTA to the APG blue system. These selectors deliberately
+ * outrank the historical national-experience teal rules. */
+body[data-brand-system-v46="true"] .apg-national-v10 .apg-national-grid .apg-national-card>span,
+body[data-brand-system-v46="true"] .apg-national-v10 .apg-national-grid .apg-national-card>b{
   color:#2563EB!important;
 }
-body[data-brand-system-v46="true"] .apg-national-card:hover>span,
-body[data-brand-system-v46="true"] .apg-national-card:hover>b,
-body[data-brand-system-v46="true"] .apg-national-card:focus-visible>span,
-body[data-brand-system-v46="true"] .apg-national-card:focus-visible>b{
+body[data-brand-system-v46="true"] .apg-national-v10 .apg-national-grid .apg-national-card:hover>span,
+body[data-brand-system-v46="true"] .apg-national-v10 .apg-national-grid .apg-national-card:hover>b,
+body[data-brand-system-v46="true"] .apg-national-v10 .apg-national-grid .apg-national-card:focus-visible>span,
+body[data-brand-system-v46="true"] .apg-national-v10 .apg-national-grid .apg-national-card:focus-visible>b{
   color:#1D4ED8!important;
 }
 
