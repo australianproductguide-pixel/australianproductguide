@@ -3,6 +3,7 @@
 const assert=require('assert');
 const seo=require('../lib/seo-optimisation-v58-runtime');
 const social=require('../lib/social-integration-v56-runtime');
+const shareCard=require('../lib/social-share-card-v57-runtime');
 const {categories,products}=require('../data');
 const {pairPages,comparisonGovernance,MAX_TOTAL_COMPARISONS,MAX_CATEGORY_COMPARISONS}=require('../lib/routes');
 
@@ -27,6 +28,13 @@ const categoryHtml=seo.patchSocialImage(sample,categoryImage);
 assert(categoryHtml.includes(categoryImage.src),'category OG image must be page-specific');
 assert(categoryHtml.includes('og:image:alt'),'category OG image must expose descriptive alt metadata');
 
+const globalShareHtml=shareCard.patchShareMetadata(sample);
+assert(globalShareHtml.includes(shareCard.SHARE_IMAGE_URL),'owner-approved APG social artwork must remain the global fallback');
+const categoryAfterFallback=seo.optimiseHtml(globalShareHtml,'/categories/robot-vacuums/');
+assert(categoryAfterFallback.includes(categoryImage.src),'category SEO metadata must override the global card with relevant provenance-backed category imagery');
+const productAfterFallback=seo.optimiseHtml(globalShareHtml,'/products/eufy-robot-vacuum-omni-e28/');
+assert(productAfterFallback.includes(shareCard.SHARE_IMAGE_URL),'product pages without verified exact imagery must retain the approved APG fallback card');
+
 assert.strictEqual(seo.routeLastmod('/products/eufy-robot-vacuum-omni-e28/'),e28.lastSubstantiveReview,'product sitemap lastmod must equal substantive review date');
 assert.strictEqual(seo.routeLastmod('/categories/robot-vacuums/'),'2026-08-19','category lastmod should reflect the later approved editorial-image update');
 assert.strictEqual(seo.routeLastmod('/about/'),null,'routes without defensible material-change provenance must omit lastmod');
@@ -47,4 +55,4 @@ assert(socialHtml.includes('Comparisons, buying tips and fresh product research'
 assert(socialHtml.includes('M18.263 11.097'),'Threads must use the current recognisable fill mark rather than the old approximation');
 assert(socialHtml.includes('M12.017 0C5.396'),'Pinterest must use the recognisable circular Pinterest mark');
 
-console.log(`APG SEO v58 QA PASSED: branded product titles, route-specific lastmod, semantic internal links, page-specific category OG imagery, social copy/marks and comparison caps (${pairPages.length}/${MAX_TOTAL_COMPARISONS}).`);
+console.log(`APG SEO v58 QA PASSED: branded product titles, route-specific lastmod, semantic internal links, category OG imagery, approved global social fallback, social copy/marks and comparison caps (${pairPages.length}/${MAX_TOTAL_COMPARISONS}).`);
