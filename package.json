@@ -2,6 +2,9 @@
   "name": "australian-product-guide",
   "version": "1.0.0",
   "private": true,
+  "dependencies": {
+    "@vercel/oidc": "3.8.4"
+  },
   "scripts": {
     "qa:deploy": "node scripts/amazon-automation-compliance-v51-qa.js && node scripts/scout-v5-syntax-check.js && node scripts/decision-lab-v4-p0-source-qa.js && node scripts/search-p0-source-qa.js && node scripts/interaction-runtime-v55-qa.js && node scripts/compare-state-handoff-v56-qa.js && node scripts/intelligence-core-v54-qa.js && node scripts/runtime-javascript-syntax.js && node scripts/desktop-nav-parity-v50-qa.js && node scripts/google-growth-v1-qa.js",
     "qa:architecture": "node scripts/runtime-dependency-audit-v57.js && node scripts/supabase-runtime-map-v57.js",
