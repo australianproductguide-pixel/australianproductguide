@@ -1,6 +1,8 @@
-// APG Brand Index Logos v62 is the outermost presentation enrichment for the
-// all-brands hub. It maps each maintained brand card to a verified manufacturer
-// source-derived mark while keeping the existing initial-letter fallback.
+// APG Brand Directory CSP v63 is the outermost presentation compatibility layer.
+// It preserves the strict Production `style-src 'self'` policy while loading the
+// premium Brands directory and brand-detail presentation from a same-origin stylesheet.
+// Brand Identity v62 remains authoritative underneath v63 for the 178-brand directory,
+// official-domain logo resolution and individual brand hero identity.
 //
 // Category Index Images v61 remains authoritative underneath v62 for the
 // all-categories editorial-image treatment.
@@ -31,4 +33,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/brand-index-logos-v62');
+module.exports=require('../lib/brand-directory-csp-v63');
