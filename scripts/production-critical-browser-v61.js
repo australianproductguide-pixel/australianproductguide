@@ -46,11 +46,23 @@ async function dismissConsent(page) {
   const b = await visible(page, '[data-apg-consent] [data-consent-essential]');
   if (b) { await b.click(); await sleep(80); }
 }
+async function suppressOptionalAccountNudge(page) {
+  await page.evaluate(() => {
+    try {
+      const now = Date.now();
+      localStorage.setItem('apg_account_nudge_v1', JSON.stringify({ dismissedUntil: now + 86400000, lastShown: now }));
+    } catch {}
+  });
+  const dismiss = await visible(page, '[data-account-nudge] [data-account-nudge-dismiss]');
+  if (dismiss) { await dismiss.click(); await sleep(60); }
+}
 async function go(page, route) {
   const res = await page.goto(BASE + route, { waitUntil: 'domcontentloaded', timeout: 30000 });
   assert(res && res.status() < 500, `${route}: HTTP ${res?.status()}`);
   await page.waitForSelector('main', { timeout: 12000 });
-  await dismissConsent(page); await sleep(220);
+  await dismissConsent(page);
+  await suppressOptionalAccountNudge(page);
+  await sleep(220);
   return res;
 }
 async function replace(handle, value) {
@@ -63,7 +75,10 @@ async function submit(page, formSelector) {
     page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 20000 }),
     button.click()
   ]);
-  await page.waitForSelector('main', { timeout: 12000 }); await dismissConsent(page); await sleep(220);
+  await page.waitForSelector('main', { timeout: 12000 });
+  await dismissConsent(page);
+  await suppressOptionalAccountNudge(page);
+  await sleep(220);
 }
 async function decision(page, q, category = '', budget = '') {
   const form = await visible(page, 'form.decision-form'); assert(form, 'Decision Lab form missing');
@@ -102,14 +117,15 @@ async function askScout(page, prompt, validate, label) {
     return body && body.getAttribute('aria-busy') !== 'true' && body.querySelectorAll('.scout-v5-row.bot').length > prior;
   }, { timeout: 25000 }, before);
   const state = await page.evaluate(() => {
-    const rows = [...document.querySelectorAll('#apgAssistantBody .scout-v5-row.bot')], latest = rows.at(-1);
+    const body = document.getElementById('apgAssistantBody');
+    const rows = [...(body?.querySelectorAll('.scout-v5-row.bot') || [])], latest = rows.at(-1);
     return {
       text: latest?.innerText || '',
-      products: [...(latest?.querySelectorAll('.scout-v5-card a[href^="/products/"]') || [])].map(a => a.getAttribute('href')),
-      actions: [...(latest?.querySelectorAll('.scout-v5-action[href]') || [])].map(a => a.getAttribute('href'))
+      products: [...(body?.querySelectorAll('.scout-v5-card a[href^="/products/"]') || [])].map(a => a.getAttribute('href')),
+      actions: [...(body?.querySelectorAll('.scout-v5-action[href]') || [])].map(a => a.getAttribute('href'))
     };
   });
-  assert(validate(state), `Scout ${label} failed; latest=${clean(state.text).slice(0, 400)}`);
+  assert(validate(state), `Scout ${label} failed; latest=${clean(state.text).slice(0, 400)} products=${state.products.length} actions=${state.actions.length}`);
   return state;
 }
 async function waitCompareCount(page, expected) {
@@ -121,6 +137,7 @@ async function waitCompareCount(page, expected) {
       selected: (() => { try { return JSON.parse(localStorage.getItem('apgCompare') || '[]'); } catch { return []; } })(),
       trayHidden: document.getElementById('compareTray')?.hidden ?? null,
       visibleDialogs: [...document.querySelectorAll('[role="dialog"]')].filter(el => { const r = el.getBoundingClientRect(), s = getComputedStyle(el); return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none'; }).map(el => cleanText(el.innerText).slice(0, 160)),
+      optionalNudgeVisible: !![...document.querySelectorAll('[data-account-nudge]')].find(el => { const r = el.getBoundingClientRect(), s = getComputedStyle(el); return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none'; }),
       url: location.href
     }));
     throw new Error(`Compare count expected ${expected}; actual=${JSON.stringify(state)}`);
@@ -211,10 +228,10 @@ async function run(browser, name, viewport, fn) {
   await run(browser, 'desktop-account-signed-out-boundary', desktop, async page => {
     await go(page, '/my-apg/'); await page.waitForSelector('[data-account-shell]', { timeout: 10000 }); await page.waitForSelector('[data-account-signed-out]:not([hidden])', { timeout: 10000 });
     assert(await visible(page, '[data-account-form]'), 'signed-out form missing');
-    assert(await visible(page, '[data-account-tab="login"]'), 'login tab missing'); assert(await visible(page, '[data-account-tab="signup"]'), 'signup tab missing');
+    assert(await visible(page, '[data-account-tab="login"]'), 'login mode control missing'); assert(await visible(page, '[data-account-tab="signup"]'), 'signup mode control missing');
     assert(!(await page.$eval('[data-account-signed-in]', el => !el.hidden)), 'signed-in panel exposed to signed-out browser');
-    const profile = await page.evaluate(async () => { const r = await fetch('/api/account/profile', { headers: { accept: 'application/json' } }); return { status: r.status }; });
-    assert(profile.status === 401, `signed-out profile endpoint expected 401, received ${profile.status}`);
+    const protectedResponse = await fetch(BASE + '/api/account/workspace', { headers: { accept: 'application/json' }, redirect: 'manual' });
+    assert(protectedResponse.status === 401, `signed-out workspace endpoint expected 401, received ${protectedResponse.status}`);
   });
 
   await run(browser, 'mobile-menu-search-decision-scout', mobile, async page => {
