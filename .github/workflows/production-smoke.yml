@@ -138,12 +138,15 @@ jobs:
         run: node scripts/production-critical-browser-v61.js
 
       - name: Capture desktop and mobile Production visual matrix
+        if: always()
         run: node scripts/production-visual-v28.js
 
       - name: Capture tablet portrait and landscape Production matrix
+        if: always()
         run: node scripts/production-tablet-visual-v61.js
 
       - name: Run Production accessibility gate
+        if: always()
         run: node scripts/production-accessibility-v61.js
 
       - name: Upload browser, visual and accessibility evidence
