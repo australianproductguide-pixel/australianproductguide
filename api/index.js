@@ -1,4 +1,10 @@
-// APG Related Buying Decisions UI v69 is the outermost presentation layer.
+// APG Homepage Situation Images v70 is the outermost presentation layer.
+// It reuses the governed category editorial imagery for the homepage
+// "What are you trying to improve?" cards while preserving their existing icon,
+// situation label, copy, filters, links and overall geometry.
+// Compatibility lineage: module.exports=require('../lib/related-decisions-ui-v69')
+//
+// APG Related Buying Decisions UI v69 remains authoritative immediately underneath.
 // It repairs the SEO v58 adjacent-category card markup by reusing APG's canonical
 // category-card renderer. Semantic category selection is preserved while icons,
 // spacing, responsive structure and standard decision actions return to the governed UI.
@@ -21,4 +27,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/related-decisions-ui-v69');
+module.exports=require('../lib/homepage-situation-images-v70');
