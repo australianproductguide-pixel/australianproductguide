@@ -1,4 +1,9 @@
-// APG Televisions Category Image Refresh v71 is the outermost presentation/governance layer.
+// APG Earbuds Category Image Refresh v72 is the outermost presentation/governance layer.
+// It replaces the misleading cotton-swab category image with a verified true-wireless-
+// earbuds photograph and corrects the visible source attribution and image dimensions.
+// Compatibility lineage: module.exports=require('../lib/televisions-category-image-v71')
+//
+// APG Televisions Category Image Refresh v71 remains authoritative immediately underneath.
 // It keeps the canonical /category-editorial/televisions.jpg path while replacing the
 // weaker generic room image with a clearer governed television-focused photograph and
 // corrects television hero/social dimensions and visible attribution.
@@ -33,4 +38,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/televisions-category-image-v71');
+module.exports=require('../lib/earbuds-category-image-v72');
