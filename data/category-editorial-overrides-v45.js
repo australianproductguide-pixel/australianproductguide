@@ -17,7 +17,7 @@ module.exports=Object.freeze({
   'dishwashers':{title:'Child loading glasses into a dishwasher in a kitchen.jpg',reason:'Natural domestic dishwasher-use scene.'},
   'document-scanners':{title:'Fujitsu ScanSnap fi-5100C duplex scanner open.jpeg',reason:'Actual document scanner rather than film-scanner or archival false positives.'},
   'e-readers':{title:'Woman reading a book on an eReader.JPG',reason:'Lifestyle reading scene rather than an isolated or dated device row.'},
-  'earbuds':{title:'Earfun wireless black headphones, September 2024 24.jpg',reason:'Recent high-resolution true wireless-earbuds photograph; replaces a semantically misleading cotton-swab false positive.'},
+  'earbuds':{title:'Here One earbuds in white charging case.jpg',reason:'Clear high-resolution true wireless-earbuds and charging-case photograph; replaces a semantically misleading cotton-swab false positive.'},
   'electric-kettles':{title:'Boilingkettle.jpg',reason:'Electric kettle in use rather than an internal controller component.'},
   'fitness-trackers':{title:'Fitbit Alta HR landscape.jpg',reason:'Clear landscape fitness-tracker photograph.'},
   'gaming-monitors':{title:'ABS PC and monitor setup.jpg',reason:'Recent high-resolution gaming PC and monitor setup; replaces a trade-show display photograph.'},
