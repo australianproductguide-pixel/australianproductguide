@@ -1,4 +1,4 @@
-/* Australian Product Guide Brand System v46.7 — final legacy-colour cleanup
+/* Australian Product Guide Brand System v46.8 — final legacy-colour cleanup
  * Current visual authority: blue/navy APG system across all standard UI.
  * Green is reserved for genuine semantic success states only.
  * The maintained Australian research proof band remains the sole approved yellow/gold
@@ -104,4 +104,96 @@ body[data-brand-system-v46="true"] .search-suggestions .suggest-item>span:last-c
 }
 body[data-brand-system-v46="true"] .search-suggestions .suggest-item small{
   color:#64748B!important;
+}
+
+/* v46.8 interaction-state convergence.
+ * Clickable/hover/focus treatments use APG blue. Green remains available only to
+ * semantic success/status UI and is deliberately not targeted by these selectors. */
+body[data-brand-system-v46="true"] .apg-v12-foot{
+  background:#EFF6FF!important;
+  border-color:#BFDBFE!important;
+  color:#334155!important;
+}
+body[data-brand-system-v46="true"] .apg-v12-foot strong{
+  color:#0F172A!important;
+}
+body[data-brand-system-v46="true"] .apg-v12-foot .button.secondary{
+  background:#FFFFFF!important;
+  border-color:#BFDBFE!important;
+  color:#0F172A!important;
+}
+body[data-brand-system-v46="true"] .apg-v12-foot .button.secondary:hover,
+body[data-brand-system-v46="true"] .apg-v12-foot .button.secondary:focus-visible{
+  background:#DBEAFE!important;
+  border-color:#93C5FD!important;
+  color:#1D4ED8!important;
+}
+body[data-brand-system-v46="true"] .apg-v12-head>a{
+  color:#2563EB!important;
+}
+body[data-brand-system-v46="true"] .apg-v12-head>a:hover,
+body[data-brand-system-v46="true"] .apg-v12-head>a:focus-visible{
+  color:#1D4ED8!important;
+  text-decoration-color:rgba(37,99,235,.45)!important;
+}
+body[data-brand-system-v46="true"] .apg-v12-filter button[aria-pressed="true"]{
+  background:#2563EB!important;
+  border-color:#2563EB!important;
+  color:#FFFFFF!important;
+}
+body[data-brand-system-v46="true"] .apg-v12-filter button:not([aria-pressed="true"]):hover,
+body[data-brand-system-v46="true"] .apg-v12-filter button:not([aria-pressed="true"]):focus-visible{
+  background:#EFF6FF!important;
+  border-color:#93C5FD!important;
+  color:#1D4ED8!important;
+}
+body[data-brand-system-v46="true"] .apg-v12-card>a:hover,
+body[data-brand-system-v46="true"] .apg-v12-card>a:focus-visible{
+  border-color:#93C5FD!important;
+  box-shadow:0 18px 42px rgba(37,99,235,.12)!important;
+}
+body[data-brand-system-v46="true"] .apg-v12-catalogue>button:hover,
+body[data-brand-system-v46="true"] .apg-v12-catalogue>button:focus-visible,
+body[data-brand-system-v46="true"] .apg-v12-page-links a:hover,
+body[data-brand-system-v46="true"] .apg-v12-page-links a:focus-visible{
+  background:#EFF6FF!important;
+  border-color:#93C5FD!important;
+  color:#1D4ED8!important;
+}
+
+/* Legacy navigation/search shells still exist beneath the current brand layer. */
+body[data-brand-system-v46="true"] .global-search:focus-within{
+  border-color:#2563EB!important;
+  box-shadow:0 0 0 4px rgba(37,99,235,.12),0 8px 24px rgba(15,23,42,.08)!important;
+}
+body[data-brand-system-v46="true"] .header-action:hover,
+body[data-brand-system-v46="true"] .header-action:focus-visible,
+body[data-brand-system-v46="true"] .nav-inner>a:hover,
+body[data-brand-system-v46="true"] .nav-inner>a:focus-visible,
+body[data-brand-system-v46="true"] .nav-trigger:hover,
+body[data-brand-system-v46="true"] .nav-trigger:focus-visible,
+body[data-brand-system-v46="true"] .nav-inner>a[aria-current="page"],
+body[data-brand-system-v46="true"] .mega-group a:hover,
+body[data-brand-system-v46="true"] .mega-group a:focus-visible{
+  background:#EFF6FF!important;
+  color:#1D4ED8!important;
+}
+body[data-brand-system-v46="true"] .mega-group:hover{
+  background:#F8FAFC!important;
+}
+
+/* Common clickable cards/tiles: blue interaction cues without tinting product imagery. */
+body[data-brand-system-v46="true"] :is(.category-card,.product-card,.comparison-card):hover,
+body[data-brand-system-v46="true"] :is(.category-card,.product-card,.comparison-card):focus-within{
+  border-color:#93C5FD!important;
+}
+body[data-brand-system-v46="true"] :is(.need-card,.finder-launch,.editorial-card,.apg-national-card):hover,
+body[data-brand-system-v46="true"] :is(.need-card,.finder-launch,.editorial-card,.apg-national-card):focus-visible{
+  background:#EFF6FF!important;
+  border-color:#93C5FD!important;
+}
+body[data-brand-system-v46="true"] main a:not(.button):not([data-affiliate-link]):hover,
+body[data-brand-system-v46="true"] main a:not(.button):not([data-affiliate-link]):focus-visible{
+  color:#1D4ED8!important;
+  text-decoration-color:rgba(37,99,235,.45)!important;
 }
