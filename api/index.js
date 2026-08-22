@@ -1,16 +1,19 @@
-// APG Brand Mark Device Parity + Integrity v66.2 is the outermost presentation layer.
-// It versions every rendered /assets/brand-marks/ request so desktop and mobile browsers
-// cannot retain different historical logo assets at the same stable URL. It also fails
-// unresolved, empty/hidden or generic product/lifestyle brand-image matches closed to a
-// clean canonical brand-name SVG, while retaining the browser-side text fallback.
-// APG Brand Mark Curated v66 remains authoritative immediately underneath, providing
-// reviewed premium-vector overrides for specific brands that remained visibly grainy
-// under automatic discovery. The curated layer never replaces verified product photography.
+// APG Brand Mark Complete v67 is the outermost presentation layer.
+// It preserves the reviewed curated vectors and v66.2 integrity protections, then fills
+// missing identities with high-resolution marks explicitly declared by each governed
+// official brand domain. Where an official site cannot be inspected reliably, it may use
+// a high-resolution cached copy of that same official-domain favicon. Generic product or
+// lifestyle imagery is never accepted as a brand logo. The canonical brand-name SVG
+// remains the final fail-closed state if no trustworthy mark can be resolved.
 //
-// APG Brand Mark Quality v65 remains authoritative underneath v66. It ensures
-// /assets/brand-marks/ prefers crisp official SVG/high-resolution logo assets and rejects
-// tiny favicon-quality images, falling back to the canonical brand name rather than a
-// blurry or misleading mark.
+// APG Brand Mark Device Parity + Integrity v66.2 remains authoritative immediately
+// underneath. It versions historical v66 assets, prevents mobile/desktop divergence and
+// rejects unresolved, empty/hidden or generic brand-image candidates.
+// APG Brand Mark Curated v66 remains authoritative underneath v66.2, providing reviewed
+// premium-vector overrides for specific brands that remained visibly grainy under
+// automatic discovery. The curated layer never replaces verified product photography.
+// APG Brand Mark Quality v65 remains authoritative underneath v66. It prefers crisp
+// official SVG/high-resolution logo assets and rejects tiny favicon-quality images.
 // APG Product Brand Placeholder v64 remains authoritative underneath v65. Until governed
 // product photography is available, non-photo product visuals use the respective brand
 // identity as an explicitly labelled interim placeholder. Verified product photography
@@ -49,4 +52,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/brand-mark-device-parity-v66');
+module.exports=require('../lib/brand-mark-complete-v67');
