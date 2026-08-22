@@ -290,14 +290,14 @@ module.exports=Object.freeze({
   "earbuds": {
     "src": "/category-editorial/earbuds.jpg",
     "width": 1280,
-    "height": 960,
-    "sourceTitle": "Earbuds.jpg",
-    "sourcePage": "https://commons.wikimedia.org/wiki/File%3AEarbuds.jpg",
-    "creator": "Gausanchennai",
+    "height": 719,
+    "sourceTitle": "Earfun wireless black headphones, September 2024 24.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3AEarfun%20wireless%20black%20headphones%2C%20September%202024%2024.jpg",
+    "creator": "Chenspec",
     "license": "CC BY-SA 4.0",
     "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
     "reviewedAt": "2026-08-19",
-    "reviewStatus": "PREMIUM_AUTO",
+    "reviewStatus": "MANUAL_CURATED",
     "purpose": "Decorative category-level editorial context only; not evidence of a specific reviewed or recommended APG product."
   },
   "electric-kettles": {
@@ -537,12 +537,12 @@ module.exports=Object.freeze({
   "juicers": {
     "src": "/category-editorial/juicers.jpg",
     "width": 1280,
-    "height": 976,
-    "sourceTitle": "U.S. Air Force Senior Airman Megan Stanton, a medic with the 366th Medical Operations Squadron, juices fruits and vegetables at her home in Mountain Home, Idaho, July 17, 2013 130717-F-NW635-288.jpg",
-    "sourcePage": "https://commons.wikimedia.org/wiki/File%3AU.S.%20Air%20Force%20Senior%20Airman%20Megan%20Stanton%2C%20a%20medic%20with%20the%20366th%20Medical%20Operations%20Squadron%2C%20juices%20fruits%20and%20vegetables%20at%20her%20home%20in%20Mountain%20Home%2C%20Idaho%2C%20July%2017%2C%202013%20130717-F-NW635-288.jpg",
-    "creator": "TSgt Samuel Morse",
-    "license": "Public domain",
-    "licenseUrl": "https://commons.wikimedia.org/wiki/File%3AU.S.%20Air%20Force%20Senior%20Airman%20Megan%20Stanton%2C%20a%20medic%20with%20the%20366th%20Medical%20Operations%20Squadron%2C%20juices%20fruits%20and%20vegetables%20at%20her%20home%20in%20Mountain%20Home%2C%20Idaho%2C%20July%2017%2C%202013%20130717-F-NW635-288.jpg",
+    "height": 854,
+    "sourceTitle": "Fresh orange juice preparation in a cozy kitchen with modern appliances and vibrant colors.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3AFresh%20orange%20juice%20preparation%20in%20a%20cozy%20kitchen%20with%20modern%20appliances%20and%20vibrant%20colors.jpg",
+    "creator": "Shixart1985",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
     "reviewedAt": "2026-08-19",
     "reviewStatus": "PREMIUM_AUTO",
     "purpose": "Decorative category-level editorial context only; not evidence of a specific reviewed or recommended APG product."

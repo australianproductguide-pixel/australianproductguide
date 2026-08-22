@@ -10,10 +10,10 @@
   },
   "summary": {
     "categories": 90,
-    "manualCurated": 56,
-    "premiumAuto": 34,
+    "manualCurated": 57,
+    "premiumAuto": 33,
     "reviewRequired": 0,
-    "totalBytes": 18270616
+    "totalBytes": 18308526
   },
   "categories": [
     {
@@ -327,16 +327,16 @@
     {
       "slug": "earbuds",
       "label": "Earbuds",
-      "title": "Earbuds.jpg",
-      "mode": "PREMIUM_AUTO",
-      "score": 158,
-      "reason": "Highest-quality licensed candidate cleared APG relevance, landscape, provenance, false-positive and visual-context gates.",
+      "title": "Earfun wireless black headphones, September 2024 24.jpg",
+      "mode": "MANUAL_CURATED",
+      "score": null,
+      "reason": "Recent high-resolution true wireless-earbuds photograph; replaces a semantically misleading cotton-swab false positive.",
       "license": "CC BY-SA 4.0",
-      "creator": "Gausanchennai",
-      "sourcePage": "https://commons.wikimedia.org/wiki/File%3AEarbuds.jpg",
+      "creator": "Chenspec",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File%3AEarfun%20wireless%20black%20headphones%2C%20September%202024%2024.jpg",
       "width": 1280,
-      "height": 960,
-      "bytes": 157698
+      "height": 719,
+      "bytes": 277628
     },
     {
       "slug": "electric-kettles",
@@ -593,16 +593,16 @@
     {
       "slug": "juicers",
       "label": "Juicers",
-      "title": "U.S. Air Force Senior Airman Megan Stanton, a medic with the 366th Medical Operations Squadron, juices fruits and vegetables at her home in Mountain Home, Idaho, July 17, 2013 130717-F-NW635-288.jpg",
+      "title": "Fresh orange juice preparation in a cozy kitchen with modern appliances and vibrant colors.jpg",
       "mode": "PREMIUM_AUTO",
-      "score": 154,
+      "score": 180,
       "reason": "Highest-quality licensed candidate cleared APG relevance, landscape, provenance, false-positive and visual-context gates.",
-      "license": "Public domain",
-      "creator": "TSgt Samuel Morse",
-      "sourcePage": "https://commons.wikimedia.org/wiki/File%3AU.S.%20Air%20Force%20Senior%20Airman%20Megan%20Stanton%2C%20a%20medic%20with%20the%20366th%20Medical%20Operations%20Squadron%2C%20juices%20fruits%20and%20vegetables%20at%20her%20home%20in%20Mountain%20Home%2C%20Idaho%2C%20July%2017%2C%202013%20130717-F-NW635-288.jpg",
+      "license": "CC BY 2.0",
+      "creator": "Shixart1985",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File%3AFresh%20orange%20juice%20preparation%20in%20a%20cozy%20kitchen%20with%20modern%20appliances%20and%20vibrant%20colors.jpg",
       "width": 1280,
-      "height": 976,
-      "bytes": 200675
+      "height": 854,
+      "bytes": 118723
     },
     {
       "slug": "kitchen-mixers",
@@ -616,7 +616,7 @@
       "sourcePage": "https://commons.wikimedia.org/wiki/File%3AKitchen%20mixer%20attachment%20hanging%20above%20a%20metal%20bowl%20on%20a%20kitchen%20counter.jpg",
       "width": 1280,
       "height": 853,
-      "bytes": 91351
+      "bytes": 91299
     },
     {
       "slug": "laptops",
@@ -1162,7 +1162,7 @@
       "sourcePage": "https://commons.wikimedia.org/wiki/File%3AUSB%20C%20Hub.png",
       "width": 1280,
       "height": 688,
-      "bytes": 714164
+      "bytes": 714200
     },
     {
       "slug": "vacuum-sealers",
@@ -1274,7 +1274,7 @@
       "sourcePage": "https://commons.wikimedia.org/wiki/File%3AWoman%20listening%20to%20music%20with%20wireless%20headphones%20neon%20light%20(50810419882).jpg",
       "width": 1280,
       "height": 854,
-      "bytes": 209346
+      "bytes": 209294
     }
   ]
 }
