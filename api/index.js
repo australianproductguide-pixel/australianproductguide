@@ -1,7 +1,7 @@
 // APG Google Product Discovery v60 is the final crawler/browser product-discovery contract.
-// It adds editorial Product/Review and breadcrumb structured data across the maintained
-// catalogue without representing APG as the merchant or emitting unsupported price,
-// stock, offer or rating claims.
+// It enriches APG's canonical Product entity with editorial Review/pros-cons data
+// while preserving the established breadcrumb and entity-provenance layers and
+// without emitting unsupported price, stock, offer or rating claims.
 //
 // Search Brand Identity v59 remains authoritative underneath v60 for crawler/browser
 // brand identity and the current owner-approved APG brand mark.
