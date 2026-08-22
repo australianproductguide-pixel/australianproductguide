@@ -1,9 +1,12 @@
-// APG Brand Mark Quality v65 is the outermost brand-identity delivery layer.
-// It preserves the v64 product placeholder presentation while ensuring /assets/brand-marks/
-// prefers crisp official SVG/high-resolution logo assets and rejects tiny favicon-quality
-// images. When a suitable official asset cannot be resolved, the UI falls back to the
-// canonical brand name rather than displaying a blurry or misleading logo.
+// APG Brand Mark Curated v66 is the outermost brand-identity delivery layer.
+// It provides reviewed premium-vector overrides for specific brands that remained visibly
+// grainy under automatic discovery, while preserving Brand Mark Quality v65 for every
+// other brand. The curated layer never replaces verified product photography.
 //
+// APG Brand Mark Quality v65 remains authoritative underneath v66. It ensures
+// /assets/brand-marks/ prefers crisp official SVG/high-resolution logo assets and rejects
+// tiny favicon-quality images, falling back to the canonical brand name rather than a
+// blurry or misleading mark.
 // APG Product Brand Placeholder v64 remains authoritative underneath v65. Until governed
 // product photography is available, non-photo product visuals use the respective brand
 // identity as an explicitly labelled interim placeholder. Verified product photography
@@ -42,4 +45,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/brand-mark-quality-v65');
+module.exports=require('../lib/brand-mark-curated-v66');
