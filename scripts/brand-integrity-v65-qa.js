@@ -14,6 +14,7 @@ const parity=read('lib/brand-mark-device-parity-v66.js');
 const curated=read('lib/brand-mark-curated-v66.js');
 const quality=read('lib/brand-mark-quality-v65.js');
 const placeholder=read('lib/product-brand-placeholder-v64.js');
+const brandIndex=read('lib/brand-index-logos-v62.js');
 const entry=read('api/index.js');
 
 assert.doesNotThrow(()=>new Function(parity),'brand-mark-device-parity-v66.js must parse');
@@ -47,11 +48,21 @@ assert.deepEqual(missingDomain,[],'every canonical brand must have a governed of
 const extraDomain=Object.keys(officialDomains).filter(slug=>!canonicalBySlug.has(slug));
 assert.deepEqual(extraDomain,[],'official-domain registry must not contain orphan brand slugs');
 
-assert(entry.includes("module.exports=require('../lib/brand-mark-device-parity-v66')"),'public entrypoint must use current v66.1 device-parity layer');
-assert(parity.includes("require('./brand-mark-curated-v66')"),'v66.1 parity must preserve curated v66 immediately underneath');
-assert(parity.includes('BRAND_MARK_ASSET_VERSION=\'66.1\''),'v66.1 must pin a cache-busting brand-mark asset generation');
-assert(parity.includes('?v=${BRAND_MARK_ASSET_VERSION}'),'v66.1 must version every rendered brand-mark URL');
-assert(parity.includes('X-APG-Brand-Mark-Device-Parity'),'v66.1 must expose live parity verification');
+assert(entry.includes("module.exports=require('../lib/brand-mark-device-parity-v66')"),'public entrypoint must use current v66.2 device-parity/integrity layer');
+assert(parity.includes("require('./brand-mark-curated-v66')"),'v66.2 parity/integrity must preserve curated v66 immediately underneath');
+assert(parity.includes("BRAND_MARK_DEVICE_PARITY_VERSION='66.2'"),'v66.2 must expose the current device-parity generation');
+assert(parity.includes("BRAND_MARK_ASSET_VERSION='66.2'"),'v66.2 must pin a cache-busting brand-mark asset generation');
+assert(parity.includes("BRAND_MARK_INTEGRITY_VERSION='66.2'"),'v66.2 must expose the current mark-integrity generation');
+assert(parity.includes('?v=${BRAND_MARK_ASSET_VERSION}'),'v66.2 must version every rendered brand-mark URL');
+assert(parity.includes('X-APG-Brand-Mark-Device-Parity'),'v66.2 must expose live device-parity verification');
+assert(parity.includes('X-APG-Brand-Mark-Integrity'),'v66.2 must expose live mark-integrity verification');
+assert(parity.includes("if(kind==='brand_img')return 'generic-brand-image-rejected'"),'v66.2 must reject generic product/lifestyle images selected only by brand-token matching');
+assert(parity.includes("'canonical-brand-name-fallback'"),'v66.2 must fail closed to a canonical brand-name graphic instead of a broken image');
+assert(parity.includes("'empty-or-hidden-svg-rejected'"),'v66.2 must reject empty/hidden SVG output');
+assert(parity.includes("slug==='amazon'"),'v66.2 must prevent Amazon sub-brand/promotional artwork from standing in for the canonical Amazon identity');
+assert(parity.includes('fallbackBrandSvg'),'v66.2 must provide a deterministic same-origin SVG fallback for canonical brands');
+assert(!parity.includes('removeObsoleteBrandImageErrorHandlers'),'v66.2 must preserve browser-side image error safety rather than stripping it');
+assert(brandIndex.includes('onerror="this.hidden=true"'),'brand directory must retain the browser-side fallback that exposes canonical text when an image request fails');
 assert(curated.includes("require('./brand-mark-quality-v65')"),'v66 must preserve v65 brand quality immediately underneath');
 assert(quality.includes("require('./product-brand-placeholder-v64')"),'v65 must preserve product placeholder v64 underneath');
 assert(placeholder.includes('/assets/brand-marks/'),'product placeholders must resolve through the governed brand-mark endpoint');
@@ -75,4 +86,4 @@ for(const slug of expectedCurated){
 assert(curated.includes("X-APG-Brand-Mark-Source','curated-reviewed-vector-override"),'v66 must expose curated provenance for live verification');
 assert(curated.includes("X-APG-Brand-Mark-Quality','premium-vector"),'v66 curated marks must report premium-vector quality');
 
-console.log(`APG Brand Integrity v66.1 QA passed: ${products.length}/${products.length} products -> ${used.size}/${brands.length} canonical brands -> ${Object.keys(officialDomains).length} governed domains; ${expectedCurated.length} curated premium-vector overrides; desktop/mobile cache parity enforced; low-quality favicon fallbacks disabled.`);
+console.log(`APG Brand Integrity v66.2 QA passed: ${products.length}/${products.length} products -> ${used.size}/${brands.length} canonical brands -> ${Object.keys(officialDomains).length} governed domains; ${expectedCurated.length} curated premium-vector overrides; desktop/mobile cache parity enforced; generic product/lifestyle logo candidates fail closed to canonical-name SVG; browser error fallback preserved.`);
