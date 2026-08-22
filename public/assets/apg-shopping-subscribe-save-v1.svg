@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-labelledby="title desc">
+  <title id="title">Australian Product Guide illustration for Amazon Australia Subscribe and Save browsing</title>
+  <desc id="desc">Original APG artwork showing a repeat-delivery parcel, recurring arrows and neutral household-product silhouettes. Eligibility and any saving remain subject to Amazon Australia's current terms.</desc>
+  <defs>
+    <linearGradient id="box" x1="232" y1="142" x2="407" y2="315" gradientUnits="userSpaceOnUse"><stop stop-color="#2563EB"/><stop offset="1" stop-color="#1D4ED8"/></linearGradient>
+    <linearGradient id="cyan" x1="94" y1="80" x2="220" y2="220" gradientUnits="userSpaceOnUse"><stop stop-color="#67E8F9"/><stop offset="1" stop-color="#06B6D4"/></linearGradient>
+    <linearGradient id="card" x1="92" y1="48" x2="552" y2="352" gradientUnits="userSpaceOnUse"><stop stop-color="#FFFFFF"/><stop offset="1" stop-color="#EFF6FF"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#0F172A" flood-opacity=".14"/></filter>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="9" stdDeviation="10" flood-color="#2563EB" flood-opacity=".10"/></filter>
+  </defs>
+  <circle cx="320" cy="207" r="164" fill="#EFF6FF" opacity=".86"/>
+  <circle cx="320" cy="207" r="181" fill="none" stroke="#BFDBFE" stroke-width="2" stroke-dasharray="9 13"/>
+  <path d="M207 132c28-42 75-67 126-65 42 2 81 21 108 52" fill="none" stroke="#06B6D4" stroke-width="9" stroke-linecap="round"/>
+  <path d="m441 119-28-2 13 25" fill="none" stroke="#06B6D4" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M435 306c-29 35-72 55-118 54-42-1-81-18-110-49" fill="none" stroke="#2563EB" stroke-width="9" stroke-linecap="round"/>
+  <path d="m207 311 28 1-14-24" fill="none" stroke="#2563EB" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <g filter="url(#shadow)">
+    <path d="M239 184 320 139l81 45v92l-81 45-81-45v-92Z" fill="url(#box)"/>
+    <path d="m239 184 81 46 81-46M320 230v91" fill="none" stroke="#BFDBFE" stroke-width="7" stroke-linejoin="round"/>
+    <path d="m320 139 81 45-31 18-81-46 31-17Z" fill="#38BDF8" opacity=".72"/>
+    <rect x="290" y="241" width="60" height="48" rx="12" fill="#FFFFFF" opacity=".94"/>
+    <path d="M306 260h28M306 272h21" stroke="#2563EB" stroke-width="6" stroke-linecap="round"/>
+  </g>
+  <g filter="url(#soft)" transform="translate(76 106)">
+    <rect width="132" height="120" rx="28" fill="url(#card)" stroke="#DBEAFE"/>
+    <rect x="32" y="45" width="30" height="50" rx="7" fill="#CFFAFE" stroke="#06B6D4" stroke-width="5"/>
+    <path d="M40 45v-9h14v9" fill="none" stroke="#0F172A" stroke-width="5" stroke-linecap="round"/>
+    <path d="M76 92V42h28l4 50H76Z" fill="#EFF6FF" stroke="#2563EB" stroke-width="5" stroke-linejoin="round"/>
+  </g>
+  <g filter="url(#soft)" transform="translate(438 98)">
+    <rect width="126" height="114" rx="27" fill="#FFFFFF" stroke="#DBEAFE"/>
+    <path d="M35 78h56V41H35z" fill="#EFF6FF" stroke="#2563EB" stroke-width="6"/>
+    <path d="M47 41v-9h33v9M45 57h36" fill="none" stroke="#06B6D4" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="78" cy="72" r="6" fill="#0F172A"/>
+  </g>
+  <g filter="url(#soft)" transform="translate(98 262)">
+    <rect width="122" height="98" rx="24" fill="#0F172A"/>
+    <path d="m35 50 11-17h20l12 17H64l-8-12-8 12H35Z" fill="#38BDF8"/>
+    <path d="m30 69 9-15h15L44 69H30Zm54 0-9-15H60l10 15h14Z" fill="#2563EB"/>
+    <path d="m57 52 11 20-11-5-11 5 11-20Z" fill="#FFFFFF"/>
+  </g>
+  <g filter="url(#soft)" transform="translate(445 263)">
+    <rect width="116" height="94" rx="23" fill="url(#card)" stroke="#DBEAFE"/>
+    <path d="M35 50h46" stroke="#2563EB" stroke-width="7" stroke-linecap="round"/>
+    <path d="m68 35 15 15-15 15M49 65 34 50l15-15" fill="none" stroke="#06B6D4" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

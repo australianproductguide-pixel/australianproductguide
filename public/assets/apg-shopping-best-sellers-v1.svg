@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-labelledby="title desc">
+  <title id="title">Australian Product Guide illustration for Amazon Australia Best Sellers browsing</title>
+  <desc id="desc">Original APG artwork showing a ranked podium, star marker and neutral product silhouettes. Popularity is presented as retailer discovery context, not an APG recommendation score.</desc>
+  <defs>
+    <linearGradient id="blue" x1="208" y1="90" x2="420" y2="330" gradientUnits="userSpaceOnUse"><stop stop-color="#38BDF8"/><stop offset=".48" stop-color="#2563EB"/><stop offset="1" stop-color="#1D4ED8"/></linearGradient>
+    <linearGradient id="cyan" x1="115" y1="84" x2="228" y2="205" gradientUnits="userSpaceOnUse"><stop stop-color="#67E8F9"/><stop offset="1" stop-color="#06B6D4"/></linearGradient>
+    <linearGradient id="card" x1="92" y1="48" x2="555" y2="336" gradientUnits="userSpaceOnUse"><stop stop-color="#FFFFFF"/><stop offset="1" stop-color="#EFF6FF"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#0F172A" flood-opacity=".13"/></filter>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="9" stdDeviation="10" flood-color="#2563EB" flood-opacity=".10"/></filter>
+  </defs>
+  <circle cx="320" cy="206" r="166" fill="#EFF6FF" opacity=".84"/>
+  <path d="M128 281h128v84H128z" rx="20" fill="#DBEAFE"/>
+  <rect x="255" y="224" width="132" height="141" rx="26" fill="url(#blue)" filter="url(#shadow)"/>
+  <rect x="386" y="271" width="128" height="94" rx="22" fill="#CFFAFE"/>
+  <text x="192" y="334" text-anchor="middle" font-family="Arial, sans-serif" font-size="35" font-weight="800" fill="#1D4ED8">2</text>
+  <text x="321" y="318" text-anchor="middle" font-family="Arial, sans-serif" font-size="42" font-weight="850" fill="#FFFFFF">1</text>
+  <text x="450" y="334" text-anchor="middle" font-family="Arial, sans-serif" font-size="35" font-weight="800" fill="#0E7490">3</text>
+  <g filter="url(#soft)" transform="translate(88 108)">
+    <rect width="150" height="134" rx="30" fill="url(#card)" stroke="#DBEAFE"/>
+    <path d="M46 77c0-21 13-37 29-37s29 16 29 37" fill="none" stroke="#0F172A" stroke-width="8" stroke-linecap="round"/>
+    <rect x="37" y="70" width="17" height="34" rx="8" fill="url(#cyan)"/>
+    <rect x="96" y="70" width="17" height="34" rx="8" fill="#2563EB"/>
+  </g>
+  <g filter="url(#soft)" transform="translate(253 78)">
+    <rect width="136" height="126" rx="30" fill="#FFFFFF" stroke="#BFDBFE"/>
+    <path d="M42 81h52V41H42z" fill="#EFF6FF" stroke="#2563EB" stroke-width="6"/>
+    <path d="M51 54h34" stroke="#06B6D4" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="83" cy="70" r="6" fill="#0F172A"/>
+    <path d="M43 93h50" stroke="#94A3B8" stroke-width="6" stroke-linecap="round"/>
+  </g>
+  <g filter="url(#soft)" transform="translate(414 116)">
+    <rect width="140" height="122" rx="28" fill="url(#card)" stroke="#DBEAFE"/>
+    <path d="M38 76c8-25 22-38 40-38 17 0 29 11 34 31-13 7-25 11-38 11-13 0-25-1-36-4Z" fill="#FFFFFF" stroke="#2563EB" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M40 84h70" stroke="#06B6D4" stroke-width="7" stroke-linecap="round"/>
+  </g>
+  <g filter="url(#soft)">
+    <circle cx="321" cy="62" r="42" fill="#0F172A"/>
+    <path d="m321 34 8 17 19 3-14 13 3 19-16-9-17 9 4-19-14-13 19-3 8-17Z" fill="#38BDF8"/>
+  </g>
+  <path d="M530 76c19 7 34 20 44 38" fill="none" stroke="#06B6D4" stroke-width="7" stroke-linecap="round"/>
+  <path d="m574 114-20-6 8 19" fill="none" stroke="#06B6D4" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

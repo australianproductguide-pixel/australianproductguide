@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-labelledby="title desc">
+  <title id="title">Australian Product Guide illustration for Amazon Australia Today's Deals browsing</title>
+  <desc id="desc">Original APG artwork showing a branded shopping bag, neutral product silhouettes and a deal-discovery tag. No Amazon programme content or retailer logo is reproduced.</desc>
+  <defs>
+    <linearGradient id="bag" x1="210" y1="82" x2="452" y2="330" gradientUnits="userSpaceOnUse"><stop stop-color="#2563EB"/><stop offset="1" stop-color="#1D4ED8"/></linearGradient>
+    <linearGradient id="cyan" x1="95" y1="86" x2="218" y2="222" gradientUnits="userSpaceOnUse"><stop stop-color="#22D3EE"/><stop offset="1" stop-color="#06B6D4"/></linearGradient>
+    <linearGradient id="ice" x1="90" y1="52" x2="554" y2="362" gradientUnits="userSpaceOnUse"><stop stop-color="#FFFFFF" stop-opacity=".96"/><stop offset="1" stop-color="#EFF6FF" stop-opacity=".78"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#0F172A" flood-opacity=".14"/></filter>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#2563EB" flood-opacity=".11"/></filter>
+  </defs>
+  <g opacity=".72">
+    <circle cx="322" cy="206" r="150" fill="#EFF6FF"/>
+    <circle cx="322" cy="206" r="176" fill="none" stroke="#BFDBFE" stroke-width="2" stroke-dasharray="8 12"/>
+    <circle cx="544" cy="94" r="22" fill="#CFFAFE"/>
+    <circle cx="94" cy="330" r="14" fill="#DBEAFE"/>
+  </g>
+  <g filter="url(#soft)" transform="translate(58 54)">
+    <rect width="126" height="116" rx="28" fill="url(#ice)" stroke="#DBEAFE"/>
+    <path d="M36 65c0-19 12-33 27-33s27 14 27 33" fill="none" stroke="#0F172A" stroke-width="8" stroke-linecap="round"/>
+    <rect x="29" y="58" width="15" height="31" rx="7" fill="url(#cyan)"/>
+    <rect x="82" y="58" width="15" height="31" rx="7" fill="#2563EB"/>
+    <path d="M43 82c8 8 32 8 40 0" fill="none" stroke="#64748B" stroke-width="5" stroke-linecap="round"/>
+  </g>
+  <g filter="url(#shadow)">
+    <path d="M217 144c0-28 23-51 51-51h108c28 0 51 23 51 51v141c0 28-23 51-51 51H268c-28 0-51-23-51-51V144Z" fill="url(#bag)"/>
+    <path d="M275 145c0-39 19-67 47-67s47 28 47 67" fill="none" stroke="#FFFFFF" stroke-opacity=".9" stroke-width="15" stroke-linecap="round"/>
+    <rect x="275" y="181" width="94" height="94" rx="24" fill="#0F172A"/>
+    <path d="m294 221 15-23h26l16 23h-18l-11-17-11 17h-17Z" fill="#38BDF8"/>
+    <path d="m286 250 12-20h20l-14 20h-18Zm72 0-12-20h-20l14 20h18Z" fill="#2563EB"/>
+    <path d="m322 223 15 27-15-7-15 7 15-27Z" fill="#FFFFFF"/>
+  </g>
+  <g filter="url(#soft)" transform="translate(428 82)">
+    <rect width="142" height="126" rx="30" fill="url(#ice)" stroke="#DBEAFE"/>
+    <path d="M36 73h54c13 0 24-11 24-24s-11-24-24-24H55c-11 0-19 9-19 19v29Z" fill="#FFFFFF" stroke="#2563EB" stroke-width="6"/>
+    <path d="M48 50h50" stroke="#06B6D4" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="102" cy="49" r="6" fill="#0F172A"/>
+    <path d="M53 86h46" stroke="#94A3B8" stroke-width="6" stroke-linecap="round"/>
+  </g>
+  <g filter="url(#soft)" transform="translate(102 258)">
+    <rect width="126" height="98" rx="24" fill="#FFFFFF" stroke="#DBEAFE"/>
+    <path d="M29 51h68v30H29z" fill="#EFF6FF" stroke="#2563EB" stroke-width="5"/>
+    <path d="M52 32h23v49H52z" fill="#CFFAFE" stroke="#06B6D4" stroke-width="5"/>
+    <path d="M63 32v49" stroke="#06B6D4" stroke-width="5"/>
+  </g>
+  <g filter="url(#soft)" transform="translate(430 252) rotate(-5 70 55)">
+    <path d="M17 24c0-9 7-16 16-16h67l29 29-61 61H33c-9 0-16-7-16-16V24Z" fill="#FFFFFF" stroke="#BFDBFE" stroke-width="4"/>
+    <circle cx="45" cy="35" r="8" fill="#22D3EE"/>
+    <path d="m89 30 7 14 15 2-11 11 3 15-14-7-14 7 3-15-11-11 15-2 7-14Z" fill="#2563EB"/>
+  </g>
+  <path d="M511 229c20-7 36-24 42-45" fill="none" stroke="#06B6D4" stroke-width="7" stroke-linecap="round"/>
+  <path d="m553 184-2 22 20-11" fill="none" stroke="#06B6D4" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

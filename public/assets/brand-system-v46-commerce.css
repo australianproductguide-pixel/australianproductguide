@@ -57,9 +57,52 @@ body[data-brand-system-v46="true"] .apg-amz-v41-orbit{border-color:rgba(37,99,23
 body[data-brand-system-v46="true"] .apg-amz-v41-chip{background:#06B6D4!important;box-shadow:0 5px 16px rgba(6,182,212,.18)!important}
 body[data-brand-system-v46="true"] .apg-amz-v41-chip.chip-b{background:#2563EB!important;box-shadow:0 5px 16px rgba(37,99,235,.18)!important}
 
+/* APG original shopping-discovery illustrations — homepage visual upgrade.
+ * These are locally authored APG assets, not Amazon logos, product photography or Amazon Program Content.
+ * The surrounding copy and paid-link label remain the source of truth: each card is a retailer-discovery route, not an APG sale claim.
+ */
+body[data-brand-system-v46="true"] .apg-amz-v41-art-deals,
+body[data-brand-system-v46="true"] .apg-amz-v41-art-best,
+body[data-brand-system-v46="true"] .apg-amz-v41-art-value,
+body[data-brand-system-v46="true"] .apg-amz-v41-art-repeat{
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+  background-size:contain!important;
+  isolation:isolate;
+}
+body[data-brand-system-v46="true"] .apg-amz-v41-art-deals{background-image:url('/assets/apg-shopping-todays-deals-v1.svg')!important}
+body[data-brand-system-v46="true"] .apg-amz-v41-art-best{background-image:url('/assets/apg-shopping-best-sellers-v1.svg')!important}
+body[data-brand-system-v46="true"] .apg-amz-v41-art-value{background-image:url('/assets/apg-shopping-under-25-v1.svg')!important}
+body[data-brand-system-v46="true"] .apg-amz-v41-art-repeat{background-image:url('/assets/apg-shopping-subscribe-save-v1.svg')!important}
+body[data-brand-system-v46="true"] .apg-amz-v41-art-deals>svg,
+body[data-brand-system-v46="true"] .apg-amz-v41-art-deals>.apg-amz-v41-orbit,
+body[data-brand-system-v46="true"] .apg-amz-v41-art-deals>.apg-amz-v41-chip,
+body[data-brand-system-v46="true"] .apg-amz-v41-art-best>svg,
+body[data-brand-system-v46="true"] .apg-amz-v41-art-best>.apg-amz-v41-orbit,
+body[data-brand-system-v46="true"] .apg-amz-v41-art-best>.apg-amz-v41-chip,
+body[data-brand-system-v46="true"] .apg-amz-v41-art-value>svg,
+body[data-brand-system-v46="true"] .apg-amz-v41-art-value>.apg-amz-v41-orbit,
+body[data-brand-system-v46="true"] .apg-amz-v41-art-value>.apg-amz-v41-chip,
+body[data-brand-system-v46="true"] .apg-amz-v41-art-repeat>svg,
+body[data-brand-system-v46="true"] .apg-amz-v41-art-repeat>.apg-amz-v41-orbit,
+body[data-brand-system-v46="true"] .apg-amz-v41-art-repeat>.apg-amz-v41-chip{display:none!important}
+body[data-brand-system-v46="true"] .apg-amz-v41-card.is-feature .apg-amz-v41-art-deals{right:1%!important;top:1%!important;width:min(61%,470px)!important;height:68%!important;background-size:contain!important}
+body[data-brand-system-v46="true"] .apg-amz-v41-stack .apg-amz-v41-art-best,
+body[data-brand-system-v46="true"] .apg-amz-v41-stack .apg-amz-v41-art-value,
+body[data-brand-system-v46="true"] .apg-amz-v41-stack .apg-amz-v41-art-repeat{min-height:118px!important;background-size:112% auto!important}
+body[data-brand-system-v46="true"] .apg-amz-v41-stack .apg-amz-v41-card{grid-template-columns:132px minmax(0,1fr)!important;column-gap:14px!important}
+
 @media(max-width:820px){
   body[data-brand-system-v46="true"] .apg-shopping-hero{padding-top:34px!important}
   body[data-brand-system-v46="true"] .apg-shopping-card{box-shadow:0 10px 28px rgba(15,23,42,.06)!important}
   body[data-brand-system-v46="true"] .apg-amz-v41-card,
   body[data-brand-system-v46="true"] .apg-amz-v41-card.is-feature{box-shadow:0 12px 30px rgba(15,23,42,.08)!important}
+  body[data-brand-system-v46="true"] .apg-amz-v41-card.is-feature .apg-amz-v41-art-deals{width:min(64%,430px)!important;height:64%!important}
+}
+@media(max-width:620px){
+  body[data-brand-system-v46="true"] .apg-amz-v41-card.is-feature .apg-amz-v41-art-deals{position:relative!important;right:auto!important;top:auto!important;width:100%!important;height:210px!important;background-size:contain!important}
+  body[data-brand-system-v46="true"] .apg-amz-v41-stack .apg-amz-v41-card{grid-template-columns:108px minmax(0,1fr)!important;column-gap:10px!important}
+  body[data-brand-system-v46="true"] .apg-amz-v41-stack .apg-amz-v41-art-best,
+  body[data-brand-system-v46="true"] .apg-amz-v41-stack .apg-amz-v41-art-value,
+  body[data-brand-system-v46="true"] .apg-amz-v41-stack .apg-amz-v41-art-repeat{min-height:108px!important;background-size:118% auto!important}
 }
