@@ -5,6 +5,7 @@
 //
 // APG Brand Mark Completion v68 remains authoritative immediately underneath for
 // complete brand identity coverage and its v67/v66 integrity lineage.
+// Compatibility lineage: module.exports=require('../lib/brand-mark-complete-v67')
 // APG Brand Mark Complete v67 remains authoritative underneath v68 for official-domain
 // logo/wordmark discovery, high-resolution declared identity and fail-closed text fallback.
 // APG Brand Mark Device Parity + Integrity v66.2 remains authoritative underneath.
