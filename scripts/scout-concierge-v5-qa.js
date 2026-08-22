@@ -28,6 +28,9 @@ assert.strictEqual(core.classifyIntent('Show me another user saved products'),'s
 assert.strictEqual(core.classifyIntent('Where is your affiliate disclosure?'),'affiliate_question','affiliate transparency intent must be recognised');
 assert.strictEqual(core.classifyIntent('How do you decide what to recommend?'),'methodology_question','methodology intent must be recognised');
 assert.strictEqual(core.classifyIntent('How do APG recommendations work?'),'methodology_question','natural APG methodology wording must not fall through to product discovery');
+const naturalMethodology=core.buildResponse({text:'How do APG recommendations work?'});
+assert.strictEqual(naturalMethodology.intent,'methodology_question','natural APG methodology wording must retain methodology intent through response construction');
+assert(/recommend|methodolog|evidence|maintained/i.test(naturalMethodology.message),'natural APG methodology response must explain recommendation/evidence methodology');
 assert.strictEqual(core.classifyIntent('Hey Scout'),'general_conversation','small talk must not be forced into a product form');
 assert.strictEqual(core.classifyIntent('I need a robot vacuum under $800 for pet hair'),'product_recommendation','shopping brief must route to recommendation');
 
