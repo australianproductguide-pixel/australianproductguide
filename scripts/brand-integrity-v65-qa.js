@@ -50,20 +50,22 @@ assert.deepEqual(missingDomain,[],'every canonical brand must have a governed of
 const extraDomain=Object.keys(officialDomains).filter(slug=>!canonicalBySlug.has(slug));
 assert.deepEqual(extraDomain,[],'official-domain registry must not contain orphan brand slugs');
 
-assert(entry.includes("module.exports=require('../lib/brand-mark-complete-v67')"),'public entrypoint must use complete brand identity v67');
-assert(complete.includes("require('./brand-mark-device-parity-v66')"),'v67 must preserve v66.2 device parity/integrity underneath');
-assert(complete.includes("BRAND_MARK_COMPLETE_VERSION='67.0'"),'v67 must expose the current complete-brand generation');
-assert(complete.includes("BRAND_MARK_ASSET_VERSION='67.0'"),'v67 must pin the current brand asset generation');
-assert(complete.includes('officialDomains'),'v67 must restrict brand identity fallbacks to governed official domains');
-assert(complete.includes('manifest-icon')&&complete.includes('apple-touch-icon'),'v67 must inspect modern official-site identity declarations');
-assert(complete.includes('official-domain-declared-identity'),'v67 must expose declared official-domain identity provenance');
-assert(complete.includes('official-domain-favicon-cache'),'v67 must expose the governed official-domain favicon fallback provenance');
-assert(complete.includes('drop_404_icon=true'),'v67 favicon fallback must reject generic default favicon responses');
-assert(complete.includes('min_size=48'),'v67 favicon fallback must require a useful high-resolution source');
-assert(complete.includes('if(slug===\'amazon\')return false'),'v67 must preserve Amazon sub-brand protection');
-assert(complete.includes("String(image.assetKind||'').toLowerCase()!=='brand_img'"),'v67 must preserve generic product/lifestyle-image rejection');
-assert(complete.includes('?v=${BRAND_MARK_ASSET_VERSION}'),'v67 must version every rendered brand-mark URL consistently across devices');
-assert(complete.includes('X-APG-Brand-Mark-Complete'),'v67 must expose live verification headers');
+assert(entry.includes("module.exports=require('../lib/brand-mark-complete-v67')"),'public entrypoint must use complete brand identity v67.1');
+assert(complete.includes("require('./brand-mark-device-parity-v66')"),'v67.1 must preserve v66.2 device parity/integrity underneath');
+assert(complete.includes("BRAND_MARK_COMPLETE_VERSION='67.1'"),'v67.1 must expose the current complete-brand generation');
+assert(complete.includes("BRAND_MARK_ASSET_VERSION='67.1'"),'v67.1 must pin the current brand asset generation');
+assert(complete.includes('officialDomains'),'v67.1 must restrict brand identity fallbacks to governed official domains');
+assert(complete.includes('manifest-icon')&&complete.includes('apple-touch-icon'),'v67.1 must inspect modern official-site identity declarations');
+assert(complete.includes('official-domain-declared-identity'),'v67.1 must expose declared official-domain identity provenance');
+assert(complete.includes('official-domain-favicon-cache'),'v67.1 must expose the governed official-domain favicon fallback provenance');
+assert(complete.includes('drop_404_icon=true'),'v67.1 favicon fallback must reject generic default favicon responses');
+assert(complete.includes('min_size=48'),'v67.1 favicon fallback must require a useful high-resolution source');
+assert(complete.includes('if(slug===\'amazon\')return false'),'v67.1 must preserve Amazon sub-brand protection');
+assert(complete.includes("String(image.assetKind||'').toLowerCase()!=='brand_img'"),'v67.1 must preserve generic product/lifestyle-image rejection');
+assert(complete.includes('svgAppearsWhiteOnly'),'v67.1 must detect visually blank white-only SVG brand marks');
+assert(complete.includes("svgAppearsWhiteOnly(image.buffer)"),'v67.1 must reject inherited v65 white-only SVGs before serving them');
+assert(complete.includes('?v=${BRAND_MARK_ASSET_VERSION}'),'v67.1 must version every rendered brand-mark URL consistently across devices');
+assert(complete.includes('X-APG-Brand-Mark-Complete'),'v67.1 must expose live verification headers');
 
 assert(parity.includes("require('./brand-mark-curated-v66')"),'v66.2 parity/integrity must preserve curated v66 immediately underneath');
 assert(parity.includes("BRAND_MARK_DEVICE_PARITY_VERSION='66.2'"),'v66.2 must expose the device-parity generation');
@@ -82,7 +84,7 @@ assert(quality.includes('premium-vector')&&quality.includes('premium-raster'),'v
 assert(quality.includes('High-quality official brand mark unavailable; use brand-name fallback'),'v65 must prefer text fallback over a poor logo');
 assert(!quality.includes('google.com/s2/favicons'),'v65 itself must not use legacy Google S2 favicon fallbacks');
 assert(!quality.includes('icons.duckduckgo.com'),'v65 itself must not use DuckDuckGo favicon fallbacks');
-assert(quality.includes("if(/icon|ico/i.test(image.type)||kind==='site_icon')return null"),'v65 must continue rejecting tiny favicon-quality raster icons; v67 owns governed high-resolution identity fallback');
+assert(quality.includes("if(/icon|ico/i.test(image.type)||kind==='site_icon')return null"),'v65 must continue rejecting tiny favicon-quality raster icons; v67.1 owns governed high-resolution identity fallback');
 assert(quality.includes('X-APG-Brand-Mark-Quality'),'v65 must expose brand mark quality for live verification');
 
 const expectedCurated=['breville','samsung','philips','delonghi','dyson'];
@@ -98,4 +100,4 @@ for(const slug of expectedCurated){
 assert(curated.includes("X-APG-Brand-Mark-Source','curated-reviewed-vector-override"),'v66 must expose curated provenance for live verification');
 assert(curated.includes("X-APG-Brand-Mark-Quality','premium-vector"),'v66 curated marks must report premium-vector quality');
 
-console.log(`APG Brand Integrity v67 QA passed: ${products.length}/${products.length} products -> ${used.size}/${brands.length} canonical brands -> ${Object.keys(officialDomains).length} governed domains; ${expectedCurated.length} curated premium-vector overrides retained; complete official-domain identity resolver active; desktop/mobile parity and bad-image protections preserved.`);
+console.log(`APG Brand Integrity v67.1 QA passed: ${products.length}/${products.length} products -> ${used.size}/${brands.length} canonical brands -> ${Object.keys(officialDomains).length} governed domains; ${expectedCurated.length} curated premium-vector overrides retained; complete official-domain identity resolver active; white-only SVGs rejected; desktop/mobile parity and bad-image protections preserved.`);
