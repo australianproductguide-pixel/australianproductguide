@@ -6,14 +6,14 @@ const layer=require('../lib/brand-mark-missing-only-v73');
 
 function assert(condition,message){if(!condition)throw new Error(message);}
 
-assert(layer.VERSION==='73.0','missing-logo layer version must be v73.0');
+assert(layer.BRAND_MARK_MISSING_ONLY_VERSION==='73.0','missing-logo layer version must be v73.0');
 assert(Array.isArray(layer.MISSING_ONLY_SLUGS)&&layer.MISSING_ONLY_SLUGS.length>50,'expected substantial attachment-derived missing-only set');
 assert(new Set(layer.MISSING_ONLY_SLUGS).size===layer.MISSING_ONLY_SLUGS.length,'missing-only set must not contain duplicates');
 
 for(const slug of ['american-tourister','breville','samsung','philips','delonghi','dyson','electrolux','google','gopro','hisense','lenovo','microsoft','nintendo','razer','tcl','ugreen','xiaomi','zojirushi']){
   assert(layer.TARGETS.has(slug),`expected attachment-derived missing target ${slug}`);
 }
-for(const slug of ['amazon','apple','lg','eufy','ninja','tp-link','asus','bose','sony','sonos','sennheiser']){
+for(const slug of ['amazon','apple','lg','eufy','ninja','tp-link','asus','bose','sony','sonos','sennheiser','iniu']){
   assert(!layer.TARGETS.has(slug),`known visible logo must remain outside missing-only scope: ${slug}`);
 }
 
