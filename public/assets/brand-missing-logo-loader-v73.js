@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='73.0';
+  const VERSION='73.1';
   const SELECTOR='img[data-apg-missing-logo-target]';
 
   function shellFor(img){return img.closest('[data-brand-logo-shell]')||img.parentElement;}
