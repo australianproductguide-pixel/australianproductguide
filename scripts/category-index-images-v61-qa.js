@@ -17,7 +17,9 @@ if(JSON.stringify(slugs)!==JSON.stringify(imageSlugs))fail('Category image regis
 
 const cards=slugs.map(slug=>`<article class="category-card"><div><span class="category-icon large"><svg><path d="M0 0"></path></svg></span></div><div><p class="eyebrow">Maintained comparison · 5 products</p><h3><a href="/categories/${slug}/">${categories[slug].label}</a></h3><p>Useful category guidance for Australian shoppers.</p><div class="pills"><span class="pill">example</span></div><div class="card-actions"><a class="button secondary" href="/categories/${slug}/">Explore category</a><a class="text-link" href="/categories/${slug}/finder/">Help me choose →</a></div></div></article>`).join('');
 const duplicatePathwayMap='<section class="section soft-panel"><div class="section-head"><div><p class="kicker">Coverage map</p><h2>90 category pathways</h2><p>Every pathway is now populated.</p></div><a href="/coverage/" class="text-link">Coverage policy →</a></div><ul class="pathway-list"><li><a href="/categories/coffee-machines/">Coffee machines</a></li></ul></section>';
-const html=`<!doctype html><html><head><title>Categories</title></head><body><main><div class="category-grid premium-category-grid">${cards}</div>${duplicatePathwayMap}</main></body></html>`;
+const hero='<section class="hero-shell"><div class="wrap"><div class="hero"><p class="kicker">Product discovery</p><h1>Browse product categories</h1><p class="lede">All 90 Australian Product Guide category pathways now contain a maintained starting catalogue. Deep-evidence and starter-evidence hubs are labelled separately so shoppers can see how mature the research is.</p></div></div></section>';
+const catalogueSearch='<div class="apg-v12-catalogue" data-v12-catalogue hidden><div><label for="apgV12CategorySearch">Find a category</label><input id="apgV12CategorySearch" type="search" placeholder="Try ‘kitchen’, ‘gaming’, ‘travel’ or a product type" data-v12-category-search></div><div class="apg-v12-count"><strong data-v12-visible>90</strong><span>categories shown</span></div><button type="button" data-v12-clear hidden>Clear search</button></div>';
+const html=`<!doctype html><html><head><title>Categories</title></head><body><main id="main">${hero}<section class="section"><div class="section-head"><div><p class="kicker">Current coverage</p><h2>90 populated comparison categories</h2></div></div>${catalogueSearch}<div class="category-grid premium-category-grid">${cards}</div>${duplicatePathwayMap}</section></main></body></html>`;
 const out=layer.inject(html,'/categories/');
 
 if(count(out,'class="category-index-media is-base"')!==90)fail(`Expected 90 base category index images, found ${count(out,'class="category-index-media is-base"')}`);
@@ -26,9 +28,9 @@ if(count(out,'decoding="async"')!==90)fail('Every category index image must deco
 if(count(out,'width="40" height="40"')!==90)fail('Every category image needs a compact 40x40 HTML fallback size');
 if(out.includes('<figcaption'))fail('Category hub tiles must not render image-caption/source bars');
 if(out.includes('<style id="apg-category-index-images-v61"'))fail('Category directory CSS must not be inline under Production CSP');
-if(!out.includes('href="/assets/category-directory-v61.css?v=61.6"'))fail('CSP-safe category directory stylesheet link missing');
+if(!out.includes('href="/assets/category-directory-v61.css?v=61.7"'))fail('CSP-safe category directory v61.7 stylesheet link missing');
 if(!out.includes('data-apg-category-index-images="v61"'))fail('Category-index runtime marker missing');
-if(!out.includes('name="apg-category-index-images" content="v61.6"'))fail('Category-index v61.6 metadata missing');
+if(!out.includes('name="apg-category-index-images" content="v61.7"'))fail('Category-index v61.7 metadata missing');
 if(out.includes('90 category pathways')||out.includes('pathway-list'))fail('Duplicated legacy 90-category pathway map must be removed');
 if(!html.includes('90 category pathways'))fail('QA fixture must contain the legacy duplicated pathway map before enrichment');
 for(const slug of slugs){
@@ -36,10 +38,31 @@ for(const slug of slugs){
   if(!out.includes(`src="${src}"`))fail(`Rendered hub is missing governed image for ${slug}`);
 }
 
+// v61.7 page-composition contracts: marketplace browse hierarchy, search visible by
+// default and direct shortcuts to high-value product discovery/decision journeys.
+if(!out.includes('class="apg-category-retail-tools"'))fail('Retail quick-browse toolbar missing');
+if(!out.includes('<span>Quick browse</span>'))fail('Quick-browse label missing');
+for(const href of ['/categories/coffee-machines/','/categories/air-fryers/','/categories/robot-vacuums/','/categories/televisions/','/categories/laptops/','/categories/smartphones/','/decision-lab/','/compare/','/brands/']){
+  if(!out.includes(`href="${href}"`))fail(`Retail directory shortcut missing: ${href}`);
+}
+if(out.includes('class="apg-v12-catalogue" data-v12-catalogue hidden'))fail('Category search must be visible in SSR presentation');
+if(!out.includes('placeholder="Search 90 categories — e.g. kitchen, gaming, travel"'))fail('Premium category search prompt missing');
+if(!out.includes('<p class="kicker">Product categories</p>'))fail('Category hero kicker not reconciled');
+if(!out.includes('<h2>All product categories</h2>'))fail('Catalogue section heading not reconciled');
+if(!out.includes('Explore 90 maintained product categories, compare your options and use Help Me Choose when you want a recommendation for your situation.'))fail('Category hero decision copy missing');
+
 const cssPath=path.join(__dirname,'..','public','assets','category-directory-v61.css');
 if(!fs.existsSync(cssPath))fail('CSP-safe category directory stylesheet file missing');
 const css=fs.readFileSync(cssPath,'utf8');
 const cssChecks=[
+  ['marketplace page background','main#main{\n  background:#f5f6f6!important'],
+  ['category sharebar removal','.platform-sharebar{\n  display:none!important'],
+  ['compact white hero','.hero-shell{\n  margin:0!important;\n  padding:20px 0 18px!important;\n  background:#fff!important'],
+  ['retail shortcut toolbar','.apg-category-retail-tools{'],
+  ['quick browse controls','.apg-category-quick'],
+  ['decision task controls','.apg-category-task-links'],
+  ['visible search shell','.apg-v12-catalogue{'],
+  ['prominent search input','.apg-v12-catalogue input[type="search"]'],
   ['two-column desktop directory','grid-template-columns:repeat(2,minmax(0,1fr))!important'],
   ['single-column responsive directory','grid-template-columns:1fr!important'],
   ['unified card geometry','grid-template-columns:42px minmax(0,1fr)!important'],
@@ -48,7 +71,7 @@ const cssChecks=[
   ['strict mobile thumbnail cap','max-width:36px!important'],
   ['strict mobile thumbnail height cap','max-height:36px!important'],
   ['image cover crop','object-fit:cover!important'],
-  ['clear category title','font-size:16px!important'],
+  ['clear category title','font-size:16.5px!important'],
   ['two-line supporting copy','-webkit-line-clamp:2!important'],
   ['category pills suppressed','.category-grid .category-card .pills'],
   ['actions visible','.category-grid .category-card .card-actions'],
@@ -58,7 +81,7 @@ const cssChecks=[
   ['no decorative card chevron','.category-grid .category-card::after']
 ];
 for(const [label,needle] of cssChecks){if(!css.includes(needle))fail(`Missing ${label} CSS contract`);}
-if(!css.includes('display:flex!important'))fail('Card actions must be visibly restored');
+if(!css.includes('display:flex!important'))fail('Card actions/retail controls must remain visibly rendered');
 if(!css.includes('content:none!important'))fail('Whole-card overlay/chevron chrome must be disabled');
 
 for(const retired of [
@@ -104,7 +127,7 @@ if(layer.inject(html,'/search/')!==html)fail('Category image layer must not alte
 if(layer.inject(out,'/categories/')!==out)fail('Category image layer must be idempotent');
 
 console.log(JSON.stringify({
-  version:'category-index-images-v61.6-qa',
+  version:'category-index-images-v61.7-qa',
   categories:slugs.length,
   governedImages:imageSlugs.length,
   renderedImages:count(out,'class="category-index-media is-base"'),
@@ -115,10 +138,15 @@ console.log(JSON.stringify({
   mobileThumbnailPx:36,
   desktopColumns:2,
   mobileColumns:1,
+  marketplaceShell:true,
+  compactHero:true,
+  searchVisibleServerSide:true,
+  quickBrowseShortcuts:6,
+  decisionToolShortcuts:3,
+  sharebarSuppressedOnHub:true,
   supportingCopyClamped:true,
   categoryPillsVisuallySuppressed:true,
   categoryActionsVisible:true,
-  wholeCardOverlayRemoved:true,
   duplicatePathwayMapRemoved:true,
   premiumAndBaseGeometryUnified:true,
   routeScoped:true,
