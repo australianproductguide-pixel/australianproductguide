@@ -67,9 +67,16 @@ jobs:
           const expect=(ok,msg)=>{if(!ok)throw new Error(msg)};
           expect(config.$schema==='https://openapi.vercel.sh/vercel.json','Vercel schema declaration missing');
           expect(JSON.stringify(config.regions)===JSON.stringify(['syd1']),`Expected Sydney function region, got ${JSON.stringify(config.regions)}`);
-          expect(Array.isArray(config.routes)&&config.routes.length===2,'Expected filesystem-first routing plus API fallback');
-          expect(config.routes[0].handle==='filesystem','Static filesystem routing must run before the API fallback');
-          expect(config.routes[1].src==='/(.*)'&&config.routes[1].dest==='/api','Unexpected dynamic fallback route');
+          expect(Array.isArray(config.routes)&&config.routes.length===6,'Expected four private MCP/OAuth routes, filesystem handling and the API fallback');
+          const protectedRoutes=[
+            ['/mcp','/api/mcp'],
+            ['/oauth/consent','/api/oauth-consent'],
+            ['/.well-known/oauth-protected-resource/mcp','/api/mcp-oauth-metadata'],
+            ['/.well-known/oauth-protected-resource','/api/mcp-oauth-metadata']
+          ];
+          protectedRoutes.forEach(([src,dest],i)=>expect(config.routes[i].src===src&&config.routes[i].dest===dest,`Unexpected protected MCP/OAuth route at position ${i}`));
+          expect(config.routes[4].handle==='filesystem','Static filesystem routing must run before the general API fallback');
+          expect(config.routes[5].src==='/(.*)'&&config.routes[5].dest==='/api','Unexpected dynamic fallback route');
           const deploymentEnabled=config.git?.deploymentEnabled||{};
           expect(deploymentEnabled['apg/*']===false&&deploymentEnabled['apg-*']===false,'Routine APG feature branches must not auto-deploy');
           const authoritativeWorkflowFiles=['amazon-shopping-assurance-v40.yml','catalogue-freshness-qa.yml','codeql.yml','indexnow.yml','production-smoke.yml','source-qa.yml'].sort();
