@@ -67,7 +67,7 @@ async function main() {
         await new Promise(r => setTimeout(r, 300));
       }
 
-      const state = await page.evaluate(() => {
+      const state = await page.evaluate(isScout => {
         const body = document.body;
         const visible = el => {
           if (!el) return false;
@@ -91,9 +91,9 @@ async function main() {
           footerVisible: visible(document.querySelector('footer')),
           searchVisible: [...document.querySelectorAll('input[type="search"],input[name="q"],[data-search-input]')].some(visible),
           maintainedBannerText: [...document.querySelectorAll('body *')].some(el => visible(el) && /maintained australian research/i.test(el.textContent || '')),
-          scoutOpen: scout ? !document.getElementById('apgAssistantPanel')?.hidden : null,
+          scoutOpen: isScout ? !document.getElementById('apgAssistantPanel')?.hidden : null,
         };
-      });
+      }, scout);
       const screenshot = path.join(OUT_DIR, `${vp}-${name}${scout ? '-scout-open' : ''}.png`);
       await page.screenshot({ path: screenshot, fullPage: !scout });
 

@@ -8,7 +8,7 @@ const {execFileSync}=require('child_process');
 
 const BASE_URL=process.env.BASE_URL||'https://australianproductguide.au';
 const CHROME=process.env.CHROME;
-const OUT=process.env.VISUAL_OUT||'visual-v27';
+const OUT=process.env.VISUAL_OUT||'visual-v28';
 const PRODUCTION_ORIGIN=new URL(BASE_URL).origin;
 const UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 APGVisualCertification/28';
 
@@ -236,7 +236,7 @@ async function main(){
       const scout=await page.evaluate(()=>({
         sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,
         open:!document.getElementById('apgAssistantPanel')?.hidden,
-        input:!!document.querySelector('.scout-input')
+        input:!!document.querySelector('.scout-v5-input')
       }));
       await page.screenshot({path:`${OUT}/${vp}-scout-open.png`,fullPage:false});
       if(nav.status<200||nav.status>=400||scout.sw>scout.cw+2||!scout.open||!scout.input||errors.length)bad.push(`${vp}/scout: ${JSON.stringify(scout)} status=${nav.status} ${errors.join('|')}`);
@@ -268,11 +268,11 @@ async function main(){
   if(captureAudit.length!==PAGES.length)bad.push(`Expected ${PAGES.length} Production document captures, got ${captureAudit.length}`);
   if(report.length!==20)bad.push(`Expected 20 visual states, got ${report.length}`);
   if(bad.length){
-    console.error(`V27_VISUAL_CERTIFICATION_FAIL=${bad.length}`);
+    console.error(`V28_VISUAL_CERTIFICATION_FAIL=${bad.length}`);
     console.error(bad.join('\n'));
     process.exit(1);
   }
-  console.log(`V27_VISUAL_CERTIFICATION=${report.length}_STATES_PASS`);
+  console.log(`V28_VISUAL_CERTIFICATION=${report.length}_STATES_PASS`);
 }
 
 main().catch(err=>{
