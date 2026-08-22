@@ -1,8 +1,9 @@
-// APG Google Product Discovery v60 is the final crawler/browser product-discovery contract.
-// It enriches APG's canonical Product entity with editorial Review/pros-cons data
-// while preserving the established breadcrumb and entity-provenance layers and
-// without emitting unsupported price, stock, offer or rating claims.
+// APG Category Index Images v61 is the outermost presentation enrichment for the
+// all-categories hub. It reuses the governed 90-category editorial image registry
+// while leaving individual category/product decision logic unchanged.
 //
+// Google Product Discovery v60 remains authoritative underneath v61 for crawler/browser
+// product-discovery enrichment and canonical Product review/pros-cons data.
 // Search Brand Identity v59 remains authoritative underneath v60 for crawler/browser
 // brand identity and the current owner-approved APG brand mark.
 // SEO Optimisation v58 remains authoritative underneath v59 for metadata,
@@ -28,4 +29,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/google-product-discovery-v60');
+module.exports=require('../lib/category-index-images-v61');
