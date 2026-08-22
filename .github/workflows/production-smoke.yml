@@ -122,7 +122,7 @@ jobs:
       BASE_URL: https://australianproductguide.au
       APG_EXPECTED_SHA: ${{ github.sha }}
       APG_GITHUB_DEPLOYMENT_ID: ${{ needs.production-smoke.outputs.github_deployment_id }}
-      OUTPUT_DIR: artifacts/interaction-v37
+      CRITICAL_BROWSER_OUT: artifacts/production-critical-browser-v61
       VISUAL_OUT: artifacts/production-visual-v28
       TABLET_VISUAL_OUT: artifacts/production-tablet-visual-v61
       A11Y_OUT: artifacts/production-accessibility-v61
@@ -145,7 +145,7 @@ jobs:
           npm install --no-save --package-lock=false puppeteer-core@24.16.0 axe-core@4.10.3 >/dev/null 2>&1
 
       - name: Run critical browser journeys
-        run: node scripts/experience-v37-browser-diagnostic.js
+        run: node scripts/production-critical-browser-v61.js
 
       - name: Capture desktop and mobile Production visual matrix
         run: node scripts/production-visual-v28.js
@@ -162,8 +162,7 @@ jobs:
         with:
           name: apg-production-browser-${{ github.run_id }}
           path: |
-            artifacts/interaction-v37
-            artifacts/decision-lab-v4-p0
+            artifacts/production-critical-browser-v61
             artifacts/production-visual-v28
             artifacts/production-tablet-visual-v61
             artifacts/production-accessibility-v61
