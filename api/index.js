@@ -1,7 +1,9 @@
-// APG Brand Mark Curated v66 is the outermost brand-identity delivery layer.
-// It provides reviewed premium-vector overrides for specific brands that remained visibly
-// grainy under automatic discovery, while preserving Brand Mark Quality v65 for every
-// other brand. The curated layer never replaces verified product photography.
+// APG Brand Mark Device Parity v66.1 is the outermost presentation layer.
+// It versions every rendered /assets/brand-marks/ request so desktop and mobile browsers
+// cannot retain different historical logo assets at the same stable URL.
+// APG Brand Mark Curated v66 remains authoritative immediately underneath, providing
+// reviewed premium-vector overrides for specific brands that remained visibly grainy
+// under automatic discovery. The curated layer never replaces verified product photography.
 //
 // APG Brand Mark Quality v65 remains authoritative underneath v66. It ensures
 // /assets/brand-marks/ prefers crisp official SVG/high-resolution logo assets and rejects
@@ -45,4 +47,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/brand-mark-curated-v66');
+module.exports=require('../lib/brand-mark-device-parity-v66');

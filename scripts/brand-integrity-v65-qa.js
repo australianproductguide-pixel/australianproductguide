@@ -10,11 +10,13 @@ const {brands,slugify}=require('../lib/routes');
 const officialDomains=require('../data/brand-official-domains-v62');
 const curatedOverrides=require('../data/brand-mark-curated-overrides-v66');
 
+const parity=read('lib/brand-mark-device-parity-v66.js');
 const curated=read('lib/brand-mark-curated-v66.js');
 const quality=read('lib/brand-mark-quality-v65.js');
 const placeholder=read('lib/product-brand-placeholder-v64.js');
 const entry=read('api/index.js');
 
+assert.doesNotThrow(()=>new Function(parity),'brand-mark-device-parity-v66.js must parse');
 assert.doesNotThrow(()=>new Function(curated),'brand-mark-curated-v66.js must parse');
 assert.doesNotThrow(()=>new Function(quality),'brand-mark-quality-v65.js must parse');
 assert.equal(products.length,482,'brand integrity gate expects the current 482-product canonical catalogue');
@@ -45,7 +47,11 @@ assert.deepEqual(missingDomain,[],'every canonical brand must have a governed of
 const extraDomain=Object.keys(officialDomains).filter(slug=>!canonicalBySlug.has(slug));
 assert.deepEqual(extraDomain,[],'official-domain registry must not contain orphan brand slugs');
 
-assert(entry.includes("module.exports=require('../lib/brand-mark-curated-v66')"),'public entrypoint must use current v66 curated brand mark layer');
+assert(entry.includes("module.exports=require('../lib/brand-mark-device-parity-v66')"),'public entrypoint must use current v66.1 device-parity layer');
+assert(parity.includes("require('./brand-mark-curated-v66')"),'v66.1 parity must preserve curated v66 immediately underneath');
+assert(parity.includes('BRAND_MARK_ASSET_VERSION=\'66.1\''),'v66.1 must pin a cache-busting brand-mark asset generation');
+assert(parity.includes('?v=${BRAND_MARK_ASSET_VERSION}'),'v66.1 must version every rendered brand-mark URL');
+assert(parity.includes('X-APG-Brand-Mark-Device-Parity'),'v66.1 must expose live parity verification');
 assert(curated.includes("require('./brand-mark-quality-v65')"),'v66 must preserve v65 brand quality immediately underneath');
 assert(quality.includes("require('./product-brand-placeholder-v64')"),'v65 must preserve product placeholder v64 underneath');
 assert(placeholder.includes('/assets/brand-marks/'),'product placeholders must resolve through the governed brand-mark endpoint');
@@ -69,6 +75,4 @@ for(const slug of expectedCurated){
 assert(curated.includes("X-APG-Brand-Mark-Source','curated-reviewed-vector-override"),'v66 must expose curated provenance for live verification');
 assert(curated.includes("X-APG-Brand-Mark-Quality','premium-vector"),'v66 curated marks must report premium-vector quality');
 
-// This gate is intentionally exact: future catalogue additions must either reuse a governed
-// canonical brand or add that brand to the canonical directory/domain registry in the same release.
-console.log(`APG Brand Integrity v66 QA passed: ${products.length}/${products.length} products -> ${used.size}/${brands.length} canonical brands -> ${Object.keys(officialDomains).length} governed domains; ${expectedCurated.length} curated premium-vector overrides; low-quality favicon fallbacks disabled.`);
+console.log(`APG Brand Integrity v66.1 QA passed: ${products.length}/${products.length} products -> ${used.size}/${brands.length} canonical brands -> ${Object.keys(officialDomains).length} governed domains; ${expectedCurated.length} curated premium-vector overrides; desktop/mobile cache parity enforced; low-quality favicon fallbacks disabled.`);
