@@ -52,4 +52,6 @@ assert(!quality.includes('icons.duckduckgo.com'),'v65 must not use DuckDuckGo fa
 assert(quality.includes("if(/icon|ico/i.test(image.type)||kind==='site_icon')return null"),'v65 must reject favicon-quality raster icons');
 assert(quality.includes("X-APG-Brand-Mark-Quality"),'v65 must expose brand mark quality for live verification');
 
+// This gate is intentionally exact: future catalogue additions must either reuse a governed
+// canonical brand or add that brand to the canonical directory/domain registry in the same release.
 console.log(`APG Brand Integrity v65 QA passed: ${products.length}/${products.length} products -> ${used.size}/${brands.length} canonical brands -> ${Object.keys(officialDomains).length} governed domains; low-quality favicon fallbacks disabled.`);
