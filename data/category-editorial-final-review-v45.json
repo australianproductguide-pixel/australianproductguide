@@ -13,7 +13,7 @@
     "manualCurated": 57,
     "premiumAuto": 33,
     "reviewRequired": 0,
-    "totalBytes": 18308526
+    "totalBytes": 18077952
   },
   "categories": [
     {
@@ -327,16 +327,16 @@
     {
       "slug": "earbuds",
       "label": "Earbuds",
-      "title": "Earfun wireless black headphones, September 2024 24.jpg",
+      "title": "Here One earbuds in white charging case.jpg",
       "mode": "MANUAL_CURATED",
       "score": null,
-      "reason": "Recent high-resolution true wireless-earbuds photograph; replaces a semantically misleading cotton-swab false positive.",
+      "reason": "Clear high-resolution true wireless-earbuds and charging-case photograph; replaces a semantically misleading cotton-swab false positive.",
       "license": "CC BY-SA 4.0",
-      "creator": "Chenspec",
-      "sourcePage": "https://commons.wikimedia.org/wiki/File%3AEarfun%20wireless%20black%20headphones%2C%20September%202024%2024.jpg",
+      "creator": "Doppler Labs",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File%3AHere%20One%20earbuds%20in%20white%20charging%20case.jpg",
       "width": 1280,
-      "height": 719,
-      "bytes": 277628
+      "height": 720,
+      "bytes": 47054
     },
     {
       "slug": "electric-kettles",
