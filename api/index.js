@@ -1,8 +1,9 @@
-// APG SEO Optimisation v58 is the final public response contract.
-// It wraps Social Share Card v57, preserving the owner-approved APG campaign
-// artwork as the default Open Graph/X preview while allowing relevant category
-// imagery and exact verified product imagery to override it where provenance permits.
+// APG Search Brand Identity v59 is the final crawler/browser identity contract.
+// It replaces the superseded favicon/logo discovery signal with the current
+// owner-approved APG brand mark while leaving recommendation and SEO logic intact.
 //
+// SEO Optimisation v58 remains authoritative underneath v59 for metadata,
+// structured content, internal discovery and route freshness.
 // Social Share Card v57 remains the global social-preview fallback layer.
 // Social Integration v56 remains the verified social-profile entity and UI layer.
 // Interaction Runtime v55 remains the browser reliability contract.
@@ -24,4 +25,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/seo-optimisation-v58-runtime');
+module.exports=require('../lib/brand-search-identity-v59');
