@@ -1,4 +1,12 @@
-// APG Missing Brand Logo Completion v73 is the outermost presentation/governance layer.
+// APG Image SEO Phase 1 v74 is the outermost crawler-facing image layer.
+// It classifies imagery as verified product photography, governed brand identity or
+// category editorial context; enriches SSR alt text/social metadata/JSON-LD/image
+// sitemap signals; and fails closed so brand/category placeholders never become
+// Product.image. Image provenance and rights decisions remain inherited from the
+// existing product/category/brand governance layers.
+// Compatibility lineage: module.exports=require('../lib/brand-mark-missing-only-v73')
+//
+// APG Missing Brand Logo Completion v73.1 remains authoritative immediately underneath.
 // It is intentionally narrow: only brands observed as blank/broken in the 22 Aug 2026
 // /brands/ capture are eligible for retry/hydration. Existing successful logos are left
 // unchanged. It also rejects invisible/empty SVG payloads and hydrates the targeted
@@ -45,4 +53,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/brand-mark-missing-only-v73');
+module.exports=require('../lib/image-seo-phase1-v74');
