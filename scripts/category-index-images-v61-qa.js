@@ -14,7 +14,8 @@ if(imageSlugs.length!==90)fail(`Expected 90 governed category images, found ${im
 if(JSON.stringify(slugs)!==JSON.stringify(imageSlugs))fail('Category image registry is not exactly aligned to the maintained 90-category catalogue');
 
 const cards=slugs.map(slug=>`<article class="category-card"><div><span class="category-icon large"><svg><path d="M0 0"></path></svg></span></div><div><h3><a href="/categories/${slug}/">${categories[slug].label}</a></h3></div></article>`).join('');
-const html=`<!doctype html><html><head><title>Categories</title></head><body><main><div class="category-grid premium-category-grid">${cards}</div></main></body></html>`;
+const duplicatePathwayMap='<section class="section soft-panel"><div class="section-head"><div><p class="kicker">Coverage map</p><h2>90 category pathways</h2><p>Every pathway is now populated.</p></div><a href="/coverage/" class="text-link">Coverage policy →</a></div><ul class="pathway-list"><li><a href="/categories/coffee-machines/">Coffee machines</a></li></ul></section>';
+const html=`<!doctype html><html><head><title>Categories</title></head><body><main><div class="category-grid premium-category-grid">${cards}</div>${duplicatePathwayMap}</main></body></html>`;
 const out=layer.inject(html,'/categories/');
 
 if(count(out,'class="category-index-media is-base"')!==90)fail(`Expected 90 base category index images, found ${count(out,'class="category-index-media is-base"')}`);
@@ -23,14 +24,17 @@ if(count(out,'decoding="async"')!==90)fail('Every category index image must deco
 if(out.includes('<figcaption'))fail('Category hub tiles must not render image-caption/source bars inside compact image slots');
 if(!out.includes('id="apg-category-index-images-v61"'))fail('Responsive category image CSS was not injected');
 if(!out.includes('data-apg-category-index-images="v61"'))fail('Category-index runtime marker was not injected');
-if(!out.includes('name="apg-category-index-images" content="v61.4"'))fail('Category-index v61.4 version metadata missing');
+if(!out.includes('name="apg-category-index-images" content="v61.5"'))fail('Category-index v61.5 version metadata missing');
+if(out.includes('90 category pathways')||out.includes('pathway-list'))fail('Duplicated legacy 90-category pathway map must be removed from the category hub');
+if(!html.includes('90 category pathways'))fail('QA fixture must contain the legacy duplicated pathway map before enrichment');
 for(const slug of slugs){
   const src=registry[slug].src;
   if(!out.includes(`src="${src}"`))fail(`Rendered hub is missing governed image for ${slug}`);
 }
 
-// Guard the v61.4 retail-directory hierarchy: photography is a compact identifier,
-// category names own navigation, and button-heavy card chrome stays off the hub.
+// Guard the v61.5 retail-directory hierarchy: photography is a compact identifier,
+// category names own navigation, button-heavy card chrome stays off the hub, and the
+// second 90-category link dump is removed rather than shown below the primary directory.
 const cssChecks=[
   ['professional card surface','border:1px solid #dde4e6!important;border-radius:12px!important'],
   ['premium horizontal directory row','grid-template-columns:56px minmax(0,1fr) 18px!important'],
@@ -62,8 +66,6 @@ for(const retired of [
   if(out.includes(retired))fail(`Retired image-dominant category rule still present: ${retired}`);
 }
 
-// Current premium cards must replace the old scene, preserve decision copy, and
-// contain exactly one governed image. CSS then makes the title the card hit target.
 const premiumCard='<article class="category-card v7-category-card" data-v7-category="coffee-machines"><div class="v7-category-scene" data-v7-category="coffee-machines"><span class="v7-scene-glow"></span><span class="v7-scene-icon"><svg><path d="M0 0"></path></svg></span><span class="v7-scene-copy"><small>Kitchen</small><strong>Coffee machines</strong></span></div><div class="v7-category-card-copy"><p class="eyebrow">Maintained comparison · 10 products</p><h3><a href="/categories/coffee-machines/">Coffee machines</a></h3><p>Choose a coffee machine for the way you actually make coffee.</p><div class="pills"><span class="pill">beginner</span></div><div class="card-actions"><a class="button secondary" href="/categories/coffee-machines/">Explore category</a><a class="text-link" href="/categories/coffee-machines/finder/">Help me choose →</a></div></div></article>';
 const premiumOut=layer.enrichCategoryCard(premiumCard);
 if(!premiumOut.includes('class="category-index-media is-premium"'))fail('Premium category card must receive its governed image in the premium slot');
@@ -80,11 +82,14 @@ if(!baseOut.includes('class="category-index-media is-base"'))fail('Base category
 if(baseOut.includes('category-icon large'))fail('Base category icon must be replaced rather than retained beside the image');
 if(count(baseOut,'category-index-media')!==1)fail('Base category card must contain exactly one governed image figure');
 
+const unrelatedSoftPanel='<section class="section soft-panel"><h2>Useful buying guidance</h2><p>Keep me.</p></section>';
+if(layer.removeLegacyPathwayMap(unrelatedSoftPanel)!==unrelatedSoftPanel)fail('Unrelated soft panels must not be removed');
+if(layer.removeLegacyPathwayMap(duplicatePathwayMap).trim()!=='')fail('Legacy duplicated pathway map removal must be exact');
 if(layer.inject(html,'/search/')!==html)fail('Category image layer must not alter non-category-index pages');
 if(layer.inject(out,'/categories/')!==out)fail('Category image layer must be idempotent');
 
 console.log(JSON.stringify({
-  version:'category-index-images-v61.4-qa',
+  version:'category-index-images-v61.5-qa',
   categories:slugs.length,
   governedImages:imageSlugs.length,
   renderedImages:count(out,'class="category-index-media is-base"'),
@@ -100,6 +105,7 @@ console.log(JSON.stringify({
   categoryPillsVisuallySuppressed:true,
   buttonChromeVisuallySuppressed:true,
   wholeCardNavigation:true,
+  duplicatePathwayMapRemoved:true,
   premiumSceneReplaced:true,
   hubCaptionsRemoved:true,
   routeScoped:true,
