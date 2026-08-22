@@ -88,18 +88,8 @@ jobs:
           echo "APG_GITHUB_DEPLOYMENT_ID=$deployment_id" >> "$GITHUB_ENV"
           echo "deployment_id=$deployment_id" >> "$GITHUB_OUTPUT"
 
-          short=$(printf '%s' "$SHA" | cut -c1-16)
-          for attempt in $(seq 1 30); do
-            code=$(curl -sS -L --max-time 30 -o /tmp/apg-home.html -w '%{http_code}' "$BASE_URL/" || true)
-            if [ "$code" = 200 ] && grep -q "v=$short" /tmp/apg-home.html; then
-              echo "Canonical Production exposes exact commit marker $short"
-              exit 0
-            fi
-            echo "Canonical runtime not reconciled yet attempt=$attempt status=${code:-transport-error} expected_marker=v=$short"
-            sleep 5
-          done
-          echo "ERROR Canonical Production did not expose commit marker v=$short after deployment success"
-          exit 1
+      - name: Reconcile exact public runtime
+        run: node scripts/wait-production-runtime-v61.js
 
       - name: Verify Production HTTP contracts
         run: node scripts/production-http-contract-v61.js
