@@ -1,29 +1,38 @@
 const http=require('http');
+const fs=require('fs');
+const path=require('path');
 const vm=require('vm');
 const app=require('../lib/account-release-reconcile');
 
-const assets=[
+const runtimeAssets=[
   '/assets/app.js',
   '/assets/assistant.js',
   '/assets/brand-polish.js',
   '/assets/navigation-v8.js',
   '/assets/amazon-associates.js',
-  '/assets/account-platform.js',
-  '/assets/brand-missing-logo-loader-v73.js'
+  '/assets/account-platform.js'
+];
+const publicAssets=[
+  path.join(__dirname,'..','public','assets','brand-missing-logo-loader-v73.js')
 ];
 
 const server=http.createServer((req,res)=>app(req,res));
 server.listen(0,'127.0.0.1',async()=>{
   const {port}=server.address();
   try{
-    for(const path of assets){
-      const response=await fetch(`http://127.0.0.1:${port}${path}`);
-      if(!response.ok)throw new Error(`${path} returned HTTP ${response.status}`);
+    for(const assetPath of runtimeAssets){
+      const response=await fetch(`http://127.0.0.1:${port}${assetPath}`);
+      if(!response.ok)throw new Error(`${assetPath} returned HTTP ${response.status}`);
       const source=await response.text();
-      new vm.Script(source,{filename:path});
-      console.log(`RUNTIME_JS_PARSE=PASS ${path}`);
+      new vm.Script(source,{filename:assetPath});
+      console.log(`RUNTIME_JS_PARSE=PASS ${assetPath}`);
     }
-    console.log(`RUNTIME_JS_SYNTAX=PASS assets=${assets.length}`);
+    for(const filePath of publicAssets){
+      const source=fs.readFileSync(filePath,'utf8');
+      new vm.Script(source,{filename:filePath});
+      console.log(`RUNTIME_JS_PARSE=PASS /assets/${path.basename(filePath)}`);
+    }
+    console.log(`RUNTIME_JS_SYNTAX=PASS assets=${runtimeAssets.length+publicAssets.length}`);
   }catch(error){
     console.error(error.stack||error.message||String(error));
     process.exitCode=1;
