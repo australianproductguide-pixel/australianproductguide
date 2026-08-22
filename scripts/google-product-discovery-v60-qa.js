@@ -17,7 +17,7 @@ assert(productNode,'product schema missing');
 assert(breadcrumb,'breadcrumb schema missing');
 assert.equal(productNode.name,'eufy Robot Vacuum Omni E28');
 assert.equal(productNode.url,'https://australianproductguide.au/products/eufy-robot-vacuum-omni-e28/');
-assert.equal(productNode.brand.name,'Eufy');
+assert.equal(productNode.brand.name,'eufy');
 assert.equal(productNode.review['@type'],'Review');
 assert.equal(productNode.review.author['@type'],'Team','Google Product Snippet reviewer must be a Person or Team');
 assert.equal(productNode.review.author.name,'Australian Product Guide');
