@@ -555,20 +555,22 @@ body[data-apg-category-index-images="v61"] .category-grid .category-card .card-a
   justify-content:center!important;
   min-height:27px!important;
   padding:4px 8px!important;
-  border:1px solid #c6cfd3!important;
+  border:1px solid var(--apg46-blue,#2563EB)!important;
   border-radius:5px!important;
-  background:#fff!important;
-  color:#1f2a30!important;
-  box-shadow:none!important;
+  background:var(--apg46-blue,#2563EB)!important;
+  color:#fff!important;
+  box-shadow:0 7px 18px rgba(37,99,235,.18)!important;
   font-size:10.75px!important;
   line-height:1.15!important;
   font-weight:750!important;
   text-decoration:none!important;
 }
 
-body[data-apg-category-index-images="v61"] .category-grid .category-card .card-actions .button.secondary:hover{
-  border-color:#94a3a9!important;
-  background:#f7f8f8!important;
+body[data-apg-category-index-images="v61"] .category-grid .category-card .card-actions .button.secondary:hover,
+body[data-apg-category-index-images="v61"] .category-grid .category-card .card-actions .button.secondary:focus-visible{
+  border-color:var(--apg46-blue-dark,#1D4ED8)!important;
+  background:var(--apg46-blue-dark,#1D4ED8)!important;
+  color:#fff!important;
 }
 
 body[data-apg-category-index-images="v61"] .category-grid .category-card .card-actions .text-link{
@@ -576,14 +578,16 @@ body[data-apg-category-index-images="v61"] .category-grid .category-card .card-a
   align-items:center!important;
   min-height:27px!important;
   padding:0!important;
-  color:#0f5f57!important;
+  color:var(--apg46-blue,#2563EB)!important;
   font-size:10.75px!important;
   line-height:1.15!important;
   font-weight:750!important;
   text-decoration:none!important;
 }
 
-body[data-apg-category-index-images="v61"] .category-grid .category-card .card-actions .text-link:hover{
+body[data-apg-category-index-images="v61"] .category-grid .category-card .card-actions .text-link:hover,
+body[data-apg-category-index-images="v61"] .category-grid .category-card .card-actions .text-link:focus-visible{
+  color:var(--apg46-blue-dark,#1D4ED8)!important;
   text-decoration:underline!important;
   text-underline-offset:2px!important;
 }
