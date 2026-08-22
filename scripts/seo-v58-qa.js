@@ -2,6 +2,7 @@
 
 const assert=require('assert');
 const seo=require('../lib/seo-optimisation-v58-runtime');
+const relatedUi=require('../lib/related-decisions-ui-v69');
 const social=require('../lib/social-integration-v56-runtime');
 const shareCard=require('../lib/social-share-card-v57-runtime');
 const {categories,products}=require('../data');
@@ -16,6 +17,15 @@ const productHtml=seo.optimiseHtml(sample,'/products/eufy-robot-vacuum-omni-e28/
 assert(productHtml.includes('<title>eufy Robot Vacuum Omni E28 Australia | Decision Guide &amp; Comparison</title>'),'product title must include brand');
 assert(productHtml.includes('name="twitter:title"'),'product pages must expose a Twitter/X title');
 assert(productHtml.includes('apg-seo-product-related'),'product pages must expose semantic adjacent buying decisions');
+assert(productHtml.includes('<a class="category-card"'),'SEO v58 fixture must expose the legacy related-card markup before the presentation repair');
+const polishedProductHtml=relatedUi.polishRelatedDecisionsHtml(productHtml);
+assert(!polishedProductHtml.includes('<a class="category-card"'),'related decision cards must not use the incompatible legacy anchor-only category-card structure');
+assert(polishedProductHtml.includes('<article class="category-card">'),'related decision cards must reuse APG canonical category-card markup');
+assert(polishedProductHtml.includes('class="category-icon large"'),'related decision cards must expose APG category iconography');
+assert(polishedProductHtml.includes('class="button secondary"'),'related decision cards must expose governed APG action styling');
+assert(polishedProductHtml.includes('Explore category'),'related decision cards must provide the standard category action');
+assert(polishedProductHtml.includes('Help me choose →'),'related decision cards must preserve the standard adjacent finder action');
+assert(polishedProductHtml.includes('name="apg-related-decisions-ui" content="v69.0.0"'),'repaired related decision markup must expose the v69 presentation marker');
 
 const robot=categories['robot-vacuums'];
 const related=seo.relatedCategories(robot).map(c=>c.slug);
@@ -57,4 +67,4 @@ assert(socialHtml.includes('Comparisons, buying tips and fresh product research'
 assert(socialHtml.includes('M18.263 11.097'),'Threads must use the current recognisable fill mark rather than the old approximation');
 assert(socialHtml.includes('M12.017 0C5.396'),'Pinterest must use the recognisable circular Pinterest mark');
 
-console.log(`APG SEO v58 QA PASSED: branded product titles, route-specific lastmod, semantic internal links, category OG imagery, conflict-free approved social fallback, social copy/marks and comparison caps (${pairPages.length}/${MAX_TOTAL_COMPARISONS}).`);
+console.log(`APG SEO v58 QA PASSED: branded product titles, route-specific lastmod, semantic internal links, canonical related-decision cards, category OG imagery, conflict-free approved social fallback, social copy/marks and comparison caps (${pairPages.length}/${MAX_TOTAL_COMPARISONS}).`);

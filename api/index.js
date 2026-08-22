@@ -1,9 +1,10 @@
-// APG Brand Mark Completion v68 is the outermost presentation layer.
-// It preserves every identity already accepted by v67.2, then completes residual
-// brand coverage using exact-title pinned vector identities or governed official-domain
-// favicon caches. Generic product/lifestyle imagery remains ineligible.
+// APG Related Buying Decisions UI v69 is the outermost presentation layer.
+// It repairs the SEO v58 adjacent-category card markup by reusing APG's canonical
+// category-card renderer. Semantic category selection is preserved while icons,
+// spacing, responsive structure and standard decision actions return to the governed UI.
 //
-// Compatibility lineage: module.exports=require('../lib/brand-mark-complete-v67')
+// APG Brand Mark Completion v68 remains authoritative immediately underneath for
+// complete brand identity coverage and its v67/v66 integrity lineage.
 // APG Brand Mark Complete v67 remains authoritative underneath v68 for official-domain
 // logo/wordmark discovery, high-resolution declared identity and fail-closed text fallback.
 // APG Brand Mark Device Parity + Integrity v66.2 remains authoritative underneath.
@@ -19,4 +20,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/brand-mark-completion-v68');
+module.exports=require('../lib/related-decisions-ui-v69');
