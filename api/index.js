@@ -1,4 +1,10 @@
-// APG Homepage Situation Images v70 is the outermost presentation layer.
+// APG Televisions Category Image Refresh v71 is the outermost presentation/governance layer.
+// It keeps the canonical /category-editorial/televisions.jpg path while replacing the
+// weaker generic room image with a clearer governed television-focused photograph and
+// corrects television hero/social dimensions and visible attribution.
+// Compatibility lineage: module.exports=require('../lib/homepage-situation-images-v70')
+//
+// APG Homepage Situation Images v70 remains authoritative immediately underneath.
 // It reuses the governed category editorial imagery for the homepage
 // "What are you trying to improve?" cards while preserving their existing icon,
 // situation label, copy, filters, links and overall geometry.
@@ -27,4 +33,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/homepage-situation-images-v70');
+module.exports=require('../lib/televisions-category-image-v71');
