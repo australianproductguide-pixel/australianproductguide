@@ -1,0 +1,242 @@
+/* APG Category Directory v61.6
+   A calm, retail-grade directory: small governed image, clear title and copy,
+   visible actions, consistent geometry across all 90 maintained categories. */
+
+body[data-apg-category-index-images="v61"] .category-grid{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:12px!important;
+  align-items:stretch!important;
+}
+
+body[data-apg-category-index-images="v61"] .category-grid .category-card,
+body[data-apg-category-index-images="v61"] .premium-category-grid .v7-category-card{
+  position:relative!important;
+  display:grid!important;
+  grid-template-columns:42px minmax(0,1fr)!important;
+  grid-template-rows:auto!important;
+  align-items:start!important;
+  column-gap:12px!important;
+  min-height:0!important;
+  padding:15px!important;
+  overflow:hidden!important;
+  background:#fff!important;
+  border:1px solid #dfe5e7!important;
+  border-radius:10px!important;
+  box-shadow:0 1px 2px rgba(15,23,42,.035)!important;
+  transition:border-color .15s ease,box-shadow .15s ease!important;
+}
+
+body[data-apg-category-index-images="v61"] .category-grid .category-card:hover{
+  transform:none!important;
+  border-color:#bcc8cc!important;
+  box-shadow:0 3px 10px rgba(15,23,42,.065)!important;
+}
+
+body[data-apg-category-index-images="v61"] .category-grid .category-card:focus-within{
+  outline:2px solid #2563eb!important;
+  outline-offset:2px!important;
+}
+
+body[data-apg-category-index-images="v61"] .category-grid .category-card::after{
+  content:none!important;
+}
+
+body[data-apg-category-index-images="v61"] .category-index-media,
+body[data-apg-category-index-images="v61"] .premium-category-grid .v7-category-card>.category-index-media.is-premium,
+body[data-apg-category-index-images="v61"] .category-grid .category-card:not(.v7-category-card)>.category-index-media.is-base{
+  position:relative!important;
+  z-index:1!important;
+  box-sizing:border-box!important;
+  display:block!important;
+  width:42px!important;
+  height:42px!important;
+  min-width:42px!important;
+  min-height:42px!important;
+  max-width:42px!important;
+  max-height:42px!important;
+  margin:1px 0 0!important;
+  overflow:hidden!important;
+  align-self:start!important;
+  border:1px solid #e2e8ea!important;
+  border-radius:8px!important;
+  background:#f5f7f7!important;
+  box-shadow:none!important;
+  pointer-events:none!important;
+}
+
+body[data-apg-category-index-images="v61"] .category-index-media>a:first-child{
+  display:block!important;
+  width:42px!important;
+  height:42px!important;
+  overflow:hidden!important;
+  background:#f5f7f7!important;
+}
+
+body[data-apg-category-index-images="v61"] .category-index-media img{
+  display:block!important;
+  box-sizing:border-box!important;
+  width:42px!important;
+  height:42px!important;
+  min-width:42px!important;
+  min-height:42px!important;
+  max-width:42px!important;
+  max-height:42px!important;
+  margin:0!important;
+  object-fit:cover!important;
+  object-position:center!important;
+  border:0!important;
+}
+
+body[data-apg-category-index-images="v61"] .premium-category-grid .v7-category-card>.v7-category-card-copy,
+body[data-apg-category-index-images="v61"] .category-grid .category-card:not(.v7-category-card)>div:not(.category-index-media){
+  min-width:0!important;
+  width:auto!important;
+  padding:0!important;
+  margin:0!important;
+}
+
+body[data-apg-category-index-images="v61"] .category-grid .category-card .eyebrow,
+body[data-apg-category-index-images="v61"] .premium-category-grid .v7-category-card>.v7-category-card-copy .eyebrow{
+  margin:0 0 4px!important;
+  color:#667579!important;
+  font-size:11px!important;
+  line-height:1.25!important;
+  font-weight:600!important;
+  letter-spacing:0!important;
+  text-transform:none!important;
+}
+
+body[data-apg-category-index-images="v61"] .category-grid .category-card h3,
+body[data-apg-category-index-images="v61"] .premium-category-grid .v7-category-card>.v7-category-card-copy h3,
+body[data-apg-category-index-images="v61"] .category-grid .category-card:not(.v7-category-card) h3{
+  margin:0!important;
+  font-size:16px!important;
+  line-height:1.28!important;
+  font-weight:700!important;
+  letter-spacing:-.01em!important;
+}
+
+body[data-apg-category-index-images="v61"] .category-grid .category-card h3 a{
+  color:#17242a!important;
+  text-decoration:none!important;
+}
+
+body[data-apg-category-index-images="v61"] .category-grid .category-card h3 a::after{
+  content:none!important;
+}
+
+body[data-apg-category-index-images="v61"] .category-grid .category-card h3 a:hover{
+  color:#0d645c!important;
+  text-decoration:underline!important;
+  text-underline-offset:2px!important;
+}
+
+body[data-apg-category-index-images="v61"] .category-grid .category-card>div>p:not(.eyebrow){
+  display:-webkit-box!important;
+  -webkit-box-orient:vertical!important;
+  -webkit-line-clamp:2!important;
+  overflow:hidden!important;
+  margin:6px 0 0!important;
+  color:#59686d!important;
+  font-size:12.5px!important;
+  line-height:1.42!important;
+}
+
+body[data-apg-category-index-images="v61"] .category-grid .category-card .pills{
+  display:none!important;
+}
+
+body[data-apg-category-index-images="v61"] .category-grid .category-card .card-actions{
+  display:flex!important;
+  align-items:center!important;
+  flex-wrap:wrap!important;
+  gap:8px 12px!important;
+  margin:10px 0 0!important;
+  padding:0!important;
+}
+
+body[data-apg-category-index-images="v61"] .category-grid .category-card .card-actions .button.secondary{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-height:30px!important;
+  padding:6px 10px!important;
+  border:1px solid #c8d2d5!important;
+  border-radius:7px!important;
+  background:#fff!important;
+  color:#17242a!important;
+  box-shadow:none!important;
+  font-size:12px!important;
+  line-height:1.2!important;
+  font-weight:700!important;
+  text-decoration:none!important;
+}
+
+body[data-apg-category-index-images="v61"] .category-grid .category-card .card-actions .button.secondary:hover{
+  border-color:#91a3a8!important;
+  background:#f7f9f9!important;
+}
+
+body[data-apg-category-index-images="v61"] .category-grid .category-card .card-actions .text-link{
+  display:inline-flex!important;
+  align-items:center!important;
+  min-height:30px!important;
+  padding:0!important;
+  color:#0d645c!important;
+  font-size:12px!important;
+  line-height:1.2!important;
+  font-weight:700!important;
+  text-decoration:none!important;
+}
+
+body[data-apg-category-index-images="v61"] .category-grid .category-card .card-actions .text-link:hover{
+  text-decoration:underline!important;
+  text-underline-offset:2px!important;
+}
+
+@media (max-width:900px){
+  body[data-apg-category-index-images="v61"] .category-grid{
+    grid-template-columns:1fr!important;
+    gap:9px!important;
+  }
+}
+
+@media (max-width:560px){
+  body[data-apg-category-index-images="v61"] .category-grid .category-card,
+  body[data-apg-category-index-images="v61"] .premium-category-grid .v7-category-card{
+    grid-template-columns:36px minmax(0,1fr)!important;
+    column-gap:10px!important;
+    padding:12px!important;
+    border-radius:9px!important;
+  }
+
+  body[data-apg-category-index-images="v61"] .category-index-media,
+  body[data-apg-category-index-images="v61"] .premium-category-grid .v7-category-card>.category-index-media.is-premium,
+  body[data-apg-category-index-images="v61"] .category-grid .category-card:not(.v7-category-card)>.category-index-media.is-base,
+  body[data-apg-category-index-images="v61"] .category-index-media>a:first-child,
+  body[data-apg-category-index-images="v61"] .category-index-media img{
+    width:36px!important;
+    height:36px!important;
+    min-width:36px!important;
+    min-height:36px!important;
+    max-width:36px!important;
+    max-height:36px!important;
+    border-radius:7px!important;
+  }
+
+  body[data-apg-category-index-images="v61"] .category-grid .category-card h3,
+  body[data-apg-category-index-images="v61"] .premium-category-grid .v7-category-card>.v7-category-card-copy h3{
+    font-size:15.5px!important;
+  }
+
+  body[data-apg-category-index-images="v61"] .category-grid .category-card>div>p:not(.eyebrow){
+    -webkit-line-clamp:2!important;
+    font-size:12.25px!important;
+  }
+
+  body[data-apg-category-index-images="v61"] .category-grid .category-card .card-actions{
+    gap:7px 10px!important;
+    margin-top:9px!important;
+  }
+}
