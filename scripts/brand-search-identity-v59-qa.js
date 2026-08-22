@@ -10,14 +10,18 @@ const runtime=read('lib/brand-search-identity-v59.js');
 const discovery=read('lib/google-product-discovery-v60.js');
 const categoryIndex=read('lib/category-index-images-v61.js');
 const brandIndex=read('lib/brand-index-logos-v62.js');
+const brandCsp=read('lib/brand-directory-csp-v63.js');
 const entry=read('api/index.js');
 const favicon=read('public/favicon.svg');
 const brandMark=read('public/assets/apg-brand-mark.svg');
 const manifest=JSON.parse(read('public/site.webmanifest'));
 
 assert.doesNotThrow(()=>new Function(runtime),'brand-search-identity-v59.js must parse');
+assert.doesNotThrow(()=>new Function(brandCsp),'brand-directory-csp-v63.js must parse');
 assert(runtime.includes("require('./seo-optimisation-v58-runtime')"),'v59 must wrap SEO v58 rather than bypass it');
-assert(entry.includes("module.exports=require('../lib/brand-index-logos-v62')"),'public entrypoint must use current v62 outer presentation layer');
+assert(entry.includes("module.exports=require('../lib/brand-directory-csp-v63')"),'public entrypoint must use current v63 CSP-safe presentation layer');
+assert(brandCsp.includes("require('./brand-index-logos-v62')"),'v63 must preserve v62 immediately underneath rather than bypass brand identity');
+assert(brandCsp.includes('/assets/brand-directory-v63.css?v=63.0'),'v63 must load the same-origin brand directory stylesheet');
 assert(brandIndex.includes("require('./category-index-images-v61')"),'v62 must preserve v61 immediately underneath rather than bypass category imagery');
 assert(categoryIndex.includes("require('./google-product-discovery-v60')"),'v61 must preserve v60 immediately underneath rather than bypass product discovery');
 assert(discovery.includes("require('./brand-search-identity-v59')"),'v60 must preserve v59 immediately underneath rather than bypass brand identity');
@@ -37,4 +41,4 @@ assert.equal(manifest.icons[0].src,'/assets/apg-brand-mark.svg');
 assert.equal(manifest.icons[0].type,'image/svg+xml');
 assert.equal(manifest.icons[0].sizes,'any');
 
-console.log('APG Search Brand Identity v59 source QA passed beneath v60, v61 and v62');
+console.log('APG Search Brand Identity v59 source QA passed beneath v60, v61, v62 and CSP-safe v63');
