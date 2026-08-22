@@ -1,6 +1,8 @@
-// APG Brand Mark Device Parity v66.1 is the outermost presentation layer.
+// APG Brand Mark Device Parity + Integrity v66.2 is the outermost presentation layer.
 // It versions every rendered /assets/brand-marks/ request so desktop and mobile browsers
-// cannot retain different historical logo assets at the same stable URL.
+// cannot retain different historical logo assets at the same stable URL. It also fails
+// unresolved, empty/hidden or generic product/lifestyle brand-image matches closed to a
+// clean canonical brand-name SVG, while retaining the browser-side text fallback.
 // APG Brand Mark Curated v66 remains authoritative immediately underneath, providing
 // reviewed premium-vector overrides for specific brands that remained visibly grainy
 // under automatic discovery. The curated layer never replaces verified product photography.
