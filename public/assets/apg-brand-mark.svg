@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-labelledby="title">
+  <title id="title">Australian Product Guide</title>
+  <defs>
+    <linearGradient id="apgTop" x1="40" y1="32" x2="148" y2="80" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#38BDF8"/>
+    </linearGradient>
+    <linearGradient id="apgLegs" x1="32" y1="98" x2="158" y2="138" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#1D4ED8"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="38" fill="#0F172A"/>
+  <path d="M39 78 70 31h52l31 47h-35L96 44 74 78H39Z" fill="url(#apgTop)"/>
+  <path d="M28 136 51 96h39l-27 40H28Zm136 0-23-40h-39l27 40h35Z" fill="url(#apgLegs)"/>
+  <path d="m96 81 29 53-29-14-29 14 29-53Z" fill="#FFFFFF"/>
+</svg>
