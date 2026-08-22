@@ -1,7 +1,9 @@
-// APG Category Index Images v61 is the outermost presentation enrichment for the
-// all-categories hub. It reuses the governed 90-category editorial image registry
-// while leaving individual category/product decision logic unchanged.
+// APG Brand Index Logos v62 is the outermost presentation enrichment for the
+// all-brands hub. It maps each maintained brand card to a verified manufacturer
+// source-derived mark while keeping the existing initial-letter fallback.
 //
+// Category Index Images v61 remains authoritative underneath v62 for the
+// all-categories editorial-image treatment.
 // Google Product Discovery v60 remains authoritative underneath v61 for crawler/browser
 // product-discovery enrichment and canonical Product review/pros-cons data.
 // Search Brand Identity v59 remains authoritative underneath v60 for crawler/browser
@@ -29,4 +31,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/category-index-images-v61');
+module.exports=require('../lib/brand-index-logos-v62');
