@@ -24,22 +24,33 @@ if(count(out,'Editorial category image')!==90)fail('Every category image must re
 if(count(out,'>Source</a>')!==90)fail('Every category image must expose its governed source attribution link');
 if(!out.includes('id="apg-category-index-images-v61"'))fail('Responsive category image CSS was not injected');
 if(!out.includes('data-apg-category-index-images="v61"'))fail('Category-index runtime marker was not injected');
-if(!out.includes('name="apg-category-index-images" content="v61.0"'))fail('Category-index version metadata missing');
+if(!out.includes('name="apg-category-index-images" content="v61.1"'))fail('Category-index version metadata missing');
 for(const slug of slugs){
   const src=registry[slug].src;
   if(!out.includes(`src="${src}"`))fail(`Rendered hub is missing governed image for ${slug}`);
 }
+
+// Current premium cards must replace the superseded illustrative scene rather than
+// create a three-child image + scene + copy layout.
+const premiumCard='<article class="category-card v7-category-card" data-v7-category="coffee-machines"><div class="v7-category-scene" data-v7-category="coffee-machines"><span class="v7-scene-glow"></span><span class="v7-scene-icon"><svg><path d="M0 0"></path></svg></span><span class="v7-scene-copy"><small>Kitchen</small><strong>Coffee machines</strong></span></div><div class="v7-category-card-copy"><h3><a href="/categories/coffee-machines/">Coffee machines</a></h3></div></article>';
+const premiumOut=layer.enrichCategoryCard(premiumCard);
+if(!premiumOut.includes('class="category-index-media"'))fail('Premium category card must receive its governed image');
+if(premiumOut.includes('v7-category-scene'))fail('Premium illustrative scene must be replaced by the governed category image');
+if(count(premiumOut,'class="category-index-media"')!==1)fail('Premium category card must contain exactly one governed image figure');
+if(!premiumOut.includes('v7-category-card-copy'))fail('Premium category decision copy must be preserved');
+
 if(layer.inject(html,'/search/')!==html)fail('Category image layer must not alter non-category-index pages');
 if(layer.inject(out,'/categories/')!==out)fail('Category image layer must be idempotent');
 
 console.log(JSON.stringify({
-  version:'category-index-images-v61-qa',
+  version:'category-index-images-v61.1-qa',
   categories:slugs.length,
   governedImages:imageSlugs.length,
   renderedImages:count(out,'class="category-index-media"'),
   lazyLoaded:count(out,'loading="lazy"'),
   responsiveCss:true,
   attributionLinks:count(out,'>Source</a>'),
+  premiumSceneReplaced:true,
   routeScoped:true,
   idempotent:true,
   failures:0
