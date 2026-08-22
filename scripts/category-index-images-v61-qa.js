@@ -23,34 +23,50 @@ if(count(out,'decoding="async"')!==90)fail('Every category index image must deco
 if(out.includes('<figcaption'))fail('Category hub tiles must not render image-caption/source bars inside compact image slots');
 if(!out.includes('id="apg-category-index-images-v61"'))fail('Responsive category image CSS was not injected');
 if(!out.includes('data-apg-category-index-images="v61"'))fail('Category-index runtime marker was not injected');
-if(!out.includes('name="apg-category-index-images" content="v61.2"'))fail('Category-index v61.2 version metadata missing');
+if(!out.includes('name="apg-category-index-images" content="v61.3"'))fail('Category-index v61.3 version metadata missing');
 for(const slug of slugs){
   const src=registry[slug].src;
   if(!out.includes(`src="${src}"`))fail(`Rendered hub is missing governed image for ${slug}`);
 }
 
-// Guard the exact original card geometry the user approved before category photography.
+// Guard the intentionally calm v61.3 hierarchy: photographs are compact visual
+// identifiers beside the text, never full-width editorial panels.
 const cssChecks=[
-  ['premium desktop 172px slot','height:172px;min-height:172px'],
-  ['premium tablet 145px slot','height:145px;min-height:145px'],
-  ['premium mobile 126px visual column','width:126px;height:100%;min-height:100%'],
-  ['base desktop 74px icon slot','width:74px;height:74px;min-width:74px;min-height:74px'],
-  ['base mobile 58px icon slot','width:58px;height:58px;min-width:58px;min-height:58px']
+  ['premium horizontal card','grid-template-columns:80px minmax(0,1fr)!important;grid-template-rows:auto!important'],
+  ['premium desktop 80px thumbnail','width:80px;height:80px;min-width:80px;min-height:80px'],
+  ['premium tablet 72px thumbnail','width:72px;height:72px;min-width:72px;min-height:72px'],
+  ['premium mobile 64px thumbnail','width:64px;height:64px;min-width:64px;min-height:64px'],
+  ['base desktop 64px thumbnail','width:64px;height:64px;min-width:64px;min-height:64px'],
+  ['base mobile 52px thumbnail','width:52px;height:52px;min-width:52px;min-height:52px'],
+  ['two-line supporting copy','-webkit-line-clamp:2'],
+  ['category pills suppressed','.category-grid .category-card .pills{display:none!important}'],
+  ['secondary category CTA suppressed','.category-grid .category-card .card-actions .text-link{display:none!important}'],
+  ['single compact primary CTA','.category-grid .category-card .card-actions .button.secondary{min-height:0!important;padding:8px 11px!important;font-size:12.5px!important}']
 ];
-for(const [label,needle] of cssChecks){if(!out.includes(needle))fail(`Missing ${label} geometry`);}
-for(const retired of ['minmax(150px,34%)','aspect-ratio:4/3','grid-template-columns:112px']){
-  if(out.includes(retired))fail(`Retired oversized v61.1 category-image rule still present: ${retired}`);
+for(const [label,needle] of cssChecks){if(!out.includes(needle))fail(`Missing ${label} rule`);}
+for(const retired of [
+  'height:172px;min-height:172px',
+  'height:145px;min-height:145px',
+  'width:126px;height:100%;min-height:100%',
+  'transform:scale(1.02)',
+  'minmax(150px,34%)',
+  'aspect-ratio:4/3',
+  'grid-template-columns:112px'
+]){
+  if(out.includes(retired))fail(`Retired image-dominant category rule still present: ${retired}`);
 }
 
-// Current premium cards must replace the old scene in-place, preserve the copy,
-// and use the premium image variant without adding a third layout child.
-const premiumCard='<article class="category-card v7-category-card" data-v7-category="coffee-machines"><div class="v7-category-scene" data-v7-category="coffee-machines"><span class="v7-scene-glow"></span><span class="v7-scene-icon"><svg><path d="M0 0"></path></svg></span><span class="v7-scene-copy"><small>Kitchen</small><strong>Coffee machines</strong></span></div><div class="v7-category-card-copy"><h3><a href="/categories/coffee-machines/">Coffee machines</a></h3></div></article>';
+// Current premium cards must replace the old scene, preserve decision copy, and
+// contain exactly one governed image. CSS then turns it into the compact thumbnail.
+const premiumCard='<article class="category-card v7-category-card" data-v7-category="coffee-machines"><div class="v7-category-scene" data-v7-category="coffee-machines"><span class="v7-scene-glow"></span><span class="v7-scene-icon"><svg><path d="M0 0"></path></svg></span><span class="v7-scene-copy"><small>Kitchen</small><strong>Coffee machines</strong></span></div><div class="v7-category-card-copy"><p class="eyebrow">Maintained comparison · 10 products</p><h3><a href="/categories/coffee-machines/">Coffee machines</a></h3><p>Choose a coffee machine for the way you actually make coffee.</p><div class="pills"><span class="pill">beginner</span></div><div class="card-actions"><a class="button secondary" href="/categories/coffee-machines/">Explore category</a><a class="text-link" href="/categories/coffee-machines/finder/">Help me choose →</a></div></div></article>';
 const premiumOut=layer.enrichCategoryCard(premiumCard);
 if(!premiumOut.includes('class="category-index-media is-premium"'))fail('Premium category card must receive its governed image in the premium slot');
 if(premiumOut.includes('v7-category-scene'))fail('Premium illustrative scene must be replaced by the governed category image');
 if(count(premiumOut,'category-index-media')!==1)fail('Premium category card must contain exactly one governed image figure');
 if(!premiumOut.includes('v7-category-card-copy'))fail('Premium category decision copy must be preserved');
 if(premiumOut.includes('<figcaption'))fail('Premium category tile must not include a caption/source bar');
+if(!premiumOut.includes('class="pills"'))fail('Source card semantics should remain in SSR markup even when hub CSS visually suppresses pills');
+if(!premiumOut.includes('class="text-link"'))fail('Source secondary action should remain in SSR markup even when hub CSS visually suppresses it');
 
 const baseCard='<article class="category-card"><div><span class="category-icon large"><svg><path d="M0 0"></path></svg></span></div><div><h3><a href="/categories/smart-plugs/">Smart plugs</a></h3></div></article>';
 const baseOut=layer.enrichCategoryCard(baseCard);
@@ -62,13 +78,21 @@ if(layer.inject(html,'/search/')!==html)fail('Category image layer must not alte
 if(layer.inject(out,'/categories/')!==out)fail('Category image layer must be idempotent');
 
 console.log(JSON.stringify({
-  version:'category-index-images-v61.2-qa',
+  version:'category-index-images-v61.3-qa',
   categories:slugs.length,
   governedImages:imageSlugs.length,
   renderedImages:count(out,'class="category-index-media is-base"'),
   lazyLoaded:count(out,'loading="lazy"'),
-  responsiveCss:true,
-  legacyGeometryPreserved:true,
+  visualHierarchy:'compact-horizontal-thumbnail',
+  premiumDesktopThumbnailPx:80,
+  premiumTabletThumbnailPx:72,
+  premiumMobileThumbnailPx:64,
+  baseDesktopThumbnailPx:64,
+  baseMobileThumbnailPx:52,
+  legacyBannerGeometryRemoved:true,
+  supportingCopyClamped:true,
+  categoryPillsVisuallySuppressed:true,
+  singleVisibleCardAction:true,
   premiumSceneReplaced:true,
   hubCaptionsRemoved:true,
   routeScoped:true,
