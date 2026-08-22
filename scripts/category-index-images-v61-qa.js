@@ -14,6 +14,7 @@ const imageSlugs=Object.keys(registry).sort();
 if(slugs.length!==90)fail(`Expected 90 maintained categories, found ${slugs.length}`);
 if(imageSlugs.length!==90)fail(`Expected 90 governed category images, found ${imageSlugs.length}`);
 if(JSON.stringify(slugs)!==JSON.stringify(imageSlugs))fail('Category image registry is not exactly aligned to the maintained 90-category catalogue');
+if(layer.CATEGORY_BRAND_ALIGNMENT_VERSION!=='61.9')fail(`Expected category brand alignment v61.9, found ${layer.CATEGORY_BRAND_ALIGNMENT_VERSION||'missing'}`);
 
 if(layer.CATEGORY_DEPARTMENTS.length!==8)fail(`Expected 8 presentation departments, found ${layer.CATEGORY_DEPARTMENTS.length}`);
 if(layer.QUICK_BROWSE_SLUGS.length!==6)fail(`Expected 6 quick-browse categories, found ${layer.QUICK_BROWSE_SLUGS.length}`);
@@ -43,8 +44,10 @@ if(count(out,'width="44" height="44"')!==8)fail('Department imagery must remain 
 if(out.includes('<figcaption'))fail('Category hub tiles must not render image-caption/source bars');
 if(out.includes('<style id="apg-category-index-images-v61"'))fail('Category directory CSS must not be inline under Production CSP');
 if(!out.includes('href="/assets/category-directory-v61.css?v=61.8"'))fail('CSP-safe category directory v61.8 stylesheet link missing');
+if(!out.includes('href="/assets/category-directory-brand-v619.css?v=61.9"'))fail('CSP-safe APG category brand-alignment v61.9 stylesheet link missing');
 if(!out.includes('data-apg-category-index-images="v61"'))fail('Category-index runtime marker missing');
 if(!out.includes('name="apg-category-index-images" content="v61.8"'))fail('Category-index v61.8 metadata missing');
+if(!out.includes('name="apg-category-brand-alignment" content="v61.9"'))fail('Category brand-alignment v61.9 metadata missing');
 if(out.includes('90 category pathways')||out.includes('pathway-list'))fail('Duplicated legacy 90-category pathway map must be removed');
 if(!html.includes('90 category pathways'))fail('QA fixture must contain the legacy duplicated pathway map before enrichment');
 for(const slug of slugs){
@@ -97,7 +100,7 @@ const cssChecks=[
   ['three-column desktop directory','grid-template-columns:repeat(3,minmax(0,1fr))!important'],
   ['two-column intermediate directory','grid-template-columns:repeat(2,minmax(0,1fr))!important'],
   ['single-column responsive directory','grid-template-columns:1fr!important'],
-  ['unified card geometry','grid-template-columns:40px minmax(0,1fr)!important'],
+  ['unified card geometry','grid-template-columns:40px minmax(0,1fr))!important'],
   ['strict desktop thumbnail cap','max-width:40px!important'],
   ['strict desktop thumbnail height cap','max-height:40px!important'],
   ['strict mobile thumbnail cap','max-width:36px!important'],
@@ -121,6 +124,22 @@ for(const retired of [
 ]){
   if(css.includes(retired))fail(`Retired oversized category geometry still present in CSP-safe stylesheet: ${retired}`);
 }
+
+const brandCssPath=path.join(__dirname,'..','public','assets','category-directory-brand-v619.css');
+if(!fs.existsSync(brandCssPath))fail('APG category brand-alignment stylesheet file missing');
+const brandCss=fs.readFileSync(brandCssPath,'utf8');
+const brandCssChecks=[
+  ['canonical APG surface','background:var(--apg46-surface,#F8FAFC)!important'],
+  ['canonical APG hero blue-soft','var(--apg46-blue-soft,#EFF6FF)'],
+  ['canonical APG hero navy','color:var(--apg46-navy,#0F172A)!important'],
+  ['canonical APG blue kicker','color:var(--apg46-blue-dark,#1D4ED8)!important'],
+  ['canonical APG blue proof cue','background:var(--apg46-blue,#2563EB)!important'],
+  ['canonical APG navy navigation strip','background:var(--apg46-navy,#0F172A)!important'],
+  ['canonical APG blue department interaction','color:var(--apg46-blue-dark,#1D4ED8)!important'],
+  ['canonical APG blue-line card interaction','border-color:var(--apg46-blue-line,#BFDBFE)!important']
+];
+for(const [label,needle] of brandCssChecks){if(!brandCss.includes(needle))fail(`Missing ${label} brand-alignment contract`);}
+if(/#0f5f57|#1f7a5a/i.test(brandCss))fail('APG brand-alignment layer must not reintroduce retired green category interaction cues');
 
 const premiumCard='<article class="category-card v7-category-card" data-v7-category="coffee-machines"><div class="v7-category-scene" data-v7-category="coffee-machines"><span class="v7-scene-glow"></span><span class="v7-scene-icon"><svg><path d="M0 0"></path></svg></span><span class="v7-scene-copy"><small>Kitchen</small><strong>Coffee machines</strong></span></div><div class="v7-category-card-copy"><p class="eyebrow">Maintained comparison · 10 products</p><h3><a href="/categories/coffee-machines/">Coffee machines</a></h3><p>Choose a coffee machine for the way you actually make coffee.</p><div class="pills"><span class="pill">beginner</span></div><div class="card-actions"><a class="button secondary" href="/categories/coffee-machines/">Explore category</a><a class="text-link" href="/categories/coffee-machines/finder/">Help me choose →</a></div></div></article>';
 const premiumOut=layer.enrichCategoryCard(premiumCard);
@@ -146,7 +165,7 @@ if(layer.inject(html,'/search/')!==html)fail('Category image layer must not alte
 if(layer.inject(out,'/categories/')!==out)fail('Category image layer must be idempotent');
 
 console.log(JSON.stringify({
-  version:'category-index-images-v61.8-qa',
+  version:'category-index-images-v61.8-brand-v61.9-qa',
   categories:slugs.length,
   governedImages:imageSlugs.length,
   renderedCategoryImages:count(out,'class="category-index-media is-base"'),
@@ -155,6 +174,8 @@ console.log(JSON.stringify({
   quickBrowseShortcuts:layer.QUICK_BROWSE_SLUGS.length,
   decisionToolShortcuts:3,
   cspSafeExternalStylesheet:true,
+  apgBrandAlignment:true,
+  brandAlignmentVersion:layer.CATEGORY_BRAND_ALIGNMENT_VERSION,
   htmlFallbackThumbnailPx:40,
   departmentThumbnailPx:44,
   desktopThumbnailPx:40,
