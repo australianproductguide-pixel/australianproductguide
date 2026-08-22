@@ -14,6 +14,7 @@ const brandCsp=read('lib/brand-directory-csp-v63.js');
 const productBrandPlaceholder=read('lib/product-brand-placeholder-v64.js');
 const brandMarkQuality=read('lib/brand-mark-quality-v65.js');
 const brandMarkCurated=read('lib/brand-mark-curated-v66.js');
+const brandMarkDeviceParity=read('lib/brand-mark-device-parity-v66.js');
 const productBrandPlaceholderCss=read('public/assets/product-brand-placeholder-v64.css');
 const entry=read('api/index.js');
 const favicon=read('public/favicon.svg');
@@ -25,8 +26,10 @@ assert.doesNotThrow(()=>new Function(brandCsp),'brand-directory-csp-v63.js must 
 assert.doesNotThrow(()=>new Function(productBrandPlaceholder),'product-brand-placeholder-v64.js must parse');
 assert.doesNotThrow(()=>new Function(brandMarkQuality),'brand-mark-quality-v65.js must parse');
 assert.doesNotThrow(()=>new Function(brandMarkCurated),'brand-mark-curated-v66.js must parse');
+assert.doesNotThrow(()=>new Function(brandMarkDeviceParity),'brand-mark-device-parity-v66.js must parse');
 assert(runtime.includes("require('./seo-optimisation-v58-runtime')"),'v59 must wrap SEO v58 rather than bypass it');
-assert(entry.includes("module.exports=require('../lib/brand-mark-curated-v66')"),'public entrypoint must use current v66 curated brand mark layer');
+assert(entry.includes("module.exports=require('../lib/brand-mark-device-parity-v66')"),'public entrypoint must use current v66.1 brand mark device parity layer');
+assert(brandMarkDeviceParity.includes("require('./brand-mark-curated-v66')"),'v66.1 device parity must preserve curated v66 immediately underneath');
 assert(brandMarkCurated.includes("require('./brand-mark-quality-v65')"),'v66 must preserve v65 immediately underneath');
 assert(brandMarkQuality.includes("require('./product-brand-placeholder-v64')"),'v65 must preserve v64 immediately underneath');
 assert(productBrandPlaceholder.includes("require('./brand-directory-csp-v63')"),'v64 must preserve v63 immediately underneath rather than bypass CSP-safe brand presentation');
@@ -56,4 +59,4 @@ assert.equal(manifest.icons[0].src,'/assets/apg-brand-mark.svg');
 assert.equal(manifest.icons[0].type,'image/svg+xml');
 assert.equal(manifest.icons[0].sizes,'any');
 
-console.log('APG Search Brand Identity v59 source QA passed beneath v60, v61, v62, CSP-safe v63, product brand placeholder v64, brand mark quality v65 and curated brand mark v66');
+console.log('APG Search Brand Identity v59 source QA passed beneath v60, v61, v62, CSP-safe v63, product brand placeholder v64, brand mark quality v65, curated brand mark v66 and device parity v66.1');
