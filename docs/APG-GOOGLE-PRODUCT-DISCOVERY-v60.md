@@ -39,19 +39,21 @@ Ordinary paid search may be tested only after separate owner approval for spend 
 
 ## v60 technical controls
 
-The `google-product-discovery-v60` runtime adds one editorial structured-data graph to every maintained `/products/<slug>/` page.
+APG already publishes one canonical `Product` entity and one `BreadcrumbList` on each maintained product decision page. The `google-product-discovery-v60` runtime enriches that existing canonical `Product` entity rather than creating a competing duplicate.
 
-The graph contains:
+The final product-page structured-data architecture contains:
 
-- `Product`;
-- `Brand`;
-- APG-authored `Review`;
+- the established canonical `Product` entity;
+- the established `Brand` and APG identity fields;
+- APG's maintained product/category/source identity enrichment;
+- the established `BreadcrumbList` linking Home -> category -> product;
+- a v60 APG-authored `Review` using Google's supported `Team` reviewer type;
 - `positiveNotes` from the product's maintained highlights;
 - `negativeNotes` from the product's maintained watch/trade-off content;
-- `BreadcrumbList` linking Home -> category -> product;
-- exact product imagery only when the existing APG image-provenance gate verifies product identity, rights and the published image source.
+- exact product imagery only when the existing APG image-provenance gate verifies product identity, rights and the published image source;
+- a maintained manufacturer model only when that model field exists in APG's evidence record.
 
-The graph deliberately does **not** emit:
+The v60 enrichment deliberately does **not** introduce:
 
 - `Offer`;
 - price or priceCurrency;
@@ -59,8 +61,9 @@ The graph deliberately does **not** emit:
 - aggregateRating;
 - reviewRating;
 - fabricated customer reviews;
-- unverified GTIN, SKU, model or retailer claims;
-- category/editorial imagery presented as exact product photography.
+- guessed GTIN/model or retailer claims;
+- category/editorial imagery presented as exact product photography;
+- a second competing Product entity.
 
 This keeps APG's structured data aligned with what the page and evidence base can actually support.
 
@@ -125,11 +128,11 @@ Any future paid-search test should additionally measure CPC, landing-page engage
 
 The v60 release must fail if product structured data introduces merchant or unsupported commerce/rating fields. QA covers all 482 maintained product records and verifies:
 
-- Product + Review graph generation;
-- APG review authorship;
-- pros/cons where maintained;
-- canonical product URLs;
-- breadcrumbs;
+- enrichment of the existing canonical Product entity rather than duplicate Product creation;
+- APG's Google-supported `Team` review authorship;
+- at least two maintained pros/cons statements for Google's editorial pros/cons treatment;
+- preservation of canonical product identity, category and primary-source fields;
+- preservation of the established BreadcrumbList without duplication;
 - rights-gated product imagery;
 - absence of `Offer`, price, availability, aggregateRating and reviewRating;
 - idempotent runtime injection;
