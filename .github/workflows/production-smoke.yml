@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       full_certification:
-        description: Run the heavyweight browser and accessibility certification
+        description: Run the heavyweight source assurance suite after Production certification
         required: false
         default: false
         type: boolean
@@ -22,11 +22,15 @@ concurrency:
 
 jobs:
   production-smoke:
-    name: Production Smoke
+    name: Production HTTP Contract
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    outputs:
+      github_deployment_id: ${{ steps.vercel.outputs.deployment_id }}
+    timeout-minutes: 15
     env:
       BASE_URL: https://australianproductguide.au
+      APG_EXPECTED_SHA: ${{ github.sha }}
+      HTTP_CONTRACT_OUT: artifacts/production-http-contract-v61
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -35,146 +39,182 @@ jobs:
           package-manager-cache: false
 
       - name: Wait for exact Vercel Production deployment
+        id: vercel
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          ready=
+          deployment_id=
+          deployment_state=
           for attempt in $(seq 1 120); do
-            deployments=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments?sha=$SHA")
-            id=$(echo "$deployments" | jq -r '[.[]|select(.environment=="Production" or .original_environment=="Production")][0].id//empty')
-            if [ -n "$id" ]; then
-              statuses=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments/$id/statuses")
-              state=$(echo "$statuses" | jq -r '.[0].state//empty')
-              echo "Production state=${state:-pending}"
-              if [ "$state" = failure ] || [ "$state" = error ]; then exit 1; fi
-              if [ "$state" = success ]; then ready=1; break; fi
+            if ! curl -fsSL \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$REPO/deployments?sha=$SHA" \
+              -o /tmp/apg-deployments.json; then
+              echo "WARN deployment lookup transport failure attempt=$attempt"
+              sleep 5
+              continue
+            fi
+            deployment_id=$(jq -r '[.[]|select(.environment=="Production" or .original_environment=="Production")][0].id//empty' /tmp/apg-deployments.json)
+            if [ -n "$deployment_id" ]; then
+              if ! curl -fsSL \
+                -H "Authorization: Bearer $GH_TOKEN" \
+                -H "Accept: application/vnd.github+json" \
+                "https://api.github.com/repos/$REPO/deployments/$deployment_id/statuses" \
+                -o /tmp/apg-deployment-statuses.json; then
+                echo "WARN deployment status transport failure id=$deployment_id attempt=$attempt"
+                sleep 5
+                continue
+              fi
+              deployment_state=$(jq -r '.[0].state//empty' /tmp/apg-deployment-statuses.json)
+              echo "Production deployment id=$deployment_id state=${deployment_state:-pending} sha=$SHA"
+              if [ "$deployment_state" = failure ] || [ "$deployment_state" = error ]; then
+                echo "ERROR Vercel Production deployment reported $deployment_state for SHA $SHA"
+                exit 1
+              fi
+              if [ "$deployment_state" = success ]; then break; fi
+            else
+              echo "Production deployment not registered yet for SHA $SHA attempt=$attempt"
             fi
             sleep 5
           done
-          test -n "$ready"
+          if [ -z "$deployment_id" ] || [ "$deployment_state" != success ]; then
+            echo "ERROR No successful Production deployment was observed for exact SHA $SHA"
+            exit 1
+          fi
+          echo "APG_GITHUB_DEPLOYMENT_ID=$deployment_id" >> "$GITHUB_ENV"
+          echo "deployment_id=$deployment_id" >> "$GITHUB_OUTPUT"
+
           short=$(printf '%s' "$SHA" | cut -c1-16)
           for attempt in $(seq 1 30); do
-            if curl -fsSL "$BASE_URL/" -o /tmp/home.html && grep -q "v=$short" /tmp/home.html; then
-              echo "Canonical Production exposes commit marker $short"
+            code=$(curl -sS -L --max-time 30 -o /tmp/apg-home.html -w '%{http_code}' "$BASE_URL/" || true)
+            if [ "$code" = 200 ] && grep -q "v=$short" /tmp/apg-home.html; then
+              echo "Canonical Production exposes exact commit marker $short"
               exit 0
             fi
+            echo "Canonical runtime not reconciled yet attempt=$attempt status=${code:-transport-error} expected_marker=v=$short"
             sleep 5
           done
-          echo "Canonical Production did not expose commit marker $short"
+          echo "ERROR Canonical Production did not expose commit marker v=$short after deployment success"
           exit 1
 
-      - name: Verify critical public journeys
-        run: |
-          set -euo pipefail
+      - name: Verify Production HTTP contracts
+        run: node scripts/production-http-contract-v61.js
 
-          # High-value HTML routes: keep this deliberately small so routine Production
-          # verification does not recreate the historical high-request QA cost profile.
-          for path in \
-            / \
-            /search/ \
-            /decision-lab/ \
-            /categories/smartphones/ \
-            /products/oppo-find-x9/ \
-            /my-apg/ \
-            /methodology/ \
-            /sources/ \
-            /affiliate-disclosure/ \
-            /privacy/ \
-            /terms/; do
-            curl -fsSL "$BASE_URL$path" -o /tmp/page.html
-            grep -qi '<!doctype html>' /tmp/page.html
-          done
-
-          # SSR-native interaction ownership must remain current on a representative
-          # dynamic page; this catches accidental reactivation of retired browser routers.
-          curl -fsSI "$BASE_URL/categories/smartphones/" -o /tmp/headers.txt
-          grep -qi '^x-apg-interaction-runtime: ssr-native-v55' /tmp/headers.txt
-
-          # Compare must render the actual selected maintained products server-side.
-          curl -fsSL "$BASE_URL/compare/custom/?products=oppo-find-x9,samsung-galaxy-s26" -o /tmp/compare.html
-          grep -q 'Find X9' /tmp/compare.html
-          grep -q 'Galaxy S26' /tmp/compare.html
-
-          # Decision Lab must produce an actual server-rendered v4 result set from a
-          # real brief. Assert durable runtime/structure contracts rather than UI copy.
-          curl -fsSL --get --data-urlencode 'q=headphones under $500 for commuting' "$BASE_URL/decision-lab/" -o /tmp/decision-lab.html
-          grep -q 'data-decision-v4="true"' /tmp/decision-lab.html
-          grep -q 'class="decision-results"' /tmp/decision-lab.html
-          grep -q 'data-affiliate-placement="decision_lab_result"' /tmp/decision-lab.html
-
-          # Scout remains a live deterministic APG capability with no paid model call.
-          curl -fsSL "$BASE_URL/api/account/scout" -o /tmp/scout.json
-          node - <<'NODE'
-          const s=require('/tmp/scout.json');
-          if(!Array.isArray(s.capabilities)||!s.capabilities.includes('product-search')) throw new Error('Scout capability contract missing');
-          if(s.account?.authenticated!==false) throw new Error('anonymous Scout account boundary changed');
-          console.log('SCOUT_SMOKE=PASS');
-          NODE
-          curl -fsSL -H 'Content-Type: application/json' -H 'Origin: https://australianproductguide.au' \
-            -d '{"text":"phone"}' "$BASE_URL/api/account/scout" -o /tmp/scout-answer.json
-          node - <<'NODE'
-          const s=require('/tmp/scout-answer.json');
-          if(!s.message) throw new Error('Scout response missing');
-          if(!Array.isArray(s.actions)) throw new Error('Scout actions missing');
-          console.log('SCOUT_RESPONSE_SMOKE=PASS');
-          NODE
-
-          # Catalogue and decision APIs preserve current product truth and commercial neutrality.
-          curl -fsSL "$BASE_URL/api/catalogue.json" -o /tmp/catalogue.json
-          node - <<'NODE'
-          const c=require('/tmp/catalogue.json');
-          if(Number(c.productCount)!==482) throw new Error('catalogue count regression');
-          if(Number(c.commercialRecommendationWeight)!==0) throw new Error('commercial recommendation weight changed');
-          console.log(`CATALOGUE_SMOKE=PASS products=${c.productCount}`);
-          NODE
-          curl -fsSL "$BASE_URL/api/decision?q=quiet%20headphones%20for%20commuting" -o /tmp/decision.json
-          node - <<'NODE'
-          const d=require('/tmp/decision.json');
-          if(d.version!=='decision-engine-v4') throw new Error('Decision Engine V4 missing');
-          if(Number(d.commercialRecommendationWeight)!==0) throw new Error('decision neutrality changed');
-          console.log('DECISION_SMOKE=PASS');
-          NODE
-
-          # Public assets, SEO control files and signed-out account boundaries.
-          curl -fsSL "$BASE_URL/assets/brand-system-v46.css" -o /tmp/brand.css
-          grep -q 'brand' /tmp/brand.css
-          curl -fsSL "$BASE_URL/robots.txt" -o /tmp/robots.txt
-          grep -qi 'sitemap' /tmp/robots.txt
-          curl -fsSL "$BASE_URL/sitemap.xml" -o /tmp/sitemap.xml
-          grep -qi '<urlset\|<sitemapindex' /tmp/sitemap.xml
-          curl -si "$BASE_URL/api/account/profile" | grep -q '^HTTP/.* 401'
-
-          # Genuine missing routes must remain genuine 404s rather than soft-200 pages.
-          code=$(curl -sS -o /tmp/not-found.html -w '%{http_code}' "$BASE_URL/__apg-production-smoke-missing-route__")
-          test "$code" = 404
-
-      - name: Publish Production verification status
+      - name: Upload HTTP verification evidence
         if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          SHA: ${{ github.sha }}
-          RUN_ID: ${{ github.run_id }}
-          JOB_STATUS: ${{ job.status }}
-        run: |
-          set -euo pipefail
-          state=success
-          if [ "$JOB_STATUS" != success ]; then state=failure; fi
-          payload=$(jq -n --arg state "$state" --arg context 'APG Production Verification' --arg description "Production smoke: $JOB_STATUS" --arg target_url "https://github.com/$REPO/actions/runs/$RUN_ID" '{state:$state,context:$context,description:$description,target_url:$target_url}')
-          curl -fsSL -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/statuses/$SHA" -d "$payload" >/dev/null
+        uses: actions/upload-artifact@v4
+        with:
+          name: apg-production-http-${{ github.run_id }}
+          path: artifacts/production-http-contract-v61
+          retention-days: 30
+          if-no-files-found: error
 
-  full-certification:
-    name: Manual Full Certification
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.full_certification }}
+  production-browser-certification:
+    name: Production Browser, Visual & Accessibility
     needs: production-smoke
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       BASE_URL: https://australianproductguide.au
+      APG_EXPECTED_SHA: ${{ github.sha }}
+      APG_GITHUB_DEPLOYMENT_ID: ${{ needs.production-smoke.outputs.github_deployment_id }}
       OUTPUT_DIR: artifacts/interaction-v37
+      VISUAL_OUT: artifacts/production-visual-v28
+      TABLET_VISUAL_OUT: artifacts/production-tablet-visual-v61
+      A11Y_OUT: artifacts/production-accessibility-v61
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Install browser certification dependencies
+        run: |
+          set -euo pipefail
+          CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)
+          if [ -z "$CHROME" ]; then
+            echo "ERROR No Chrome/Chromium executable is available on the runner"
+            exit 1
+          fi
+          echo "CHROME=$CHROME" >> "$GITHUB_ENV"
+          npm install --no-save --package-lock=false puppeteer-core@24.16.0 axe-core@4.10.3 >/dev/null 2>&1
+
+      - name: Run critical browser journeys
+        run: node scripts/experience-v37-browser-diagnostic.js
+
+      - name: Capture desktop and mobile Production visual matrix
+        run: node scripts/production-visual-v28.js
+
+      - name: Capture tablet portrait and landscape Production matrix
+        run: node scripts/production-tablet-visual-v61.js
+
+      - name: Run Production accessibility gate
+        run: node scripts/production-accessibility-v61.js
+
+      - name: Upload browser, visual and accessibility evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apg-production-browser-${{ github.run_id }}
+          path: |
+            artifacts/interaction-v37
+            artifacts/decision-lab-v4-p0
+            artifacts/production-visual-v28
+            artifacts/production-tablet-visual-v61
+            artifacts/production-accessibility-v61
+          retention-days: 30
+          if-no-files-found: warn
+
+  publish-verification:
+    name: Publish Production Verification
+    if: always()
+    needs: [production-smoke, production-browser-certification]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      statuses: write
+    steps:
+      - name: Publish exact-SHA release status
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          HTTP_STATUS: ${{ needs.production-smoke.result }}
+          BROWSER_STATUS: ${{ needs.production-browser-certification.result }}
+        run: |
+          set -euo pipefail
+          state=success
+          description="Production HTTP + browser QA GREEN"
+          if [ "$HTTP_STATUS" != success ] || [ "$BROWSER_STATUS" != success ]; then
+            state=failure
+            description="Production QA RED: http=$HTTP_STATUS browser=$BROWSER_STATUS"
+          fi
+          payload=$(jq -n \
+            --arg state "$state" \
+            --arg context 'APG Production Verification' \
+            --arg description "$description" \
+            --arg target_url "https://github.com/$REPO/actions/runs/$RUN_ID" \
+            '{state:$state,context:$context,description:$description,target_url:$target_url}')
+          curl -fsSL -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPO/statuses/$SHA" \
+            -d "$payload" >/dev/null
+          echo "APG Production Verification state=$state http=$HTTP_STATUS browser=$BROWSER_STATUS sha=$SHA"
+          test "$state" = success
+
+  full-certification:
+    name: Manual Full Source Certification
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.full_certification }}
+    needs: production-browser-certification
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -195,31 +235,3 @@ jobs:
           node scripts/product-image-qa.js
           node scripts/editorial-compliance-qa.js
           node scripts/trust-infrastructure-v28-qa.js
-
-      - name: Install browser diagnostic dependency
-        run: |
-          set -euo pipefail
-          CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser)
-          test -n "$CHROME"
-          echo "CHROME=$CHROME" >> "$GITHUB_ENV"
-          npm install --no-save --package-lock=false puppeteer-core@24.16.0 >/dev/null 2>&1
-
-      - name: Run representative browser and accessibility certification
-        run: |
-          set -euo pipefail
-          node scripts/core-journey-production-smoke.js
-          node scripts/experience-v37-browser-diagnostic.js
-          node scripts/decision-lab-v4-p0-browser-diagnostic.js
-          node scripts/accessibility-spot-qa-v26.js --base-url "$BASE_URL" --output-dir artifacts/accessibility-v26
-
-      - name: Upload manual certification evidence
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: apg-full-certification-${{ github.run_id }}
-          path: |
-            artifacts/interaction-v37
-            artifacts/decision-lab-v4-p0
-            artifacts/accessibility-v26
-          retention-days: 30
-          if-no-files-found: warn

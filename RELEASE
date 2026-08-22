@@ -1,23 +1,33 @@
-Australian Product Guide — Brand Conformity v35.1 final whole-site visual, browser and share identity release
-Release date: 2026-08-19 Australia/Sydney
-Status: CURRENT only when this exact GitHub main SHA has Vercel READY, APG v35 Brand Conformity Certification = SUCCESS and APG v35.1 Dynamic/Edge Certification = SUCCESS; otherwise treat as RELEASE CANDIDATE
-Production source: GitHub main via Vercel
-Canonical production domain: https://australianproductguide.au
+APG PRODUCTION RELEASE CONTROL
+Status: CURRENT
 
-Current platform: Brand Conformity v35.1 is the governing presentation layer over v35, Brand Conformity v34.1, the observer-loop-free Brand Fidelity v32.5.1 baseline, Premium Theme v31.1, Premium Brand v30 and the maintained APG application/data stack. The architecture remains lightweight SSR-first Node with progressive enhancement. Current Amazon Australia catalogue/ASIN controls from the v33 audit remain intact. v35/v35.1 change presentation, browser/share assets, Scout shell identity and release controls only; they do not change product-fit logic, catalogue data, retailer ranking, affiliate weighting, account/auth behaviour, analytics consent or privacy controls.
+No APG release is complete merely because a commit exists on GitHub main or a Vercel deployment is READY.
 
-Approved palette contract: APG Blue #2563EB and APG Navy #0F172A lead the consumer experience, with white, Light Grey #F1F5F9 and Slate #64748B providing neutral surfaces and text hierarchy. APG Teal #06B6D4 is a restrained secondary accent. APG Green #10B981 is restricted to genuine semantic success/verified cues rather than decorative legacy theming. Historical decorative green/cyan/mint families are rejected by computed-style Production certification. The intentional MAINTAINED AUSTRALIAN RESEARCH yellow band remains the approved high-attention trust exception using the recovered historical yellow family #FFD65B → #F4BB45 → #F2B348 with dark readable foreground treatment and data-driven catalogue metrics.
+Completion chain:
+GitHub main
+-> Vercel Production
+-> https://australianproductguide.au public runtime
+-> exact-SHA functional/browser/accessibility QA
+-> APG Production Verification GREEN
+-> APG Operating Backend reconciled to that exact release
+-> RELEASE COMPLETE
 
-Search and Research View: v35 closes the post-v34 Search/Research View v43 visual regression that had reintroduced historical teal/mint styling. Search results, recommendations, evidence/source modules, query suggestions, filters and related states are governed by the APG Blue/Navy/light-neutral system, with Teal restrained and Green semantic only. Search/recommendation logic remains unchanged.
+GREEN means all critical Production controls pass, no known P0/P1 release blocker remains, GitHub Production Verification is successful, and current operating records have been reconciled.
 
-Browser and share identity: the current board-faithful APG favicon is versioned in page metadata, with a conventional /favicon.ico fallback added by v35.1. Apple touch icons, 192px/512px web-app icons and a web manifest use first-party APG assets. Open Graph and Twitter metadata explicitly use a first-party 1200×630 PNG APG share card with secure URL, image type and dimensions so shared APG links resolve to the new identity rather than the superseded social.svg artwork. Third-party social/messaging clients may temporarily retain cached historical previews outside APG control.
+AMBER means Production operates but a material non-critical defect, verification gap, or operating-record discrepancy remains.
 
-Scout identity: Scout remains a recognisable first-party APG character, not the superseded teal/yellow mascot and not a bare APG logo. The APG navigator uses APG Navy, APG Blue, white/light-blue and a restrained Teal highlight, with the APG master mark worn as a badge. The character is server-rendered in the launcher/panel shell and retained through interactive client states. Consumer-facing wording is “Scout” and “Your APG decision guide”. Scout recommendation logic and zero-commercial-weight controls are unchanged.
+RED means critical functionality, integrity, or verification failed, or the exact Production release cannot be established reliably.
 
-Canonical every-page audit contract: the exact-Production v35 certification reads the live sitemap, fetches every canonical route and headless-renders every canonical route. It requires HTTP 200, current presentation/metadata, valid content, no superseded Scout wording, no known historical visible colour families, no true document-width overflow and no browser page errors. Representative major page families are also captured at desktop/mobile including Home, Search, Product, Compare, Decision Lab, Trust and Scout states.
+Required release evidence:
+- full and abbreviated Git SHA
+- commit message/timestamp
+- Vercel deployment ID/status/timestamp
+- canonical Production URL/domain
+- QA start/completion timestamps
+- verification suite/version and result
+- current catalogue/Amazon/runtime metrics when reconciled
 
-Dynamic/noindex/error audit contract: v35.1 explicitly covers surfaces that are not guaranteed to appear in the canonical sitemap: populated Search, empty Search, My APG, My APG login/signup states and a real HTTP 404 at desktop and mobile widths. These pages must carry the current APG logo/presentation chain, favicon/ICO/app/share metadata, current Scout character, no historical v7 logo, no known historical visible palette and no document overflow or page errors. HTTP 404 semantics are preserved while the page receives the full current presentation transform.
+If a fix creates a new SHA/deployment, relevant verification must be rerun against that new release. Evidence from different deployments must not be combined into one certification.
 
-Release discipline: GitHub main remains authoritative. This RELEASE file travels with the v35.1 implementation so the durable source record and runtime share one exact SHA. The release is not CURRENT until the exact SHA is READY on canonical Production and both v35 canonical and v35.1 dynamic/edge certification statuses are SUCCESS. Existing v27, v32 and v32.5.1 gates remain additional regression controls.
-
-Remaining external gaps: lawful genuine-product photography remains a separate rights/delivery programme where authorised exact-model imagery is unavailable. Hosted Supabase Auth settings outside the connected writable surface remain separate owner/admin configuration work unless subsequently verified. Formal trade mark clearance/registration is not claimed by this release.
+Detailed procedure: docs/PRODUCTION-RELEASE-CONTROL.md
+Automated control: .github/workflows/production-smoke.yml
