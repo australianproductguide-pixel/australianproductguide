@@ -8,7 +8,8 @@ const assets=[
   '/assets/brand-polish.js',
   '/assets/navigation-v8.js',
   '/assets/amazon-associates.js',
-  '/assets/account-platform.js'
+  '/assets/account-platform.js',
+  '/assets/brand-missing-logo-loader-v73.js'
 ];
 
 const server=http.createServer((req,res)=>app(req,res));
