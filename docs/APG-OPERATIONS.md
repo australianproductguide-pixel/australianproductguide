@@ -95,31 +95,41 @@ APG-authored decision visuals may be used where genuine product photography righ
 APG uses a deliberately small set of authoritative GitHub Actions. **Green means the relevant acceptance criteria passed; red means the release or control genuinely requires investigation.** Do not recreate version-specific standalone workflows for historical layers.
 
 1. **APG Release Gate** — the primary pre-release source gate for pull requests. It runs the full source, catalogue, recommendation, account/auth, affiliate, imagery, trust and governance assurance suite on GitHub infrastructure before merge.
-2. **APG Production Verification** — a deliberately lightweight post-merge Production smoke test. It waits for the exact GitHub SHA to reach Vercel Production and checks the canonical domain, critical public routes, catalogue/decision neutrality and auth boundaries. The heavyweight browser/accessibility certification is available by explicit manual dispatch when a major release warrants it.
+2. **APG Production Verification** — the mandatory post-merge exact-SHA Production gate. It waits for the exact GitHub SHA to reach Vercel Production, reconciles the canonical public runtime, verifies critical HTTP/data contracts, then executes browser journeys plus desktop/mobile/tablet visual and accessibility certification. It publishes the final exact-SHA Production status.
 3. **APG Scheduled Controls** — time-driven freshness, review-debt, catalogue authority, retailer/Amazon, imagery and decision-quality monitoring. It creates evidence artefacts without auto-publishing product facts.
 4. **APG CodeQL Security** — JavaScript/TypeScript security analysis on pull requests, `main` and a weekly schedule.
 
 Dependabot is maintained separately in `.github/dependabot.yml` for dependency and GitHub Actions update pull requests.
 
-Historical and version-specific QA logic should remain available as reusable `scripts/*-qa.js` controls where it still protects a current contract. Those scripts are invoked by an authoritative gate when relevant. Tests must validate **runtime-chain reachability or observable behaviour**, not assume that `api/index.js` directly imports an older wrapper.
+Historical and version-specific QA logic should remain available as reusable `scripts/*-qa.js` controls only where it protects a current observable contract. Current browser tests must follow the current SSR-native interaction model and must not require superseded client-side markers merely because historical filenames remain in the repository.
+
+The controlling release standard is documented in [`APG-RELEASE-CONTROL.md`](APG-RELEASE-CONTROL.md).
 
 ## 10. Change flow
 
 Preferred engineering flow:
 
 1. inspect current Production, GitHub `main`, Vercel, Supabase where relevant, and relevant Drive records;
-2. create a focused branch from the current `main` SHA;
-3. make the smallest coherent change;
-4. require **APG Release Gate** (and CodeQL where triggered) to pass;
-5. create/review a Vercel Preview only when a stable candidate needs browser or environment-specific verification — routine `apg/*` and `apg-*` micro-commits must not auto-deploy;
-6. merge only after source checks and any intentionally requested Preview are acceptable;
-7. verify Vercel Production is READY;
-8. verify Production SHA equals GitHub `main`;
-9. require the lightweight **APG Production Verification** smoke test to pass;
-10. invoke full manual Production certification for major releases or material UX/runtime changes where the added assurance is justified;
-11. reconcile material release evidence or decisions in Drive.
+2. establish the exact currently deployed Production SHA;
+3. create a focused branch from current `main`;
+4. reproduce and diagnose the issue before changing Production;
+5. batch the smallest coherent fix and run source/static validation;
+6. require **APG Release Gate** (and CodeQL where triggered) to pass;
+7. use a Vercel Preview only when a stable candidate genuinely needs environment-specific browser verification — routine APG branches must not auto-deploy;
+8. merge once the candidate is coherent and source controls pass;
+9. allow the intended SHA to become the current Vercel Production deployment;
+10. require **APG Production Verification** to reconcile GitHub SHA, Vercel Production and the canonical public runtime and to complete critical browser, visual and accessibility QA;
+11. inspect the resulting evidence and resolve any P0/P1 release blocker;
+12. reconcile current release, catalogue, Amazon coverage and runtime/version fields in the APG Operating Backend;
+13. mark the release complete only when all layers describe the same exact Production state.
 
-A deployment is **not complete** merely because Vercel says READY.
+**NO APG RELEASE IS COMPLETE UNTIL PRODUCTION VERIFICATION IS GREEN AND THE OPERATING RECORDS ARE RECONCILED.**
+
+The release chain is:
+
+`GitHub main -> Vercel Production -> public runtime -> functional/visual/accessibility QA -> Production Verification GREEN -> Operating Backend reconciled -> RELEASE COMPLETE`
+
+A deployment is **not complete** merely because Vercel says READY. A commit on `main`, a successful pre-deployment CI gate, or an HTTP 200 response is also insufficient by itself.
 
 ## 11. Minimum release acceptance
 
@@ -131,25 +141,29 @@ Release acceptance should cover, where relevant:
 - recommendation regression profiles;
 - affiliate/retailer identity controls;
 - imagery provenance;
-- search, compare and Help Me Choose journeys;
-- mobile/desktop presentation and accessibility where changed;
+- Search, comparison and Decision Lab journeys;
+- Scout availability and consumer interaction;
+- mobile/tablet/desktop presentation and accessibility;
 - canonicals, robots, sitemap and structured data;
 - trust/legal routes;
 - public anonymous access and account/auth security boundaries;
 - Vercel Analytics/public telemetry without leaking private My APG URL data;
 - Supabase source/migration reconciliation where database changes occur;
 - absence of unrelated Venture Lab/Tradie contamination;
-- exact GitHub `main` -> Vercel Production SHA alignment.
+- exact GitHub `main` -> Vercel Production -> public runtime alignment;
+- evidence tied to one exact Production SHA/deployment.
+
+Automated QA should test stable semantic contracts and functional outcomes. Do not make releases depend on non-contractual marketing wording, punctuation, whitespace or cosmetic copy. Network, HTTP, data and assertion failures should be distinguishable in diagnostics.
 
 ## 12. Infrastructure cost and telemetry controls
 
 APG is operated as a mature site, not a continuous-build experiment. Infrastructure controls therefore include:
 
 - Production continues to deploy from `main`;
-- routine APG feature-branch pushes do not create automatic Vercel Preview builds;
+- routine APG feature/fix branches do not create automatic Vercel Preview builds;
 - Vercel's deploy-time QA is a small release-safety gate, while the full source suite runs on GitHub before merge;
-- routine post-merge Production verification is intentionally low-volume;
-- heavyweight browser/sitewide certification is deliberate rather than automatic;
+- debug locally or against current Production where safe, batch fixes, and avoid one-assertion-per-Production-build loops;
+- post-merge Production Verification is comprehensive but bounded: one exact-SHA HTTP/browser/visual/accessibility certification per intended release;
 - genuine files in `public/` are served before the serverless SSR fallback;
 - automated browser sessions are excluded from consumer Web Analytics;
 - field RUM remains privacy-minimised and sparsely sampled, with automated browser sessions excluded;
@@ -165,8 +179,9 @@ If Production is materially degraded:
 1. identify the affected deployment and last known-good Production deployment;
 2. preserve evidence before making changes;
 3. prefer a small reversible fix or Vercel rollback over broad emergency rewriting;
-4. re-run APG Production Verification after recovery;
-5. document the cause, impact, fix and prevention action in `07 – QA, Releases & Production Evidence` when material.
+4. re-run APG Production Verification after recovery against the resulting exact SHA/deployment;
+5. reconcile the Operating Backend before declaring recovery complete;
+6. document the cause, impact, fix and prevention action in `07 – QA, Releases & Production Evidence` when material.
 
 ## 14. Automation principles
 

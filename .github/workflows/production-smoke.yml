@@ -37,7 +37,6 @@ jobs:
         with:
           node-version: 24
           package-manager-cache: false
-
       - name: Wait for exact Vercel Production deployment
         id: vercel
         env:
@@ -49,22 +48,14 @@ jobs:
           deployment_id=
           deployment_state=
           for attempt in $(seq 1 120); do
-            if ! curl -fsSL \
-              -H "Authorization: Bearer $GH_TOKEN" \
-              -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/repos/$REPO/deployments?sha=$SHA" \
-              -o /tmp/apg-deployments.json; then
+            if ! curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments?sha=$SHA" -o /tmp/apg-deployments.json; then
               echo "WARN deployment lookup transport failure attempt=$attempt"
               sleep 5
               continue
             fi
             deployment_id=$(jq -r '[.[]|select(.environment=="Production" or .original_environment=="Production")][0].id//empty' /tmp/apg-deployments.json)
             if [ -n "$deployment_id" ]; then
-              if ! curl -fsSL \
-                -H "Authorization: Bearer $GH_TOKEN" \
-                -H "Accept: application/vnd.github+json" \
-                "https://api.github.com/repos/$REPO/deployments/$deployment_id/statuses" \
-                -o /tmp/apg-deployment-statuses.json; then
+              if ! curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments/$deployment_id/statuses" -o /tmp/apg-deployment-statuses.json; then
                 echo "WARN deployment status transport failure id=$deployment_id attempt=$attempt"
                 sleep 5
                 continue
@@ -87,23 +78,10 @@ jobs:
           fi
           echo "APG_GITHUB_DEPLOYMENT_ID=$deployment_id" >> "$GITHUB_ENV"
           echo "deployment_id=$deployment_id" >> "$GITHUB_OUTPUT"
-
-          short=$(printf '%s' "$SHA" | cut -c1-16)
-          for attempt in $(seq 1 30); do
-            code=$(curl -sS -L --max-time 30 -o /tmp/apg-home.html -w '%{http_code}' "$BASE_URL/" || true)
-            if [ "$code" = 200 ] && grep -q "v=$short" /tmp/apg-home.html; then
-              echo "Canonical Production exposes exact commit marker $short"
-              exit 0
-            fi
-            echo "Canonical runtime not reconciled yet attempt=$attempt status=${code:-transport-error} expected_marker=v=$short"
-            sleep 5
-          done
-          echo "ERROR Canonical Production did not expose commit marker v=$short after deployment success"
-          exit 1
-
+      - name: Reconcile exact public runtime
+        run: node scripts/wait-production-runtime-v61.js
       - name: Verify Production HTTP contracts
         run: node scripts/production-http-contract-v61.js
-
       - name: Upload HTTP verification evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -132,7 +110,6 @@ jobs:
         with:
           node-version: 24
           package-manager-cache: false
-
       - name: Install browser certification dependencies
         run: |
           set -euo pipefail
@@ -143,19 +120,14 @@ jobs:
           fi
           echo "CHROME=$CHROME" >> "$GITHUB_ENV"
           npm install --no-save --package-lock=false puppeteer-core@24.16.0 axe-core@4.10.3 >/dev/null 2>&1
-
       - name: Run critical browser journeys
         run: node scripts/experience-v37-browser-diagnostic.js
-
       - name: Capture desktop and mobile Production visual matrix
         run: node scripts/production-visual-v28.js
-
       - name: Capture tablet portrait and landscape Production matrix
         run: node scripts/production-tablet-visual-v61.js
-
       - name: Run Production accessibility gate
         run: node scripts/production-accessibility-v61.js
-
       - name: Upload browser, visual and accessibility evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -195,17 +167,8 @@ jobs:
             state=failure
             description="Production QA RED: http=$HTTP_STATUS browser=$BROWSER_STATUS"
           fi
-          payload=$(jq -n \
-            --arg state "$state" \
-            --arg context 'APG Production Verification' \
-            --arg description "$description" \
-            --arg target_url "https://github.com/$REPO/actions/runs/$RUN_ID" \
-            '{state:$state,context:$context,description:$description,target_url:$target_url}')
-          curl -fsSL -X POST \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/$REPO/statuses/$SHA" \
-            -d "$payload" >/dev/null
+          payload=$(jq -n --arg state "$state" --arg context 'APG Production Verification' --arg description "$description" --arg target_url "https://github.com/$REPO/actions/runs/$RUN_ID" '{state:$state,context:$context,description:$description,target_url:$target_url}')
+          curl -fsSL -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/statuses/$SHA" -d "$payload" >/dev/null
           echo "APG Production Verification state=$state http=$HTTP_STATUS browser=$BROWSER_STATUS sha=$SHA"
           test "$state" = success
 
@@ -221,7 +184,6 @@ jobs:
         with:
           node-version: 24
           package-manager-cache: false
-
       - name: Run full source assurance on GitHub infrastructure
         run: |
           set -euo pipefail
