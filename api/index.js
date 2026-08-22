@@ -1,4 +1,11 @@
-// APG Earbuds Category Image Refresh v72 is the outermost presentation/governance layer.
+// APG Missing Brand Logo Completion v73 is the outermost presentation/governance layer.
+// It is intentionally narrow: only brands observed as blank/broken in the 22 Aug 2026
+// /brands/ capture are eligible for retry/hydration. Existing successful logos are left
+// unchanged. It also rejects invisible/empty SVG payloads and hydrates the targeted
+// directory marks through a CSP-safe first-party runtime asset.
+// Compatibility lineage: module.exports=require('../lib/earbuds-category-image-v72')
+//
+// APG Earbuds Category Image Refresh v72 remains authoritative immediately underneath.
 // It replaces the misleading cotton-swab category image with a verified true-wireless-
 // earbuds photograph and corrects the visible source attribution and image dimensions.
 // Compatibility lineage: module.exports=require('../lib/televisions-category-image-v71')
@@ -38,4 +45,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/earbuds-category-image-v72');
+module.exports=require('../lib/brand-mark-missing-only-v73');
