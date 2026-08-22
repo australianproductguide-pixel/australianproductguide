@@ -73,14 +73,30 @@ async function decision(page, q, category = '', budget = '') {
   await submit(page, 'form.decision-form');
   const url = new URL(page.url());
   assert(url.pathname === '/decision-lab/' && url.searchParams.get('q') === q, `Decision submission mismatch: ${url.href}`);
-  assert(await page.$('main[data-decision-v4="true"]'), 'Decision v4 marker missing');
-  const runtime = await page.evaluate(() => document.body.dataset.apgInteractionRuntime || document.querySelector('meta[name="apg-interaction-mode"]')?.content || '');
-  assert(/^ssr-native-/i.test(runtime), `Decision Lab not SSR-native: ${runtime}`);
+  const state = await page.evaluate(() => {
+    const form = document.querySelector('form.decision-form');
+    const button = form?.querySelector('button[type="submit"],input[type="submit"]');
+    return {
+      decisionV4: document.body.dataset.decisionV4 || '',
+      runtime: document.body.dataset.apgInteractionRuntime || document.querySelector('meta[name="apg-interaction-mode"]')?.content || '',
+      summary: !!document.querySelector('.decision-summary'),
+      products: document.querySelectorAll('.decision-results a[href^="/products/"]').length,
+      zero: !!document.querySelector('.decision-results .zero-state'),
+      busy: form?.getAttribute('aria-busy') === 'true',
+      disabled: !!button?.disabled
+    };
+  });
+  assert(state.decisionV4 === 'true', `Decision v4 semantic marker missing: ${JSON.stringify(state)}`);
+  assert(/^ssr-native-/i.test(state.runtime), `Decision Lab not SSR-native: ${state.runtime}`);
+  assert(state.summary, `Decision Lab summary missing: ${JSON.stringify(state)}`);
+  assert(state.products > 0 || state.zero, `Decision Lab returned no controlled outcome: ${JSON.stringify(state)}`);
+  assert(!state.busy && !state.disabled, `Decision Lab remained busy/disabled after navigation: ${JSON.stringify(state)}`);
 }
 async function askScout(page, prompt, validate, label) {
-  const input = await visible(page, '#scout-v5-input'); assert(input, 'Scout input missing');
+  const input = await visible(page, '.scout-v5-input'); assert(input, 'Scout input missing');
   const before = await page.$$eval('#apgAssistantBody .scout-v5-row.bot', rows => rows.length);
-  await replace(input, prompt); await page.click('#scout-v5-send');
+  await replace(input, prompt);
+  const send = await visible(page, '.scout-v5-send'); assert(send, 'Scout send control missing'); await send.click();
   await page.waitForFunction(prior => {
     const body = document.getElementById('apgAssistantBody');
     return body && body.getAttribute('aria-busy') !== 'true' && body.querySelectorAll('.scout-v5-row.bot').length > prior;
@@ -96,6 +112,21 @@ async function askScout(page, prompt, validate, label) {
   assert(validate(state), `Scout ${label} failed; latest=${clean(state.text).slice(0, 400)}`);
   return state;
 }
+async function waitCompareCount(page, expected) {
+  try {
+    await page.waitForFunction(n => document.querySelector('[data-compare-count]')?.textContent.trim() === String(n), { timeout: 5000 }, expected);
+  } catch (error) {
+    const state = await page.evaluate(() => ({
+      count: document.querySelector('[data-compare-count]')?.textContent.trim() || null,
+      selected: (() => { try { return JSON.parse(localStorage.getItem('apgCompare') || '[]'); } catch { return []; } })(),
+      trayHidden: document.getElementById('compareTray')?.hidden ?? null,
+      visibleDialogs: [...document.querySelectorAll('[role="dialog"]')].filter(el => { const r = el.getBoundingClientRect(), s = getComputedStyle(el); return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none'; }).map(el => cleanText(el.innerText).slice(0, 160)),
+      url: location.href
+    }));
+    throw new Error(`Compare count expected ${expected}; actual=${JSON.stringify(state)}`);
+  }
+}
+function cleanText(value) { return String(value || '').replace(/\s+/g, ' ').trim(); }
 async function run(browser, name, viewport, fn) {
   const page = await browser.newPage(); await page.setViewport(viewport); instrument(page, name); const started = Date.now();
   try { await fn(page); report.journeys.push({ name, result: 'PASS', durationMs: Date.now() - started }); }
@@ -140,29 +171,34 @@ async function run(browser, name, viewport, fn) {
 
   await run(browser, 'desktop-product-save-compare-result-remove', desktop, async page => {
     await go(page, '/products/sony-wh-1000xm6/');
-    await page.evaluate(() => { localStorage.setItem('apgCompare', '[]'); localStorage.setItem('apgSaved', '[]'); }); await go(page, '/products/sony-wh-1000xm6/');
+    await page.evaluate(() => { localStorage.setItem('apgCompare', '[]'); localStorage.setItem('apgSaved', '[]'); });
+    await go(page, '/products/sony-wh-1000xm6/');
     const sony = await visible(page, '[data-compare-product="sony-wh-1000xm6"]'); assert(sony, 'Sony compare missing'); await sony.click();
-    await page.waitForFunction(() => document.querySelector('[data-compare-count]')?.textContent.trim() === '1', { timeout: 5000 });
-    const save = await visible(page, '[data-save-product="sony-wh-1000xm6"]'); assert(save, 'Sony save missing'); await save.click();
-    await page.waitForFunction(() => JSON.parse(localStorage.getItem('apgSaved') || '[]').includes('sony-wh-1000xm6'), { timeout: 5000 });
+    await waitCompareCount(page, 1);
+
     await go(page, '/products/bose-quietcomfort-ultra-headphones/');
     const bose = await visible(page, '[data-compare-product="bose-quietcomfort-ultra-headphones"]'); assert(bose, 'Bose compare missing'); await bose.click();
-    await page.waitForFunction(() => document.querySelector('[data-compare-count]')?.textContent.trim() === '2', { timeout: 5000 });
+    await waitCompareCount(page, 2);
     const link = await visible(page, '#compareTray [data-compare-link]'); assert(link, 'Compare result link missing');
     const href = await link.evaluate(el => el.getAttribute('href') || ''); assert(href.includes('sony-wh-1000xm6') && href.includes('bose-quietcomfort-ultra-headphones'), `Compare href wrong: ${href}`);
     await Promise.all([page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }), link.click()]);
     assert(new URL(page.url()).pathname === '/compare/custom/', 'Compare result route failed');
     assert(await page.$('[data-compare-product="sony-wh-1000xm6"]') && await page.$('[data-compare-product="bose-quietcomfort-ultra-headphones"]'), 'Compare result missing product');
+
     await go(page, '/products/bose-quietcomfort-ultra-headphones/');
     const remove = await visible(page, '[data-compare-product="bose-quietcomfort-ultra-headphones"]'); assert(remove, 'Bose remove control missing'); await remove.click();
-    await page.waitForFunction(() => document.querySelector('[data-compare-count]')?.textContent.trim() === '1', { timeout: 5000 });
+    await waitCompareCount(page, 1);
     const selected = await page.evaluate(() => JSON.parse(localStorage.getItem('apgCompare') || '[]'));
     assert(selected.length === 1 && selected[0] === 'sony-wh-1000xm6', `Compare remove state wrong: ${JSON.stringify(selected)}`);
+
+    await go(page, '/products/sony-wh-1000xm6/');
+    const save = await visible(page, '[data-save-product="sony-wh-1000xm6"]'); assert(save, 'Sony save missing'); await save.click();
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem('apgSaved') || '[]').includes('sony-wh-1000xm6'), { timeout: 5000 });
   });
 
   await run(browser, 'desktop-scout-conversation-navigation', desktop, async page => {
     await go(page, '/'); const open = await visible(page, '#apgAssistantLauncher'); assert(open, 'Scout launcher missing'); await open.click();
-    await page.waitForSelector('#apgAssistantPanel:not([hidden]) #scout-v5-input', { timeout: 10000 });
+    await page.waitForSelector('#apgAssistantPanel:not([hidden]) .scout-v5-input', { timeout: 10000 });
     const first = await askScout(page, 'Recommend quiet headphones for commuting under $500', s => s.products.length > 0, 'product recommendation');
     await askScout(page, 'Compare the top options for long flights', s => clean(s.text).length > 20, 'comparison follow-up');
     await askScout(page, 'How do APG recommendations work?', s => /recommend|methodolog|evidence|maintained/i.test(s.text), 'methodology');
@@ -177,6 +213,8 @@ async function run(browser, name, viewport, fn) {
     assert(await visible(page, '[data-account-form]'), 'signed-out form missing');
     assert(await visible(page, '[data-account-tab="login"]'), 'login tab missing'); assert(await visible(page, '[data-account-tab="signup"]'), 'signup tab missing');
     assert(!(await page.$eval('[data-account-signed-in]', el => !el.hidden)), 'signed-in panel exposed to signed-out browser');
+    const profile = await page.evaluate(async () => { const r = await fetch('/api/account/profile', { headers: { accept: 'application/json' } }); return { status: r.status }; });
+    assert(profile.status === 401, `signed-out profile endpoint expected 401, received ${profile.status}`);
   });
 
   await run(browser, 'mobile-menu-search-decision-scout', mobile, async page => {
@@ -188,7 +226,7 @@ async function run(browser, name, viewport, fn) {
     await go(page, '/decision-lab/'); await decision(page, 'headphones for long flights', 'wireless-headphones'); assert(await page.$('.decision-results a[href^="/products/"]'), 'mobile Decision shortlist missing');
     await go(page, '/'); const t2 = await visible(page, '[data-mobile-toggle]'); await t2.click(); await page.waitForSelector('#mobileNav:not([hidden])', { timeout: 5000 });
     const scout = await visible(page, '#mobileNav [data-v26-scout-mobile]'); assert(scout, 'mobile Scout missing'); const before = page.url(); await scout.click();
-    await page.waitForSelector('#apgAssistantPanel:not([hidden]) #scout-v5-input', { timeout: 10000 }); assert(page.url() === before, 'opening Scout changed URL');
+    await page.waitForSelector('#apgAssistantPanel:not([hidden]) .scout-v5-input', { timeout: 10000 }); assert(page.url() === before, 'opening Scout changed URL');
     await askScout(page, 'What is Australian Product Guide?', s => /Australian Product Guide|APG/i.test(s.text), 'mobile site answer');
   });
 
