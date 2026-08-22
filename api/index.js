@@ -1,7 +1,10 @@
-// APG Search Brand Identity v59 is the final crawler/browser identity contract.
-// It replaces the superseded favicon/logo discovery signal with the current
-// owner-approved APG brand mark while leaving recommendation and SEO logic intact.
+// APG Google Product Discovery v60 is the final crawler/browser product-discovery contract.
+// It enriches APG's canonical Product entity with editorial Review/pros-cons data
+// while preserving the established breadcrumb and entity-provenance layers and
+// without emitting unsupported price, stock, offer or rating claims.
 //
+// Search Brand Identity v59 remains authoritative underneath v60 for crawler/browser
+// brand identity and the current owner-approved APG brand mark.
 // SEO Optimisation v58 remains authoritative underneath v59 for metadata,
 // structured content, internal discovery and route freshness.
 // Social Share Card v57 remains the global social-preview fallback layer.
@@ -25,4 +28,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/brand-search-identity-v59');
+module.exports=require('../lib/google-product-discovery-v60');
