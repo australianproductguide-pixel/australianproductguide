@@ -28,8 +28,13 @@ assert.doesNotThrow(()=>new Function(brandMarkQuality),'brand-mark-quality-v65.j
 assert.doesNotThrow(()=>new Function(brandMarkCurated),'brand-mark-curated-v66.js must parse');
 assert.doesNotThrow(()=>new Function(brandMarkDeviceParity),'brand-mark-device-parity-v66.js must parse');
 assert(runtime.includes("require('./seo-optimisation-v58-runtime')"),'v59 must wrap SEO v58 rather than bypass it');
-assert(entry.includes("module.exports=require('../lib/brand-mark-device-parity-v66')"),'public entrypoint must use current v66.1 brand mark device parity layer');
-assert(brandMarkDeviceParity.includes("require('./brand-mark-curated-v66')"),'v66.1 device parity must preserve curated v66 immediately underneath');
+assert(entry.includes("module.exports=require('../lib/brand-mark-device-parity-v66')"),'public entrypoint must use current v66.2 brand-mark parity/integrity layer');
+assert(brandMarkDeviceParity.includes("require('./brand-mark-curated-v66')"),'v66.2 parity/integrity must preserve curated v66 immediately underneath');
+assert(brandMarkDeviceParity.includes("BRAND_MARK_DEVICE_PARITY_VERSION='66.2'"),'v66.2 must expose the current desktop/mobile parity generation');
+assert(brandMarkDeviceParity.includes("BRAND_MARK_INTEGRITY_VERSION='66.2'"),'v66.2 must expose the current brand-integrity generation');
+assert(brandMarkDeviceParity.includes("'canonical-brand-name-fallback'"),'v66.2 must prevent unresolved marks from becoming broken-image UI');
+assert(brandMarkDeviceParity.includes("if(kind==='brand_img')return 'generic-brand-image-rejected'"),'v66.2 must reject product/lifestyle imagery selected merely by brand-token matching');
+assert(brandIndex.includes('onerror="this.hidden=true"'),'brand UI must preserve its browser-side canonical text fallback');
 assert(brandMarkCurated.includes("require('./brand-mark-quality-v65')"),'v66 must preserve v65 immediately underneath');
 assert(brandMarkQuality.includes("require('./product-brand-placeholder-v64')"),'v65 must preserve v64 immediately underneath');
 assert(productBrandPlaceholder.includes("require('./brand-directory-csp-v63')"),'v64 must preserve v63 immediately underneath rather than bypass CSP-safe brand presentation');
@@ -59,4 +64,4 @@ assert.equal(manifest.icons[0].src,'/assets/apg-brand-mark.svg');
 assert.equal(manifest.icons[0].type,'image/svg+xml');
 assert.equal(manifest.icons[0].sizes,'any');
 
-console.log('APG Search Brand Identity v59 source QA passed beneath v60, v61, v62, CSP-safe v63, product brand placeholder v64, brand mark quality v65, curated brand mark v66 and device parity v66.1');
+console.log('APG Search Brand Identity v59 source QA passed beneath v60, v61, v62, CSP-safe v63, product brand placeholder v64, brand mark quality v65, curated brand mark v66 and desktop/mobile parity + integrity v66.2');
