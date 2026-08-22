@@ -19,6 +19,7 @@ assert.equal(productNode.name,'eufy Robot Vacuum Omni E28');
 assert.equal(productNode.url,'https://australianproductguide.au/products/eufy-robot-vacuum-omni-e28/');
 assert.equal(productNode.brand.name,'Eufy');
 assert.equal(productNode.review['@type'],'Review');
+assert.equal(productNode.review.author['@type'],'Team','Google Product Snippet reviewer must be a Person or Team');
 assert.equal(productNode.review.author.name,'Australian Product Guide');
 assert(productNode.review.positiveNotes?.itemListElement?.length>0,'editorial pros must be structured when maintained');
 assert(productNode.review.negativeNotes?.itemListElement?.length>0,'editorial trade-off must be structured when maintained');
@@ -33,7 +34,10 @@ for(const product of products){
   const node=productGraph['@graph'].find(x=>x['@type']==='Product');
   assert(node,`${product.slug}: Product node missing`);
   assert.equal(node.url,`https://australianproductguide.au/products/${product.slug}/`);
+  assert.equal(node.review?.author?.['@type'],'Team',`${product.slug}: Google-eligible editorial reviewer type missing`);
   assert.equal(node.review?.author?.name,'Australian Product Guide',`${product.slug}: editorial review author missing`);
+  const statementCount=(node.review?.positiveNotes?.itemListElement?.length||0)+(node.review?.negativeNotes?.itemListElement?.length||0);
+  assert(statementCount>=2,`${product.slug}: Google pros/cons treatment requires at least two maintained statements`);
   assert(node.description,`${product.slug}: product description missing`);
   assert(node.brand?.name,`${product.slug}: brand missing`);
   if(node.image){
@@ -48,6 +52,7 @@ const injected=discovery.inject(shell,'/products/eufy-robot-vacuum-omni-e28/');
 assert(injected.includes('data-apg-google-product-discovery="v60.0"'),'product page must receive v60 JSON-LD');
 assert(injected.includes('"@type":"Product"'),'product page must expose Product entity');
 assert(injected.includes('"@type":"Review"'),'product page must expose editorial Review entity');
+assert(injected.includes('"@type":"Team"'),'product review must use Google-supported Team reviewer type');
 assert(injected.includes('"positiveNotes"'),'product page must expose Google-supported editorial pros');
 assert(injected.includes('"negativeNotes"'),'product page must expose Google-supported editorial cons/trade-offs');
 assert(injected.includes('"@type":"BreadcrumbList"'),'product page must expose breadcrumb entity');
@@ -55,4 +60,4 @@ assert(!prohibited.test(injected),'injected schema must not pretend APG is the m
 assert.equal(discovery.inject(injected,'/products/eufy-robot-vacuum-omni-e28/'),injected,'injection must be idempotent');
 assert(!discovery.inject(shell,'/categories/robot-vacuums/').includes('data-apg-google-product-discovery='),'category pages must retain their established CollectionPage schema rather than product markup');
 
-console.log('APG GOOGLE PRODUCT DISCOVERY v60 QA PASSED: 482 editorial Product/Review graphs, breadcrumb coverage, rights-gated imagery and zero merchant/price/rating fabrication.');
+console.log('APG GOOGLE PRODUCT DISCOVERY v60 QA PASSED: 482 editorial Product/Review graphs, Google-eligible reviewer/pros-cons coverage, breadcrumb coverage, rights-gated imagery and zero merchant/price/rating fabrication.');
