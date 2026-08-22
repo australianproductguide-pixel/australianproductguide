@@ -1,8 +1,13 @@
-// APG Product Brand Placeholder v64 is the outermost product-presentation layer.
-// Until governed product photography is available, non-photo product visuals use the
-// respective brand identity as an explicitly labelled interim placeholder. Verified
-// product photography remains authoritative and is never replaced by this layer.
+// APG Brand Mark Quality v65 is the outermost brand-identity delivery layer.
+// It preserves the v64 product placeholder presentation while ensuring /assets/brand-marks/
+// prefers crisp official SVG/high-resolution logo assets and rejects tiny favicon-quality
+// images. When a suitable official asset cannot be resolved, the UI falls back to the
+// canonical brand name rather than displaying a blurry or misleading logo.
 //
+// APG Product Brand Placeholder v64 remains authoritative underneath v65. Until governed
+// product photography is available, non-photo product visuals use the respective brand
+// identity as an explicitly labelled interim placeholder. Verified product photography
+// remains authoritative and is never replaced by this layer.
 // APG Brand Directory CSP v63 remains authoritative underneath v64. It preserves the
 // strict Production `style-src 'self'` policy while loading the premium Brands directory
 // and brand-detail presentation from a same-origin stylesheet.
@@ -37,4 +42,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/product-brand-placeholder-v64');
+module.exports=require('../lib/brand-mark-quality-v65');
