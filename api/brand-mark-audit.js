@@ -7,8 +7,9 @@
 const resolver=require('../lib/brand-mark-official-completion-v69');
 const {brands,slugify}=require('../lib/routes');
 
-const AUDIT_VERSION='1.3';
+const AUDIT_VERSION='1.4';
 const MAX_BATCH=20;
+const DEBUG_HTML_LIMIT=640*1024;
 
 function json(res,status,payload){
   res.statusCode=status;
@@ -38,14 +39,27 @@ async function inspectBrand(name){
     };
   }catch(error){return {brand:name,slug,source:'audit-error',kind:null,quality:null,reference:null,sourceUrl:null,presentation:null,fallback:true,policyFallback:false,error:String(error&&error.message||error)};}
 }
+async function debugOfficialCandidates(slug){
+  const domain=resolver.officialDomains&&resolver.officialDomains[slug];
+  if(!domain||typeof resolver.explicitLogoCandidates!=='function')return {domain:domain||null,pageUrl:null,status:null,candidates:[]};
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),4500);
+  try{
+    const response=await fetch(`https://${domain}/`,{redirect:'follow',signal:controller.signal,headers:{'User-Agent':'AustralianProductGuide/1.0 (+https://australianproductguide.au/about/)','Accept':'text/html,application/xhtml+xml'}});
+    if(!response.ok)return {domain,pageUrl:response.url||`https://${domain}/`,status:response.status,candidates:[]};
+    const text=(await response.text()).slice(0,DEBUG_HTML_LIMIT);
+    return {domain,pageUrl:response.url||`https://${domain}/`,status:response.status,candidates:resolver.explicitLogoCandidates(text,response.url||`https://${domain}/`).map(item=>({url:item.url,kind:item.kind,score:item.score}))};
+  }catch(error){return {domain,pageUrl:null,status:null,candidates:[],error:String(error&&error.message||error)};}finally{clearTimeout(timer);}
+}
 module.exports=async function handler(req,res){
   if(req.method!=='GET'){res.setHeader('Allow','GET');return json(res,405,{error:'Method not allowed'});}
   let url;try{url=new URL(req.url,'https://australianproductguide.au');}catch{return json(res,400,{error:'Invalid request URL'});}
   const offset=Math.max(0,Math.min(brands.length,Number.parseInt(url.searchParams.get('offset')||'0',10)||0));
   const requested=Number.parseInt(url.searchParams.get('limit')||String(MAX_BATCH),10)||MAX_BATCH;
   const limit=Math.max(1,Math.min(MAX_BATCH,requested));
+  const debug=url.searchParams.get('debug')==='1';
   const slice=brands.slice(offset,offset+limit),results=await Promise.all(slice.map(inspectBrand));
   const fallbacks=results.filter(item=>item.fallback),policyFallbacks=fallbacks.filter(item=>item.policyFallback),unresolved=fallbacks.filter(item=>!item.policyFallback);
+  if(debug)await Promise.all(unresolved.map(async item=>{item.officialCandidateDebug=await debugOfficialCandidates(item.slug);}));
   const sources={};for(const item of results)sources[item.source]=(sources[item.source]||0)+1;
   return json(res,200,{
     auditVersion:AUDIT_VERSION,
