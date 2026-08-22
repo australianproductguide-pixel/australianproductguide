@@ -38,7 +38,10 @@ const cssChecks=[
   ['premium mobile 64px thumbnail','width:64px;height:64px;min-width:64px;min-height:64px'],
   ['base desktop 64px thumbnail','width:64px;height:64px;min-width:64px;min-height:64px'],
   ['base mobile 52px thumbnail','width:52px;height:52px;min-width:52px;min-height:52px'],
-  ['two-line supporting copy','-webkit-line-clamp:2']
+  ['two-line supporting copy','-webkit-line-clamp:2'],
+  ['category pills suppressed','.category-grid .category-card .pills{display:none!important}'],
+  ['secondary category CTA suppressed','.category-grid .category-card .card-actions .text-link{display:none!important}'],
+  ['single compact primary CTA','.category-grid .category-card .card-actions .button.secondary{min-height:0!important;padding:8px 11px!important;font-size:12.5px!important}']
 ];
 for(const [label,needle] of cssChecks){if(!out.includes(needle))fail(`Missing ${label} rule`);}
 for(const retired of [
@@ -55,13 +58,15 @@ for(const retired of [
 
 // Current premium cards must replace the old scene, preserve decision copy, and
 // contain exactly one governed image. CSS then turns it into the compact thumbnail.
-const premiumCard='<article class="category-card v7-category-card" data-v7-category="coffee-machines"><div class="v7-category-scene" data-v7-category="coffee-machines"><span class="v7-scene-glow"></span><span class="v7-scene-icon"><svg><path d="M0 0"></path></svg></span><span class="v7-scene-copy"><small>Kitchen</small><strong>Coffee machines</strong></span></div><div class="v7-category-card-copy"><h3><a href="/categories/coffee-machines/">Coffee machines</a></h3><p>Choose a coffee machine for the way you actually make coffee.</p></div></article>';
+const premiumCard='<article class="category-card v7-category-card" data-v7-category="coffee-machines"><div class="v7-category-scene" data-v7-category="coffee-machines"><span class="v7-scene-glow"></span><span class="v7-scene-icon"><svg><path d="M0 0"></path></svg></span><span class="v7-scene-copy"><small>Kitchen</small><strong>Coffee machines</strong></span></div><div class="v7-category-card-copy"><p class="eyebrow">Maintained comparison · 10 products</p><h3><a href="/categories/coffee-machines/">Coffee machines</a></h3><p>Choose a coffee machine for the way you actually make coffee.</p><div class="pills"><span class="pill">beginner</span></div><div class="card-actions"><a class="button secondary" href="/categories/coffee-machines/">Explore category</a><a class="text-link" href="/categories/coffee-machines/finder/">Help me choose →</a></div></div></article>';
 const premiumOut=layer.enrichCategoryCard(premiumCard);
 if(!premiumOut.includes('class="category-index-media is-premium"'))fail('Premium category card must receive its governed image in the premium slot');
 if(premiumOut.includes('v7-category-scene'))fail('Premium illustrative scene must be replaced by the governed category image');
 if(count(premiumOut,'category-index-media')!==1)fail('Premium category card must contain exactly one governed image figure');
 if(!premiumOut.includes('v7-category-card-copy'))fail('Premium category decision copy must be preserved');
 if(premiumOut.includes('<figcaption'))fail('Premium category tile must not include a caption/source bar');
+if(!premiumOut.includes('class="pills"'))fail('Source card semantics should remain in SSR markup even when hub CSS visually suppresses pills');
+if(!premiumOut.includes('class="text-link"'))fail('Source secondary action should remain in SSR markup even when hub CSS visually suppresses it');
 
 const baseCard='<article class="category-card"><div><span class="category-icon large"><svg><path d="M0 0"></path></svg></span></div><div><h3><a href="/categories/smart-plugs/">Smart plugs</a></h3></div></article>';
 const baseOut=layer.enrichCategoryCard(baseCard);
@@ -86,6 +91,8 @@ console.log(JSON.stringify({
   baseMobileThumbnailPx:52,
   legacyBannerGeometryRemoved:true,
   supportingCopyClamped:true,
+  categoryPillsVisuallySuppressed:true,
+  singleVisibleCardAction:true,
   premiumSceneReplaced:true,
   hubCaptionsRemoved:true,
   routeScoped:true,
