@@ -1,0 +1,55 @@
+/* APG Brand Directory v63.0
+ * CSP-safe presentation for the v62.4 brand discovery markup.
+ * Served as a same-origin stylesheet so Production's style-src 'self' policy remains intact.
+ */
+body[data-apg-brand-index-logos="v62"] .apg-brand-directory,
+body[data-apg-brand-detail-logo="v62"] .brand-hero-logo-panel,
+body[data-apg-brand-detail-logo="v62"] .brand-hero-logo-shell{box-sizing:border-box}
+body[data-apg-brand-index-logos="v62"] .apg-brand-directory{display:grid;gap:38px;width:min(calc(100% - 40px),1240px);margin:4px auto 0}
+body[data-apg-brand-index-logos="v62"] .apg-brand-discovery-panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,420px);gap:18px 28px;align-items:end;padding:28px;border:1px solid #dce5e9;border-radius:22px;background:linear-gradient(145deg,#f8fbfc,#fff);box-shadow:0 10px 32px rgba(15,23,42,.045)}
+body[data-apg-brand-index-logos="v62"] .apg-brand-discovery-copy h2,body[data-apg-brand-index-logos="v62"] .apg-brand-section-heading h2{margin:.18rem 0 .35rem;color:#0f172a;letter-spacing:-.025em}
+body[data-apg-brand-index-logos="v62"] .apg-brand-discovery-copy p:last-child,body[data-apg-brand-index-logos="v62"] .apg-brand-section-heading>p{margin:0;color:#60717d;line-height:1.55}
+body[data-apg-brand-index-logos="v62"] .apg-brand-search{display:flex;align-items:center;gap:10px;height:48px;padding:0 14px;border:1px solid #cfdbe0;border-radius:12px;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.03)}
+body[data-apg-brand-index-logos="v62"] .apg-brand-search:focus-within{border-color:#315fd8;box-shadow:0 0 0 3px rgba(49,95,216,.1)}
+body[data-apg-brand-index-logos="v62"] .apg-brand-search svg{width:19px;height:19px;fill:none;stroke:#637783;stroke-width:1.8;flex:0 0 auto}
+body[data-apg-brand-index-logos="v62"] .apg-brand-search input{width:100%;height:100%;border:0!important;outline:0!important;background:transparent!important;color:#0f172a;font:inherit;box-shadow:none!important}
+body[data-apg-brand-index-logos="v62"] .apg-brand-az{grid-column:1/-1;display:flex;gap:5px;overflow-x:auto;padding:8px 0 2px;scrollbar-width:thin}
+body[data-apg-brand-index-logos="v62"] .apg-brand-az a{display:grid;place-items:center;flex:0 0 34px;height:34px;border:1px solid #dce5e9;border-radius:8px;background:#fff;color:#334155;font-size:.78rem;font-weight:760;text-decoration:none}
+body[data-apg-brand-index-logos="v62"] .apg-brand-az a:hover{border-color:#9fb4be;color:#0b6a62;background:#f8fbfa}
+body[data-apg-brand-index-logos="v62"] .apg-brand-search-status{grid-column:1/-1;margin:-4px 0 0!important;color:#71818b!important;font-size:.78rem!important}
+body[data-apg-brand-index-logos="v62"] .apg-brand-section-heading{display:flex;justify-content:space-between;align-items:end;gap:24px;margin-bottom:18px}
+body[data-apg-brand-index-logos="v62"] .apg-brand-section-heading>p{max-width:540px;font-size:.82rem;text-align:right}
+body[data-apg-brand-index-logos="v62"] .apg-brand-featured-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+body[data-apg-brand-index-logos="v62"] .apg-featured-brand-tile{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;min-height:145px;padding:17px 12px;border:1px solid #dfe7eb;border-radius:15px;background:#fff;color:#0f172a;text-align:center;text-decoration:none;box-shadow:0 2px 8px rgba(15,23,42,.03);transition:border-color .17s ease,box-shadow .17s ease,transform .17s ease}
+body[data-apg-brand-index-logos="v62"] .apg-featured-brand-tile:hover{border-color:#b9cbd2;box-shadow:0 8px 22px rgba(15,23,42,.065);transform:translateY(-1px)}
+body[data-apg-brand-index-logos="v62"] .apg-featured-brand-mark{position:relative;display:grid;place-items:center;overflow:hidden;width:72px;height:72px;margin-bottom:11px;border:1px solid #e6ecef;border-radius:14px;background:#fff}
+body[data-apg-brand-index-logos="v62"] .apg-featured-brand-tile .apg-brand-directory-copy{align-items:center}
+body[data-apg-brand-index-logos="v62"] .apg-featured-brand-tile .apg-brand-directory-copy strong{font-size:.84rem}
+body[data-apg-brand-index-logos="v62"] .apg-featured-brand-tile .apg-brand-directory-copy small{font-size:.67rem}
+body[data-apg-brand-index-logos="v62"] .apg-featured-brand-tile .apg-brand-directory-arrow{display:none}
+body[data-apg-brand-index-logos="v62"] .apg-brand-letter-groups{display:grid;gap:34px}
+body[data-apg-brand-index-logos="v62"] .apg-brand-letter-group{scroll-margin-top:110px}
+body[data-apg-brand-index-logos="v62"] .apg-brand-letter-head{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;padding-bottom:9px;border-bottom:1px solid #e4ebee}
+body[data-apg-brand-index-logos="v62"] .apg-brand-letter-head h3{margin:0;color:#0f172a;font-size:1.3rem;line-height:1}
+body[data-apg-brand-index-logos="v62"] .apg-brand-letter-head span{color:#84919a;font-size:.72rem}
+body[data-apg-brand-index-logos="v62"] .apg-brand-letter-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 12px}
+body[data-apg-brand-index-logos="v62"] .apg-brand-directory-tile{position:relative;display:flex;align-items:center;gap:11px;min-width:0;min-height:70px;padding:10px 11px;border:1px solid #e1e8eb;border-radius:12px;background:#fff;color:#0f172a;text-decoration:none;transition:border-color .16s ease,background .16s ease,box-shadow .16s ease}
+body[data-apg-brand-index-logos="v62"] .apg-brand-directory-tile:hover{border-color:#becdd3;background:#fbfdfd;box-shadow:0 5px 16px rgba(15,23,42,.045)}
+body[data-apg-brand-index-logos="v62"] .brand-card-mark{position:relative;display:grid;place-items:center;overflow:hidden;width:46px;height:46px;min-width:46px;border:1px solid #e5ecef;border-radius:10px;background:#fff}
+body[data-apg-brand-index-logos="v62"] .apg-brand-directory-copy{display:flex;flex:1;flex-direction:column;gap:3px;min-width:0;text-align:left}
+body[data-apg-brand-index-logos="v62"] .apg-brand-directory-copy strong{overflow:hidden;color:#0f172a;font-size:.82rem;font-weight:760;line-height:1.25;text-overflow:ellipsis;white-space:nowrap}
+body[data-apg-brand-index-logos="v62"] .apg-brand-directory-copy small{color:#73828c;font-size:.68rem;line-height:1.25}
+body[data-apg-brand-index-logos="v62"] .apg-brand-directory-arrow{flex:0 0 auto;color:#98a6ae;font-size:1.15rem;line-height:1}
+body[data-apg-brand-index-logos="v62"] .brand-logo-text-fallback,body[data-apg-brand-detail-logo="v62"] .brand-logo-text-fallback{display:flex;align-items:center;justify-content:center;width:100%;height:100%;padding:5px;color:#475569;font-size:.52rem;font-weight:800;line-height:1.08;text-align:center;letter-spacing:-.02em;overflow-wrap:anywhere}
+body[data-apg-brand-index-logos="v62"] .brand-card-logo,body[data-apg-brand-detail-logo="v62"] .brand-card-logo{position:absolute!important;inset:5px!important;display:block!important;width:calc(100% - 10px)!important;height:calc(100% - 10px)!important;object-fit:contain!important;object-position:center!important;background:#fff!important}
+body[data-apg-brand-index-logos="v62"] .apg-brand-empty{padding:38px 20px;border:1px dashed #cad7dc;border-radius:14px;background:#fafcfc;text-align:center;color:#475569}
+body[data-apg-brand-index-logos="v62"] .apg-brand-empty strong,body[data-apg-brand-index-logos="v62"] .apg-brand-empty span{display:block}
+body[data-apg-brand-index-logos="v62"] .apg-brand-empty span{margin-top:5px;font-size:.82rem;color:#768690}
+body[data-apg-brand-detail-logo="v62"] .brand-hero-grid{align-items:center!important;gap:38px!important}
+body[data-apg-brand-detail-logo="v62"] .brand-hero-logo-panel{display:flex!important;align-items:center!important;justify-content:center!important;min-height:205px!important;padding:26px!important;border:1px solid #dfe7eb!important;border-radius:22px!important;background:linear-gradient(145deg,#fff,#f8fafb)!important;box-shadow:0 12px 36px rgba(15,23,42,.055)!important}
+body[data-apg-brand-detail-logo="v62"] .brand-hero-logo-shell{position:relative!important;display:grid!important;place-items:center!important;overflow:hidden!important;width:164px!important;height:164px!important;border:1px solid #e3e9ec!important;border-radius:24px!important;background:#fff!important;box-shadow:0 5px 20px rgba(15,23,42,.04)!important}
+body[data-apg-brand-detail-logo="v62"] .brand-hero-logo-shell .brand-logo-text-fallback{padding:12px;font-size:.95rem!important;color:#334155!important}
+@media (max-width:1100px){body[data-apg-brand-index-logos="v62"] .apg-brand-featured-grid{grid-template-columns:repeat(4,minmax(0,1fr))}body[data-apg-brand-index-logos="v62"] .apg-brand-letter-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:780px){body[data-apg-brand-index-logos="v62"] .apg-brand-directory{gap:30px;width:min(calc(100% - 28px),1240px)}body[data-apg-brand-index-logos="v62"] .apg-brand-discovery-panel{grid-template-columns:1fr;padding:21px}body[data-apg-brand-index-logos="v62"] .apg-brand-az,body[data-apg-brand-index-logos="v62"] .apg-brand-search-status{grid-column:1}body[data-apg-brand-index-logos="v62"] .apg-brand-section-heading{display:block}body[data-apg-brand-index-logos="v62"] .apg-brand-section-heading>p{max-width:none;margin-top:7px;text-align:left}body[data-apg-brand-index-logos="v62"] .apg-brand-featured-grid{grid-template-columns:repeat(3,minmax(0,1fr))}body[data-apg-brand-index-logos="v62"] .apg-brand-letter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}body[data-apg-brand-detail-logo="v62"] .brand-hero-logo-panel{min-height:165px!important}}
+@media (max-width:520px){body[data-apg-brand-index-logos="v62"] .apg-brand-directory{width:min(calc(100% - 20px),1240px)}body[data-apg-brand-index-logos="v62"] .apg-brand-discovery-panel{padding:18px;border-radius:17px}body[data-apg-brand-index-logos="v62"] .apg-brand-featured-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}body[data-apg-brand-index-logos="v62"] .apg-featured-brand-tile{min-height:125px;padding:13px 8px}body[data-apg-brand-index-logos="v62"] .apg-featured-brand-mark{width:62px;height:62px}body[data-apg-brand-index-logos="v62"] .apg-brand-letter-grid{grid-template-columns:1fr;gap:8px}body[data-apg-brand-index-logos="v62"] .apg-brand-directory-tile{min-height:64px}body[data-apg-brand-detail-logo="v62"] .brand-hero-logo-panel{min-height:132px!important;padding:16px!important;border-radius:17px!important}body[data-apg-brand-detail-logo="v62"] .brand-hero-logo-shell{width:112px!important;height:112px!important;border-radius:18px!important}}
+@media (prefers-reduced-motion:reduce){body[data-apg-brand-index-logos="v62"] .apg-featured-brand-tile,body[data-apg-brand-index-logos="v62"] .apg-brand-directory-tile{transition:none!important}body[data-apg-brand-index-logos="v62"] .apg-featured-brand-tile:hover{transform:none!important}}
