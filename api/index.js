@@ -1,4 +1,13 @@
-// APG Footer Navigation v83 is the outermost runtime layer.
+// APG Search Console Opportunity v84 is the outermost runtime layer.
+// It uses observed Google Search Console demand to sharpen consumer-facing
+// metadata on product, comparison and category routes and adds lightweight SSR
+// decision-path links from product/comparison pages back to their category,
+// buying guide, comparison hub and finder. It does not alter canonical URLs,
+// indexability, structured-data claims, recommendation scoring, retailer ordering,
+// affiliate logic or analytics collection.
+// Compatibility lineage: module.exports=require('../lib/footer-navigation-v83')
+//
+// APG Footer Navigation v83 remains authoritative immediately underneath v84.
 // It hardens native footer hit targets and mobile interaction geometry without
 // intercepting clicks or changing the authoritative Trust Centre content underneath.
 // Compatibility lineage: module.exports=require('../lib/trust-centre-authoritative-v82')
@@ -44,7 +53,7 @@
 // APG Homepage Situation Overlay v70.1 remains authoritative immediately underneath.
 // It left-aligns the icon + situation-label treatment across the homepage
 // "What are you trying to improve?" cards and prevents the two overlays from
-// colliding on narrow mobile viewports. Imagery, copy, filters and links are unchanged.
+// colliding on narrow mobile viewports. Imagery, copy, filters, links and overall geometry are unchanged.
 // Compatibility lineage: module.exports=require('../lib/premium-search-mobile-v761')
 //
 // APG Premium Search Mobile Cascade Fix v76.1 remains authoritative immediately underneath.
@@ -120,4 +129,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/footer-navigation-v83');
+module.exports=require('../lib/search-console-opportunity-v84');
