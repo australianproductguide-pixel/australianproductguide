@@ -1,4 +1,4 @@
-/* APG Footer Navigation v83.1 — reliable touch targets, compact mobile grid and overlap protection */
+/* APG Footer Navigation v83.2 — reliable touch targets, exact mobile alignment, compact grid and overlap protection */
 .apg-footer-v11 .footer-v11-inner,
 .apg-footer-v11 .footer-v11-nav,
 .apg-footer-v11 .footer-v11-group{position:relative!important}
@@ -29,13 +29,17 @@
     row-gap:26px!important;
   }
   .apg-footer-v11 .footer-v11-group{gap:2px!important;width:100%!important;min-width:0!important}
-  .apg-footer-v11 .footer-v11-group h3{margin-bottom:7px!important;font-size:14px!important}
+  .apg-footer-v11 .footer-v11-group h3{
+    margin:0 0 7px!important;
+    padding:0!important;
+    font-size:14px!important;
+  }
   .apg-footer-v11 .footer-v11-group a{
     width:100%!important;
     max-width:none!important;
     min-height:44px!important;
     margin:0!important;
-    padding:10px 6px!important;
+    padding:10px 0!important;
     font-size:14px!important;
     line-height:1.35!important;
     white-space:normal!important;
@@ -43,12 +47,63 @@
   }
   .apg-footer-v11 .footer-v11-group a:hover,
   .apg-footer-v11 .footer-v11-group a:focus-visible{background:rgba(255,255,255,.08)!important}
+
+  /* Keep privacy controls visually subordinate to the footer's navigation, social
+     and legal content while preserving a comfortable mobile touch target. */
+  .apg-footer-v11 + .apg-cookie-footer-wrap,
+  .apg-cookie-footer-wrap{
+    box-sizing:border-box!important;
+    width:100%!important;
+    margin:0 auto!important;
+    padding:18px 36px 24px!important;
+    background:#0f172a!important;
+  }
+  .apg-cookie-footer-button{
+    appearance:none!important;
+    -webkit-appearance:none!important;
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    min-height:40px!important;
+    width:auto!important;
+    max-width:100%!important;
+    margin:0!important;
+    padding:7px 11px!important;
+    border:1px solid rgba(203,213,225,.28)!important;
+    border-radius:999px!important;
+    background:rgba(255,255,255,.035)!important;
+    color:#aebbd0!important;
+    font:inherit!important;
+    font-size:12.5px!important;
+    font-weight:500!important;
+    line-height:1.2!important;
+    text-decoration:none!important;
+    letter-spacing:0!important;
+    box-shadow:none!important;
+    cursor:pointer!important;
+    touch-action:manipulation!important;
+  }
+  .apg-cookie-footer-button:hover,
+  .apg-cookie-footer-button:focus-visible{
+    color:#e2e8f0!important;
+    border-color:rgba(147,197,253,.55)!important;
+    background:rgba(255,255,255,.07)!important;
+  }
+  .apg-cookie-footer-button:focus-visible{
+    outline:3px solid #93c5fd!important;
+    outline-offset:2px!important;
+  }
+
   .apg-assistant-launcher.apg-footer-overlap-guard{
     opacity:0!important;
     visibility:hidden!important;
     pointer-events:none!important;
     transform:translateY(10px)!important;
   }
+}
+@media(max-width:380px){
+  .apg-footer-v11 + .apg-cookie-footer-wrap,
+  .apg-cookie-footer-wrap{padding-left:24px!important;padding-right:24px!important}
 }
 @media(max-width:340px){
   .apg-footer-v11 nav.footer-v11-nav{

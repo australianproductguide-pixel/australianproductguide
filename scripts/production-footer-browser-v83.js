@@ -10,7 +10,7 @@ const CHROME=process.env.CHROME||'/usr/bin/google-chrome';
 const OUT=process.env.FOOTER_BROWSER_OUT||'artifacts/production-footer-browser-v83';
 const SHA=(process.env.APG_EXPECTED_SHA||process.env.GITHUB_SHA||'').trim();
 const REQUIRED=['/about/','/methodology/','/editorial-standards/','/sources/','/corrections-policy/','/coverage/','/contact/','/affiliate-disclosure/','/privacy/','/terms/'];
-const report={suite:'production-footer-browser-v83.1',baseUrl:BASE,gitSha:SHA||null,started:new Date().toISOString(),viewports:[],failures:[]};
+const report={suite:'production-footer-browser-v83.2',baseUrl:BASE,gitSha:SHA||null,started:new Date().toISOString(),viewports:[],failures:[]};
 fs.mkdirSync(OUT,{recursive:true});
 
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -143,14 +143,51 @@ async function runViewport(browser,name,viewport){
         const launcher=document.getElementById('apgAssistantLauncher');
         const r=first&&first.getBoundingClientRect();
         const ls=launcher&&getComputedStyle(launcher);
+        const textLeft=el=>{
+          if(!el)return null;
+          const walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);
+          let node;
+          while((node=walker.nextNode())){
+            const text=String(node.nodeValue||'');
+            const index=text.search(/\S/);
+            if(index<0)continue;
+            const range=document.createRange();
+            range.setStart(node,index);
+            range.setEnd(node,Math.min(index+1,text.length));
+            const box=range.getBoundingClientRect();
+            if(box.width||box.height)return box.left;
+          }
+          return el.getBoundingClientRect().left;
+        };
         const groups=[...document.querySelectorAll('.apg-footer-v11 .footer-v11-group')].slice(0,4).map(group=>{
           const box=group.getBoundingClientRect();
-          return {left:box.left,top:box.top,right:box.right,bottom:box.bottom,width:box.width,height:box.height};
+          const heading=group.querySelector('h3');
+          const headingLeft=textLeft(heading);
+          const links=[...group.querySelectorAll('a')];
+          const linkTextLefts=links.map(textLeft);
+          return {
+            left:box.left,top:box.top,right:box.right,bottom:box.bottom,width:box.width,height:box.height,
+            headingLeft,
+            linkTextLefts,
+            alignmentDeltas:linkTextLefts.map(left=>left==null||headingLeft==null?null:Math.abs(left-headingLeft))
+          };
         });
+        const cookie=document.querySelector('.apg-cookie-footer-button');
+        const cookieStyle=cookie&&getComputedStyle(cookie);
+        const cookieRect=cookie&&cookie.getBoundingClientRect();
         return {
           height:r&&r.height||0,
           columns:nav&&getComputedStyle(nav).gridTemplateColumns||'',
           groups,
+          cookie:cookie?{
+            left:cookieRect.left,
+            width:cookieRect.width,
+            height:cookieRect.height,
+            fontSize:parseFloat(cookieStyle.fontSize)||0,
+            textDecoration:cookieStyle.textDecorationLine,
+            borderRadius:cookieStyle.borderRadius,
+            display:cookieStyle.display
+          }:null,
           launcherGuard:!!launcher&&launcher.classList.contains('apg-footer-overlap-guard'),
           launcherVisibility:ls&&ls.visibility||null,
           launcherPointerEvents:ls&&ls.pointerEvents||null
@@ -164,6 +201,16 @@ async function runViewport(browser,name,viewport){
       assert(sameRow(three,four)&&four.left>three.left+20,`${name}: second two footer groups are not a two-column row: ${JSON.stringify(mobileState)}`);
       assert(three.top>one.top+20,`${name}: footer groups did not form a second row: ${JSON.stringify(mobileState)}`);
       assert(one.width>100&&two.width>100&&three.width>100&&four.width>100,`${name}: footer columns are too narrow: ${JSON.stringify(mobileState)}`);
+      for(const [index,group] of mobileState.groups.entries()){
+        assert(group.headingLeft!=null,`${name}: group ${index+1} heading text position unavailable`);
+        assert(group.alignmentDeltas.length>0,`${name}: group ${index+1} has no links to align`);
+        for(const delta of group.alignmentDeltas)assert(delta!=null&&delta<=1.25,`${name}: group ${index+1} heading/link text drift is ${delta}px: ${JSON.stringify(group)}`);
+      }
+      assert(mobileState.cookie,`${name}: Cookie preferences control missing`);
+      assert(mobileState.cookie.left>=20,`${name}: Cookie preferences is detached from footer inset: ${JSON.stringify(mobileState.cookie)}`);
+      assert(mobileState.cookie.height>=39.5,`${name}: Cookie preferences touch target is too short: ${JSON.stringify(mobileState.cookie)}`);
+      assert(mobileState.cookie.fontSize<=13,`${name}: Cookie preferences is visually too prominent: ${JSON.stringify(mobileState.cookie)}`);
+      assert(mobileState.cookie.textDecoration==='none',`${name}: Cookie preferences should not use oversized-link underline styling: ${JSON.stringify(mobileState.cookie)}`);
       assert(mobileState.launcherGuard&&mobileState.launcherPointerEvents==='none',`${name}: Scout footer overlap guard not active: ${JSON.stringify(mobileState)}`);
     }
     if(errors.length)throw new Error(`${name}: browser errors: ${JSON.stringify(errors)}`);
@@ -186,5 +233,5 @@ async function runViewport(browser,name,viewport){
   report.finished=new Date().toISOString();
   fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2));
   if(report.failures.length){console.error(JSON.stringify(report.failures,null,2));process.exit(1);}
-  console.log(`FOOTER_NAVIGATION_V83_1_PRODUCTION=PASS viewports=${report.viewports.length} clicks=${report.viewports.reduce((sum,row)=>sum+(row.links||0),0)}`);
+  console.log(`FOOTER_NAVIGATION_V83_2_PRODUCTION=PASS viewports=${report.viewports.length} clicks=${report.viewports.reduce((sum,row)=>sum+(row.links||0),0)} alignment=exact cookie=compact`);
 })().catch(error=>{console.error(error.stack||error);process.exit(1);});
