@@ -14,6 +14,7 @@ const v42Priority=require('./catalogue-v42-priority');
 const v27Retailers=require('./catalogue-v27-retailers');
 const v27RetailersPass5=require('./catalogue-v27-retailers-pass5');
 const v27RetailersPass6=require('./catalogue-v27-retailers-pass6');
+const searchConsoleDepthV85=require('./search-console-depth-v85');
 const REVIEWED='2026-08-18';
 const DEEP_RESEARCHED='2026-08-15';
 const NEXT_REVIEW='2026-09-16';
@@ -48,6 +49,7 @@ for(const [slug,rows] of Object.entries(consumerV13)){
 }
 v41Depth.apply({deepCategories,nationalCategories,maintainedProduct});
 v42Priority.apply({nationalCategories,maintainedProduct});
+searchConsoleDepthV85.apply({expandedCategories,retailersFor});
 v27Retailers.apply({categoryMaps:[deepCategories,starterCategories,expandedCategories,searchCategories,nationalCategories,authorityCategories]});
 v27RetailersPass5.apply({categoryMaps:[deepCategories,starterCategories,expandedCategories,searchCategories,nationalCategories,authorityCategories]});
 v27RetailersPass6.apply({categoryMaps:[deepCategories,starterCategories,expandedCategories,searchCategories,nationalCategories,authorityCategories]});
