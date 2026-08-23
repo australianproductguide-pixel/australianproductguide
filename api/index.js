@@ -1,4 +1,12 @@
-// APG Brand Mark Canonical Parity v91 is the authoritative outermost runtime layer.
+// APG Category Directory Mobile Alignment v92 is the authoritative outermost runtime layer.
+// It fixes the inconsistent mobile alignment of Browse category and Help me choose
+// controls on /categories/ by neutralising inherited flex growth/centering and pinning
+// both actions to the left edge of each category-card copy block at every mobile wrap.
+// This is presentation-only and does not alter category data, ordering, imagery,
+// recommendation logic, affiliate behaviour, analytics, SEO metadata or destinations.
+// Compatibility lineage: module.exports=require('../lib/brand-mark-canonical-parity-v91')
+//
+// APG Brand Mark Canonical Parity v91 remains authoritative immediately underneath v92.
 // It gives known problem brand identities one deterministic final outcome after all
 // legacy discovery/completion layers: Breville uses the reviewed vector override and
 // Amazon fails closed to a canonical brand-name treatment rather than a product image,
@@ -73,4 +81,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/brand-mark-canonical-parity-v91');
+module.exports=require('../lib/category-directory-mobile-alignment-v92');
