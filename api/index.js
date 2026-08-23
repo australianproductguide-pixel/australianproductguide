@@ -1,4 +1,11 @@
-// APG Category Directory Mobile Alignment v92 is the authoritative outermost runtime layer.
+// APG Social + Footer Polish v93 is the authoritative outermost runtime layer.
+// It gives the shared social surfaces a consistent platform-brand treatment, adds
+// deliberate mobile breathing room beneath the final social row, and left-aligns the
+// Cookie preferences control to the footer content edge. It is presentation-only and
+// preserves social destinations, consent semantics, analytics, SEO and commerce logic.
+// Compatibility lineage: module.exports=require('../lib/category-directory-mobile-alignment-v92')
+//
+// APG Category Directory Mobile Alignment v92 remains authoritative immediately underneath v93.
 // It fixes the inconsistent mobile alignment of Browse category and Help me choose
 // controls on /categories/ by neutralising inherited flex growth/centering and pinning
 // both actions to the left edge of each category-card copy block at every mobile wrap.
@@ -81,4 +88,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/category-directory-mobile-alignment-v92');
+module.exports=require('../lib/social-footer-polish-v93');
