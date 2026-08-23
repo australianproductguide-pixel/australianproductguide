@@ -1,4 +1,11 @@
-// APG Search Console Depth v85 is the outermost runtime layer.
+// APG Category Page Polish v86 is the outermost runtime layer.
+// It refines maintained category-page spacing between the primary action buttons and
+// priority pills across desktop/mobile, and aligns the What Matters step-number accents
+// with the current APG blue interaction language. It does not alter category content,
+// recommendation logic, retailer ordering, affiliate behaviour or analytics.
+// Compatibility lineage: module.exports=require('../lib/search-console-depth-v85-runtime')
+//
+// APG Search Console Depth v85 remains authoritative immediately underneath v86.
 // It operationalises APG's depth-over-breadth Search Console workflow by preserving
 // search equity during a verified Australian product-identity correction: legacy
 // Philips STH5030/80 product/comparison URLs permanently redirect to STH5030/20.
@@ -37,4 +44,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/search-console-depth-v85-runtime');
+module.exports=require('../lib/category-page-polish-v86');
