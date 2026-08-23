@@ -1,4 +1,8 @@
-// APG Category Page Polish v86 is the outermost runtime layer.
+// APG Action 2 Measurement Truth v87 is the outermost runtime layer.
+// It closes the proven Scout -> Amazon attribution gap without expanding data scope.
+// Compatibility lineage: module.exports=require('../lib/category-page-polish-v86')
+//
+// APG Category Page Polish v86 remains authoritative immediately underneath v87.
 // It refines maintained category-page spacing between the primary action buttons and
 // priority pills across desktop/mobile, and aligns the What Matters step-number accents
 // with the current APG blue interaction language. It does not alter category content,
@@ -44,4 +48,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/category-page-polish-v86');
+module.exports=require('../lib/action2-measurement-v87');
