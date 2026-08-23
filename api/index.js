@@ -1,4 +1,10 @@
-// APG Mobile Header Full Wordmark v75 is the outermost presentation layer.
+// APG Premium Search Experience v76 is the outermost presentation layer.
+// It upgrades the visual hierarchy, responsive proportions, focus states and
+// suggestion surfaces of APG search while preserving Search v52 query handling,
+// ranking, transport, analytics and interaction contracts unchanged.
+// Compatibility lineage: module.exports=require('../lib/mobile-header-wordmark-v75')
+//
+// APG Mobile Header Full Wordmark v75 remains authoritative immediately underneath.
 // It keeps the full Australian Product Guide lock-up visible in the mobile header,
 // hides the APG monogram on mobile, and scales the governed identity responsively
 // while leaving desktop header behaviour unchanged.
@@ -59,4 +65,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/mobile-header-wordmark-v75');
+module.exports=require('../lib/premium-search-v76');
