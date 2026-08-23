@@ -43,10 +43,6 @@ async function hrefs(page){
 }
 
 async function positionFooterLink(handle){
-  // Footer links live close to the document boundary. scrollIntoView({block:'center'}) can
-  // legitimately hit the browser's maximum scroll position, leaving the element's full
-  // box centre outside the viewport. Position it first, then choose the centre of the
-  // *visible intersection* so elementFromPoint and the real click test a reachable pixel.
   await handle.evaluate(el=>{
     el.scrollIntoView({block:'nearest',inline:'nearest'});
     const r=el.getBoundingClientRect();
@@ -106,23 +102,42 @@ async function runViewport(browser,name,viewport){
   const page=await browser.newPage();
   await page.setViewport(viewport);
   const errors=[];
-  page.on('pageerror',error=>errors.push(error.message||String(error)));
-  page.on('console',message=>{if(message.type()==='error'&&!/google-analytics|googletagmanager|doubleclick|favicon/i.test(message.text()))errors.push(message.text());});
+  const context={route:'initialising'};
+  let routes=[];
+  const rows=[];
+  const pushError=(type,text,location)=>errors.push({
+    type,
+    text:String(text||''),
+    route:context.route,
+    pageUrl:page.url(),
+    sourceUrl:location&&location.url||null,
+    lineNumber:location&&Number.isFinite(location.lineNumber)?location.lineNumber:null,
+    columnNumber:location&&Number.isFinite(location.columnNumber)?location.columnNumber:null
+  });
+  page.on('pageerror',error=>pushError('pageerror',error.message||String(error),null));
+  page.on('console',message=>{
+    if(message.type()!=='error'||/google-analytics|googletagmanager|doubleclick|favicon/i.test(message.text()))return;
+    pushError('console',message.text(),message.location());
+  });
   try{
+    context.route='footer-discovery';
     await prepare(page,'/');
-    const routes=await hrefs(page);
+    routes=await hrefs(page);
     for(const required of REQUIRED)assert(routes.includes(required),`${name}: required footer destination missing ${required}`);
-    const rows=[];
     for(const route of routes){
+      context.route=route;
+      const errorStart=errors.length;
       const geometry=await clickFooterLink(page,route,name);
-      rows.push({route,result:'PASS',geometry});
+      rows.push({route,result:'PASS',destination:page.url(),geometry,newErrors:errors.slice(errorStart)});
     }
+    context.route='final-footer-geometry';
     await prepare(page,'/');
     const first=await page.$('.apg-footer-v11 .footer-v11-group a');
     assert(first,`${name}: footer contains no navigation links`);
     await positionFooterLink(first);
+    let mobileState=null;
     if(viewport.width<=700){
-      const state=await page.evaluate(()=>{
+      mobileState=await page.evaluate(()=>{
         const first=document.querySelector('.apg-footer-v11 .footer-v11-group a');
         const nav=document.querySelector('.apg-footer-v11 .footer-v11-nav');
         const launcher=document.getElementById('apgAssistantLauncher');
@@ -130,15 +145,15 @@ async function runViewport(browser,name,viewport){
         const ls=launcher&&getComputedStyle(launcher);
         return {height:r&&r.height||0,columns:nav&&getComputedStyle(nav).gridTemplateColumns||'',launcherGuard:!!launcher&&launcher.classList.contains('apg-footer-overlap-guard'),launcherVisibility:ls&&ls.visibility||null,launcherPointerEvents:ls&&ls.pointerEvents||null};
       });
-      assert(state.height>=43.5,`${name}: mobile footer tap target ${state.height}px is below 44px`);
-      assert(!/\s/.test(state.columns.trim()),`${name}: mobile footer remains multi-column: ${state.columns}`);
-      assert(state.launcherGuard&&state.launcherPointerEvents==='none',`${name}: Scout footer overlap guard not active: ${JSON.stringify(state)}`);
+      assert(mobileState.height>=43.5,`${name}: mobile footer tap target ${mobileState.height}px is below 44px`);
+      assert(!/\s/.test(mobileState.columns.trim()),`${name}: mobile footer remains multi-column: ${mobileState.columns}`);
+      assert(mobileState.launcherGuard&&mobileState.launcherPointerEvents==='none',`${name}: Scout footer overlap guard not active: ${JSON.stringify(mobileState)}`);
     }
-    assert(errors.length===0,`${name}: browser errors: ${errors.join(' | ')}`);
-    report.viewports.push({name,viewport,result:'PASS',links:rows.length,routes,rows});
+    if(errors.length)throw new Error(`${name}: browser errors: ${JSON.stringify(errors)}`);
+    report.viewports.push({name,viewport,result:'PASS',links:rows.length,routes,rows,mobileState,errors});
   }catch(error){
-    report.failures.push({name,error:error.message});
-    report.viewports.push({name,viewport,result:'FAIL',error:error.message});
+    report.failures.push({name,error:error.message,errors});
+    report.viewports.push({name,viewport,result:'FAIL',error:error.message,linksCompleted:rows.length,routes,rows,errors});
     try{await page.screenshot({path:path.join(OUT,`${name}-failure.png`),fullPage:true});}catch{}
   }finally{await page.close();}
 }
