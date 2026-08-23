@@ -6,13 +6,13 @@ assert.equal(surface.CONSUMER_SURFACE_VERSION,'81.0');
 assert.equal(surface.VERSION,'52.0','Search v52 must remain the protected API contract');
 assert.equal(surface.SEARCH_PLATFORM_VERIFICATION_VERSION,'80.0','Google verification v80 must remain intact underneath');
 
-const decision=`<!doctype html><html><body><p>Decision Engine v4 turns your needs, maximum budget, priorities and deal-breakers into an explainable shortlist drawn only from APG's maintained Australian product set. Hard constraints are enforced; missing proof is disclosed rather than guessed.</p><span class="engine-status">Decision Engine v4</span><h2>Your structured decision profile</h2><p>The engine distinguishes hard constraints from preferences. Missing or conflicting evidence stays visible rather than being silently traded away.</p><p>Ordered by fit to your decision state, never by affiliate availability or commission.</p></body></html>`;
+const decision=`<!doctype html><html><body><p>Decision Engine v4 turns your needs, maximum budget, priorities and deal-breakers into an explainable shortlist drawn only from APG's maintained Australian product set. Hard constraints are enforced; missing proof is disclosed rather than guessed.</p><span class="engine-status">Decision Engine v4</span><span>0 commercial scoring points</span><h2>Your structured decision profile</h2><p>The engine distinguishes hard constraints from preferences. Missing or conflicting evidence stays visible rather than being silently traded away.</p><p>Ordered by fit to your decision state, never by affiliate availability or commission.</p></body></html>`;
 const decisionOut=surface.reconcile(decision,'https://australianproductguide.au/decision-lab/');
 assert(!decisionOut.includes('Decision Engine v4'));
 assert(!decisionOut.includes('structured decision profile'));
 assert(decisionOut.includes('Explainable matching'));
 assert(decisionOut.includes('What matters in your decision'));
-assert(decisionOut.includes('Affiliate commission never affects ranking')===false || true);
+assert(decisionOut.includes('Affiliate commission never affects ranking'));
 
 const product='<!doctype html><html><body><section aria-label="APG product intelligence profile"><p class="kicker">Catalogue Intelligence v48</p><h2>One intelligence contract across all maintained products</h2><p>This product is evaluated through the same APG identity, decision, evidence, retailer, imagery and alternative framework used across the full maintained catalogue. Evidence depth remains explicit: a maintained classification is not presented as a manufacturer-verified fact.</p><small>Australian retailer intelligence</small><strong>1 current exact-model destination</strong><small class="ci48-policy">All 482 maintained products participate in the same catalogue-intelligence contract. Classification signals can improve soft relevance; hard requirements still require the existing verified hard-constraint path. Retailer coverage, affiliate status and imagery contribute zero recommendation points.</small></section></body></html>';
 const productOut=surface.reconcile(product,'https://australianproductguide.au/products/sony-wh-1000xm6/');
