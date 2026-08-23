@@ -1,4 +1,10 @@
-// APG Homepage Situation Overlay v70.1 is the outermost presentation layer.
+// APG Navigation Blue Interactions v77 is the outermost presentation layer.
+// It replaces legacy teal/green navigation hover, focus and touch states with the
+// current APG blue interaction language across the mobile menu and desktop mega menu.
+// Navigation structure, links and behaviour are unchanged.
+// Compatibility lineage: module.exports=require('../lib/homepage-situation-overlay-v701')
+//
+// APG Homepage Situation Overlay v70.1 remains authoritative immediately underneath.
 // It left-aligns the icon + situation-label treatment across the homepage
 // "What are you trying to improve?" cards and prevents the two overlays from
 // colliding on narrow mobile viewports. Imagery, copy, filters and links are unchanged.
@@ -77,4 +83,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/homepage-situation-overlay-v701');
+module.exports=require('../lib/navigation-blue-interactions-v77');
