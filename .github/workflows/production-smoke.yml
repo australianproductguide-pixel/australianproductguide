@@ -113,6 +113,7 @@ jobs:
       APG_EXPECTED_SHA: ${{ github.sha }}
       APG_GITHUB_DEPLOYMENT_ID: ${{ needs.production-smoke.outputs.github_deployment_id }}
       CRITICAL_BROWSER_OUT: artifacts/production-critical-browser-v61
+      MEASUREMENT_CERT_OUT: artifacts/production-measurement-certification-v89
       FOOTER_BROWSER_OUT: artifacts/production-footer-browser-v83
       VISUAL_OUT: artifacts/production-visual-v28
       TABLET_VISUAL_OUT: artifacts/production-tablet-visual-v61
@@ -138,6 +139,9 @@ jobs:
       - name: Run critical browser journeys
         run: node scripts/production-critical-browser-v61.js
 
+      - name: Certify Production GA consent, privacy and transport
+        run: node scripts/production-measurement-certification-v89.js
+
       - name: Verify desktop and mobile footer navigation
         run: node scripts/production-footer-browser-v83.js
 
@@ -153,13 +157,14 @@ jobs:
         if: always()
         run: node scripts/production-accessibility-v61.js
 
-      - name: Upload browser, visual and accessibility evidence
+      - name: Upload browser, measurement, visual and accessibility evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: apg-production-browser-${{ github.run_id }}
           path: |
             artifacts/production-critical-browser-v61
+            artifacts/production-measurement-certification-v89
             artifacts/production-footer-browser-v83
             artifacts/production-visual-v28
             artifacts/production-tablet-visual-v61
@@ -187,7 +192,7 @@ jobs:
         run: |
           set -euo pipefail
           state=success
-          description="Production HTTP + browser QA GREEN"
+          description="Production HTTP + browser + measurement QA GREEN"
           if [ "$HTTP_STATUS" != success ] || [ "$BROWSER_STATUS" != success ]; then
             state=failure
             description="Production QA RED: http=$HTTP_STATUS browser=$BROWSER_STATUS"
