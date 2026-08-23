@@ -1,8 +1,15 @@
-// APG Social + Footer Polish v93 is the authoritative outermost runtime layer.
+// APG Mobile Account + Footer Polish v94 is the authoritative outermost runtime layer.
+// It completes the screenshot-verified mobile remediation for My APG and the footer:
+// Cookie preferences aligns to the shared footer edge, optional account-sync fields
+// stack cleanly, workspace headings are left aligned and workspace-level actions stack.
+// This is presentation-only and preserves account/auth logic, consent semantics,
+// storage, analytics, SEO, recommendations, social destinations and commerce logic.
+// Compatibility lineage: module.exports=require('../lib/social-footer-polish-v93')
+//
+// APG Social + Footer Polish v93 remains authoritative immediately underneath v94.
 // It gives the shared social surfaces a consistent platform-brand treatment, adds
-// deliberate mobile breathing room beneath the final social row, and left-aligns the
-// Cookie preferences control to the footer content edge. It is presentation-only and
-// preserves social destinations, consent semantics, analytics, SEO and commerce logic.
+// deliberate mobile breathing room beneath the final social row, and standardises
+// recognisable social marks without changing profile destinations or behaviour.
 // Compatibility lineage: module.exports=require('../lib/category-directory-mobile-alignment-v92')
 //
 // APG Category Directory Mobile Alignment v92 remains authoritative immediately underneath v93.
@@ -88,4 +95,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/social-footer-polish-v93');
+module.exports=require('../lib/mobile-account-footer-polish-v94');
