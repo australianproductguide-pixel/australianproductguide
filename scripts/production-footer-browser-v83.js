@@ -10,7 +10,7 @@ const CHROME=process.env.CHROME||'/usr/bin/google-chrome';
 const OUT=process.env.FOOTER_BROWSER_OUT||'artifacts/production-footer-browser-v83';
 const SHA=(process.env.APG_EXPECTED_SHA||process.env.GITHUB_SHA||'').trim();
 const REQUIRED=['/about/','/methodology/','/editorial-standards/','/sources/','/corrections-policy/','/coverage/','/contact/','/affiliate-disclosure/','/privacy/','/terms/'];
-const report={suite:'production-footer-browser-v83',baseUrl:BASE,gitSha:SHA||null,started:new Date().toISOString(),viewports:[],failures:[]};
+const report={suite:'production-footer-browser-v83.1',baseUrl:BASE,gitSha:SHA||null,started:new Date().toISOString(),viewports:[],failures:[]};
 fs.mkdirSync(OUT,{recursive:true});
 
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -143,10 +143,27 @@ async function runViewport(browser,name,viewport){
         const launcher=document.getElementById('apgAssistantLauncher');
         const r=first&&first.getBoundingClientRect();
         const ls=launcher&&getComputedStyle(launcher);
-        return {height:r&&r.height||0,columns:nav&&getComputedStyle(nav).gridTemplateColumns||'',launcherGuard:!!launcher&&launcher.classList.contains('apg-footer-overlap-guard'),launcherVisibility:ls&&ls.visibility||null,launcherPointerEvents:ls&&ls.pointerEvents||null};
+        const groups=[...document.querySelectorAll('.apg-footer-v11 .footer-v11-group')].slice(0,4).map(group=>{
+          const box=group.getBoundingClientRect();
+          return {left:box.left,top:box.top,right:box.right,bottom:box.bottom,width:box.width,height:box.height};
+        });
+        return {
+          height:r&&r.height||0,
+          columns:nav&&getComputedStyle(nav).gridTemplateColumns||'',
+          groups,
+          launcherGuard:!!launcher&&launcher.classList.contains('apg-footer-overlap-guard'),
+          launcherVisibility:ls&&ls.visibility||null,
+          launcherPointerEvents:ls&&ls.pointerEvents||null
+        };
       });
       assert(mobileState.height>=43.5,`${name}: mobile footer tap target ${mobileState.height}px is below 44px`);
-      assert(!/\s/.test(mobileState.columns.trim()),`${name}: mobile footer remains multi-column: ${mobileState.columns}`);
+      assert(mobileState.groups.length===4,`${name}: expected four footer groups, got ${mobileState.groups.length}`);
+      const [one,two,three,four]=mobileState.groups;
+      const sameRow=(a,b)=>Math.abs(a.top-b.top)<=3;
+      assert(sameRow(one,two)&&two.left>one.left+20,`${name}: first two footer groups are not a two-column row: ${JSON.stringify(mobileState)}`);
+      assert(sameRow(three,four)&&four.left>three.left+20,`${name}: second two footer groups are not a two-column row: ${JSON.stringify(mobileState)}`);
+      assert(three.top>one.top+20,`${name}: footer groups did not form a second row: ${JSON.stringify(mobileState)}`);
+      assert(one.width>100&&two.width>100&&three.width>100&&four.width>100,`${name}: footer columns are too narrow: ${JSON.stringify(mobileState)}`);
       assert(mobileState.launcherGuard&&mobileState.launcherPointerEvents==='none',`${name}: Scout footer overlap guard not active: ${JSON.stringify(mobileState)}`);
     }
     if(errors.length)throw new Error(`${name}: browser errors: ${JSON.stringify(errors)}`);
@@ -169,5 +186,5 @@ async function runViewport(browser,name,viewport){
   report.finished=new Date().toISOString();
   fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2));
   if(report.failures.length){console.error(JSON.stringify(report.failures,null,2));process.exit(1);}
-  console.log(`FOOTER_NAVIGATION_V83_PRODUCTION=PASS viewports=${report.viewports.length} clicks=${report.viewports.reduce((sum,row)=>sum+(row.links||0),0)}`);
+  console.log(`FOOTER_NAVIGATION_V83_1_PRODUCTION=PASS viewports=${report.viewports.length} clicks=${report.viewports.reduce((sum,row)=>sum+(row.links||0),0)}`);
 })().catch(error=>{console.error(error.stack||error);process.exit(1);});
