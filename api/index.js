@@ -1,4 +1,10 @@
-// APG Image SEO Phase 1 v74 is the outermost crawler-facing image layer.
+// APG Mobile Header Full Wordmark v75 is the outermost presentation layer.
+// It keeps the full Australian Product Guide lock-up visible in the mobile header,
+// hides the APG monogram on mobile, and scales the governed identity responsively
+// while leaving desktop header behaviour unchanged.
+// Compatibility lineage: module.exports=require('../lib/image-seo-phase1-v74')
+//
+// APG Image SEO Phase 1 v74 remains authoritative immediately underneath.
 // It classifies imagery as verified product photography, governed brand identity or
 // category editorial context; enriches SSR alt text/social metadata/JSON-LD/image
 // sitemap signals; and fails closed so brand/category placeholders never become
@@ -53,4 +59,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/image-seo-phase1-v74');
+module.exports=require('../lib/mobile-header-wordmark-v75');
