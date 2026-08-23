@@ -1,11 +1,17 @@
+// APG Action 3 Search Commerce v90 is the authoritative outermost runtime layer.
+// It adds confidence-gated Search retailer actions after product identity is resolved,
+// preserving APG guide and Compare routes and the existing Action 2 analytics contract.
+// Recommendation rank remains upstream and commercial recommendation weight remains zero.
+// Compatibility lineage: module.exports=require('../lib/pagespeed-performance-v88')
+//
 // APG PageSpeed Performance v89 critical-CSS bundling is temporarily superseded.
 // Exact Production verification found the generated critical stylesheet endpoint could
 // fail for internally redirected static assets. Keep v89 source for audit history, but
-// restore v88 as the live outer performance layer until the optimisation is reimplemented
+// restore v88 as the live performance layer until the optimisation is reimplemented
 // with a static-build-safe approach. This is a reliability remediation, not a rollback of
 // the underlying v88 performance, v87 measurement or downstream consumer contracts.
 //
-// APG PageSpeed Performance v88 is the authoritative outermost runtime layer.
+// APG PageSpeed Performance v88 remains authoritative immediately underneath v90.
 // It hardens homepage loading priority against the 23 Aug 2026 PageSpeed baseline
 // while preserving accessibility, SEO, agentic browsing and the v87 measurement path.
 // Compatibility lineage: module.exports=require('../lib/action2-measurement-v87')
@@ -60,4 +66,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/pagespeed-performance-v88');
+module.exports=require('../lib/action3-search-commerce-v90');
