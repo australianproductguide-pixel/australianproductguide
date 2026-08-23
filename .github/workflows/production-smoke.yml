@@ -115,6 +115,7 @@ jobs:
       CRITICAL_BROWSER_OUT: artifacts/production-critical-browser-v61
       MEASUREMENT_CERT_OUT: artifacts/production-measurement-certification-v89
       FOOTER_BROWSER_OUT: artifacts/production-footer-browser-v83
+      BRAND_PARITY_OUT: artifacts/production-brand-parity-v91
       VISUAL_OUT: artifacts/production-visual-v28
       TABLET_VISUAL_OUT: artifacts/production-tablet-visual-v61
       A11Y_OUT: artifacts/production-accessibility-v61
@@ -145,6 +146,9 @@ jobs:
       - name: Verify desktop and mobile footer navigation
         run: node scripts/production-footer-browser-v83.js
 
+      - name: Verify desktop and mobile brand identity parity
+        run: node scripts/production-brand-parity-v91.js
+
       - name: Capture desktop and mobile Production visual matrix
         if: always()
         run: node scripts/production-visual-v28.js
@@ -157,7 +161,7 @@ jobs:
         if: always()
         run: node scripts/production-accessibility-v61.js
 
-      - name: Upload browser, measurement, visual and accessibility evidence
+      - name: Upload browser, measurement, brand, visual and accessibility evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -166,6 +170,7 @@ jobs:
             artifacts/production-critical-browser-v61
             artifacts/production-measurement-certification-v89
             artifacts/production-footer-browser-v83
+            artifacts/production-brand-parity-v91
             artifacts/production-visual-v28
             artifacts/production-tablet-visual-v61
             artifacts/production-accessibility-v61
