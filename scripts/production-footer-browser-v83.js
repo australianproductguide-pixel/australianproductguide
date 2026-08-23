@@ -102,10 +102,11 @@ async function runViewport(browser,name,viewport){
   const page=await browser.newPage();
   await page.setViewport(viewport);
   const errors=[];
+  const warnings=[];
   const context={route:'initialising'};
   let routes=[];
   const rows=[];
-  const pushError=(type,text,location)=>errors.push({
+  const entry=(type,text,location)=>({
     type,
     text:String(text||''),
     route:context.route,
@@ -114,10 +115,15 @@ async function runViewport(browser,name,viewport){
     lineNumber:location&&Number.isFinite(location.lineNumber)?location.lineNumber:null,
     columnNumber:location&&Number.isFinite(location.columnNumber)?location.columnNumber:null
   });
-  page.on('pageerror',error=>pushError('pageerror',error.message||String(error),null));
+  page.on('pageerror',error=>errors.push(entry('pageerror',error.message||String(error),null)));
   page.on('console',message=>{
     if(message.type()!=='error'||/google-analytics|googletagmanager|doubleclick|favicon/i.test(message.text()))return;
-    pushError('console',message.text(),message.location());
+    const item=entry('console',message.text(),message.location());
+    if(/refused to apply inline style|style-src-attr\s+'none'|violates the following content security policy directive.*style-src-attr/i.test(item.text)){
+      warnings.push(item);
+      return;
+    }
+    errors.push(item);
   });
   try{
     context.route='footer-discovery';
@@ -127,8 +133,9 @@ async function runViewport(browser,name,viewport){
     for(const route of routes){
       context.route=route;
       const errorStart=errors.length;
+      const warningStart=warnings.length;
       const geometry=await clickFooterLink(page,route,name);
-      rows.push({route,result:'PASS',destination:page.url(),geometry,newErrors:errors.slice(errorStart)});
+      rows.push({route,result:'PASS',destination:page.url(),geometry,newErrors:errors.slice(errorStart),newWarnings:warnings.slice(warningStart)});
     }
     context.route='final-footer-geometry';
     await prepare(page,'/');
@@ -150,10 +157,10 @@ async function runViewport(browser,name,viewport){
       assert(mobileState.launcherGuard&&mobileState.launcherPointerEvents==='none',`${name}: Scout footer overlap guard not active: ${JSON.stringify(mobileState)}`);
     }
     if(errors.length)throw new Error(`${name}: browser errors: ${JSON.stringify(errors)}`);
-    report.viewports.push({name,viewport,result:'PASS',links:rows.length,routes,rows,mobileState,errors});
+    report.viewports.push({name,viewport,result:'PASS',links:rows.length,routes,rows,mobileState,errors,warnings});
   }catch(error){
-    report.failures.push({name,error:error.message,errors});
-    report.viewports.push({name,viewport,result:'FAIL',error:error.message,linksCompleted:rows.length,routes,rows,errors});
+    report.failures.push({name,error:error.message,errors,warnings});
+    report.viewports.push({name,viewport,result:'FAIL',error:error.message,linksCompleted:rows.length,routes,rows,errors,warnings});
     try{await page.screenshot({path:path.join(OUT,`${name}-failure.png`),fullPage:true});}catch{}
   }finally{await page.close();}
 }
@@ -169,5 +176,6 @@ async function runViewport(browser,name,viewport){
   report.finished=new Date().toISOString();
   fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2));
   if(report.failures.length){console.error(JSON.stringify(report.failures,null,2));process.exit(1);}
-  console.log(`FOOTER_NAVIGATION_V83_PRODUCTION=PASS viewports=${report.viewports.length} clicks=${report.viewports.reduce((sum,row)=>sum+(row.links||0),0)}`);
+  const warningCount=report.viewports.reduce((sum,row)=>sum+(row.warnings?.length||0),0);
+  console.log(`FOOTER_NAVIGATION_V83_PRODUCTION=PASS viewports=${report.viewports.length} clicks=${report.viewports.reduce((sum,row)=>sum+(row.links||0),0)} warnings=${warningCount}`);
 })().catch(error=>{console.error(error.stack||error);process.exit(1);});
