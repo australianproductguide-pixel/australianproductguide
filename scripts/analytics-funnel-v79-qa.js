@@ -15,6 +15,8 @@ assert(source.includes('window.__apgAnalyticsAllowed=false'));
 assert(source.includes("payload.analytics_storage==='granted'"));
 assert(source.includes("payload.analytics_storage==='denied'"));
 assert(source.includes("window.apgTrackEvent=function"));
+assert(source.includes("location.pathname==='/search/'&&(location.search||location.hash)"),'consented Search must discard raw query/hash before the Google tag loads');
+assert(source.includes("history.replaceState(history.state,'',location.pathname)"),'Search privacy guard must remove raw URL state without navigation');
 assert(source.includes("track('site_search'"));
 assert(source.includes("track('product_view'"));
 assert(source.includes("track('comparison_started'"));
