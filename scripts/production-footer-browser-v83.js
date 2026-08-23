@@ -42,22 +42,41 @@ async function hrefs(page){
   return page.$$eval('.apg-footer-v11 .footer-v11-nav a[href]',links=>[...new Set(links.map(a=>a.getAttribute('href')).filter(h=>h&&h.startsWith('/')))]);
 }
 
+async function positionFooterLink(handle){
+  // Footer links live close to the document boundary. scrollIntoView({block:'center'}) can
+  // legitimately hit the browser's maximum scroll position, leaving the element's full
+  // box centre outside the viewport. Position it first, then choose the centre of the
+  // *visible intersection* so elementFromPoint and the real click test a reachable pixel.
+  await handle.evaluate(el=>{
+    el.scrollIntoView({block:'nearest',inline:'nearest'});
+    const r=el.getBoundingClientRect();
+    const desired=Math.max(80,Math.min(innerHeight*0.42,360));
+    const delta=r.top-desired;
+    if(Math.abs(delta)>2)window.scrollBy({top:delta,left:0,behavior:'instant'});
+  });
+  await sleep(220);
+}
+
 async function clickFooterLink(page,href,label){
   await prepare(page,'/');
   const handle=await page.$(`.apg-footer-v11 .footer-v11-nav a[href="${href.replace(/"/g,'\\"')}"]`);
   assert(handle,`${label}: missing footer link ${href}`);
-  await handle.evaluate(el=>el.scrollIntoView({block:'center',inline:'nearest'}));
-  await sleep(180);
+  await positionFooterLink(handle);
   const hit=await handle.evaluate(el=>{
     const r=el.getBoundingClientRect();
-    const x=r.left+r.width/2,y=r.top+r.height/2;
-    const top=document.elementFromPoint(x,y);
+    const left=Math.max(0,r.left),right=Math.min(innerWidth,r.right);
+    const topEdge=Math.max(0,r.top),bottom=Math.min(innerHeight,r.bottom);
+    const visibleWidth=Math.max(0,right-left),visibleHeight=Math.max(0,bottom-topEdge);
+    const x=left+visibleWidth/2,y=topEdge+visibleHeight/2;
+    const top=visibleWidth>0&&visibleHeight>0?document.elementFromPoint(x,y):null;
     const nav=getComputedStyle(el.closest('.footer-v11-nav'));
     const own=getComputedStyle(el);
     const launcher=document.getElementById('apgAssistantLauncher');
     const ls=launcher?getComputedStyle(launcher):null;
     return {
-      width:r.width,height:r.height,x,y,
+      width:r.width,height:r.height,x,y,rectTop:r.top,rectBottom:r.bottom,
+      viewportWidth:innerWidth,viewportHeight:innerHeight,
+      visibleWidth,visibleHeight,
       topTag:top&&top.tagName||null,
       topClass:top&&String(top.className||'')||null,
       topHref:top&&top.getAttribute?top.getAttribute('href'):null,
@@ -69,12 +88,13 @@ async function clickFooterLink(page,href,label){
       launcherGuard:!!launcher&&launcher.classList.contains('apg-footer-overlap-guard')
     };
   });
-  assert(hit.ownsPoint,`${label}: tap point for ${href} is intercepted by ${hit.topTag}.${hit.topClass||''} href=${hit.topHref||''}`);
+  assert(hit.visibleWidth>0&&hit.visibleHeight>0,`${label}: footer link ${href} is outside the viewport after positioning: ${JSON.stringify(hit)}`);
+  assert(hit.ownsPoint,`${label}: tap point for ${href} is intercepted by ${hit.topTag}.${hit.topClass||''} href=${hit.topHref||''}; geometry=${JSON.stringify(hit)}`);
   assert(hit.pointerEvents!=='none',`${label}: footer link ${href} has pointer-events:none`);
   const expected=new URL(BASE+href);
   await Promise.all([
     page.waitForNavigation({waitUntil:'domcontentloaded',timeout:20000}),
-    handle.click({delay:35})
+    page.mouse.click(hit.x,hit.y,{delay:35})
   ]);
   const actual=new URL(page.url());
   assert(actual.pathname===expected.pathname,`${label}: ${href} navigated to ${actual.pathname}`);
@@ -98,17 +118,9 @@ async function runViewport(browser,name,viewport){
       rows.push({route,result:'PASS',geometry});
     }
     await prepare(page,'/');
-    const mobileState=await page.evaluate(()=>{
-      const first=document.querySelector('.apg-footer-v11 .footer-v11-group a');
-      const nav=document.querySelector('.apg-footer-v11 .footer-v11-nav');
-      if(!first||!nav)return null;
-      first.scrollIntoView({block:'center'});
-      const r=first.getBoundingClientRect();
-      const launcher=document.getElementById('apgAssistantLauncher');
-      const ls=launcher?getComputedStyle(launcher):null;
-      return {height:r.height,columns:getComputedStyle(nav).gridTemplateColumns,launcherGuard:!!launcher&&launcher.classList.contains('apg-footer-overlap-guard'),launcherVisibility:ls&&ls.visibility||null,launcherPointerEvents:ls&&ls.pointerEvents||null};
-    });
-    await sleep(180);
+    const first=await page.$('.apg-footer-v11 .footer-v11-group a');
+    assert(first,`${name}: footer contains no navigation links`);
+    await positionFooterLink(first);
     if(viewport.width<=700){
       const state=await page.evaluate(()=>{
         const first=document.querySelector('.apg-footer-v11 .footer-v11-group a');
