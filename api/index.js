@@ -1,4 +1,9 @@
-// APG PageSpeed Performance v88 is the outermost runtime layer.
+// APG PageSpeed Performance v89 is the outermost runtime layer.
+// It consolidates the remaining synchronous homepage CSS request chain identified by
+// the 23 Aug 2026 mobile PageSpeed run while preserving v88 loading priorities.
+// Compatibility lineage: module.exports=require('../lib/pagespeed-performance-v88')
+//
+// APG PageSpeed Performance v88 remains authoritative immediately underneath v89.
 // It hardens homepage loading priority against the 23 Aug 2026 PageSpeed baseline
 // while preserving accessibility, SEO, agentic browsing and the v87 measurement path.
 // Compatibility lineage: module.exports=require('../lib/action2-measurement-v87')
@@ -53,4 +58,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/pagespeed-performance-v88');
+module.exports=require('../lib/pagespeed-performance-v89');
