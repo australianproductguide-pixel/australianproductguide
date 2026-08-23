@@ -37,8 +37,18 @@ async function newPage(browser,viewport){
   await page.setViewport(viewport);
   return {context,page};
 }
-async function consentState(page){return page.evaluate(()=>({allowed:window.__apgAnalyticsAllowed===true,loaded:window.__apgGaLoaded===true,pref:localStorage.getItem('apg_cookie_preferences'),dataLayer:(window.dataLayer||[]).map(x=>Array.from(x||[]).slice(0,3))}));}
+async function consentState(page){return page.evaluate(()=>({allowed:window.__apgAnalyticsAllowed===true,loaded:window.__apgGaLoaded===true,pref:localStorage.getItem('apg_cookie_preferences'),location:window.location.href,dataLayer:(window.dataLayer||[]).map(x=>Array.from(x||[]).slice(0,3))}));}
 async function clickVisible(page,selector){await page.waitForSelector(selector,{visible:true,timeout:10000});await page.click(selector);}
+async function waitForAffiliateEvents(net,start,timeoutMs=10000){
+  const deadline=Date.now()+timeoutMs;
+  while(Date.now()<deadline){
+    const events=net.slice(start).filter(r=>r.collect).map(r=>r.event).filter(Boolean);
+    const affiliateCount=events.filter(x=>x==='affiliate_click').length;
+    const shoppingCount=events.filter(x=>x==='amazon_shopping_click').length;
+    if(affiliateCount>=1&&shoppingCount>=1){await sleep(1000);return;}
+    await sleep(250);
+  }
+}
 async function run(name,fn){try{await fn();report.checks.push({name,result:'PASS'});}catch(e){report.failures.push({name,error:e.message});report.checks.push({name,result:'FAIL',detail:e.message});}}
 
 (async()=>{
@@ -71,6 +81,7 @@ async function run(name,fn){try{await fn();report.checks.push({name,result:'PASS
     await page.waitForFunction(()=>window.__apgAnalyticsAllowed===true&&window.__apgGaLoaded===true,{timeout:10000});await sleep(3000);
     const state=await consentState(page);const cookies=await page.cookies();
     check(state.allowed&&state.loaded,'analytics grant enables GA');
+    check(new URL(state.location).search===''&&new URL(state.location).hash==='','consented Search URL discards raw query/hash before GA load',state.location);
     check(net.some(r=>/googletagmanager\.com\/gtag\/js/i.test(r.url)),'GA library requested after consent');
     check(net.some(r=>r.collect),'GA collect transport observed after consent');
     check(cookies.some(c=>/^_ga/i.test(c.name)),'GA first-party cookie observed after consent',cookies.map(c=>c.name).join(','));
@@ -90,8 +101,14 @@ async function run(name,fn){try{await fn();report.checks.push({name,result:'PASS
     await clickVisible(page,'[data-apg-consent] [data-consent-allow]');await sleep(2500);
     await page.evaluate(()=>document.addEventListener('click',e=>{if(e.target.closest('[data-affiliate-link]'))e.preventDefault();},true));
     const start=net.length;
-    const affiliate=await page.$('[data-affiliate-link]');check(!!affiliate,'measured Amazon affiliate CTA exists');
-    await affiliate.click();await sleep(2500);
+    const selector='a[data-affiliate-link][data-affiliate-destination]';
+    await page.waitForSelector(selector,{visible:true,timeout:10000});
+    const affiliate=await page.$(selector);check(!!affiliate,'measured Amazon affiliate CTA exists');
+    await affiliate.click();
+    // GA may batch consented event transport for several seconds when navigation is deliberately
+    // prevented by the certification harness. Poll the observed network rather than using a
+    // fragile fixed delay, while preserving the exact-one-event assertion below.
+    await waitForAffiliateEvents(net,start,10000);
     const events=net.slice(start).filter(r=>r.collect).map(r=>r.event).filter(Boolean);
     const affiliateCount=events.filter(x=>x==='affiliate_click').length;
     const shoppingCount=events.filter(x=>x==='amazon_shopping_click').length;
