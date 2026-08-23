@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
 if(window.__APG_FOOTER_NAVIGATION_V83__)return;
-window.__APG_FOOTER_NAVIGATION_V83__='83.1';
+window.__APG_FOOTER_NAVIGATION_V83__='83.2';
 
 function init(){
   const footer=document.querySelector('.apg-footer-v11');
