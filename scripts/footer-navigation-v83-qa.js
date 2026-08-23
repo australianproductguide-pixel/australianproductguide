@@ -4,8 +4,11 @@
 const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
-const runtime=require('../lib/footer-navigation-v83');
+// Load the real public entrypoint first so side-effect runtimes initialise in the
+// same order as Production. Loading the outer module directly first can change
+// singleton initialisation order inside a source-QA process.
 const api=require('../api');
+const runtime=require('../lib/footer-navigation-v83');
 
 const css=fs.readFileSync(path.join(__dirname,'../public/assets/footer-navigation-v83.css'),'utf8');
 const js=fs.readFileSync(path.join(__dirname,'../public/assets/footer-navigation-v83.js'),'utf8');
