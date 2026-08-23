@@ -1,4 +1,10 @@
-// APG Premium Search Mobile Cascade Fix v76.1 is the outermost presentation layer.
+// APG Homepage Situation Overlay v70.1 is the outermost presentation layer.
+// It left-aligns the icon + situation-label treatment across the homepage
+// "What are you trying to improve?" cards and prevents the two overlays from
+// colliding on narrow mobile viewports. Imagery, copy, filters and links are unchanged.
+// Compatibility lineage: module.exports=require('../lib/premium-search-mobile-v761')
+//
+// APG Premium Search Mobile Cascade Fix v76.1 remains authoritative immediately underneath.
 // It resolves the higher-specificity site-wide form rule that was still drawing an
 // inner rounded search input on iOS/mobile, so the search now renders as one unified
 // icon + field + Search button control. Search v52 behaviour remains unchanged.
@@ -71,4 +77,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/premium-search-mobile-v761');
+module.exports=require('../lib/homepage-situation-overlay-v701');
