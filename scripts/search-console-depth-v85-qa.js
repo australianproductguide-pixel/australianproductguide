@@ -1,0 +1,27 @@
+'use strict';
+const assert=require('node:assert/strict');
+const data=require('../data');
+const routes=require('../lib/routes');
+const runtime=require('../lib/search-console-depth-v85-runtime');
+const depth=require('../data/search-console-depth-v85');
+
+const product=data.products.find(p=>p.slug===depth.NEW_SLUG);
+assert(product,'Corrected Philips STH5030/20 product must exist');
+assert.equal(product.model,'STH5030/20');
+assert.equal(product.evidenceTier,'deep');
+assert.equal(product.source,depth.SOURCE);
+assert.equal(product.decisionAttributes.continuousSteamGMin,24);
+assert.equal(product.decisionAttributes.heatUpSeconds,35);
+assert.equal(product.decisionAttributes.maxTankMl,200);
+assert.equal(product.decisionAttributes.horizontalSteaming,true);
+assert(!data.products.some(p=>p.slug===depth.OLD_SLUG),'Legacy STH5030/80 must not remain a canonical product entity');
+assert(routes.indexableRoutes.includes(`/products/${depth.NEW_SLUG}/`),'Corrected product route must be indexable');
+assert(!routes.indexableRoutes.includes(`/products/${depth.OLD_SLUG}/`),'Legacy product route must leave sitemap/indexable routes');
+const pair=routes.pairPages.find(p=>p.category==='garment-steamers'&&[p.a.slug,p.b.slug].includes(depth.NEW_SLUG)&&[p.a.slug,p.b.slug].includes('philips-3000-series-handheld-steamer-sth3000-20'));
+assert(pair,'Philips 3000 vs corrected Philips 5000 comparison must exist');
+assert(pair.path.includes(depth.NEW_SLUG),'Comparison canonical must use corrected Australian model slug');
+assert(!routes.indexableRoutes.some(p=>p.includes(depth.OLD_SLUG)),'No legacy /80 route may remain indexable');
+assert.equal(runtime.searchConsoleDepthRedirectTarget(`/products/${depth.OLD_SLUG}/`),`/products/${depth.NEW_SLUG}/`);
+assert.equal(runtime.searchConsoleDepthRedirectTarget(`/compare/garment-steamers/philips-3000-series-handheld-steamer-sth3000-20-vs-${depth.OLD_SLUG}/`),pair.path);
+assert(routes.comparisonGovernance.currentTotal<=routes.comparisonGovernance.totalCap,'Comparison governance cap remains enforced');
+console.log('Search Console depth v85 QA: PASS');
