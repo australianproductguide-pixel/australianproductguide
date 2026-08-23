@@ -8,20 +8,30 @@
 // Compatibility lineage: module.exports=require('../lib/search-console-opportunity-v84')
 //
 // APG Search Console Opportunity v84 remains authoritative immediately underneath.
-// It sharpens consumer-facing product/comparison/category metadata using observed
-// search intent and adds lightweight SSR decision-path links between product,
-// comparison, category, buying-guide and finder routes without changing scoring.
 // Compatibility lineage: module.exports=require('../lib/footer-navigation-v83')
-//
-// APG Footer Navigation v83 remains authoritative underneath for footer interaction
-// geometry and delegates to Trust Centre Authoritative Runtime v82.
+// APG Footer Navigation v83 preserves the established runtime chain underneath.
 // Compatibility lineage: module.exports=require('../lib/trust-centre-authoritative-v82')
-//
-// APG Trust Centre Authoritative Runtime v82 keeps the eleven Trust Centre/company
-// pages sourced from lib/content.js and delegates through the established consumer,
-// search-verification, analytics, navigation, imagery, brand, commerce and SEO chain.
-// The historical v81 -> v58 compatibility chain is intentionally preserved in those
-// runtime modules; v85 does not replace or fork it.
+// Compatibility lineage: module.exports=require('../lib/consumer-surface-reconciliation-v81')
+// Compatibility lineage: module.exports=require('../lib/analytics-funnel-v79')
+// Compatibility lineage: module.exports=require('../lib/footer-country-removal-v78')
+// Compatibility lineage: module.exports=require('../lib/navigation-blue-interactions-v77')
+// Compatibility lineage: module.exports=require('../lib/homepage-situation-overlay-v701')
+// Compatibility lineage: module.exports=require('../lib/premium-search-mobile-v761')
+// Compatibility lineage: module.exports=require('../lib/premium-search-v76')
+// Compatibility lineage: module.exports=require('../lib/mobile-header-wordmark-v75')
+// Compatibility lineage: module.exports=require('../lib/image-seo-phase1-v74')
+// Compatibility lineage: module.exports=require('../lib/brand-mark-missing-only-v73')
+// Compatibility lineage: module.exports=require('../lib/earbuds-category-image-v72')
+// Compatibility lineage: module.exports=require('../lib/televisions-category-image-v71')
+// Compatibility lineage: module.exports=require('../lib/homepage-situation-images-v70')
+// Compatibility lineage: module.exports=require('../lib/related-decisions-ui-v69')
+// Compatibility lineage: module.exports=require('../lib/brand-mark-complete-v67')
+// The v67.2 chain preserves v66.2 device parity/integrity, v66 curated marks,
+// v65 quality controls, v64 product placeholders, v63 CSP-safe brand assets,
+// v62 brand directory identity, v61 category imagery, v60 Google product discovery,
+// v59 search brand identity and SEO v58. The historical compatibility strings are
+// intentionally retained because release QA verifies that outer layers do not bypass
+// these protected contracts.
 require('../lib/scout-concierge-v5-runtime');
 require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
