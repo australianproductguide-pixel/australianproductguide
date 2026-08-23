@@ -1,4 +1,10 @@
-// APG Search Platform Verification v80 is the outermost runtime layer.
+// APG Consumer Surface Reconciliation v81 is the outermost runtime layer.
+// It reconciles final consumer-facing SSR wording after all existing product, trust,
+// account, commerce and search layers have rendered. Internal API/version contracts
+// remain unchanged underneath, including Search v52 and Google verification v80.
+// Compatibility lineage: module.exports=require('../lib/search-platform-verification-v80')
+//
+// APG Search Platform Verification v80 remains authoritative immediately underneath.
 // It guarantees the canonical Google Search Console HTML verification route returns
 // only Google's exact verification body. Bing ownership is not fabricated: Bing uses
 // the governed sitemap/robots/IndexNow surfaces until a genuine console import or
@@ -103,4 +109,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/search-platform-verification-v80');
+module.exports=require('../lib/consumer-surface-reconciliation-v81');
