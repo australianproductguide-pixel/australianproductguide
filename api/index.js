@@ -1,9 +1,14 @@
-// APG Mobile Account + Footer Polish v94 is the authoritative outermost runtime layer.
-// It completes the screenshot-verified mobile remediation for My APG and the footer:
-// Cookie preferences aligns to the shared footer edge, optional account-sync fields
-// stack cleanly, workspace headings are left aligned and workspace-level actions stack.
-// This is presentation-only and preserves account/auth logic, consent semantics,
-// storage, analytics, SEO, recommendations, social destinations and commerce logic.
+// APG Legacy Account-Sync Mobile Alignment v95 is the authoritative outermost runtime layer.
+// It targets the older [data-account-panel] rendered on /my-apg/, whose Email/Password
+// markup differs from the newer .apg-account-shell corrected in v94. On mobile it forces
+// one labelled full-width field per row and an even action layout without changing auth,
+// Supabase, sync, privacy, analytics, recommendations, SEO or commerce behaviour.
+// Compatibility lineage: module.exports=require('../lib/mobile-account-footer-polish-v94')
+//
+// APG Mobile Account + Footer Polish v94 remains authoritative immediately underneath v95.
+// It completes the screenshot-verified mobile remediation for the newer My APG account
+// shell and the footer: Cookie preferences aligns to the shared footer edge, newer account
+// fields stack cleanly, workspace headings are left aligned and workspace-level actions stack.
 // Compatibility lineage: module.exports=require('../lib/social-footer-polish-v93')
 //
 // APG Social + Footer Polish v93 remains authoritative immediately underneath v94.
@@ -95,4 +100,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/mobile-account-footer-polish-v94');
+module.exports=require('../lib/legacy-account-sync-mobile-alignment-v95');
