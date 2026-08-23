@@ -36,12 +36,14 @@ const banned=[
   /Row Level Security/i,
   /Decision Engine v\d/i,
   /Catalogue Intelligence v\d/i,
-  /planned supported product-data route is Amazon Creators API/i
+  /planned supported product-data route is Amazon Creators API/i,
+  /Australian Product Guide \(Australian Product Guide\)/i
 ];
 
 function assertNoBanned(text,label){
   for(const pattern of banned)assert.doesNotMatch(text,pattern,`${label} contains superseded/internal wording: ${pattern}`);
 }
+function occurrences(text,needle){return String(text||'').split(needle).length-1;}
 function render(url){
   return new Promise((resolve,reject)=>{
     const headers={};
@@ -64,6 +66,7 @@ function assertCanonicalSource(){
     assert.ok(page&&page.title&&page.heading&&page.description&&page.body,`canonical ${slug} content required`);
     assert.match(page.body,new RegExp(REVIEW_DATE.replace(/ /g,'\\s+'),'i'),`${slug} truthful review date`);
     assertNoBanned(page.body,`canonical ${slug}`);
+    assert.equal(occurrences(page.body,'<aside class="related-policies">'),1,`${slug} canonical related-policy block`);
   }
 
   for(const slug of ['about','coverage','updates']){
@@ -99,6 +102,7 @@ function assertCanonicalSource(){
     assert.match(response.body,/Australian Product Guide/i,`${path} APG identity`);
     assert.match(response.body,new RegExp(REVIEW_DATE.replace(/ /g,'\\s+'),'i'),`${path} rendered review date`);
     assertNoBanned(response.body,`rendered ${path}`);
+    assert.equal(occurrences(response.body,'<aside class="related-policies">'),1,`${path} must render one related-policy block`);
     console.log(`TRUST_RENDER=PASS ${path}`);
   }
 
@@ -111,7 +115,7 @@ function assertCanonicalSource(){
   assert.match(coverage.body,new RegExp(`${facts.products} products across ${facts.categories} populated categories, representing ${facts.brands} brands`),'rendered dynamic coverage facts');
   const terms=await render('/terms/');
   assert.match(terms.body,/Australian Consumer Law/i,'rendered ACL preservation');
-  assert.equal(privacy.headers['x-apg-trust-centre'],'v82.0','Trust Centre runtime header');
+  assert.equal(privacy.headers['x-apg-trust-centre'],'v82.1','Trust Centre runtime header');
 
   console.log(`TRUST_CENTRE_REGRESSION_V82=PASS pages=${TRUST_SLUGS.length}`);
 })().catch(error=>{console.error(error.stack||error);process.exit(1);});
