@@ -50,6 +50,7 @@ function render(url){
       statusCode:200,
       setHeader(k,v){headers[String(k).toLowerCase()]=v;},
       getHeader(k){return headers[String(k).toLowerCase()];},
+      removeHeader(k){delete headers[String(k).toLowerCase()];},
       end(body=''){resolve({status:this.statusCode,headers,body:String(body||'')});}
     };
     try{const result=app(req,res);if(result&&typeof result.then==='function')result.catch(reject);}catch(error){reject(error);}
