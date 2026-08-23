@@ -16,19 +16,28 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const check=(ok,name,detail='')=>{report.checks.push({name,result:ok?'PASS':'FAIL',detail});if(!ok)throw new Error(`${name}${detail?`: ${detail}`:''}`);};
 const isGoogle=u=>/https:\/\/(?:www\.)?(?:googletagmanager\.com|(?:[a-z0-9.-]+\.)?google-analytics\.com)\//i.test(u);
 const isCollect=u=>/google-analytics\.com\/(?:g\/)?collect/i.test(u);
-function paramsFor(req){
-  const all=new URLSearchParams();
-  try{const u=new URL(req.url());u.searchParams.forEach((v,k)=>all.append(k,v));}catch{}
+function parameterSetsFor(req){
+  const base=new URLSearchParams();
+  try{const u=new URL(req.url());u.searchParams.forEach((v,k)=>base.append(k,v));}catch{}
   const post=req.postData&&req.postData();
-  if(post){try{new URLSearchParams(post).forEach((v,k)=>all.append(k,v));}catch{}}
-  return all;
+  if(!post)return [base];
+  const lines=String(post).split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  if(!lines.length)return [base];
+  return lines.map(line=>{
+    const all=new URLSearchParams(base.toString());
+    try{new URLSearchParams(line).forEach((v,k)=>all.append(k,v));}catch{}
+    return all;
+  });
 }
 function observe(page,bucket){
   page.on('request',req=>{
     if(!isGoogle(req.url()))return;
-    const p=paramsFor(req);
-    const row={url:req.url().replace(/([?&](?:cid|sid|_p|sct|seg|gtm|gcd|dma|dma_cps|are)=[^&]*)/g,''),collect:isCollect(req.url()),event:p.get('en')||null,pageLocation:p.get('dl')||null,pageReferrer:p.get('dr')||null,pageTitle:p.get('dt')||null};
-    bucket.push(row);report.gaRequests.push(row);
+    const cleanUrl=req.url().replace(/([?&](?:cid|sid|_p|sct|seg|gtm|gcd|dma|dma_cps|are)=[^&]*)/g,'');
+    const collect=isCollect(req.url());
+    for(const p of parameterSetsFor(req)){
+      const row={url:cleanUrl,collect,event:p.get('en')||null,pageLocation:p.get('dl')||null,pageReferrer:p.get('dr')||null,pageTitle:p.get('dt')||null};
+      bucket.push(row);report.gaRequests.push(row);
+    }
   });
 }
 async function newPage(browser,viewport){
@@ -105,10 +114,9 @@ async function run(name,fn){try{await fn();report.checks.push({name,result:'PASS
     await page.waitForSelector(selector,{visible:true,timeout:10000});
     const affiliate=await page.$(selector);check(!!affiliate,'measured Amazon affiliate CTA exists');
     await affiliate.click();
-    // The exact-SHA Production run observed GA withholding the first governed affiliate event
-    // until 8.2 seconds after the click when navigation was deliberately prevented. Allow a
-    // bounded 30-second observation window for normal GA batching, while still requiring
-    // exactly one affiliate_click and exactly one amazon_shopping_click below.
+    // GA can batch multiple event payloads into one newline-delimited g/collect POST when
+    // navigation is deliberately prevented. The observer expands each batch line into its
+    // own event row, then this bounded window still requires exactly one of each governed event.
     await waitForAffiliateEvents(net,start,30000);
     const events=net.slice(start).filter(r=>r.collect).map(r=>r.event).filter(Boolean);
     const affiliateCount=events.filter(x=>x==='affiliate_click').length;
