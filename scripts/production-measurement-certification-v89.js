@@ -37,7 +37,7 @@ async function newPage(browser,viewport){
   await page.setViewport(viewport);
   return {context,page};
 }
-async function consentState(page){return page.evaluate(()=>({allowed:window.__apgAnalyticsAllowed===true,loaded:window.__apgGaLoaded===true,pref:localStorage.getItem('apg:privacy-preferences:v1'),dataLayer:(window.dataLayer||[]).map(x=>Array.from(x||[]).slice(0,3))}));}
+async function consentState(page){return page.evaluate(()=>({allowed:window.__apgAnalyticsAllowed===true,loaded:window.__apgGaLoaded===true,pref:localStorage.getItem('apg_cookie_preferences'),dataLayer:(window.dataLayer||[]).map(x=>Array.from(x||[]).slice(0,3))}));}
 async function clickVisible(page,selector){await page.waitForSelector(selector,{visible:true,timeout:10000});await page.click(selector);}
 async function run(name,fn){try{await fn();report.checks.push({name,result:'PASS'});}catch(e){report.failures.push({name,error:e.message});report.checks.push({name,result:'FAIL',detail:e.message});}}
 
@@ -65,7 +65,9 @@ async function run(name,fn){try{await fn();report.checks.push({name,result:'PASS
   await run('granted-consent-sends-sanitised-ga',async()=>{
     const {context,page}=await newPage(browser,desktop);const net=[];observe(page,net);
     await page.goto(`${BASE}/search/?q=${MARKER}`,{waitUntil:'domcontentloaded',timeout:30000});
-    await clickVisible(page,'[data-apg-consent] [data-consent-analytics]');
+    // Exercise the visible first-layer consent action. The analytics checkbox is intentionally
+    // hidden inside the Manage choices panel and therefore is not a valid direct click target.
+    await clickVisible(page,'[data-apg-consent] [data-consent-allow]');
     await page.waitForFunction(()=>window.__apgAnalyticsAllowed===true&&window.__apgGaLoaded===true,{timeout:10000});await sleep(3000);
     const state=await consentState(page);const cookies=await page.cookies();
     check(state.allowed&&state.loaded,'analytics grant enables GA');
@@ -85,7 +87,7 @@ async function run(name,fn){try{await fn();report.checks.push({name,result:'PASS
   await run('affiliate-events-single-transport',async()=>{
     const {context,page}=await newPage(browser,desktop);const net=[];observe(page,net);
     await page.goto(`${BASE}/products/sony-wh-1000xm6/`,{waitUntil:'domcontentloaded',timeout:30000});
-    await clickVisible(page,'[data-apg-consent] [data-consent-analytics]');await sleep(2500);
+    await clickVisible(page,'[data-apg-consent] [data-consent-allow]');await sleep(2500);
     await page.evaluate(()=>document.addEventListener('click',e=>{if(e.target.closest('[data-affiliate-link]'))e.preventDefault();},true));
     const start=net.length;
     const affiliate=await page.$('[data-affiliate-link]');check(!!affiliate,'measured Amazon affiliate CTA exists');
