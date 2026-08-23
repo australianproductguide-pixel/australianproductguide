@@ -39,7 +39,7 @@ async function newPage(browser,viewport){
 }
 async function consentState(page){return page.evaluate(()=>({allowed:window.__apgAnalyticsAllowed===true,loaded:window.__apgGaLoaded===true,pref:localStorage.getItem('apg_cookie_preferences'),location:window.location.href,dataLayer:(window.dataLayer||[]).map(x=>Array.from(x||[]).slice(0,3))}));}
 async function clickVisible(page,selector){await page.waitForSelector(selector,{visible:true,timeout:10000});await page.click(selector);}
-async function waitForAffiliateEvents(net,start,timeoutMs=10000){
+async function waitForAffiliateEvents(net,start,timeoutMs=30000){
   const deadline=Date.now()+timeoutMs;
   while(Date.now()<deadline){
     const events=net.slice(start).filter(r=>r.collect).map(r=>r.event).filter(Boolean);
@@ -105,10 +105,11 @@ async function run(name,fn){try{await fn();report.checks.push({name,result:'PASS
     await page.waitForSelector(selector,{visible:true,timeout:10000});
     const affiliate=await page.$(selector);check(!!affiliate,'measured Amazon affiliate CTA exists');
     await affiliate.click();
-    // GA may batch consented event transport for several seconds when navigation is deliberately
-    // prevented by the certification harness. Poll the observed network rather than using a
-    // fragile fixed delay, while preserving the exact-one-event assertion below.
-    await waitForAffiliateEvents(net,start,10000);
+    // The exact-SHA Production run observed GA withholding the first governed affiliate event
+    // until 8.2 seconds after the click when navigation was deliberately prevented. Allow a
+    // bounded 30-second observation window for normal GA batching, while still requiring
+    // exactly one affiliate_click and exactly one amazon_shopping_click below.
+    await waitForAffiliateEvents(net,start,30000);
     const events=net.slice(start).filter(r=>r.collect).map(r=>r.event).filter(Boolean);
     const affiliateCount=events.filter(x=>x==='affiliate_click').length;
     const shoppingCount=events.filter(x=>x==='amazon_shopping_click').length;
