@@ -1,4 +1,10 @@
-// APG Navigation Blue Interactions v77 is the outermost presentation layer.
+// APG Footer Country Selector Removal v78 is the outermost presentation layer.
+// APG currently serves Australia only, so the redundant footer country selector is
+// removed from rendered HTML across desktop and mobile. Footer identity, navigation,
+// social links and disclosure content are unchanged.
+// Compatibility lineage: module.exports=require('../lib/navigation-blue-interactions-v77')
+//
+// APG Navigation Blue Interactions v77 remains authoritative immediately underneath.
 // It replaces legacy teal/green navigation hover, focus and touch states with the
 // current APG blue interaction language across the mobile menu and desktop mega menu.
 // Navigation structure, links and behaviour are unchanged.
@@ -83,4 +89,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/navigation-blue-interactions-v77');
+module.exports=require('../lib/footer-country-removal-v78');
