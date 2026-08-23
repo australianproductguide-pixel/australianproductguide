@@ -113,6 +113,7 @@ jobs:
       APG_EXPECTED_SHA: ${{ github.sha }}
       APG_GITHUB_DEPLOYMENT_ID: ${{ needs.production-smoke.outputs.github_deployment_id }}
       CRITICAL_BROWSER_OUT: artifacts/production-critical-browser-v61
+      FOOTER_BROWSER_OUT: artifacts/production-footer-browser-v83
       VISUAL_OUT: artifacts/production-visual-v28
       TABLET_VISUAL_OUT: artifacts/production-tablet-visual-v61
       A11Y_OUT: artifacts/production-accessibility-v61
@@ -137,6 +138,9 @@ jobs:
       - name: Run critical browser journeys
         run: node scripts/production-critical-browser-v61.js
 
+      - name: Verify desktop and mobile footer navigation
+        run: node scripts/production-footer-browser-v83.js
+
       - name: Capture desktop and mobile Production visual matrix
         if: always()
         run: node scripts/production-visual-v28.js
@@ -156,6 +160,7 @@ jobs:
           name: apg-production-browser-${{ github.run_id }}
           path: |
             artifacts/production-critical-browser-v61
+            artifacts/production-footer-browser-v83
             artifacts/production-visual-v28
             artifacts/production-tablet-visual-v61
             artifacts/production-accessibility-v61

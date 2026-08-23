@@ -1,5 +1,10 @@
-// APG Trust Centre Authoritative Runtime v82 is the outermost runtime layer.
-// The eleven Trust Centre/company pages now take their substantive content from the
+// APG Footer Navigation v83 is the outermost runtime layer.
+// It hardens native footer hit targets and mobile interaction geometry without
+// intercepting clicks or changing the authoritative Trust Centre content underneath.
+// Compatibility lineage: module.exports=require('../lib/trust-centre-authoritative-v82')
+//
+// APG Trust Centre Authoritative Runtime v82 is authoritative immediately underneath.
+// The eleven Trust Centre/company pages take their substantive content from the
 // single authoritative lib/content.js source. v82 only neutralises legacy technical
 // account-status chrome injected by older shared runtime layers; it does not rewrite
 // policy substance. Search v52 and the existing v81/v80 compatibility lineage remain
@@ -115,4 +120,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/trust-centre-authoritative-v82');
+module.exports=require('../lib/footer-navigation-v83');
