@@ -1,8 +1,14 @@
-// APG Consumer Surface Reconciliation v81 is the outermost runtime layer.
-// It reconciles final consumer-facing SSR wording after all existing product, trust,
-// account, commerce and search layers have rendered. Internal API/version contracts
-// remain unchanged underneath, including Search v52 and Google verification v80.
-// Compatibility lineage: module.exports=require('../lib/search-platform-verification-v80')
+// APG Trust Centre Authoritative Runtime v82 is the outermost runtime layer.
+// The eleven Trust Centre/company pages now take their substantive content from the
+// single authoritative lib/content.js source. v82 only neutralises legacy technical
+// account-status chrome injected by older shared runtime layers; it does not rewrite
+// policy substance. Search v52 and the existing v81/v80 compatibility lineage remain
+// unchanged underneath.
+// Compatibility lineage: module.exports=require('../lib/consumer-surface-reconciliation-v81')
+//
+// APG Consumer Surface Reconciliation v81 remains authoritative underneath v82 for
+// non-Trust consumer-facing wording. Its historical Trust copy replacements are now
+// expected to be no-ops because Trust Centre substance is current at source.
 //
 // APG Search Platform Verification v80 remains authoritative immediately underneath.
 // It guarantees the canonical Google Search Console HTML verification route returns
@@ -109,4 +115,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/consumer-surface-reconciliation-v81');
+module.exports=require('../lib/trust-centre-authoritative-v82');
