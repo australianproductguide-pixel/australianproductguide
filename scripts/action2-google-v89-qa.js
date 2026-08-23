@@ -1,0 +1,12 @@
+'use strict';
+const assert=require('assert');
+const growth=require('../lib/google-growth-v1');
+const required=['retailer','link_kind','category','cta_placement','referral_context','destination','decision_surface','product_slug'];
+assert.deepStrictEqual(growth.ACTION2_CUSTOM_DIMENSIONS.map(x=>x[0]),required);
+for(const fn of ['listSitemaps','searchConsoleDetailedSnapshot','analyticsEventBaseline','analyticsRealtimeEvents','listCustomDimensions','ensureAction2CustomDimensions'])assert.strictEqual(typeof growth[fn],'function',`${fn} missing`);
+assert(growth.SERVICE_ACCOUNT_SCOPES.includes('https://www.googleapis.com/auth/analytics.edit'),'analytics.edit scope missing');
+assert(growth.SERVICE_ACCOUNT_SCOPES.includes('https://www.googleapis.com/auth/webmasters'),'Search Console scope missing');
+const source=require('fs').readFileSync(require.resolve('./action2-google-certification-v89.js'),'utf8');
+assert(source.includes("process.env.VERCEL_ENV!=='production'"),'Google certification must skip non-Production');
+assert(!source.includes('topQueries'),'Production certification must not log raw Search Console queries');
+console.log('ACTION2_GOOGLE_V89_QA_OK');
