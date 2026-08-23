@@ -1,4 +1,11 @@
-// APG Consent-Safe Analytics Funnel v79 is the outermost runtime layer.
+// APG Search Platform Verification v80 is the outermost runtime layer.
+// It guarantees the canonical Google Search Console HTML verification route returns
+// only Google's exact verification body. Bing ownership is not fabricated: Bing uses
+// the governed sitemap/robots/IndexNow surfaces until a genuine console import or
+// verification token is evidenced. Search v52 remains the protected API contract.
+// Compatibility lineage: module.exports=require('../lib/analytics-funnel-v79')
+//
+// APG Consent-Safe Analytics Funnel v79 remains authoritative immediately underneath.
 // It blocks GA4 event queuing until analytics consent is granted, stops later event
 // sending if consent is withdrawn, and adds privacy-minimised decision-funnel events
 // without sending typed search terms, Decision Lab descriptions, Scout messages,
@@ -96,4 +103,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/analytics-funnel-v79');
+module.exports=require('../lib/search-platform-verification-v80');
