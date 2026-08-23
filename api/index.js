@@ -1,4 +1,11 @@
-// APG Footer Country Selector Removal v78 is the outermost presentation layer.
+// APG Consent-Safe Analytics Funnel v79 is the outermost runtime layer.
+// It blocks GA4 event queuing until analytics consent is granted, stops later event
+// sending if consent is withdrawn, and adds privacy-minimised decision-funnel events
+// without sending typed search terms, Decision Lab descriptions, Scout messages,
+// account identifiers or URL query strings. Search v52 remains the protected API contract.
+// Compatibility lineage: module.exports=require('../lib/footer-country-removal-v78')
+//
+// APG Footer Country Selector Removal v78 remains authoritative immediately underneath.
 // APG currently serves Australia only, so the redundant footer country selector is
 // removed from rendered HTML across desktop and mobile. Footer identity, navigation,
 // social links and disclosure content are unchanged.
@@ -89,4 +96,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/footer-country-removal-v78');
+module.exports=require('../lib/analytics-funnel-v79');
