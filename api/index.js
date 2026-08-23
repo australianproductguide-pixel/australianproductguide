@@ -1,4 +1,10 @@
-// APG Premium Search Experience v76 is the outermost presentation layer.
+// APG Premium Search Mobile Cascade Fix v76.1 is the outermost presentation layer.
+// It resolves the higher-specificity site-wide form rule that was still drawing an
+// inner rounded search input on iOS/mobile, so the search now renders as one unified
+// icon + field + Search button control. Search v52 behaviour remains unchanged.
+// Compatibility lineage: module.exports=require('../lib/premium-search-v76')
+//
+// APG Premium Search Experience v76 remains authoritative immediately underneath.
 // It upgrades the visual hierarchy, responsive proportions, focus states and
 // suggestion surfaces of APG search while preserving Search v52 query handling,
 // ranking, transport, analytics and interaction contracts unchanged.
@@ -65,4 +71,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/premium-search-v76');
+module.exports=require('../lib/premium-search-mobile-v761');
