@@ -1,4 +1,9 @@
-// APG Action 2 Measurement Truth v87 is the outermost runtime layer.
+// APG PageSpeed Performance v88 is the outermost runtime layer.
+// It hardens homepage loading priority against the 23 Aug 2026 PageSpeed baseline
+// while preserving accessibility, SEO, agentic browsing and the v87 measurement path.
+// Compatibility lineage: module.exports=require('../lib/action2-measurement-v87')
+//
+// APG Action 2 Measurement Truth v87 remains authoritative immediately underneath.
 // It closes the proven Scout -> Amazon attribution gap without expanding data scope.
 // Compatibility lineage: module.exports=require('../lib/category-page-polish-v86')
 //
@@ -48,4 +53,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/action2-measurement-v87');
+module.exports=require('../lib/pagespeed-performance-v88');
