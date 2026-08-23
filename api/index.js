@@ -1,4 +1,11 @@
-// APG Action 3 Search Commerce v90 is the authoritative outermost runtime layer.
+// APG Brand Mark Canonical Parity v91 is the authoritative outermost runtime layer.
+// It gives known problem brand identities one deterministic final outcome after all
+// legacy discovery/completion layers: Breville uses the reviewed vector override and
+// Amazon fails closed to a canonical brand-name treatment rather than a product image,
+// favicon or unapproved Amazon Mark. Target brand URLs are cache-busted to v91.
+// Compatibility lineage: module.exports=require('../lib/action3-search-commerce-v90')
+//
+// APG Action 3 Search Commerce v90 remains authoritative immediately underneath v91.
 // It adds confidence-gated Search retailer actions after product identity is resolved,
 // preserving APG guide and Compare routes and the existing Action 2 analytics contract.
 // Recommendation rank remains upstream and commercial recommendation weight remains zero.
@@ -66,4 +73,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/action3-search-commerce-v90');
+module.exports=require('../lib/brand-mark-canonical-parity-v91');
