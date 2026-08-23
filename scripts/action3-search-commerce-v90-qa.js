@@ -35,6 +35,8 @@ assert.ok(keychron.url.startsWith('https://www.amazon.com.au/s?'));
 assert.ok(keychron.url.includes('tag=auproductguid-22'));
 
 assert.equal(high('Sony WH-1000XM6'),true,'exact Sony model should be high confidence');
+assert.equal(high('Sony WH1000XM6'),true,'normalised Sony model should recover to high confidence');
+assert.equal(high('TP-Link Archer BE550'),true,'known fallback model should be high confidence');
 assert.equal(high('headphones'),false,'category query must stay decision-support');
 assert.equal(high('headphones under $300'),false,'budget query must stay decision-support');
 assert.equal(high('robot vacuum for pet hair'),false,'use-case query must stay decision-support');
@@ -61,15 +63,44 @@ assert.equal(broad.action3.intentClass,'DECISION_SUPPORT');
 assert.ok(broad.products.every(p=>p.retailerAction===null));
 assert.ok(!String(broad.bodyHtml||'').includes('data-affiliate-placement="search_result"'));
 
-const fakeExact={queryUnderstanding:{modelMatchCount:1,modelAmbiguous:false},products:[{slug:'tp-link-tapo-c410',name:'Tapo C410',brand:'TP-Link',category:'home-security-cameras',url:'/products/tp-link-tapo-c410/'}],bodyHtml:'<div class="actions"><a class="button secondary" href="/products/tp-link-tapo-c410/">Open product guide</a></div>'};
-const exactEnriched=layer.enrichPayload(fakeExact);
-assert.equal(exactEnriched.products[0].retailerAction.status,'EXACT_VERIFIED');
-assert.match(exactEnriched.bodyHtml,/data-affiliate-destination="direct_asin"/);
+const exactSearch=layer.enrichPayload(payloadFor('TP-Link Tapo C410'));
+assert.equal(exactSearch.products[0].retailerAction.status,'EXACT_VERIFIED');
+assert.match(exactSearch.bodyHtml,/data-affiliate-destination="direct_asin"/);
 
-const fakeFallback={queryUnderstanding:{modelMatchCount:1,modelAmbiguous:false},products:[{slug:'keychron-k2-pro',name:'Keychron K2 Pro',brand:'Keychron',category:'mechanical-keyboards',url:'/products/keychron-k2-pro/'}],bodyHtml:'<div class="actions"><a class="button secondary" href="/products/keychron-k2-pro/">Open product guide</a></div>'};
-const fallbackEnriched=layer.enrichPayload(fakeFallback);
-assert.equal(fallbackEnriched.products[0].retailerAction.status,'SEARCH_FALLBACK');
-assert.match(fallbackEnriched.bodyHtml,/Search this model on Amazon Australia/);
-assert.match(fallbackEnriched.bodyHtml,/data-affiliate-destination="search_fallback"/);
+const fallbackSearch=layer.enrichPayload(payloadFor('TP-Link Archer BE550'));
+assert.equal(fallbackSearch.products.length,1);
+assert.equal(fallbackSearch.products[0].retailerAction.status,'SEARCH_FALLBACK');
+assert.match(fallbackSearch.bodyHtml,/Search this model on Amazon Australia/);
+assert.match(fallbackSearch.bodyHtml,/data-affiliate-destination="search_fallback"/);
 
-console.log('ACTION3_SEARCH_COMMERCE_V90_OK');
+const sonyLegacy=`<body data-product-slug="sony-wh-1000xm6" data-amazon-link-type="exact"><div class="actions"><span class="apg-primary-purchase"><a class="button apg-amazon-cta" href="https://www.amazon.com.au/dp/B0F4DKKPN1?tag=auproductguid-22" rel="sponsored nofollow noopener" target="_blank" data-affiliate-link data-affiliate-retailer="Amazon Australia" data-affiliate-kind="direct" data-affiliate-placement="product_hero" data-affiliate-context="product_page_primary" data-affiliate-category="wireless-headphones" data-product-slug="sony-wh-1000xm6">View on Amazon Australia</a><small><strong>Paid Amazon Associate link.</strong> Exact Amazon product destination verified.</small></span></div><p>Exact Amazon Australia individual product listing verified.</p><section><h2>Move from research to the exact product</h2><a class="retailer-row" href="https://www.amazon.com.au/dp/B0F4DKKPN1?tag=auproductguid-22" rel="sponsored nofollow noopener" target="_blank" data-affiliate-link data-affiliate-retailer="Amazon Australia" data-affiliate-kind="direct" data-affiliate-placement="retailer_panel"><span><small>Paid link · Amazon Associate · Exact individual product page verified</small></span><span>View on Amazon Australia</span></a></section><aside><strong>Ready to check the exact product?</strong><small>Verified destination · paid Amazon Associate link</small><a href="https://www.amazon.com.au/dp/B0F4DKKPN1?tag=auproductguid-22" data-affiliate-link data-affiliate-retailer="Amazon Australia" data-affiliate-kind="direct" data-affiliate-placement="product_mobile_sticky">View on Amazon AU</a></aside></body>`;
+const sonyReconciled=layer.reconcileAmazonAffiliateMarkup(sonyLegacy);
+assert.match(sonyReconciled,/data-amazon-link-type="variant"/);
+assert.equal((sonyReconciled.match(/data-affiliate-destination="verified_variant"/g)||[]).length,3);
+assert.equal((sonyReconciled.match(/data-product-slug="sony-wh-1000xm6"/g)||[]).length,4);
+assert.match(sonyReconciled,/View available variant on Amazon Australia/);
+assert.match(sonyReconciled,/View available variant on Amazon AU/);
+assert.match(sonyReconciled,/Verified Amazon variant destination/);
+assert.match(sonyReconciled,/Verified Amazon Australia variant listing/);
+assert.match(sonyReconciled,/Verified variant listing/);
+assert.match(sonyReconciled,/Ready to check the available variant/);
+assert.match(sonyReconciled,/Move from research to a verified retailer option/);
+assert.ok(!sonyReconciled.includes('Exact Amazon product destination verified.'));
+assert.ok(!sonyReconciled.includes('Exact Amazon Australia individual product listing verified.'));
+assert.ok(!sonyReconciled.includes('Exact individual product page verified'));
+
+const tapoLegacy=`<body data-product-slug="tp-link-tapo-c410" data-amazon-link-type="exact"><a href="https://example.invalid" data-affiliate-link data-affiliate-retailer="Amazon Australia" data-affiliate-kind="search" data-affiliate-placement="product_hero" data-product-slug="tp-link-tapo-c410">View on Amazon Australia</a></body>`;
+const tapoReconciled=layer.reconcileAmazonAffiliateMarkup(tapoLegacy);
+assert.match(tapoReconciled,/data-affiliate-destination="direct_asin"/);
+assert.match(tapoReconciled,/data-affiliate-kind="direct"/);
+assert.match(tapoReconciled,/https:\/\/www\.amazon\.com\.au\/dp\/B0D3814FFN\?tag=auproductguid-22/);
+assert.match(tapoReconciled,/View on Amazon Australia/);
+
+const keychronLegacy=`<body data-product-slug="keychron-k2-pro"><a href="https://example.invalid" data-affiliate-link data-affiliate-retailer="Amazon Australia" data-affiliate-kind="direct" data-affiliate-placement="product_hero" data-product-slug="keychron-k2-pro">View on Amazon Australia</a></body>`;
+const keychronReconciled=layer.reconcileAmazonAffiliateMarkup(keychronLegacy);
+assert.match(keychronReconciled,/data-affiliate-destination="search_fallback"/);
+assert.match(keychronReconciled,/data-affiliate-kind="search"/);
+assert.match(keychronReconciled,/Search this model on Amazon Australia/);
+assert.match(keychronReconciled,/tag=auproductguid-22/);
+
+console.log('ACTION3_SEARCH_COMMERCE_V901_OK');
