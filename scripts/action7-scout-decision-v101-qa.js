@@ -1,7 +1,7 @@
 'use strict';
 
 const assert=require('assert');
-const action7=require('../lib/action7-scout-decision-v1011');
+const action7=require('../lib/action7-scout-decision-v1012');
 const core=require('../lib/scout-concierge-v5-core');
 const action4=require('../data/action4-decision-evidence-v96');
 const amazon=require('../data/amazon-au-mappings-v33');
