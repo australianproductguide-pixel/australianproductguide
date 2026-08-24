@@ -81,13 +81,16 @@ const moduleText=require('fs').readFileSync(require.resolve('../lib/amazon-shopp
 assert(!/decision-engine|recommendation_weight\s*[=:]\s*[1-9]|affiliate.*score|commission.*score/i.test(moduleText),'v41 must not influence recommendation scoring');
 assert(/recommendations remain independent|separate from APG recommendations|separate from APG product suitability/i.test(moduleText),'v41 must explain recommendation separation');
 
-// Final wrapper must persist v39 shopping discovery and add v41 with its own CSS only where used.
+// v39 remains valid in isolation. The current v41 homepage intentionally replaces that older compact
+// strip with one stronger v41 module so APG does not render duplicate Amazon shopping discovery bands.
 const shell='<html><head><title>APG</title></head><body><nav class="primary-nav apg-nav-v8"><div class="wrap nav-inner"></div></nav><main><p>Base</p></main><footer></footer></body></html>';
 const v39Home=finalV39.finalShoppingHtml(shell,{url:'/'});
+assert(v39Home.includes('apg-shopping-home'),'v39 homepage shopping discovery baseline missing');
 const v41Home=finalV41.finalCreativeHtml(v39Home,{url:'/'});
-assert(v41Home.includes('apg-shopping-home'),'v41 must preserve v39 homepage shopping discovery');
+assert(!v41Home.includes('apg-shopping-home'),'v41 must remove the duplicate v39 homepage shopping strip');
 assert(v41Home.includes('data-amazon-creative-v41="home"'),'v41 homepage creative missing at final response');
 assert(v41Home.includes(finalV41.CSS_PATH),'v41 stylesheet missing on creative page');
+assert(v41Home.includes('name="apg-home-amazon-placement"'),'v41 homepage placement marker missing');
 assert.strictEqual((v41Home.match(/data-amazon-creative-v41="home"/g)||[]).length,1,'v41 homepage creative must be idempotent');
 
 const v39Deals=finalV39.finalShoppingHtml(shell.replace('<main><p>Base</p></main>','<main>'+require('../lib/amazon-shopping-discovery-v39').dealsPage({headers:{host:'australianproductguide.au'}}).match(/<main[\s\S]*<\/main>/)?.[0]?.replace(/^<main[^>]*>|<\/main>$/g,'')+'</main>'),{url:'/deals/'});
