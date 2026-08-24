@@ -23,7 +23,6 @@ function enhance(root){
   let settleTimer=0;
   let railVisible=true;
   let interacting=false;
-  let userTookControl=false;
   let normalising=false;
   let logicalIndexState=0;
 
@@ -80,9 +79,7 @@ function enhance(root){
     dots.forEach((dot,dotIndex)=>dot.classList.toggle('is-active',dotIndex===index));
     if(progress)progress.setAttribute('aria-label',`Proof ${index+1} of ${cards.length}`);
   };
-  const requestUpdate=()=>{
-    if(!frame)frame=requestAnimationFrame(update);
-  };
+  const requestUpdate=()=>{ if(!frame)frame=requestAnimationFrame(update); };
 
   const normaliseLoop=()=>{
     if(normalising)return;
@@ -97,10 +94,7 @@ function enhance(root){
     if(target===null)return;
     normalising=true;
     track.scrollTo({left:target,top:0,behavior:'auto'});
-    requestAnimationFrame(()=>{
-      normalising=false;
-      requestUpdate();
-    });
+    requestAnimationFrame(()=>{ normalising=false; requestUpdate(); });
   };
   const scheduleNormalise=()=>{
     if(settleTimer)clearTimeout(settleTimer);
@@ -113,12 +107,9 @@ function enhance(root){
   };
 
   const clearAutoplay=()=>{
-    if(autoplayTimer){
-      clearTimeout(autoplayTimer);
-      autoplayTimer=0;
-    }
+    if(autoplayTimer){ clearTimeout(autoplayTimer); autoplayTimer=0; }
   };
-  const autoplayEligible=()=>mobileMode.matches&&!reduceMotion.matches&&!userTookControl&&railVisible&&!interacting&&document.visibilityState!=='hidden';
+  const autoplayEligible=()=>mobileMode.matches&&!reduceMotion.matches&&railVisible&&!interacting&&document.visibilityState!=='hidden';
   const scheduleAutoplay=()=>{
     clearAutoplay();
     if(!autoplayEligible())return;
@@ -128,19 +119,14 @@ function enhance(root){
       scheduleAutoplay();
     },AUTO_DELAY);
   };
-  const takeManualControl=()=>{
-    userTookControl=true;
+  const manualMove=direction=>{
     clearAutoplay();
+    move(direction);
+    scheduleAutoplay();
   };
 
-  previous.addEventListener('click',()=>{
-    takeManualControl();
-    move(-1);
-  });
-  next.addEventListener('click',()=>{
-    takeManualControl();
-    move(1);
-  });
+  previous.addEventListener('click',()=>manualMove(-1));
+  next.addEventListener('click',()=>manualMove(1));
 
   track.addEventListener('scroll',()=>{
     requestUpdate();
@@ -151,51 +137,41 @@ function enhance(root){
   track.addEventListener('keydown',event=>{
     if(event.key==='ArrowLeft'){
       event.preventDefault();
-      takeManualControl();
-      move(-1);
+      manualMove(-1);
     }else if(event.key==='ArrowRight'){
       event.preventDefault();
-      takeManualControl();
-      move(1);
+      manualMove(1);
     }else if(event.key==='Home'){
       event.preventDefault();
-      takeManualControl();
+      clearAutoplay();
       scrollToLogical(0);
+      scheduleAutoplay();
     }else if(event.key==='End'){
       event.preventDefault();
-      takeManualControl();
+      clearAutoplay();
       scrollToLogical(cards.length-1);
+      scheduleAutoplay();
     }
   });
 
-  root.addEventListener('pointerenter',()=>{
-    interacting=true;
-    clearAutoplay();
-  });
-  root.addEventListener('pointerleave',()=>{
-    interacting=false;
-    scheduleAutoplay();
-  });
-  root.addEventListener('focusin',()=>{
-    interacting=true;
-    clearAutoplay();
-  });
+  root.addEventListener('pointerenter',()=>{ interacting=true; clearAutoplay(); });
+  root.addEventListener('pointerleave',()=>{ interacting=false; scheduleAutoplay(); });
+  root.addEventListener('focusin',()=>{ interacting=true; clearAutoplay(); });
   root.addEventListener('focusout',event=>{
     if(root.contains(event.relatedTarget))return;
     interacting=false;
     scheduleAutoplay();
   });
-  track.addEventListener('touchstart',()=>{
-    interacting=true;
-    takeManualControl();
-  },{passive:true});
+  track.addEventListener('touchstart',()=>{ interacting=true; clearAutoplay(); },{passive:true});
   track.addEventListener('touchend',()=>{
     interacting=false;
     scheduleNormalise();
+    scheduleAutoplay();
   },{passive:true});
   track.addEventListener('touchcancel',()=>{
     interacting=false;
     scheduleNormalise();
+    scheduleAutoplay();
   },{passive:true});
 
   if('IntersectionObserver' in window){
