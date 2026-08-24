@@ -1,4 +1,8 @@
-// APG Action 7 Scout + Decision Lab Intelligence v101.6 is the authoritative outermost runtime layer.
+// APG Buying Guide Theme Alignment v102.0 is the authoritative outermost runtime layer.
+// It preserves Action 7 v101.6 and all protected intelligence/runtime contracts while
+// reconciling the shared buying-guide decision-step accents with APG's current blue theme.
+// Compatibility lineage: module.exports=require('../lib/action7-closure-v1016')
+// APG Action 7 Scout + Decision Lab Intelligence v101.6 remains authoritative underneath.
 // It preserves Scout v5 and Decision Engine v4, retains v101.4 state/evidence/retailer integration,
 // and closes Decision Lab rendered evidence parity across both res.write and res.end output.
 // Compatibility lineage: module.exports=require('../lib/action7-closure-v1015')
@@ -48,4 +52,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/action7-closure-v1016');
+module.exports=require('../lib/buying-guide-theme-alignment-v102');
