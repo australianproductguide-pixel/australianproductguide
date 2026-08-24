@@ -1,6 +1,7 @@
-// APG Action 7 Scout + Decision Lab Intelligence v101 is the authoritative outermost runtime layer.
+// APG Action 7 Scout + Decision Lab Intelligence v101.1 is the authoritative outermost runtime layer.
 // It preserves Scout v5 and Decision Engine v4 while adding structured multi-turn decision continuity,
 // Action 4 schema-aware questions, trace-aware explanations, central platform facts and Decision Lab handoff.
+// Compatibility lineage: module.exports=require('../lib/action7-scout-decision-v101')
 // Compatibility lineage: module.exports=require('../lib/action5-recall-surface-v1002')
 // Compatibility lineage: module.exports=require('../lib/action5-demand-ranking-v1001')
 // Compatibility lineage: module.exports=require('../lib/action5-strategic-closure-v100')
@@ -42,4 +43,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/action7-scout-decision-v101');
+module.exports=require('../lib/action7-scout-decision-v1011');
