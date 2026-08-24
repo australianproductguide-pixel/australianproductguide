@@ -4,7 +4,7 @@
 const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
 const mobileMode=window.matchMedia('(max-width: 780px)');
 const rails=[...document.querySelectorAll('[data-apg-proof-rail]')];
-const AUTO_DELAY=5000;
+const AUTO_DELAY=3000;
 const SETTLE_DELAY=140;
 
 function enhance(root){
