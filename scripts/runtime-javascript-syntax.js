@@ -2,6 +2,7 @@ const http=require('http');
 const fs=require('fs');
 const path=require('path');
 const vm=require('vm');
+require('./apg-proof-rail-v103-qa');
 const app=require('../lib/account-release-reconcile');
 
 const runtimeAssets=[
@@ -13,7 +14,8 @@ const runtimeAssets=[
   '/assets/account-platform.js'
 ];
 const publicAssets=[
-  path.join(__dirname,'..','public','assets','brand-missing-logo-loader-v73.js')
+  path.join(__dirname,'..','public','assets','brand-missing-logo-loader-v73.js'),
+  path.join(__dirname,'..','public','assets','apg-proof-rail-v103.js')
 ];
 
 const server=http.createServer((req,res)=>app(req,res));
