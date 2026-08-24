@@ -1,4 +1,8 @@
-// APG Buying Guide Theme Alignment v102.0 is the authoritative outermost runtime layer.
+// APG Proof Rail v103.0 is the authoritative outermost homepage presentation layer.
+// It replaces only the legacy homepage proof banner with the SSR-first ApgProofRail,
+// preserving every downstream intelligence, commerce, account, SEO and analytics contract.
+// Compatibility lineage: module.exports=require('../lib/buying-guide-theme-alignment-v102');
+// APG Buying Guide Theme Alignment v102.0 remains authoritative underneath for buying guides.
 // It preserves Action 7 v101.6 and all protected intelligence/runtime contracts while
 // reconciling the shared buying-guide decision-step accents with APG's current blue theme.
 // Compatibility lineage: module.exports=require('../lib/action7-closure-v1016')
@@ -52,4 +56,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/buying-guide-theme-alignment-v102');
+module.exports=require('../lib/apg-proof-rail-runtime-v103');
