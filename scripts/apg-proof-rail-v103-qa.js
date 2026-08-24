@@ -54,7 +54,14 @@ const css=fs.readFileSync(path.join(__dirname,'..','public','assets','apg-proof-
 assert(/scroll-snap-type\s*:\s*x mandatory/i.test(css),'CSS scroll snap is required');
 assert(/flex\s*:\s*0 0 calc\(\(100% - 32px\)\/3\)/i.test(css),'desktop must expose three equal cards');
 assert(/@media\(max-width:780px\)[\s\S]*?flex-basis\s*:\s*100%/i.test(css),'mobile must expose one card at a time');
-assert(/@media\(max-width:780px\)[\s\S]*?min-height\s*:\s*224px/i.test(css),'mobile card must use the compact premium height');
+assert(/@media\(max-width:780px\)[\s\S]*?min-height\s*:\s*208px/i.test(css),'mobile card must use the final compact 208px minimum height');
+assert(/@media\(max-width:780px\)[\s\S]*?margin-top\s*:\s*-20px/i.test(css),'mobile rail must tighten the gap beneath the homepage explainer');
+const phraseBlock=(css.match(/\.apg-proof-value-v103\.is-phrase\s*\{([\s\S]*?)\}/)||[])[1]||'';
+assert(/display\s*:\s*block/i.test(phraseBlock),'phrase proof must render as editorial text');
+assert(/padding\s*:\s*0/i.test(phraseBlock),'phrase proof must not retain pill padding');
+assert(/border\s*:\s*0/i.test(phraseBlock),'phrase proof must not retain a button-like border');
+assert(/background\s*:\s*transparent/i.test(phraseBlock),'phrase proof must not retain a button-like background');
+assert(/background\s*:\s*rgba\(255,255,255,\.135\)/i.test(css),'decorative proof circles must use the softened opacity');
 assert(/width\s*:\s*44px/i.test(css)&&/height\s*:\s*44px/i.test(css),'arrow touch targets must remain at least 44px');
 assert(/apg-proof-dot-v103\.is-active[\s\S]*?width\s*:\s*22px/i.test(css),'active pill progress treatment missing');
 assert(!/#1C1E20 0 48%/.test(css),'legacy black split-flap visual treatment must be removed');
@@ -69,4 +76,4 @@ assert(js.includes("event.key==='Home'")&&js.includes("event.key==='End'"),'keyb
 assert(js.includes("matchMedia('(prefers-reduced-motion: reduce)')"),'JS reduced-motion preference missing');
 assert(js.includes("classList.toggle('is-active'"),'progress indicators must follow active proof state');
 
-console.log(`APG_PROOF_RAIL_V103_QA=PASS version=${proof.VERSION} products=${stats.products} categories=${stats.categories} brands=${stats.brands} cards=${cards.length} premium=compact`);
+console.log(`APG_PROOF_RAIL_V103_QA=PASS version=${proof.VERSION} products=${stats.products} categories=${stats.categories} brands=${stats.brands} cards=${cards.length} premium=final-polish`);
