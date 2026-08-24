@@ -3,9 +3,16 @@ const {images,imageFor,validationErrors}=require('../data/product-images');
 const {imageStatus}=require('../data/image-provenance');
 const {TAG}=require('../data/retailers');
 
+const ACTION6_FIRST_TRANCHE=[
+  'apple-iphone-17',
+  'apple-iphone-17-pro',
+  'samsung-galaxy-z-flip7'
+];
+
 const productBySlug=new Map(products.map(product=>[product.slug,product]));
 const issues=[];
 const displayUrlToSlugs=new Map();
+const verifiedBySourceType={};
 let verifiedImagery=0;
 let amazonProgramContent=0;
 let exactMatches=0;
@@ -13,6 +20,7 @@ let immaterialVariantMatches=0;
 let verifiedAmazonAsinMappings=0;
 let amazonSearchFallbackProducts=0;
 let amazonDirectMappingsWithoutAsin=0;
+let completeVerifiedProvenance=0;
 
 for(const slug of Object.keys(images)){
   const product=productBySlug.get(slug);
@@ -39,11 +47,14 @@ for(const product of products){
   const status=imageStatus(product);
 
   if(record&&record.imageStatus==='verified'&&record.imageVerified===true){
-    for(const error of validationErrors(product,record))issues.push(`${product.slug}: ${error}`);
+    const recordErrors=validationErrors(product,record);
+    for(const error of recordErrors)issues.push(`${product.slug}: ${error}`);
+    if(recordErrors.length===0)completeVerifiedProvenance+=1;
   }
 
   if(!status.productPhotography)continue;
   verifiedImagery+=1;
+  verifiedBySourceType[status.sourceType]=(verifiedBySourceType[status.sourceType]||0)+1;
 
   if(!status.displayUrl)issues.push(`${product.slug}: displayed photography has no image URL`);
   if(!status.alt||String(status.alt).trim().length<3)issues.push(`${product.slug}: displayed photography has no meaningful alt text`);
@@ -79,6 +90,24 @@ for(const [imageUrl,slugs] of displayUrlToSlugs){
   if(slugs.length>1)issues.push(`duplicate verified image URL across products: ${slugs.join(', ')} (${imageUrl})`);
 }
 
+const trancheRows=ACTION6_FIRST_TRANCHE.map(slug=>{
+  const product=productBySlug.get(slug);
+  const status=product?imageStatus(product):null;
+  const record=product?imageFor(product):null;
+  const errors=product&&record?validationErrors(product,record):['missing product image record'];
+  const complete=Boolean(product&&status?.productPhotography&&record?.imageStatus==='verified'&&record?.imageVerified===true&&errors.length===0);
+  if(!complete)issues.push(`${slug}: Action 6 first-tranche completion control failed${errors.length?` (${errors.join('; ')})`:''}`);
+  return {
+    slug,
+    category:product?.category||null,
+    imageStatus:record?.imageStatus||'missing',
+    matchStatus:status?.matchStatus||'unverified',
+    sourceType:status?.sourceType||null,
+    complete
+  };
+});
+const action6FirstTrancheComplete=trancheRows.every(row=>row.complete);
+
 const totalProducts=products.length;
 const withoutVerifiedImagery=totalProducts-verifiedImagery;
 const coveragePercent=totalProducts?Number((verifiedImagery/totalProducts*100).toFixed(1)):0;
@@ -88,6 +117,8 @@ const report={
   verifiedImagery,
   withoutVerifiedImagery,
   coveragePercent,
+  completeVerifiedProvenance,
+  verifiedBySourceType,
   verifiedAmazonAsinMappings,
   amazonSearchFallbackProducts,
   amazonDirectMappingsWithoutAsin,
@@ -96,8 +127,15 @@ const report={
   immaterialVariantMatches,
   registryRecords:Object.keys(images).length,
   invalidRecords:issues.length,
+  action6CompletionGate:{
+    tranche:'smartphones-first-commercial-tranche',
+    expectedProducts:ACTION6_FIRST_TRANCHE.length,
+    verifiedProducts:trancheRows.filter(row=>row.complete).length,
+    complete:action6FirstTrancheComplete,
+    products:trancheRows
+  },
   target:'As close to 100% as compliant verified imagery legitimately permits',
-  note:'Missing imagery is reported, not treated as a QA failure. Invalid, duplicate or unsafe image mappings fail the release gate.'
+  note:'Missing imagery outside the controlled Action 6 first tranche is reported, not treated as a QA failure. Invalid, duplicate, unsafe or regressed first-tranche image mappings fail the release gate.'
 };
 
 console.log(JSON.stringify(report,null,2));
@@ -106,5 +144,5 @@ if(issues.length){
   for(const issue of issues)console.error(`- ${issue}`);
   process.exitCode=1;
 }else{
-  console.log(`Product image QA passed: ${verifiedImagery}/${totalProducts} maintained products have verified compliant photography; ${withoutVerifiedImagery} remain explicitly unreconciled.`);
+  console.log(`Product image QA passed: ${verifiedImagery}/${totalProducts} maintained products have verified compliant photography; Action 6 first tranche ${action6FirstTrancheComplete?'GREEN':'NOT GREEN'}; ${withoutVerifiedImagery} products remain explicitly unreconciled.`);
 }
