@@ -29,7 +29,7 @@ assert(cards[4].value==='Best fit','fit proof must use plain language');
 assert(!cards.some(card=>['AU','SRC','FIT'].includes(card.value)),'cryptic proof abbreviations must not return');
 
 const html=proof.ApgProofRail(stats);
-assert(proof.VERSION==='103.4','Proof Rail version must identify the seamless-loop release');
+assert(proof.VERSION==='103.5','Proof Rail version must identify the three-second seamless-loop release');
 assert((html.match(/data-proof-card/g)||[]).length===5,'SSR output must contain five canonical proof cards');
 assert((html.match(/data-proof-dot>/g)||[]).length===5,'SSR output must contain five progress indicators');
 assert(html.includes('aria-label="Australian Product Guide proof rail"'),'semantic section label missing');
@@ -37,7 +37,7 @@ assert(html.includes('aria-label="Previous proof"'),'previous control accessible
 assert(html.includes('aria-label="Next proof"'),'next control accessible label missing');
 assert(html.includes('data-proof-current>1</strong>'),'screen-reader progress state missing');
 assert(html.includes('apg-proof-dot-v103 is-active'),'first progress indicator must be active in SSR');
-assert(html.includes('data-apg-proof-autoplay="5000"'),'five-second autoplay contract missing from SSR');
+assert(html.includes('data-apg-proof-autoplay="3000"'),'three-second autoplay contract missing from SSR');
 assert(!html.includes('data-proof-autoplay-toggle'),'pause/play control must not render');
 assert(!/Pause automatic proof rotation|Resume automatic proof rotation/.test(html),'pause/play accessible copy must not render');
 assert(html.includes('aria-live="off"'),'automatic rotation must not create repetitive live-region announcements');
@@ -76,8 +76,8 @@ assert(/prefers-reduced-motion\s*:\s*reduce/i.test(css),'reduced-motion support 
 
 const js=fs.readFileSync(path.join(__dirname,'..','public','assets','apg-proof-rail-v103.js'),'utf8');
 new vm.Script(js,{filename:'apg-proof-rail-v103.js'});
-assert(/const AUTO_DELAY=5000;/.test(js),'autoplay must hold each proof for five seconds');
-assert(/window\.setTimeout\([\s\S]*?AUTO_DELAY\)/.test(js),'autoplay must use a resettable five-second timeout');
+assert(/const AUTO_DELAY=3000;/.test(js),'autoplay must hold each proof for three seconds');
+assert(/window\.setTimeout\([\s\S]*?AUTO_DELAY\)/.test(js),'autoplay must use a resettable three-second timeout');
 assert(!/setInterval\s*\(/.test(js),'autoplay must remain resettable rather than using an uncontrolled interval');
 assert(js.includes("makeClone(card,'before'")&&js.includes("makeClone(card,'after'"),'seamless loop must build a duplicate cycle on both sides');
 assert(js.includes('track.prepend(...before)')&&js.includes('track.append(...after)'),'duplicate cycles must flank the canonical five cards');
@@ -96,8 +96,8 @@ assert(js.includes("document.visibilityState!=='hidden'")&&js.includes("document
 assert(js.includes("'IntersectionObserver' in window")&&js.includes('intersectionRatio>=0.25'),'autoplay must only run while the rail is meaningfully visible');
 assert(js.includes("root.addEventListener('focusin'")&&js.includes("root.addEventListener('pointerenter'"),'autoplay must pause during keyboard/pointer interaction');
 assert(js.includes("track.addEventListener('touchstart'")&&js.includes('clearAutoplay()'),'touch interaction must pause automatic movement while the user swipes');
-assert(js.includes("track.addEventListener('touchend'")&&js.includes('scheduleAutoplay()'),'autoplay must resume on a fresh five-second countdown after a swipe');
-assert(js.includes('const manualMove=direction=>')&&js.includes('move(direction);')&&js.includes('scheduleAutoplay();'),'arrow/keyboard navigation must restart the five-second countdown');
+assert(js.includes("track.addEventListener('touchend'")&&js.includes('scheduleAutoplay()'),'autoplay must resume on a fresh three-second countdown after a swipe');
+assert(js.includes('const manualMove=direction=>')&&js.includes('move(direction);')&&js.includes('scheduleAutoplay();'),'arrow/keyboard navigation must restart the three-second countdown');
 assert(!/data-proof-autoplay-toggle|Pause automatic proof rotation|Resume automatic proof rotation/.test(js),'pause/play control logic must be removed');
 assert(js.includes("classList.toggle('is-active'"),'progress indicators must follow active proof state');
 assert(js.includes('previous.disabled=false')&&js.includes('next.disabled=false'),'looping arrows must not expose a dead end state');
