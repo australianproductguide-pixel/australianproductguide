@@ -5,7 +5,7 @@ const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
 const mobileMode=window.matchMedia('(max-width: 780px)');
 const rails=[...document.querySelectorAll('[data-apg-proof-rail]')];
 const AUTO_DELAY=5000;
-const SWIPE_THRESHOLD=42;
+const SETTLE_DELAY=140;
 
 function enhance(root){
   const track=root.querySelector('[data-proof-track]');
@@ -16,34 +16,20 @@ function enhance(root){
   const current=root.querySelector('[data-proof-current]');
   const total=root.querySelector('[data-proof-total]');
   const dots=[...root.querySelectorAll('[data-proof-dot]')];
-  const autoplayToggle=root.querySelector('[data-proof-autoplay-toggle]');
   if(!track||!cards.length||!previous||!next)return;
 
   let frame=0;
   let autoplayTimer=0;
-  let autoplayPaused=false;
+  let settleTimer=0;
   let railVisible=true;
   let interacting=false;
-  let touchStartX=null;
-  let touchStartedAtStart=false;
-  let touchStartedAtEnd=false;
+  let userTookControl=false;
+  let normalising=false;
+  let logicalIndexState=0;
 
   if(total)total.textContent=String(cards.length);
 
   const behaviour=()=>reduceMotion.matches?'auto':'smooth';
-  const maxScroll=()=>Math.max(0,track.scrollWidth-track.clientWidth);
-  const atStart=()=>track.scrollLeft<=2;
-  const atEnd=()=>track.scrollLeft>=maxScroll()-2;
-  const activeIndex=()=>{
-    const left=track.scrollLeft;
-    let best=0;
-    let distance=Infinity;
-    cards.forEach((card,index)=>{
-      const delta=Math.abs(card.offsetLeft-track.offsetLeft-left);
-      if(delta<distance){distance=delta;best=index;}
-    });
-    return best;
-  };
   const step=()=>{
     if(cards.length>1){
       const measured=cards[1].offsetLeft-cards[0].offsetLeft;
@@ -51,17 +37,41 @@ function enhance(root){
     }
     return cards[0].getBoundingClientRect().width;
   };
-  const updateAutoplayControl=()=>{
-    if(!autoplayToggle)return;
-    const eligibleMode=mobileMode.matches&&!reduceMotion.matches;
-    autoplayToggle.hidden=!eligibleMode;
-    autoplayToggle.classList.toggle('is-paused',autoplayPaused);
-    autoplayToggle.setAttribute('aria-pressed',String(autoplayPaused));
-    autoplayToggle.setAttribute('aria-label',autoplayPaused?'Resume automatic proof rotation':'Pause automatic proof rotation');
+  const originalStart=()=>cards[0].offsetLeft-track.offsetLeft;
+  const cycleWidth=()=>step()*cards.length;
+  const normaliseIndex=value=>((value%cards.length)+cards.length)%cards.length;
+  const activeIndex=()=>{
+    const cardStep=step();
+    if(cardStep<=0)return logicalIndexState;
+    return normaliseIndex(Math.round((track.scrollLeft-originalStart())/cardStep));
   };
+  const scrollToLogical=(index,mode=behaviour())=>{
+    const target=originalStart()+(normaliseIndex(index)*step());
+    track.scrollTo({left:target,top:0,behavior:mode});
+  };
+
+  const makeClone=(card,position,index)=>{
+    const clone=card.cloneNode(true);
+    clone.removeAttribute('data-proof-card');
+    clone.setAttribute('data-proof-clone',position);
+    clone.setAttribute('data-proof-logical-index',String(index));
+    clone.setAttribute('aria-hidden','true');
+    clone.setAttribute('role','presentation');
+    clone.removeAttribute('aria-label');
+    clone.tabIndex=-1;
+    return clone;
+  };
+
+  const before=cards.map((card,index)=>makeClone(card,'before',index));
+  const after=cards.map((card,index)=>makeClone(card,'after',index));
+  track.prepend(...before);
+  track.append(...after);
+  track.scrollTo({left:originalStart(),top:0,behavior:'auto'});
+
   const update=()=>{
     frame=0;
     const index=activeIndex();
+    logicalIndexState=index;
     previous.disabled=false;
     next.disabled=false;
     previous.setAttribute('aria-disabled','false');
@@ -73,22 +83,33 @@ function enhance(root){
   const requestUpdate=()=>{
     if(!frame)frame=requestAnimationFrame(update);
   };
-  const moveTo=edge=>{
-    const left=edge==='end'?maxScroll():0;
-    track.scrollTo({left,top:0,behavior:behaviour()});
-    requestUpdate();
+
+  const normaliseLoop=()=>{
+    if(normalising)return;
+    const cardStep=step();
+    const width=cycleWidth();
+    const start=originalStart();
+    if(cardStep<=0||width<=0)return;
+    const left=track.scrollLeft;
+    let target=null;
+    if(left<start-(cardStep*.5))target=left+width;
+    else if(left>=start+width-(cardStep*.5))target=left-width;
+    if(target===null)return;
+    normalising=true;
+    track.scrollTo({left:target,top:0,behavior:'auto'});
+    requestAnimationFrame(()=>{
+      normalising=false;
+      requestUpdate();
+    });
+  };
+  const scheduleNormalise=()=>{
+    if(settleTimer)clearTimeout(settleTimer);
+    settleTimer=window.setTimeout(normaliseLoop,SETTLE_DELAY);
   };
   const move=direction=>{
-    if(direction>0&&atEnd()){
-      moveTo('start');
-      return;
-    }
-    if(direction<0&&atStart()){
-      moveTo('end');
-      return;
-    }
     track.scrollBy({left:direction*step(),top:0,behavior:behaviour()});
     requestUpdate();
+    scheduleNormalise();
   };
 
   const clearAutoplay=()=>{
@@ -97,10 +118,9 @@ function enhance(root){
       autoplayTimer=0;
     }
   };
-  const autoplayEligible=()=>mobileMode.matches&&!reduceMotion.matches&&!autoplayPaused&&railVisible&&!interacting&&document.visibilityState!=='hidden';
+  const autoplayEligible=()=>mobileMode.matches&&!reduceMotion.matches&&!userTookControl&&railVisible&&!interacting&&document.visibilityState!=='hidden';
   const scheduleAutoplay=()=>{
     clearAutoplay();
-    updateAutoplayControl();
     if(!autoplayEligible())return;
     autoplayTimer=window.setTimeout(()=>{
       autoplayTimer=0;
@@ -108,44 +128,43 @@ function enhance(root){
       scheduleAutoplay();
     },AUTO_DELAY);
   };
-  const resetAutoplay=()=>{
+  const takeManualControl=()=>{
+    userTookControl=true;
     clearAutoplay();
-    scheduleAutoplay();
   };
 
   previous.addEventListener('click',()=>{
+    takeManualControl();
     move(-1);
-    resetAutoplay();
   });
   next.addEventListener('click',()=>{
+    takeManualControl();
     move(1);
-    resetAutoplay();
   });
-  if(autoplayToggle){
-    autoplayToggle.addEventListener('click',()=>{
-      autoplayPaused=!autoplayPaused;
-      scheduleAutoplay();
-    });
-  }
 
-  track.addEventListener('scroll',requestUpdate,{passive:true});
+  track.addEventListener('scroll',()=>{
+    requestUpdate();
+    scheduleNormalise();
+  },{passive:true});
+  if('onscrollend' in track)track.addEventListener('scrollend',normaliseLoop,{passive:true});
+
   track.addEventListener('keydown',event=>{
     if(event.key==='ArrowLeft'){
       event.preventDefault();
+      takeManualControl();
       move(-1);
-      resetAutoplay();
     }else if(event.key==='ArrowRight'){
       event.preventDefault();
+      takeManualControl();
       move(1);
-      resetAutoplay();
     }else if(event.key==='Home'){
       event.preventDefault();
-      moveTo('start');
-      resetAutoplay();
+      takeManualControl();
+      scrollToLogical(0);
     }else if(event.key==='End'){
       event.preventDefault();
-      moveTo('end');
-      resetAutoplay();
+      takeManualControl();
+      scrollToLogical(cards.length-1);
     }
   });
 
@@ -166,37 +185,17 @@ function enhance(root){
     interacting=false;
     scheduleAutoplay();
   });
-
-  track.addEventListener('touchstart',event=>{
-    if(!event.touches||!event.touches.length)return;
+  track.addEventListener('touchstart',()=>{
     interacting=true;
-    clearAutoplay();
-    touchStartX=event.touches[0].clientX;
-    touchStartedAtStart=atStart();
-    touchStartedAtEnd=atEnd();
+    takeManualControl();
   },{passive:true});
-  track.addEventListener('touchend',event=>{
-    const touch=event.changedTouches&&event.changedTouches[0];
-    if(touch&&touchStartX!==null){
-      const delta=touch.clientX-touchStartX;
-      if(touchStartedAtEnd&&delta<=-SWIPE_THRESHOLD){
-        moveTo('start');
-      }else if(touchStartedAtStart&&delta>=SWIPE_THRESHOLD){
-        moveTo('end');
-      }
-    }
-    touchStartX=null;
-    touchStartedAtStart=false;
-    touchStartedAtEnd=false;
+  track.addEventListener('touchend',()=>{
     interacting=false;
-    scheduleAutoplay();
+    scheduleNormalise();
   },{passive:true});
   track.addEventListener('touchcancel',()=>{
-    touchStartX=null;
-    touchStartedAtStart=false;
-    touchStartedAtEnd=false;
     interacting=false;
-    scheduleAutoplay();
+    scheduleNormalise();
   },{passive:true});
 
   if('IntersectionObserver' in window){
@@ -212,20 +211,19 @@ function enhance(root){
   if(typeof reduceMotion.addEventListener==='function')reduceMotion.addEventListener('change',scheduleAutoplay);
   if(typeof mobileMode.addEventListener==='function')mobileMode.addEventListener('change',scheduleAutoplay);
 
+  const realign=()=>{
+    track.scrollTo({left:originalStart()+(logicalIndexState*step()),top:0,behavior:'auto'});
+    requestUpdate();
+  };
   if('ResizeObserver' in window){
-    const observer=new ResizeObserver(()=>{
-      requestUpdate();
-      scheduleAutoplay();
-    });
+    const observer=new ResizeObserver(realign);
     observer.observe(track);
   }else{
-    window.addEventListener('resize',()=>{
-      requestUpdate();
-      scheduleAutoplay();
-    },{passive:true});
+    window.addEventListener('resize',realign,{passive:true});
   }
 
   root.dataset.proofEnhanced='true';
+  root.dataset.proofLoop='seamless';
   update();
   scheduleAutoplay();
 }
