@@ -1,6 +1,6 @@
-/* APG Proof Rail v103.2
+/* APG Proof Rail v103.3
  * Premium compact homepage trust rail: SSR-first content, native scroll snap,
- * restrained controls and lightweight progressive enhancement.
+ * restrained looping controls and lightweight progressive enhancement.
  */
 .apg-proof-rail-v103{
   --apg-proof-blue:var(--apg46-blue,#2563EB);
@@ -185,6 +185,7 @@
   box-shadow:none;
 }
 .apg-proof-progress-v103{
+  position:relative;
   display:none;
   align-items:center;
   justify-content:center;
@@ -208,6 +209,45 @@
 .apg-proof-dot-v103.is-active{
   width:22px;
   background:var(--apg-proof-blue);
+}
+.apg-proof-autoplay-toggle-v103{
+  display:none;
+  position:absolute;
+  left:calc(50% + 49px);
+  top:50%;
+  width:24px;
+  height:24px;
+  place-items:center;
+  padding:0;
+  transform:translateY(-50%);
+  border:1px solid rgba(37,99,235,.24);
+  border-radius:999px;
+  background:rgba(255,255,255,.24);
+  color:#315F9D;
+  box-shadow:none;
+  cursor:pointer;
+}
+.apg-proof-autoplay-toggle-v103[hidden]{display:none!important}
+.apg-proof-autoplay-toggle-v103 svg{
+  width:13px;
+  height:13px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2.2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.apg-proof-autoplay-toggle-v103 .is-play{display:none}
+.apg-proof-autoplay-toggle-v103.is-paused .is-pause{display:none}
+.apg-proof-autoplay-toggle-v103.is-paused .is-play{display:block}
+.apg-proof-autoplay-toggle-v103:hover{
+  border-color:rgba(37,99,235,.44);
+  background:rgba(255,255,255,.42);
+  color:var(--apg-proof-blue-dark);
+}
+.apg-proof-autoplay-toggle-v103:focus-visible{
+  outline:2px solid var(--apg-proof-navy)!important;
+  outline-offset:2px;
 }
 
 @media(max-width:780px){
@@ -259,6 +299,7 @@
   .apg-proof-arrow-v103.is-prev{left:1px}
   .apg-proof-arrow-v103.is-next{right:1px}
   .apg-proof-progress-v103{display:flex}
+  .apg-proof-autoplay-toggle-v103{display:grid}
 }
 
 @media(max-width:420px){
@@ -279,4 +320,5 @@
   .apg-proof-track-v103{scroll-behavior:auto!important}
   .apg-proof-arrow-v103,
   .apg-proof-dot-v103{transition:none!important}
+  .apg-proof-autoplay-toggle-v103{display:none!important}
 }
