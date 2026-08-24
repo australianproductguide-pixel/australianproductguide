@@ -1,4 +1,9 @@
-// APG Action 5 Strategic Closure v100 is the authoritative outermost runtime layer.
+// APG Action 5 Demand Ranking v100.1 is the authoritative outermost runtime layer.
+// It corrects v100 product-level demand ordering so observed GA4/GSC signals outrank
+// zero-observation ties while preserving retailer integrity, recall suppression and privacy.
+// Compatibility lineage: module.exports=require('../lib/action5-strategic-closure-v100')
+//
+// APG Action 5 Strategic Closure v100 remains authoritative immediately underneath v100.1.
 // It closes the four v99 P1 retailer-identity cases without guessing ASINs, suppresses
 // commerce for recalled Anker A1647, and adds a live product-level demand priority endpoint.
 // Compatibility lineage: module.exports=require('../lib/action5-retailer-integrity-v99')
@@ -135,4 +140,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/action5-strategic-closure-v100');
+module.exports=require('../lib/action5-demand-ranking-v1001');
