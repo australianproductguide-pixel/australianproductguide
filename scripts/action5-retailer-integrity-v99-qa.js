@@ -1,12 +1,13 @@
 'use strict';
 const assert=require('node:assert/strict');
-const action5=require('../lib/action5-demand-ranking-v1001');
+const action5=require('../lib/action5-recall-surface-v1002');
 const amazon=require('../data/amazon-au-mappings-v33');
 const scout=require('../lib/scout-concierge-v5');
 
 const x=action5.structuralSnapshot();
 assert.equal(x.version,'100.0');
 assert.equal(action5.ACTION5_DEMAND_RANKING_VERSION,'100.1');
+assert.equal(action5.ACTION5_RECALL_SURFACE_VERSION,'100.2');
 assert.equal(x.amazon.total,482,'Action 5 must recount the full maintained catalogue');
 assert.equal(x.amazon.exact,18,'Verified exact mappings must remain evidence-backed');
 assert.equal(x.amazon.variant,12,'Verified variant mappings must remain evidence-backed');
@@ -53,8 +54,14 @@ assert.equal(scrubbed.safetyState,'NO_SAFE_PATH_RECALL');
 
 const recalledHtml='<a data-affiliate-retailer="Amazon Australia" data-product-slug="anker-power-bank-20000mah-22-5w" href="https://www.amazon.com.au/s?k=Anker">Search this model on Amazon Australia</a>';
 const safeHtml=action5.stripRecalledCommerceHtml(recalledHtml,'/products/anker-power-bank-20000mah-22-5w/');
-assert.ok(!safeHtml.includes('href="https://www.amazon.com.au/'), 'Recalled product HTML must not retain an Amazon purchase/search URL');
+assert.ok(!safeHtml.includes('href="https://www.amazon.com.au/'), 'Recalled primary CTA must not retain an Amazon purchase/search URL');
 assert.ok(safeHtml.includes('Australian recall'));
+
+const historical=`<script type="application/ld+json">{"@type":"Product","sameAs":"${action5.OLD_AMAZON_URL}"}</script><a class="retailer-row" href="${action5.OLD_AMAZON_URL}"><span>Model discovery reference</span></a><div class="notice affiliate-disclosure-inline"><strong>Paid Amazon Associate links.</strong> As an Amazon Associate I earn from qualifying purchases.</div><p class="fine-inline">Amazon links are paid links. APG-maintained price context is not a live Amazon price.</p>`;
+const sanitised=action5.sanitiseRecallPageHtml(historical,action5.RECALL_PATH);
+assert.ok(!sanitised.includes(action5.OLD_AMAZON_URL),'Recalled product page must not retain its historical Amazon model-discovery URL or structured sameAs');
+assert.ok(sanitised.includes(action5.RECALL_URL),'Recalled product page should route provenance/safety context to the manufacturer recall source');
+assert.ok(sanitised.includes('No purchase pathway is provided for this product'));
 
 const exactSlug=Object.keys(amazon.VERIFIED).find(slug=>amazon.VERIFIED[slug].matchStatus==='EXACT_VERIFIED'&&scout.core.PRODUCT_BY_SLUG.has(slug));
 const variantSlug=Object.keys(amazon.VERIFIED).find(slug=>amazon.VERIFIED[slug].matchStatus==='VARIANT_VERIFIED'&&scout.core.PRODUCT_BY_SLUG.has(slug));
@@ -65,4 +72,4 @@ assert.equal(exact.actions.find(a=>a&&a.affiliate)?.label,'View on Amazon Austra
 assert.equal(variant.actions.find(a=>a&&a.affiliate)?.label,'View available variant on Amazon Australia');
 assert.equal(variant.meta.amazonAu.matchStatus,'VARIANT_VERIFIED');
 
-console.log(`ACTION5_STRATEGIC_CLOSURE_V1001_GREEN exact=${x.amazon.exact} variant=${x.amazon.variant} fallback=${x.amazon.fallback} noSafe=${x.amazon.noSafePath} p1Open=${x.p1.open} p2=${x.priority.counts.P2} broaderExactDestinations=${x.retailers.exactDestinationCount} demandOrdering=measured-first`);
+console.log(`ACTION5_STRATEGIC_CLOSURE_V1002_GREEN exact=${x.amazon.exact} variant=${x.amazon.variant} fallback=${x.amazon.fallback} noSafe=${x.amazon.noSafePath} p1Open=${x.p1.open} p2=${x.priority.counts.P2} broaderExactDestinations=${x.retailers.exactDestinationCount} demandOrdering=measured-first recallSurface=sanitised`);
