@@ -1,4 +1,4 @@
-/* APG Proof Rail v103.1
+/* APG Proof Rail v103.2
  * Premium compact homepage trust rail: SSR-first content, native scroll snap,
  * restrained controls and lightweight progressive enhancement.
  */
@@ -24,7 +24,7 @@
   position:absolute;
   z-index:-1;
   border-radius:999px;
-  background:rgba(255,255,255,.17);
+  background:rgba(255,255,255,.135);
   pointer-events:none;
 }
 .apg-proof-rail-v103::before{
@@ -105,17 +105,19 @@
   line-height:.94;
 }
 .apg-proof-value-v103.is-phrase{
-  display:inline-flex;
-  align-items:center;
-  min-height:35px;
-  padding:7px 11px;
-  border:1px solid rgba(37,99,235,.18);
-  border-radius:999px;
-  background:rgba(239,246,255,.58);
+  display:block;
+  min-height:0;
+  margin:0 0 9px;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
   color:#164E9A;
-  font-size:.82rem;
-  line-height:1;
-  letter-spacing:.005em;
+  font-size:1.02rem;
+  font-weight:850;
+  line-height:1.12;
+  letter-spacing:-.018em;
 }
 .apg-proof-card-v103 h3{
   margin:0 0 8px;
@@ -209,42 +211,45 @@
 }
 
 @media(max-width:780px){
+  .apg-proof-rail-v103{
+    margin-top:-20px;
+  }
   .apg-proof-shell-v103{
-    padding-top:16px!important;
-    padding-bottom:14px!important;
+    padding-top:14px!important;
+    padding-bottom:12px!important;
   }
   .apg-proof-stage-v103{
     padding-inline:46px;
   }
   .apg-proof-card-v103{
     flex-basis:100%;
-    min-height:224px;
-    padding:18px 18px 17px;
+    min-height:208px;
+    padding:16px 17px 15px;
   }
   .apg-proof-kicker-v103{
     min-height:0;
-    margin-bottom:8px;
-    font-size:.64rem;
-    letter-spacing:.095em;
+    margin-bottom:7px;
+    font-size:.62rem;
+    letter-spacing:.09em;
   }
-  .apg-proof-value-v103{margin-bottom:8px}
+  .apg-proof-value-v103{margin-bottom:7px}
   .apg-proof-value-v103.is-metric{
-    font-size:2.9rem;
+    font-size:2.75rem;
     line-height:.94;
   }
   .apg-proof-value-v103.is-phrase{
-    min-height:32px;
-    padding:6px 10px;
-    font-size:.76rem;
+    margin-bottom:7px;
+    font-size:.96rem;
+    line-height:1.12;
   }
   .apg-proof-card-v103 h3{
-    font-size:1.03rem;
-    line-height:1.2;
-    margin-bottom:7px;
+    font-size:1rem;
+    line-height:1.18;
+    margin-bottom:6px;
   }
   .apg-proof-card-v103 p{
-    font-size:.76rem;
-    line-height:1.39;
+    font-size:.74rem;
+    line-height:1.36;
   }
   .apg-proof-arrow-v103{
     top:calc(50% - 12px);
@@ -259,15 +264,15 @@
 @media(max-width:420px){
   .apg-proof-stage-v103{padding-inline:43px}
   .apg-proof-card-v103{
-    min-height:228px;
-    padding:17px 16px 16px;
+    min-height:208px;
+    padding:15px 15px 14px;
     border-radius:16px;
   }
-  .apg-proof-kicker-v103{font-size:.60rem;letter-spacing:.085em}
-  .apg-proof-value-v103.is-metric{font-size:2.7rem}
-  .apg-proof-value-v103.is-phrase{font-size:.72rem}
-  .apg-proof-card-v103 h3{font-size:.99rem}
-  .apg-proof-card-v103 p{font-size:.73rem}
+  .apg-proof-kicker-v103{font-size:.58rem;letter-spacing:.082em}
+  .apg-proof-value-v103.is-metric{font-size:2.6rem}
+  .apg-proof-value-v103.is-phrase{font-size:.92rem}
+  .apg-proof-card-v103 h3{font-size:.96rem}
+  .apg-proof-card-v103 p{font-size:.70rem}
 }
 
 @media(prefers-reduced-motion:reduce){
