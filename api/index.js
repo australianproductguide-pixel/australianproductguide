@@ -1,7 +1,7 @@
-// APG Action 7 Scout + Decision Lab Intelligence v101.5 is the authoritative outermost runtime layer.
+// APG Action 7 Scout + Decision Lab Intelligence v101.6 is the authoritative outermost runtime layer.
 // It preserves Scout v5 and Decision Engine v4, retains v101.4 state/evidence/retailer integration,
-// and closes Decision Lab rendered evidence parity so verified Action 4 criteria cannot be described
-// by legacy rendering as undocumented.
+// and closes Decision Lab rendered evidence parity across both res.write and res.end output.
+// Compatibility lineage: module.exports=require('../lib/action7-closure-v1015')
 // Compatibility lineage: module.exports=require('../lib/action7-scout-decision-v1014')
 // Compatibility lineage: module.exports=require('../lib/action7-scout-decision-v1013')
 // Compatibility lineage: module.exports=require('../lib/action7-scout-decision-v1012')
@@ -22,4 +22,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/action7-closure-v1015');
+module.exports=require('../lib/action7-closure-v1016');
