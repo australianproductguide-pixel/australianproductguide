@@ -12,6 +12,7 @@ function enhance(root){
   const progress=root.querySelector('[data-proof-progress]');
   const current=root.querySelector('[data-proof-current]');
   const total=root.querySelector('[data-proof-total]');
+  const dots=[...root.querySelectorAll('[data-proof-dot]')];
   if(!track||!cards.length||!previous||!next)return;
 
   let frame=0;
@@ -47,6 +48,7 @@ function enhance(root){
     previous.setAttribute('aria-disabled',String(atStart));
     next.setAttribute('aria-disabled',String(atEnd));
     if(current)current.textContent=String(index+1);
+    dots.forEach((dot,dotIndex)=>dot.classList.toggle('is-active',dotIndex===index));
     if(progress)progress.setAttribute('aria-label',`Proof ${index+1} of ${cards.length}`);
   };
   const requestUpdate=()=>{
