@@ -15,6 +15,8 @@
 // Compatibility lineage: module.exports=require('../lib/action4-closure-v971')
 // Compatibility lineage: module.exports=require('../lib/action4-closure-v97')
 // Compatibility lineage: module.exports=require('../lib/action4-decision-evidence-v96')
+// Protected historical release-control lineage: module.exports=require('../lib/brand-mark-canonical-parity-v91')
+// Protected historical release-control lineage: module.exports=require('../lib/action3-search-commerce-v90')
 require('../lib/scout-concierge-v5-runtime');
 require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
