@@ -1,11 +1,12 @@
 'use strict';
 const assert=require('node:assert/strict');
-const action5=require('../lib/action5-strategic-closure-v100');
+const action5=require('../lib/action5-demand-ranking-v1001');
 const amazon=require('../data/amazon-au-mappings-v33');
 const scout=require('../lib/scout-concierge-v5');
 
 const x=action5.structuralSnapshot();
 assert.equal(x.version,'100.0');
+assert.equal(action5.ACTION5_DEMAND_RANKING_VERSION,'100.1');
 assert.equal(x.amazon.total,482,'Action 5 must recount the full maintained catalogue');
 assert.equal(x.amazon.exact,18,'Verified exact mappings must remain evidence-backed');
 assert.equal(x.amazon.variant,12,'Verified variant mappings must remain evidence-backed');
@@ -34,6 +35,13 @@ assert.equal(x.gate.checks.recommendationSafety,true);
 assert.equal(x.gate.status,'GREEN',`Action 5 v100 blockers: ${x.gate.blockers.join(', ')}`);
 assert.equal(x.strategicGate.status,'GREEN_WITH_LIVE_DEMAND_QUEUE');
 
+const observed={productId:'observed-product',signals:{affiliateClicks:2,gscClicks:0,gscImpressions:0,productViews:0,comparisonSignals:0,saveSignals:0,scoutSignals:0,decisionSignals:0,observedEvents:2}};
+const unobserved={productId:'aaa-zero-product',signals:{affiliateClicks:0,gscClicks:0,gscImpressions:0,productViews:0,comparisonSignals:0,saveSignals:0,scoutSignals:0,decisionSignals:0,observedEvents:0}};
+const ranked=action5.rankCandidates([unobserved,observed]);
+assert.equal(ranked[0].productId,'observed-product','Observed product demand must outrank stable-ID ordering when a real signal exists');
+assert.equal(ranked[0].demandRank,1);
+assert.ok(action5.compareDemandRows(observed,unobserved)<0,'Demand comparator must order measured commerce engagement first');
+
 const recalled=action5.safeAmazonRecord(scout.core.PRODUCT_BY_SLUG.get(action5.RECALL_SLUG));
 assert.equal(recalled.matchStatus,'NO_SAFE_PATH_RECALL');
 assert.equal(recalled.url,null);
@@ -57,4 +65,4 @@ assert.equal(exact.actions.find(a=>a&&a.affiliate)?.label,'View on Amazon Austra
 assert.equal(variant.actions.find(a=>a&&a.affiliate)?.label,'View available variant on Amazon Australia');
 assert.equal(variant.meta.amazonAu.matchStatus,'VARIANT_VERIFIED');
 
-console.log(`ACTION5_STRATEGIC_CLOSURE_V100_GREEN exact=${x.amazon.exact} variant=${x.amazon.variant} fallback=${x.amazon.fallback} noSafe=${x.amazon.noSafePath} p1Open=${x.p1.open} p2=${x.priority.counts.P2} broaderExactDestinations=${x.retailers.exactDestinationCount}`);
+console.log(`ACTION5_STRATEGIC_CLOSURE_V1001_GREEN exact=${x.amazon.exact} variant=${x.amazon.variant} fallback=${x.amazon.fallback} noSafe=${x.amazon.noSafePath} p1Open=${x.p1.open} p2=${x.priority.counts.P2} broaderExactDestinations=${x.retailers.exactDestinationCount} demandOrdering=measured-first`);
