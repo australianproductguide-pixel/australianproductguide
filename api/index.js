@@ -1,7 +1,11 @@
-// APG Action 5 Retailer Integrity v99 is the authoritative outermost runtime layer.
+// APG Action 5 Strategic Closure v100 is the authoritative outermost runtime layer.
+// It closes the four v99 P1 retailer-identity cases without guessing ASINs, suppresses
+// commerce for recalled Anker A1647, and adds a live product-level demand priority endpoint.
+// Compatibility lineage: module.exports=require('../lib/action5-retailer-integrity-v99')
+//
+// APG Action 5 Retailer Integrity v99 remains authoritative immediately underneath v100.
 // It preserves exact/variant/fallback retailer truth, adds a fresh whole-estate retailer
-// recount and risk-based mapping freshness gate, and exposes one Action 5 certification
-// endpoint without changing recommendation ranking or introducing retailer automation.
+// recount and risk-based mapping freshness gate without changing recommendation ranking.
 // Compatibility lineage: module.exports=require('../lib/action4-final-v981')
 //
 // APG Action 4 Final Closure v98.1 remains authoritative immediately underneath v99.
@@ -131,4 +135,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/action5-retailer-integrity-v99');
+module.exports=require('../lib/action5-strategic-closure-v100');
