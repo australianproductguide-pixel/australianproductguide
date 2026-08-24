@@ -30,7 +30,7 @@ assert(!cards.some(card=>['AU','SRC','FIT'].includes(card.value)),'cryptic proof
 
 const html=proof.ApgProofRail(stats);
 assert((html.match(/data-proof-card/g)||[]).length===5,'SSR output must contain five proof cards');
-assert((html.match(/data-proof-dot/g)||[]).length===5,'SSR output must contain five progress indicators');
+assert((html.match(/data-proof-dot>/g)||[]).length===5,'SSR output must contain five progress indicators');
 assert(html.includes('aria-label="Australian Product Guide proof rail"'),'semantic section label missing');
 assert(html.includes('aria-label="Previous proof"'),'previous control accessible label missing');
 assert(html.includes('aria-label="Next proof"'),'next control accessible label missing');
