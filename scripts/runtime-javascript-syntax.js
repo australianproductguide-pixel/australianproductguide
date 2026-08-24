@@ -2,7 +2,6 @@ const http=require('http');
 const fs=require('fs');
 const path=require('path');
 const vm=require('vm');
-require('./apg-proof-rail-v103-qa');
 const app=require('../lib/account-release-reconcile');
 
 const runtimeAssets=[
