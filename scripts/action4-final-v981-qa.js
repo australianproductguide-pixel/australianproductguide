@@ -5,6 +5,11 @@ const {products,categories}=require('../data');
 const snap=runtime.action4FinalSnapshot();
 
 assert.strictEqual(snap.version,'98.1');
+assert.strictEqual(snap.schemaVersion,'category-decision-schema-v2.2');
+assert.strictEqual(snap.categoryDecisionSchemaVersion,'category-decision-schema-v2.2');
+assert.strictEqual(snap.evidenceDepth.schemaVersion,'category-decision-schema-v2.2');
+assert.strictEqual(snap.evidenceDepthStandardVersion,'evidence-depth-standard-v2.2');
+assert.strictEqual(snap.evidenceDepth.standard,'evidence-depth-standard-v2.2');
 assert.strictEqual(products.length,482,'maintained catalogue count changed unexpectedly');
 assert.strictEqual(Object.keys(categories).length,90,'maintained category count changed unexpectedly');
 
@@ -41,7 +46,8 @@ const expected={
 };
 for(const scenario of snap.parity.scenarios){assert(scenario.category,`${scenario.name} missing category binding`);assert(scenario.winner,`${scenario.name} missing winner`);assert.strictEqual(scenario.winner,expected[scenario.name],`${scenario.name} benchmark regressed`);assert(scenario.traceHash,`${scenario.name} missing shared trace`);}
 assert.strictEqual(snap.perCategoryDemand.status,'NOT_YET_MEASURED');
+assert.strictEqual(snap.action4Gate.checks.authoritativeSchemaSignal,true,'authoritative v2.2 schema signals must reconcile');
 assert.strictEqual(snap.action4Gate.status,'GREEN',`Action 4 final gate blockers: ${(snap.action4Gate.blockers||[]).join(', ')}`);
 assert.strictEqual(snap.action4Gate.evidenceBacklogStatus,'ONGOING_MAINTENANCE');
 
-console.log(JSON.stringify({ok:true,version:snap.version,gate:snap.action4Gate.status,entities:{reviewed:snap.entityIntegrity.reviewed,resolved:snap.entityIntegrity.resolved,open:snap.entityIntegrity.open},commerce:{reviewed:snap.commerceRevalidation.reviewed,complete:snap.commerceRevalidation.complete,exactDestinations:snap.commerceRevalidation.exactDestinationCount,noExactCurrentDestination:snap.commerceRevalidation.noExactCurrentDestinationCount},depth:{categories:snap.evidenceDepth.categoryCount,products:snap.evidenceDepth.products,strong:snap.evidenceDepth.strong,below:snap.evidenceDepth.below,strongPct:snap.evidenceDepth.strongPct,firstWave:snap.evidenceDepth.firstWave,topGaps:snap.evidenceDepth.priorityGapBacklog.slice(0,10)},parity:snap.parity.scenarios.map(s=>({name:s.name,winner:s.winner,category:s.category})),demand:snap.perCategoryDemand.status},null,2));
+console.log(JSON.stringify({ok:true,version:snap.version,schemaVersion:snap.schemaVersion,depthStandard:snap.evidenceDepthStandardVersion,gate:snap.action4Gate.status,entities:{reviewed:snap.entityIntegrity.reviewed,resolved:snap.entityIntegrity.resolved,open:snap.entityIntegrity.open},commerce:{reviewed:snap.commerceRevalidation.reviewed,complete:snap.commerceRevalidation.complete,exactDestinations:snap.commerceRevalidation.exactDestinationCount,noExactCurrentDestination:snap.commerceRevalidation.noExactCurrentDestinationCount},depth:{categories:snap.evidenceDepth.categoryCount,products:snap.evidenceDepth.products,strong:snap.evidenceDepth.strong,below:snap.evidenceDepth.below,strongPct:snap.evidenceDepth.strongPct,firstWave:snap.evidenceDepth.firstWave,topGaps:snap.evidenceDepth.priorityGapBacklog.slice(0,10)},parity:snap.parity.scenarios.map(s=>({name:s.name,winner:s.winner,category:s.category})),demand:snap.perCategoryDemand.status},null,2));
