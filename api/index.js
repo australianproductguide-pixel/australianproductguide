@@ -1,4 +1,11 @@
-// APG Legacy Account-Sync Mobile Alignment v95 is the authoritative outermost runtime layer.
+// APG Action 4 Decision Evidence v96 is the authoritative outermost runtime layer.
+// It applies product-entity lifecycle controls, category decision schemas, evidence-aware
+// criterion scoring and one trace contract across Decision Lab, Scout and comparison.
+// Unknown evidence contributes zero; classification-only context cannot masquerade as
+// verified decision evidence; affiliate/retailer participation remains zero-weight.
+// Compatibility lineage: module.exports=require('../lib/legacy-account-sync-mobile-alignment-v95')
+//
+// APG Legacy Account-Sync Mobile Alignment v95 remains authoritative immediately underneath v96.
 // It targets the older [data-account-panel] rendered on /my-apg/, whose Email/Password
 // markup differs from the newer .apg-account-shell corrected in v94. On mobile it forces
 // one labelled full-width field per row and an even action layout without changing auth,
@@ -100,4 +107,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/legacy-account-sync-mobile-alignment-v95');
+module.exports=require('../lib/action4-decision-evidence-v96');
