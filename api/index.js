@@ -1,4 +1,9 @@
-// APG Action 4.1 Closure v97 is the authoritative outermost runtime layer.
+// APG Action 4.1 Closure v97.1 is the authoritative outermost runtime layer.
+// It reconciles live reporting for category-bound parity scenarios and category-specific
+// depth evidence, while keeping newly resolved retailer mappings in revalidation state.
+// Compatibility lineage: module.exports=require('../lib/action4-closure-v97')
+//
+// APG Action 4.1 Closure v97 remains immediately underneath v97.1.
 // It closes first-wave entity/evidence gaps, canonicalises intent aliases, removes
 // category nouns from preference scoring, adds category-specific depth recounting and
 // certifies one shared decision trace across Decision Lab, Scout and comparison.
@@ -113,4 +118,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/action4-closure-v97');
+module.exports=require('../lib/action4-closure-v971');
