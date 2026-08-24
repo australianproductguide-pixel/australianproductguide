@@ -1,4 +1,10 @@
-// APG Action 4 Final Closure v98.1 is the authoritative outermost runtime layer.
+// APG Action 5 Retailer Integrity v99 is the authoritative outermost runtime layer.
+// It preserves exact/variant/fallback retailer truth, adds a fresh whole-estate retailer
+// recount and risk-based mapping freshness gate, and exposes one Action 5 certification
+// endpoint without changing recommendation ranking or introducing retailer automation.
+// Compatibility lineage: module.exports=require('../lib/action4-final-v981')
+//
+// APG Action 4 Final Closure v98.1 remains authoritative immediately underneath v99.
 // It resolves the final entity exceptions, completes nine commerce revalidations,
 // defines Evidence Depth v2 requirements across all 90 maintained categories and
 // recounts the full maintained catalogue while preserving the first-wave decision engine.
@@ -74,8 +80,9 @@
 // while preserving accessibility, SEO, agentic browsing and the v87 measurement path.
 // Compatibility lineage: module.exports=require('../lib/action2-measurement-v87')
 //
-// APG Action 2 Measurement Truth v87 remains authoritative immediately underneath.
-// It closes the proven Scout -> Amazon attribution gap without expanding data scope.
+// APG Action 2 Measurement Truth v87.1 remains authoritative immediately underneath.
+// It preserves Scout -> Amazon attribution while distinguishing verified variants from
+// exact ASIN interactions without expanding data collection or sending raw Scout text.
 // Compatibility lineage: module.exports=require('../lib/category-page-polish-v86')
 //
 // APG Category Page Polish v86 remains authoritative immediately underneath v87.
@@ -124,4 +131,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/action4-final-v981');
+module.exports=require('../lib/action5-retailer-integrity-v99');
