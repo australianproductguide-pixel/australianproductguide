@@ -36,6 +36,10 @@ assert(html.includes('aria-label="Previous proof"'),'previous control accessible
 assert(html.includes('aria-label="Next proof"'),'next control accessible label missing');
 assert(html.includes('data-proof-current>1</strong>'),'screen-reader progress state missing');
 assert(html.includes('apg-proof-dot-v103 is-active'),'first progress indicator must be active in SSR');
+assert(html.includes('data-apg-proof-autoplay="5000"'),'five-second autoplay contract missing from SSR');
+assert(html.includes('data-proof-autoplay-toggle'),'autoplay pause/resume control missing');
+assert(html.includes('aria-label="Pause automatic proof rotation"'),'autoplay control accessible label missing');
+assert(html.includes('aria-live="off"'),'automatic rotation must not create repetitive live-region announcements');
 assert(!/apg-proof-mark-v103/.test(html),'legacy split-flap proof marks must be removed');
 assert(html.includes(`data-apg-proof-products="${stats.products}"`),'SSR product provenance marker missing');
 assert(html.includes(`data-apg-proof-categories="${stats.categories}"`),'SSR category provenance marker missing');
@@ -64,16 +68,31 @@ assert(/background\s*:\s*transparent/i.test(phraseBlock),'phrase proof must not 
 assert(/background\s*:\s*rgba\(255,255,255,\.135\)/i.test(css),'decorative proof circles must use the softened opacity');
 assert(/width\s*:\s*44px/i.test(css)&&/height\s*:\s*44px/i.test(css),'arrow touch targets must remain at least 44px');
 assert(/apg-proof-dot-v103\.is-active[\s\S]*?width\s*:\s*22px/i.test(css),'active pill progress treatment missing');
+assert(/apg-proof-autoplay-toggle-v103[\s\S]*?width\s*:\s*24px[\s\S]*?height\s*:\s*24px/i.test(css),'compact autoplay control sizing missing');
+assert(/apg-proof-autoplay-toggle-v103\.is-paused[\s\S]*?is-play/i.test(css),'pause/resume visual state missing');
 assert(!/#1C1E20 0 48%/.test(css),'legacy black split-flap visual treatment must be removed');
 assert(/prefers-reduced-motion\s*:\s*reduce/i.test(css),'reduced-motion support missing');
+assert(/prefers-reduced-motion\s*:\s*reduce[\s\S]*?apg-proof-autoplay-toggle-v103\s*\{display:none!important\}/i.test(css),'autoplay control must disappear when reduced motion disables rotation');
 
 const js=fs.readFileSync(path.join(__dirname,'..','public','assets','apg-proof-rail-v103.js'),'utf8');
 new vm.Script(js,{filename:'apg-proof-rail-v103.js'});
-assert(!/setInterval\s*\(/.test(js),'autoplay/timer rotation is not permitted');
-assert(!/autoplay/i.test(js),'autoplay must not be introduced');
+assert(/const AUTO_DELAY=5000;/.test(js),'autoplay must hold each proof for five seconds');
+assert(/window\.setTimeout\([\s\S]*?AUTO_DELAY\)/.test(js),'autoplay must use a resettable five-second timeout');
+assert(!/setInterval\s*\(/.test(js),'autoplay must remain resettable rather than using an uncontrolled interval');
+assert(js.includes('direction>0&&atEnd()')&&js.includes("moveTo('start')"),'forward navigation must wrap from the final proof to the first');
+assert(js.includes('direction<0&&atStart()')&&js.includes("moveTo('end')"),'reverse navigation must wrap from the first proof to the final proof');
+assert(js.includes('touchStartedAtEnd&&delta<=-SWIPE_THRESHOLD'),'an additional forward swipe at the end must wrap to the first proof');
+assert(js.includes('touchStartedAtStart&&delta>=SWIPE_THRESHOLD'),'an additional reverse swipe at the start must wrap to the final proof');
 assert(js.includes("event.key==='ArrowLeft'")&&js.includes("event.key==='ArrowRight'"),'keyboard arrow navigation missing');
 assert(js.includes("event.key==='Home'")&&js.includes("event.key==='End'"),'keyboard boundary navigation missing');
 assert(js.includes("matchMedia('(prefers-reduced-motion: reduce)')"),'JS reduced-motion preference missing');
+assert(js.includes("matchMedia('(max-width: 780px)')"),'autoplay must remain scoped to the one-card mobile mode');
+assert(js.includes('!reduceMotion.matches')&&js.includes('mobileMode.matches'),'autoplay eligibility must respect reduced motion and mobile mode');
+assert(js.includes("document.visibilityState!=='hidden'")&&js.includes("document.addEventListener('visibilitychange'"),'autoplay must stop while the page is hidden');
+assert(js.includes("'IntersectionObserver' in window")&&js.includes('intersectionRatio>=0.25'),'autoplay must only run while the rail is meaningfully visible');
+assert(js.includes("root.addEventListener('focusin'")&&js.includes("root.addEventListener('pointerenter'"),'autoplay must pause during keyboard/pointer interaction');
+assert(js.includes("Resume automatic proof rotation")&&js.includes("Pause automatic proof rotation"),'explicit pause/resume control logic missing');
 assert(js.includes("classList.toggle('is-active'"),'progress indicators must follow active proof state');
+assert(js.includes('previous.disabled=false')&&js.includes('next.disabled=false'),'looping arrows must not expose a dead end state');
 
-console.log(`APG_PROOF_RAIL_V103_QA=PASS version=${proof.VERSION} products=${stats.products} categories=${stats.categories} brands=${stats.brands} cards=${cards.length} premium=final-polish`);
+console.log(`APG_PROOF_RAIL_V103_QA=PASS version=${proof.VERSION} products=${stats.products} categories=${stats.categories} brands=${stats.brands} cards=${cards.length} premium=autoplay-loop`);
