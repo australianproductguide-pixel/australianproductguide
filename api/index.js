@@ -1,4 +1,10 @@
-// APG Action 4 Decision Evidence v96 is the authoritative outermost runtime layer.
+// APG Action 4.1 Closure v97 is the authoritative outermost runtime layer.
+// It closes first-wave entity/evidence gaps, canonicalises intent aliases, removes
+// category nouns from preference scoring, adds category-specific depth recounting and
+// certifies one shared decision trace across Decision Lab, Scout and comparison.
+// Compatibility lineage: module.exports=require('../lib/action4-decision-evidence-v96')
+//
+// APG Action 4 Decision Evidence v96 remains authoritative immediately underneath v97.
 // It applies product-entity lifecycle controls, category decision schemas, evidence-aware
 // criterion scoring and one trace contract across Decision Lab, Scout and comparison.
 // Unknown evidence contributes zero; classification-only context cannot masquerade as
@@ -107,4 +113,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/action4-decision-evidence-v96');
+module.exports=require('../lib/action4-closure-v97');
