@@ -1,4 +1,9 @@
-// APG Action 5 Demand Ranking v100.1 is the authoritative outermost runtime layer.
+// APG Action 5 Recall Surface Closure v100.2 is the authoritative outermost runtime layer.
+// It removes residual Amazon discovery/structured-data references from recalled Anker A1647
+// while preserving the corrected product-level demand queue and all earlier Action 5 controls.
+// Compatibility lineage: module.exports=require('../lib/action5-demand-ranking-v1001')
+//
+// APG Action 5 Demand Ranking v100.1 remains authoritative immediately underneath v100.2.
 // It corrects v100 product-level demand ordering so observed GA4/GSC signals outrank
 // zero-observation ties while preserving retailer integrity, recall suppression and privacy.
 // Compatibility lineage: module.exports=require('../lib/action5-strategic-closure-v100')
@@ -140,4 +145,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/action5-demand-ranking-v1001');
+module.exports=require('../lib/action5-recall-surface-v1002');
