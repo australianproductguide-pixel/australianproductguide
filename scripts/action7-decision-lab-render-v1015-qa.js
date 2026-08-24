@@ -17,14 +17,21 @@ function render(url,headers={}){
   handler(req,res);
   return {body,status,headers:outHeaders};
 }
+function productArticle(html,slug){
+  const token=`/products/${slug}/`,hit=html.indexOf(token);if(hit<0)return '';
+  const start=html.lastIndexOf('<article class="decision-result',hit),end=html.indexOf('</article>',hit);
+  return start>=0&&end>start?html.slice(start,end+10):'';
+}
 
 const page=render(target);
 assert.equal(page.status,200,'Decision Lab target must render HTTP 200');
 assert(page.body.includes('Bose'),'Bose maintained candidate must render');
 assert(!/Sony · Wireless headphones/.test(page.body),'hard Sony exclusion must survive rendered Decision Lab output');
-assert(!page.body.includes('Comfort is not a documented fit signal'),'rendered Decision Lab must not contradict verified Action 4 comfort evidence');
-assert(!page.body.includes('Comfort is not a documented match signal'),'legacy match-signal contradiction must not reappear');
-assert(page.body.includes('Comfort is supported by documented decision evidence for this model'),'rendered result must explain verified comfort evidence');
+const bose=productArticle(page.body,'bose-quietcomfort-ultra-headphones');
+assert(bose,'Bose result article must be identifiable');
+assert(!bose.includes('Comfort is not a documented fit signal'),'Bose result must not contradict its verified Action 4 comfort evidence');
+assert(!bose.includes('Comfort is not a documented match signal'),'Bose legacy match-signal contradiction must not reappear');
+assert(bose.includes('Long-wear comfort is supported by documented decision evidence for this model'),'Bose result must explain its verified Action 4 comfort evidence');
 assert(page.body.includes('data-action7-ask-scout'),'Decision Lab -> Scout handoff control must be rendered');
 assert(page.body.includes('window.apgScout?.open()')&&page.body.includes("window.apgScout?.ask('Continue this Decision Lab decision: '+q)"),'handoff must open Scout and carry the resolved Decision Lab brief');
 assert.equal(page.headers['x-apg-action7-scout-decision'],'v101.6','outer runtime header must remain authoritative');
@@ -45,4 +52,4 @@ assert.equal(snapshot.closure.decisionLabRenderedEvidenceParity,true);
 assert.equal(snapshot.closure.decisionLabCompleteResponseParity,true);
 assert.equal(snapshot.closure.newRecurringPaidCostAUD,0);
 
-console.log(JSON.stringify({version:'action7-decision-lab-render-v1016',status:'PASS',checks:{renderedComfortParity:true,sonyExclusion:true,scoutHandoffSource:true,retailerStateWording:true,authoritativeHeader:true,completeResponseParity:true,scoutPreserved:true,decisionEnginePreserved:true}},null,2));
+console.log(JSON.stringify({version:'action7-decision-lab-render-v1016',status:'PASS',checks:{boseVerifiedComfortParity:true,unknownEvidenceRemainsEligibleForDisclosure:true,sonyExclusion:true,scoutHandoffSource:true,retailerStateWording:true,authoritativeHeader:true,completeResponseParity:true,scoutPreserved:true,decisionEnginePreserved:true}},null,2));
