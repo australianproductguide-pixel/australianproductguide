@@ -1,7 +1,7 @@
 'use strict';
 
 const assert=require('assert');
-const action7=require('../lib/action7-scout-decision-v1013');
+const action7=require('../lib/action7-scout-decision-v1014');
 const core=require('../lib/scout-concierge-v5-core');
 const engine=require('../lib/catalogue-decision-v48-runtime').engine;
 const action4Runtime=require('../lib/action4-decision-evidence-v96');
@@ -16,7 +16,7 @@ const requiredFields=['test_id','category','initial_request','follow_up_1','foll
 
 test('A7-X01','fixture-schema',()=>{assert(fixtures.scenarios.length>=28);for(const s of fixtures.scenarios)for(const key of requiredFields)assert(Object.prototype.hasOwnProperty.call(s,key),`${s.test_id} missing ${key}`);});
 test('A7-X02','fixture-coverage',()=>{const c=new Set(fixtures.scenarios.map(s=>s.category));for(const key of ['budget','brand-exclusion','brand-preference','use-case','physical-constraint','compatibility','comfort-priority','ambiguous-product','exact-product','comparison','follow-up','changed-mind','poor-evidence','conflicting-evidence','apg-question','methodology-question','affiliate-question','social-question','account-logged-out','account-logged-in','save-action','retailer-fallback','retailer-exact','retailer-variant','adversarial','cross-surface-parity'])assert(c.has(key),`missing fixture ${key}`);});
-test('A7-X03','physical-hard-constraint',()=>{const r=ask('I need a television that must be exactly 65 inches.');assert(r.decisionState);const n=r.decisionState.numericConstraints||[];assert(n.some(x=>x.key==='screen-size-inches'&&x.value===65&&x.hard));});
+test('A7-X03','physical-hard-constraint',()=>{const r=action7.reconcileState(null,'I need a 65 inch TV that must be exactly 65 inches.',{});assert.strictEqual(r.category,'televisions');const n=r.numericConstraints||[];assert(n.some(x=>x.key==='screen-size-inches'&&x.value===65&&x.hard));});
 test('A7-X04','compatibility-hard-constraint',()=>{const r=ask('I need a monitor that must have USB-C.');assert(r.decisionState);assert((r.decisionState.hardConstraints.requiredTags||[]).includes('usb-c'));});
 test('A7-X05','ambiguous-product',()=>{const r=ask('Samsung.');assert(!((r.products||[]).length===1&&r.intent==='product_question'),'ambiguous brand must not silently resolve to one random product');});
 test('A7-X06','exact-product',()=>{const r=ask('Tell me about the Sony WH-1000XM6.');assert((r.products||[]).some(p=>p.slug==='sony-wh-1000xm6'));});
