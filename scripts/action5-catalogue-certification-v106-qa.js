@@ -5,12 +5,12 @@ const snap=runtime.amazonCatalogueCertificationSnapshot();
 
 assert.equal(snap.version,'106.0');
 assert.equal(snap.catalogue.total,482,'maintained catalogue must reconcile to current 482-product baseline');
-assert.equal(snap.amazon.exactVerified,19,'exact-direct count must include the verified eufy S1 Pro promotion');
-assert.equal(snap.amazon.verifiedVariation,13,'verified-variation count must include the Sony ULT WEAR colour variant');
-assert.equal(snap.amazon.totalVerifiedDirect,32,'verified direct coverage must reconcile after the v106.1 promotions');
-assert.equal(snap.amazon.searchFallback,449,'only unresolved products may remain on model-specific Amazon AU search fallbacks');
-assert.equal(snap.investigation.documentedFallbackExceptions,3,'the three evidence-bound fallback exceptions remain documented');
-assert.equal(snap.investigation.investigationRequired,446,'two former P2 fallbacks must leave the investigation queue after verified promotion');
+assert.equal(snap.amazon.exactVerified,20,'exact-direct count must include the verified Philips NA353/10 promotion');
+assert.equal(snap.amazon.verifiedVariation,13,'verified-variation count must preserve the Sony ULT WEAR colour variant');
+assert.equal(snap.amazon.totalVerifiedDirect,33,'verified direct coverage must reconcile after the v106.2 promotion');
+assert.equal(snap.amazon.searchFallback,448,'only unresolved or evidence-bound exception products may remain on model-specific Amazon AU search fallbacks');
+assert.equal(snap.investigation.documentedFallbackExceptions,3,'two prior coffee-machine exceptions plus the investigated Makita DHP485Z exception remain documented');
+assert.equal(snap.investigation.investigationRequired,445,'the promoted Philips item and newly documented Makita case must leave their prior unresolved states correctly');
 assert.equal(snap.amazon.exactVerified+snap.amazon.verifiedVariation+snap.amazon.searchFallback+snap.amazon.noSuitableAmazonDestination,snap.catalogue.total,'every product must have one governed Amazon/safety state');
 assert.equal(snap.amazon.brokenOrUncontrolled,0,'no malformed or uncontrolled Amazon states may ship');
 assert.equal(snap.amazon.affiliateTagIntegrityPct,100,'every active Amazon pathway must carry the APG Associates tag');
@@ -34,6 +34,16 @@ assert.ok(sony,'Sony ULT WEAR must be present in verified direct catalogue');
 assert.equal(sony.currentPathwayType,'VARIANT_VERIFIED');
 assert.equal(sony.currentAsin,'B0CX1VYYQL');
 assert.equal(sony.lastVerifiedDate,'2026-08-25');
+const philips=snap.verifiedDirect.find(x=>x.slug==='philips-3000-series-dual-basket-na35310');
+assert.ok(philips,'Philips NA353/10 must be present in verified direct catalogue');
+assert.equal(philips.currentPathwayType,'EXACT_VERIFIED');
+assert.equal(philips.currentAsin,'B0DK74HSQC');
+assert.equal(philips.lastVerifiedDate,'2026-08-25');
+const makita=snap.remainingExceptions.find(x=>x.slug==='makita-dhp485-18v-brushless-hammer-driver-drill');
+assert.ok(makita,'Makita DHP485Z must remain as an evidence-bound fallback exception until its current Amazon AU detail-page identity is recovered');
+assert.equal(makita.verificationStatus,'DOCUMENTED_EXCEPTION');
+assert.equal(makita.potentialCandidateAsin,'B07KWN1ZWF');
+assert.match(makita.whyCandidateRejected,/Amazon Australia detail page/);
 for(const x of snap.remainingExceptions.filter(x=>x.verificationStatus==='DOCUMENTED_EXCEPTION')){
   assert.ok(x.reasonDirectMappingUnavailable);
   assert.ok(Array.isArray(x.searchesPerformed)&&x.searchesPerformed.length);
@@ -41,4 +51,4 @@ for(const x of snap.remainingExceptions.filter(x=>x.verificationStatus==='DOCUME
   assert.ok(x.lastChecked);
   assert.ok(x.nextReviewDate);
 }
-console.log(`APG Amazon catalogue certification v106.1 QA PASS: ${snap.amazon.totalVerifiedDirect} direct, ${snap.investigation.documentedFallbackExceptions} documented fallback exceptions, ${snap.investigation.investigationRequired} investigations required, ${snap.amazon.noSuitableAmazonDestination} safety-suppressed.`);
+console.log(`APG Amazon catalogue certification v106.2 QA PASS: ${snap.amazon.totalVerifiedDirect} direct, ${snap.investigation.documentedFallbackExceptions} documented fallback exceptions, ${snap.investigation.investigationRequired} investigations required, ${snap.amazon.noSuitableAmazonDestination} safety-suppressed.`);
