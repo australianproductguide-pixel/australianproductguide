@@ -1,17 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-labelledby="title">
   <title id="title">Australian Product Guide</title>
   <defs>
-    <linearGradient id="apgTop" x1="40" y1="32" x2="148" y2="80" gradientUnits="userSpaceOnUse">
+    <linearGradient id="apgTop" x1="54" y1="56" x2="154" y2="56" gradientUnits="userSpaceOnUse">
       <stop stop-color="#2563EB"/>
-      <stop offset="1" stop-color="#38BDF8"/>
+      <stop offset=".52" stop-color="#38A4F3"/>
+      <stop offset="1" stop-color="#2F8FEF"/>
     </linearGradient>
-    <linearGradient id="apgLegs" x1="32" y1="98" x2="158" y2="138" gradientUnits="userSpaceOnUse">
+    <linearGradient id="apgLeft" x1="26" y1="116" x2="81" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#315FD8"/>
+      <stop offset="1" stop-color="#2563EB"/>
+    </linearGradient>
+    <linearGradient id="apgRight" x1="128" y1="116" x2="182" y2="116" gradientUnits="userSpaceOnUse">
       <stop stop-color="#2563EB"/>
-      <stop offset="1" stop-color="#1D4ED8"/>
+      <stop offset="1" stop-color="#1E56C8"/>
     </linearGradient>
   </defs>
-  <rect width="192" height="192" rx="38" fill="#0F172A"/>
-  <path d="M39 78 70 31h52l31 47h-35L96 44 74 78H39Z" fill="url(#apgTop)"/>
-  <path d="M28 136 51 96h39l-27 40H28Zm136 0-23-40h-39l27 40h35Z" fill="url(#apgLegs)"/>
-  <path d="m96 81 29 53-29-14-29 14 29-53Z" fill="#FFFFFF"/>
+  <rect width="192" height="192" rx="34" fill="#0F172A"/>
+  <g transform="matrix(1.16 0 0 1.16 -24.64 -2.02)">
+    <path d="M54 81 86 83 105 51 123 83 154 83 125 32 83 33Z" fill="url(#apgTop)"/>
+    <path d="M81 96 48 96 26 135 59 137Z" fill="url(#apgLeft)"/>
+    <path d="M128 97 151 137 182 136 159 95Z" fill="url(#apgRight)"/>
+    <path d="M104 87 76 136 106 126 132 137Z" fill="#FFFFFF"/>
+  </g>
 </svg>
