@@ -1,4 +1,8 @@
-// APG Proof Rail v103.0 is the authoritative outermost homepage presentation layer.
+// APG Decision hard-constraint fallback remediation v103.6 is the authoritative outermost
+// correctness layer. It preserves the full v103.5 presentation/runtime chain and restores
+// the governed fallback state when every maintained candidate conflicts with a hard constraint.
+// Compatibility lineage: module.exports=require('../lib/apg-proof-rail-runtime-v103');
+// APG Proof Rail v103.0 is the authoritative outermost homepage presentation layer underneath.
 // It replaces only the legacy homepage proof banner with the SSR-first ApgProofRail,
 // preserving every downstream intelligence, commerce, account, SEO and analytics contract.
 // Compatibility lineage: module.exports=require('../lib/buying-guide-theme-alignment-v102');
@@ -56,4 +60,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/apg-proof-rail-runtime-v103');
+module.exports=require('../lib/decision-hard-constraint-fallback-v1036');
