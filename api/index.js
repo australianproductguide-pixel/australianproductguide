@@ -1,6 +1,10 @@
 // APG Search Opportunity Depth v104.0 is the authoritative outermost search-depth layer.
 // It deepens six deliberately selected high-intent category, guide and comparison journeys
 // while leaving the canonical Trust Centre source under its existing regression controls.
+// Compatibility lineage: module.exports=require('../lib/decision-hard-constraint-fallback-v1036');
+// APG Decision hard-constraint fallback remediation v103.6 remains authoritative underneath.
+// It preserves the full v103.5 presentation/runtime chain and restores explicit fallback
+// whenever a maintained-category hard constraint leaves zero eligible products.
 // Compatibility lineage: module.exports=require('../lib/apg-proof-rail-runtime-v103');
 // APG Proof Rail v103.0 remains authoritative underneath for the homepage presentation layer.
 // It replaces only the legacy homepage proof banner with the SSR-first ApgProofRail,
