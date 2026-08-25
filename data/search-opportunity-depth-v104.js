@@ -1,10 +1,10 @@
 'use strict';
 
 // APG Search Opportunity Depth v104.0
-// Six deliberately curated high-intent decision areas. This module deepens existing
-// category/guide/comparison routes; it does not create catalogue scale for its own sake.
-// The shortlist reflects APG's current maintained priority architecture (v41/v42), not
-// an invented claim about live Search Console demand.
+// Six deliberately curated high-intent decision areas. This deepens existing
+// category, guide and comparison routes without manufacturing new catalogue scale.
+// These are editorial priority areas derived from APG's maintained evidence/depth
+// programme; they are not presented as a claim about live Search Console demand.
 
 const VERSION='104.0';
 const REVIEWED='2026-08-25';
@@ -20,14 +20,8 @@ const categoryDepth=Object.freeze({
       'Treat the smart-TV platform as an ecosystem choice only after picture, size and connection requirements are satisfied.'
     ]),
     avoid:'Do not compare TVs by a single headline such as peak brightness, refresh rate or panel label. Those numbers can hide model-size differences and may not describe the room you actually watch in.',
-    verify:Object.freeze(['Exact Australian model and screen size','Dimensions with and without the stand','Required HDMI / gaming features on that exact model','Current retailer price, stock and warranty terms']),
-    pair:Object.freeze({
-      a:'lg-oled-evo-c6-55-inch-oled55c6psa',
-      b:'tcl-c8k-65-inch-premium-qd-miniled-tv',
-      aWhen:'Prioritise a 55-inch OLED option, Dolby Vision and high-refresh gaming features, and the room conditions suit OLED.',
-      bWhen:'Prioritise a larger 65-inch Mini LED option, bright-room intent and Google TV.',
-      tradeoffs:Object.freeze(['55-inch versus 65-inch fit and viewing distance','OLED versus Mini LED priorities','Room brightness and reflection conditions','Gaming inputs and exact refresh behaviour','Current Australian price gap'])
-    })
+    verify:Object.freeze(['Exact Australian model and screen size','Dimensions with and without the stand','Required HDMI and gaming features on that exact model','Current retailer price, stock and warranty terms']),
+    comparisonQuestions:Object.freeze(['Which screen size actually fits the room and viewing distance?','Which display technology better suits the room brightness and viewing mix?','Which exact HDMI, VRR and refresh features are required?','What compromise comes with the cheaper option?','Is the current Australian price gap worth the differences that matter to you?'])
   }),
   laptops:Object.freeze({
     label:'Laptops',
@@ -39,14 +33,8 @@ const categoryDepth=Object.freeze({
       'Check ports and docking needs for the way the laptop will actually be used at home, university or work.'
     ]),
     avoid:'Do not choose from benchmark headlines alone. A fast laptop can still be the wrong purchase when an application, peripheral, port, battery requirement or operating system does not fit the job.',
-    verify:Object.freeze(['Exact Australian configuration / model code','Required application and peripheral compatibility','Memory and storage configuration','Ports, charger and external-display requirements']),
-    pair:Object.freeze({
-      a:'apple-macbook-air-13-inch-m5',
-      b:'microsoft-surface-laptop-13-8-inch-8th-edition',
-      aWhen:'Prioritise macOS, Apple ecosystem fit and a light 13-inch-class laptop, and required software is compatible.',
-      bWhen:'Prioritise Windows, a touchscreen and the Surface form factor, and required Windows-on-Arm software and peripherals are compatible.',
-      tradeoffs:Object.freeze(['macOS versus Windows workflow','Application and peripheral compatibility','Touchscreen requirement','Ports and docking','Exact memory and storage configuration'])
-    })
+    verify:Object.freeze(['Exact Australian configuration or model code','Required application and peripheral compatibility','Memory and storage configuration','Ports, charger and external-display requirements']),
+    comparisonQuestions:Object.freeze(['Do both laptops run the software and peripherals you actually need?','Which operating-system ecosystem is the better long-term fit?','Are memory and storage sufficient for the ownership period?','Which display, battery, weight and port trade-offs matter in daily use?','Does the current Australian price gap buy capability you will use?'])
   }),
   'washing-machines':Object.freeze({
     label:'Washing machines',
@@ -57,15 +45,9 @@ const categoryDepth=Object.freeze({
       'Compare energy and water efficiency alongside the cycles you will actually use.',
       'Decide whether automatic dosing, quick cycles and connected features will genuinely change the weekly routine.'
     ]),
-    avoid:'Do not let an AI, app or quick-cycle label override the hard constraints: capacity, physical fit, water/energy use, cycle needs and serviceability.',
+    avoid:'Do not let an AI, app or quick-cycle label override the hard constraints: capacity, physical fit, water and energy use, cycle needs and serviceability.',
     verify:Object.freeze(['Cabinet dimensions and door clearance','Exact WELS and energy information for the model','Cycle conditions behind headline quick-wash claims','Current warranty, delivery and installation terms']),
-    pair:Object.freeze({
-      a:'samsung-bespoke-ai-front-load-washer-auto-dispense-9kg',
-      b:'lg-9kg-series-9-front-load-washer',
-      aWhen:'Prioritise a 9kg front loader with automatic dosing and Samsung SmartThings features.',
-      bWhen:'Prioritise a 9kg front loader with LG ThinQ, AI DD and the maintained fast-cycle option.',
-      tradeoffs:Object.freeze(['Automatic dosing preference','Normal versus quick-cycle use','Connected-home ecosystem','Installation depth and clearance','Current efficiency and retailer terms'])
-    })
+    comparisonQuestions:Object.freeze(['Which capacity fits normal household loads without unnecessary oversizing?','Will each machine physically fit the space, access path and door clearance?','How do water and energy requirements compare for the cycles you will actually use?','Will auto dosing, quick cycles or connected features change the routine?','What are the current delivery, installation and warranty differences?'])
   }),
   'coffee-machines':Object.freeze({
     label:'Coffee machines',
@@ -78,13 +60,7 @@ const categoryDepth=Object.freeze({
     ]),
     avoid:'Do not buy a premium machine because it has more drink names or automation if you actually want manual control — or buy a manual machine if the routine will stop you using it.',
     verify:Object.freeze(['Bench dimensions and clearances','Manual, guided or one-touch workflow','Milk system and cleaning routine','Current Australian retailer price and exact model']),
-    pair:Object.freeze({
-      a:'breville-barista-express-impress-bes876',
-      b:'breville-barista-touch-impress-bes881',
-      aWhen:'Prefer assisted dosing and tamping with a more hands-on espresso and manual milk workflow at a lower product tier.',
-      bWhen:'Prefer touchscreen guidance, assisted puck preparation and automatic milk, including the maintained cold-drink capability.',
-      tradeoffs:Object.freeze(['Manual versus touchscreen-guided workflow','Manual versus automatic milk preparation','Cold-drink requirement','Bench space','Current Australian price difference'])
-    })
+    comparisonQuestions:Object.freeze(['Which workflow will you still enjoy on a busy weekday?','How much milk automation or manual control do you actually want?','Will both machines fit the available bench space and cleaning routine?','Do cold drinks, bean switching or wider drink menus matter enough to pay for?','Which trade-off remains after the current Australian price difference is considered?'])
   }),
   'robot-vacuums':Object.freeze({
     label:'Robot vacuums',
@@ -96,14 +72,8 @@ const categoryDepth=Object.freeze({
       'Check thresholds, rugs and floor transitions that can determine whether automation works across the whole home.'
     ]),
     avoid:'Do not rank robot vacuums by stated Pa suction alone. Navigation, brush design, mopping, dock automation and the layout of the home can change the practical fit.',
-    verify:Object.freeze(['Dock footprint and servicing clearance','Mopping and station functions on the exact variant','Threshold / floor compatibility','Consumables, retailer support and current availability']),
-    pair:Object.freeze({
-      a:'eufy-robot-vacuum-omni-e28',
-      b:'ecovacs-deebot-x11-pro-omni',
-      aWhen:'Prioritise the maintained E28 combination of HydroJet mopping, Omni-station automation and the detachable portable deep cleaner.',
-      bWhen:'Prioritise the maintained X11 PRO OMNI obstacle-avoidance and fast-charge automation feature set.',
-      tradeoffs:Object.freeze(['Mopping system','Portable deep-cleaning requirement','Obstacle-avoidance priorities','Dock and maintenance workflow','Current Australian price and availability'])
-    })
+    verify:Object.freeze(['Dock footprint and servicing clearance','Mopping and station functions on the exact variant','Threshold and floor compatibility','Consumables, retailer support and current availability']),
+    comparisonQuestions:Object.freeze(['Which cleaning system better matches the floors, rugs and pet-hair load?','How much dock automation do you want to maintain and make room for?','Which model better handles the obstacles and transitions in the home?','Are the mopping differences meaningful for your floor mix?','What are the current consumable, support and Australian retailer differences?'])
   }),
   smartphones:Object.freeze({
     label:'Smartphones',
@@ -112,17 +82,11 @@ const categoryDepth=Object.freeze({
       'Start with iOS versus Android based on devices, apps, services and workflow — not brand loyalty alone.',
       'Choose phone size and weight for everyday handling before paying for a larger display or battery.',
       'Define the camera jobs that matter: everyday photos, zoom, video, low light or social capture.',
-      'Choose storage for the ownership period and check charging/accessory compatibility before purchase.'
+      'Choose storage for the ownership period and check charging and accessory compatibility before purchase.'
     ]),
     avoid:'Do not use one camera megapixel, benchmark score or AI feature as a proxy for the whole phone. Ecosystem, size, camera system, storage and support horizon all matter.',
-    verify:Object.freeze(['Exact Australian model and storage option','SIM / eSIM and carrier requirements','Charging accessories and standards','Software-support and warranty information from the manufacturer']),
-    pair:Object.freeze({
-      a:'apple-iphone-17',
-      b:'samsung-galaxy-s26',
-      aWhen:'Prioritise iOS, Apple ecosystem fit and the maintained 6.3-inch iPhone 17 feature set.',
-      bWhen:'Prioritise Android, Samsung ecosystem features and the maintained compact Galaxy S26 configuration.',
-      tradeoffs:Object.freeze(['iOS versus Android ecosystem','Camera-system priorities','Storage choice','Charging and accessory compatibility','Exact Australian price and plan / retailer terms'])
-    })
+    verify:Object.freeze(['Exact Australian model and storage option','SIM, eSIM and carrier requirements','Charging accessories and standards','Software-support and warranty information from the manufacturer']),
+    comparisonQuestions:Object.freeze(['Which ecosystem better fits your existing devices, apps and services?','Which size and weight is more comfortable for daily use?','Which camera system is stronger for the photos and video you actually take?','Which storage and charging setup will suit the ownership period?','Does the current Australian price gap justify the capability difference for you?'])
   })
 });
 
