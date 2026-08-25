@@ -1,4 +1,8 @@
-// APG Search Opportunity Depth v104.0 is the authoritative outermost search-depth layer.
+// APG Amazon Australia Catalogue Certification v106.0 is the authoritative outermost
+// retailer-certification control. It preserves Search Opportunity Depth v104 and the full
+// runtime lineage while applying the owner's stricter 25 August 2026 Action 5 completion gate.
+// Compatibility lineage: module.exports=require('../lib/search-opportunity-depth-v104-runtime');
+// APG Search Opportunity Depth v104.0 remains authoritative underneath for search-depth logic.
 // It deepens six deliberately selected high-intent category, guide and comparison journeys
 // while leaving the canonical Trust Centre source under its existing regression controls.
 // Compatibility lineage: module.exports=require('../lib/decision-hard-constraint-fallback-v1036');
@@ -64,4 +68,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/search-opportunity-depth-v104-runtime');
+module.exports=require('../lib/action5-catalogue-certification-v106-runtime');
