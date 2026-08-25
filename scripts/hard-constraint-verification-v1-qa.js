@@ -36,9 +36,9 @@ function render(url){
   assert(requiredChecked.hardFailures.some(x=>/required anc is not supported/i.test(x)),'required negative evidence must remain explainable');
 
   const excludedUnknownBase={p:{brand:'Example',specs:[['Battery','30 hours']]},eligibility:'eligible',reasons:[],gaps:[],conflicts:[],hardFailures:[],verificationNeeds:[]};
-  const excludedUnknown=verification.applyConstraintEvidence(excludedUnknownBase,{requiredTags:[],hardExcludedTags:['gaming']});
-  assert.equal(excludedUnknown.eligibility,'unverified','absence of positive evidence must not verify an exclusion');
-  assert(excludedUnknown.verificationNeeds.some(x=>/excluded gaming is absent/i.test(x)),'unverified exclusion must state the evidence gap');
+  const excludedUnknownChecked=verification.applyConstraintEvidence(excludedUnknownBase,{requiredTags:[],hardExcludedTags:['gaming']});
+  assert.equal(excludedUnknownChecked.eligibility,'unverified','absence of positive evidence must not verify an exclusion');
+  assert(excludedUnknownChecked.verificationNeeds.some(x=>/excluded gaming is absent/i.test(x)),'unverified exclusion must state the evidence gap');
 
   const excludedVerifiedBase={p:{brand:'Example',specs:[['Gaming','No']]},eligibility:'eligible',reasons:[],gaps:[],conflicts:[],hardFailures:[],verificationNeeds:[]};
   const excludedVerified=verification.applyConstraintEvidence(excludedVerifiedBase,{requiredTags:[],hardExcludedTags:['gaming']});
@@ -61,9 +61,9 @@ function render(url){
   assert.equal(anc.results[0]?.constraintVerification?.find(x=>x.key==='required:anc')?.state,'VERIFIED','known ANC evidence must verify the must-have');
   assert.equal(anc.results[0]?.hardConstraintStatus,'eligible');
 
-  const excludedUnknown=await render('/api/decision?q=wireless+headphones+must+not+have+gaming&category=wireless-headphones');
-  assert.equal(excludedUnknown.status,200);
-  const noGaming=JSON.parse(excludedUnknown.body);
+  const excludedUnknownResponse=await render('/api/decision?q=wireless+headphones+must+not+have+gaming&category=wireless-headphones');
+  assert.equal(excludedUnknownResponse.status,200);
+  const noGaming=JSON.parse(excludedUnknownResponse.body);
   assert.equal(noGaming.audit?.eligibleCount,0,'an exclusion with no absence proof must not leave products fully eligible');
   assert(noGaming.audit?.unverifiedCount>0,'unknown absence must produce unverified candidates');
   assert.equal(noGaming.audit?.hardConstraintFallback,true,'zero verified eligible candidates under a hard exclusion must enter fallback');
