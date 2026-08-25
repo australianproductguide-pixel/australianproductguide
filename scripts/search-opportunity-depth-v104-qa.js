@@ -3,6 +3,7 @@
 const assert=require('assert');
 const fs=require('fs');
 const pages=require('../lib/pages');
+const content=require('../lib/content');
 const depth=require('../lib/search-opportunity-depth-v104');
 const runtime=require('../lib/search-opportunity-depth-v104-runtime');
 const {categories}=require('../data');
@@ -53,15 +54,20 @@ for(const slug of TARGETS){
   has(pairHtml,'APG does not award a generic winner');
 }
 
-const about=depth.transformHtml(pages.trustPage(req,'about'),'/about/');
-has(about,'Reviewed 25 August 2026','About review date not reconciled');
-has(about,'id="search-feedback-loop"','About search feedback section missing');
-has(about,'depth over mass page creation');
-
-const updates=depth.transformHtml(pages.trustPage(req,'updates'),'/updates/');
-has(updates,'Reviewed 25 August 2026','Updates review date not reconciled');
-has(updates,'id="search-depth-25-aug"','25 August update record missing');
-has(updates,'High-intent decision depth and search feedback loop');
+// Step 1 reconciliation: About/Updates are already sourced from the canonical,
+// data-driven Trust Centre content. v104 must not create a competing runtime version
+// merely to change dates or react to a stale search-engine cache.
+const facts=content.__facts;
+assert(facts&&facts.products&&facts.categories&&facts.brands,'Canonical Trust Centre catalogue facts required');
+for(const slug of ['about','updates']){
+  const original=pages.trustPage(req,slug);
+  const transformed=depth.transformHtml(original,`/${slug}/`);
+  assert.strictEqual(transformed,original,`v104 must not mutate canonical Trust Centre route /${slug}/`);
+  has(original,`${facts.products} products`,`${slug} must use current data-driven product count`);
+  has(original,`${facts.categories} populated categories`,`${slug} must use current data-driven category count`);
+  assert(!/257 products/i.test(original),`${slug} contains superseded 257-product claim`);
+  assert(!/48 populated categories/i.test(original),`${slug} contains superseded 48-category claim`);
+}
 
 const untouched=pages.categoryPage(req,categories['air-fryers'],url('/categories/air-fryers/'));
 assert.strictEqual(depth.transformHtml(untouched,'/categories/air-fryers/'),untouched,'Non-target category must remain unchanged');
@@ -72,5 +78,5 @@ has(apiEntry,"module.exports=require('../lib/search-opportunity-depth-v104-runti
 console.log('SEARCH_OPPORTUNITY_DEPTH_V104=PASS');
 console.log(`TARGET_CATEGORIES=${TARGETS.length}`);
 console.log(`CURATED_PAIR_PAGES_TESTED=${TARGETS.length}`);
-console.log('ABOUT_UPDATES_RECONCILED=YES');
+console.log('ABOUT_UPDATES_SOURCE_RECONCILIATION=PASS');
 console.log('NEW_CATALOGUE_ROUTES_CREATED=0');
