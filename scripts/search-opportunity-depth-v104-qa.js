@@ -6,6 +6,7 @@ const pages=require('../lib/pages');
 const content=require('../lib/content');
 const depth=require('../lib/search-opportunity-depth-v104');
 const runtime=require('../lib/search-opportunity-depth-v104-runtime');
+const growth=require('../lib/search-opportunity-growth-v104');
 const {categories}=require('../data');
 const {pairPages,indexableRoutes}=require('../lib/routes');
 
@@ -17,6 +18,7 @@ function has(text,token,msg){assert(String(text).includes(token),msg||`Missing $
 assert.strictEqual(depth.VERSION,'104.0');
 assert.strictEqual(depth.REVIEWED,'2026-08-25');
 assert.strictEqual(runtime.SEARCH_OPPORTUNITY_DEPTH_VERSION,'104.0');
+assert.strictEqual(growth.VERSION,'104.0');
 assert.strictEqual(Object.keys(depth.categoryDepth).length,6,'v104 must remain a deliberate six-category depth programme');
 
 for(const slug of TARGETS){
@@ -69,6 +71,31 @@ for(const slug of ['about','updates']){
   assert(!/48 populated categories/i.test(original),`${slug} contains superseded 48-category claim`);
 }
 
+// Steps 4-5: prepare exact APG distribution + earned-authority work, but do not
+// publish or send from the build process.
+const plan=growth.plan();
+assert.strictEqual(plan.published,false,'v104 must never auto-publish external content');
+assert.deepStrictEqual([...plan.targets].sort(),[...TARGETS].sort(),'Distribution targets must match the six depth categories');
+assert.strictEqual(plan.profiles.length,6,'All six verified APG social profiles must be available to the distribution plan');
+assert(plan.profiles.every(p=>p.active&&p.verified&&p.url),'Distribution plan may use only active verified APG profiles');
+assert.strictEqual(plan.items.length,12,'Expected one category and one head-to-head asset for each target category');
+for(const item of plan.items){
+  assert.strictEqual(item.status,'READY_FOR_HUMAN_APPROVAL_NOT_PUBLISHED',`${item.id} must remain approval-gated`);
+  assert(item.destination.startsWith(growth.ORIGIN+'/'),'Social destination must remain canonical APG');
+  assert(!/amazon\.|tag=auproductguid/i.test(item.destination),`${item.id} must not distribute direct Amazon affiliate URLs`);
+  for(const key of growth.SOCIAL_KEYS){
+    assert(item.drafts[key],`${item.id} missing ${key} draft`);
+    assert.strictEqual(item.drafts[key].destination,item.destination,`${item.id} ${key} destination drift`);
+  }
+  if(item.kind==='head-to-head'){
+    assert(item.pair&&item.pair.a&&item.pair.b,`${item.id} must resolve a curated comparison pair`);
+    assert.strictEqual(item.creative.type,'generic-apg-card',`${item.id} must default to generic APG creative until product imagery is independently cleared`);
+  }
+}
+assert(growth.authorityQueue.length>=5,'Earned-authority queue must contain selective high-quality candidates');
+assert(growth.authorityQueue.every(x=>x.status==='PREPARED_NOT_SENT'),'Earned-authority work must remain unsent pending approval');
+assert(/Observed search demand/.test(growth.expansionGate.rule),'Expansion must remain search-evidence gated');
+
 const untouched=pages.categoryPage(req,categories['air-fryers'],url('/categories/air-fryers/'));
 assert.strictEqual(depth.transformHtml(untouched,'/categories/air-fryers/'),untouched,'Non-target category must remain unchanged');
 
@@ -79,4 +106,7 @@ console.log('SEARCH_OPPORTUNITY_DEPTH_V104=PASS');
 console.log(`TARGET_CATEGORIES=${TARGETS.length}`);
 console.log(`CURATED_PAIR_PAGES_TESTED=${TARGETS.length}`);
 console.log('ABOUT_UPDATES_SOURCE_RECONCILIATION=PASS');
+console.log(`SOCIAL_DISTRIBUTION_ASSETS=${plan.items.length} APPROVAL_GATED=YES`);
+console.log(`EARNED_AUTHORITY_CANDIDATES=${growth.authorityQueue.length} SENT=NO`);
+console.log('SEARCH_EXPANSION_GATE=ENFORCED');
 console.log('NEW_CATALOGUE_ROUTES_CREATED=0');
