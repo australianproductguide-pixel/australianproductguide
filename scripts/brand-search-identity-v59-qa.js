@@ -19,6 +19,7 @@ const brandMarkComplete=read('lib/brand-mark-complete-v67.js');
 const productBrandPlaceholderCss=read('public/assets/product-brand-placeholder-v64.css');
 const entry=read('api/index.js');
 const favicon=read('public/favicon.svg');
+const versionedFavicon=read('public/favicon-v105.svg');
 const brandMark=read('public/assets/apg-brand-mark.svg');
 const manifest=JSON.parse(read('public/site.webmanifest'));
 
@@ -62,20 +63,28 @@ assert(brandCsp.includes('/assets/brand-directory-v63.css?v=63.0'),'v63 must loa
 assert(brandIndex.includes("require('./category-index-images-v61')"),'v62 must preserve v61 immediately underneath rather than bypass category imagery');
 assert(categoryIndex.includes("require('./google-product-discovery-v60')"),'v61 must preserve v60 immediately underneath rather than bypass product discovery');
 assert(discovery.includes("require('./brand-search-identity-v59')"),'v60 must preserve v59 immediately underneath rather than bypass brand identity');
+assert(runtime.includes("const FAVICON='/favicon-v105.svg'"),'final browser identity must use a versioned favicon URL so cached legacy artwork is not reused');
 assert(runtime.includes('rel=\"icon\" type=\"image/svg+xml\" sizes=\"any\" href=\"${FAVICON}\"'),'final HTML must publish the new favicon');
 assert(runtime.includes('rel=\"manifest\" href=\"${MANIFEST}\"'),'final HTML must publish the web manifest');
 assert(runtime.includes('ImageObject'),'Organization logo must be promoted as an ImageObject');
 assert(runtime.includes("path==='/favicon.ico'"),'legacy root favicon requests must be handled');
-for(const source of [favicon,brandMark]){
+assert(runtime.includes("res.setHeader('Location',FAVICON)"),'legacy favicon requests must redirect to the current cache-busted asset');
+for(const source of [favicon,versionedFavicon,brandMark]){
   assert(source.includes('width="192" height="192" viewBox="0 0 192 192"'),'brand mark must expose a square 192x192 canvas');
   assert(source.includes('#0F172A'),'brand mark must use APG Navy');
   assert(source.includes('#2563EB'),'brand mark must use APG Blue');
   assert(source.includes('#FFFFFF'),'brand mark must retain the white decision arrow');
+  assert(source.includes('M54 81 86 83 105 51 123 83 154 83 125 32 83 33Z'),'browser identity must use the canonical APG header symbol geometry');
+  assert(source.includes('M104 87 76 136 106 126 132 137Z'),'browser identity must retain the canonical white APG decision arrow');
+  assert(source.includes('matrix(1.16 0 0 1.16 -24.64 -2.02)'),'browser icon must keep the enlarged small-format presentation rather than reverting to an undersized mark');
 }
+assert.equal(favicon,versionedFavicon,'legacy and versioned favicon assets must remain visually identical');
+assert.equal(versionedFavicon,brandMark,'favicon and canonical browser brand mark must remain visually identical');
 assert.equal(manifest.name,'Australian Product Guide');
 assert.equal(manifest.short_name,'APG');
-assert.equal(manifest.icons[0].src,'/assets/apg-brand-mark.svg');
+assert.equal(manifest.icons[0].src,'/favicon-v105.svg');
 assert.equal(manifest.icons[0].type,'image/svg+xml');
 assert.equal(manifest.icons[0].sizes,'any');
+assert.equal(manifest.icons[0].purpose,'any','browser icon must not be declared maskable unless a dedicated maskable safe-area asset exists');
 
-console.log('APG Search Brand Identity v59 source QA passed beneath v60, v61, v62, CSP-safe v63, product brand placeholder v64, brand mark quality v65, curated brand mark v66, parity/integrity v66.2 and complete official brand identity resolver v67.2');
+console.log('APG Search Brand Identity v59 source QA passed beneath v60, v61, v62, CSP-safe v63, product brand placeholder v64, brand mark quality v65, curated brand mark v66, parity/integrity v66.2 and complete official brand identity resolver v67.2; favicon v105 uses the enlarged canonical APG header mark with a cache-busted non-maskable browser identity path');
