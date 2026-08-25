@@ -1,6 +1,6 @@
 // APG Search Opportunity Depth v104.0 is the authoritative outermost search-depth layer.
-// It deepens six deliberately selected high-intent category, guide and comparison journeys,
-// reconciles About/Updates, and preserves the existing v103 proof rail and downstream controls.
+// It deepens six deliberately selected high-intent category, guide and comparison journeys
+// while leaving the canonical Trust Centre source under its existing regression controls.
 // Compatibility lineage: module.exports=require('../lib/apg-proof-rail-runtime-v103');
 // APG Proof Rail v103.0 remains authoritative underneath for the homepage presentation layer.
 // It replaces only the legacy homepage proof banner with the SSR-first ApgProofRail,
