@@ -10,9 +10,13 @@ const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
 
 const compatibility=[...api.matchAll(/Compatibility lineage: module\.exports=require\('([^']+)'\)/g)].map(m=>m[1]);
 const sideEffects=[...api.matchAll(/^require\('([^']+)'\);$/gm)].map(m=>m[1]);
-const exported=(api.match(/module\.exports=require\('([^']+)'\);\s*$/m)||[])[1]||null;
+const outerRuntime=(api.match(/const runtime=require\('([^']+)'\);/)||[])[1]||null;
+const postLineageGuard=(api.match(/const hardConstraintParity=require\('([^']+)'\);/)||[])[1]||null;
 
-assert.equal(exported,'../lib/action5-catalogue-certification-v106-runtime','v106 must remain the canonical outer Production runtime until an explicitly certified successor replaces it');
+assert.equal(outerRuntime,'../lib/action5-catalogue-certification-v106-runtime','v106 must remain the canonical outer Production runtime until an explicitly certified successor replaces it');
+assert.equal(postLineageGuard,'../lib/hard-constraint-result-parity-v1','hard-constraint proof parity must be installed explicitly after the full re-ranking lineage');
+assert(api.includes('hardConstraintParity.install();'),'post-lineage parity guard must be explicitly installed');
+assert(api.includes('module.exports=runtime;'),'the parity guard must not replace the v106 HTTP runtime');
 assert(compatibility.length>=40,`expected the documented compatibility chain to remain visible for controlled consolidation; found ${compatibility.length}`);
 assert(compatibility.includes('../lib/search-opportunity-depth-v104-runtime'));
 assert(compatibility.includes('../lib/decision-hard-constraint-fallback-v1036'));
@@ -22,7 +26,7 @@ assert(compatibility.includes('../lib/brand-mark-canonical-parity-v91'));
 assert(compatibility.includes('../lib/analytics-funnel-v79'));
 
 const expectedSideEffects=['../lib/scout-concierge-v5-runtime','../lib/consumer-intelligence-v47-runtime','../lib/catalogue-decision-v48-runtime','../lib/brand-system-v46','../lib/consumer-intelligence-v47'];
-assert.deepEqual(sideEffects,expectedSideEffects,'hidden/order-sensitive side-effect installers must remain explicitly inventoried until deliberately composed or removed with parity proof');
+assert.deepEqual(sideEffects,expectedSideEffects,'hidden/order-sensitive pre-runtime side-effect installers must remain explicitly inventoried until deliberately composed or removed with parity proof');
 
 const deploy=String(pkg.scripts&&pkg.scripts['qa:deploy']||'');
 assert(deploy.startsWith('node scripts/brand-mark-canonical-parity-v91-qa.js'),'Brand Parity v91 must remain the first deploy gate');
@@ -38,11 +42,12 @@ for(const framework of ['next','react','vue','@angular/core','svelte'])assert(!d
 
 console.log(JSON.stringify({
   ok:true,
-  outerRuntime:exported,
+  outerRuntime,
+  postLineageGuard,
   compatibilityLayerCount:compatibility.length,
-  sideEffectInstallerCount:sideEffects.length,
-  sideEffectInstallers:sideEffects,
+  preRuntimeSideEffectInstallerCount:sideEffects.length,
+  preRuntimeSideEffectInstallers:sideEffects,
   brandParityFirstGate:true,
   prohibitedFrameworksAbsent:true,
-  policy:'Inventory before consolidation. No wrapper or side-effect dependency is deleted without route/API/browser/SEO parity proof.'
+  policy:'Inventory before consolidation. Post-lineage guards must be explicit and may not replace the canonical v106 HTTP runtime. No wrapper or side-effect dependency is deleted without route/API/browser/SEO parity proof.'
 },null,2));
