@@ -36,7 +36,7 @@ assert.equal(x.gate.checks.recommendationSafety,true);
 assert.equal(x.gate.status,'GREEN',`Action 5 v100 blockers: ${x.gate.blockers.join(', ')}`);
 assert.equal(x.strategicGate.status,'GREEN_WITH_LIVE_DEMAND_QUEUE');
 
-const observed={productId:'observed-product',signals:{affiliateClicks:2,gscClicks:0,gscImpressions:0,productViews:0,comparisonSignals:0,saveSignals:0,scoutSignals:0,decisionSignals:0,observedEvents:2}};
+const observed={productId:'observed-product',signals:{affiliateClicks:2,gscClicks:0,gscImpressions:0,productViews:0,affiliateClicks:2,comparisonSignals:0,saveSignals:0,scoutSignals:0,decisionSignals:0,observedEvents:2}};
 const unobserved={productId:'aaa-zero-product',signals:{affiliateClicks:0,gscClicks:0,gscImpressions:0,productViews:0,comparisonSignals:0,saveSignals:0,scoutSignals:0,decisionSignals:0,observedEvents:0}};
 const ranked=action5.rankCandidates([unobserved,observed]);
 assert.equal(ranked[0].productId,'observed-product','Observed product demand must outrank stable-ID ordering when a real signal exists');
@@ -73,3 +73,4 @@ assert.equal(variant.actions.find(a=>a&&a.affiliate)?.label,'View available vari
 assert.equal(variant.meta.amazonAu.matchStatus,'VARIANT_VERIFIED');
 
 console.log(`ACTION5_STRATEGIC_CLOSURE_V1002_GREEN exact=${x.amazon.exact} variant=${x.amazon.variant} fallback=${x.amazon.fallback} noSafe=${x.amazon.noSafePath} p1Open=${x.p1.open} p2=${x.priority.counts.P2} broaderExactDestinations=${x.retailers.exactDestinationCount} demandOrdering=measured-first recallSurface=sanitised`);
+require('./action5-catalogue-certification-v106-qa');
