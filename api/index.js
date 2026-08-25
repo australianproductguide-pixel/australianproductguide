@@ -1,4 +1,8 @@
-// APG Proof Rail v103.0 is the authoritative outermost homepage presentation layer.
+// APG Search Opportunity Depth v104.0 is the authoritative outermost search-depth layer.
+// It deepens six deliberately selected high-intent category, guide and comparison journeys,
+// reconciles About/Updates, and preserves the existing v103 proof rail and downstream controls.
+// Compatibility lineage: module.exports=require('../lib/apg-proof-rail-runtime-v103');
+// APG Proof Rail v103.0 remains authoritative underneath for the homepage presentation layer.
 // It replaces only the legacy homepage proof banner with the SSR-first ApgProofRail,
 // preserving every downstream intelligence, commerce, account, SEO and analytics contract.
 // Compatibility lineage: module.exports=require('../lib/buying-guide-theme-alignment-v102');
@@ -56,4 +60,4 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/apg-proof-rail-runtime-v103');
+module.exports=require('../lib/search-opportunity-depth-v104-runtime');
