@@ -36,7 +36,7 @@ assert.equal(x.gate.checks.recommendationSafety,true);
 assert.equal(x.gate.status,'GREEN',`Action 5 v100 blockers: ${x.gate.blockers.join(', ')}`);
 assert.equal(x.strategicGate.status,'GREEN_WITH_LIVE_DEMAND_QUEUE');
 
-const observed={productId:'observed-product',signals:{affiliateClicks:2,gscClicks:0,gscImpressions:0,productViews:0,affiliateClicks:2,comparisonSignals:0,saveSignals:0,scoutSignals:0,decisionSignals:0,observedEvents:2}};
+const observed={productId:'observed-product',signals:{affiliateClicks:2,gscClicks:0,gscImpressions:0,productViews:0,comparisonSignals:0,saveSignals:0,scoutSignals:0,decisionSignals:0,observedEvents:2}};
 const unobserved={productId:'aaa-zero-product',signals:{affiliateClicks:0,gscClicks:0,gscImpressions:0,productViews:0,comparisonSignals:0,saveSignals:0,scoutSignals:0,decisionSignals:0,observedEvents:0}};
 const ranked=action5.rankCandidates([unobserved,observed]);
 assert.equal(ranked[0].productId,'observed-product','Observed product demand must outrank stable-ID ordering when a real signal exists');
