@@ -7,10 +7,10 @@
   "theme_color": "#0F172A",
   "icons": [
     {
-      "src": "/assets/apg-brand-mark.svg",
+      "src": "/favicon-v105.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }
