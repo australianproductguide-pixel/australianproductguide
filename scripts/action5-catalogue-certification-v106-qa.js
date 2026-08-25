@@ -5,6 +5,12 @@ const snap=runtime.amazonCatalogueCertificationSnapshot();
 
 assert.equal(snap.version,'106.0');
 assert.equal(snap.catalogue.total,482,'maintained catalogue must reconcile to current 482-product baseline');
+assert.equal(snap.amazon.exactVerified,19,'exact-direct count must include the verified eufy S1 Pro promotion');
+assert.equal(snap.amazon.verifiedVariation,13,'verified-variation count must include the Sony ULT WEAR colour variant');
+assert.equal(snap.amazon.totalVerifiedDirect,32,'verified direct coverage must reconcile after the v106.1 promotions');
+assert.equal(snap.amazon.searchFallback,449,'only unresolved products may remain on model-specific Amazon AU search fallbacks');
+assert.equal(snap.investigation.documentedFallbackExceptions,3,'the three evidence-bound fallback exceptions remain documented');
+assert.equal(snap.investigation.investigationRequired,446,'two former P2 fallbacks must leave the investigation queue after verified promotion');
 assert.equal(snap.amazon.exactVerified+snap.amazon.verifiedVariation+snap.amazon.searchFallback+snap.amazon.noSuitableAmazonDestination,snap.catalogue.total,'every product must have one governed Amazon/safety state');
 assert.equal(snap.amazon.brokenOrUncontrolled,0,'no malformed or uncontrolled Amazon states may ship');
 assert.equal(snap.amazon.affiliateTagIntegrityPct,100,'every active Amazon pathway must carry the APG Associates tag');
@@ -18,6 +24,16 @@ assert.equal(snap.gate.checks.recommendationCommercialNeutrality,true);
 assert.equal(snap.gate.checks.structuralErrorsZero,true);
 assert.ok(snap.remainingExceptions.every(x=>x.currentPathwayType==='SEARCH_FALLBACK'));
 assert.ok(snap.remainingExceptions.every(x=>x.currentAmazonDestination&&x.affiliateTagPresent===true));
+const eufy=snap.verifiedDirect.find(x=>x.slug==='eufy-robot-vacuum-s1-pro');
+assert.ok(eufy,'eufy S1 Pro must be present in verified direct catalogue');
+assert.equal(eufy.currentPathwayType,'EXACT_VERIFIED');
+assert.equal(eufy.currentAsin,'B0DN5Y1B27');
+assert.equal(eufy.lastVerifiedDate,'2026-08-25');
+const sony=snap.verifiedDirect.find(x=>x.slug==='sony-ult-wear-wh-ult900n');
+assert.ok(sony,'Sony ULT WEAR must be present in verified direct catalogue');
+assert.equal(sony.currentPathwayType,'VARIANT_VERIFIED');
+assert.equal(sony.currentAsin,'B0CX1VYYQL');
+assert.equal(sony.lastVerifiedDate,'2026-08-25');
 for(const x of snap.remainingExceptions.filter(x=>x.verificationStatus==='DOCUMENTED_EXCEPTION')){
   assert.ok(x.reasonDirectMappingUnavailable);
   assert.ok(Array.isArray(x.searchesPerformed)&&x.searchesPerformed.length);
@@ -25,4 +41,4 @@ for(const x of snap.remainingExceptions.filter(x=>x.verificationStatus==='DOCUME
   assert.ok(x.lastChecked);
   assert.ok(x.nextReviewDate);
 }
-console.log(`APG Amazon catalogue certification v106 QA PASS: ${snap.amazon.totalVerifiedDirect} direct, ${snap.investigation.documentedFallbackExceptions} documented fallback exceptions, ${snap.investigation.investigationRequired} investigations required, ${snap.amazon.noSuitableAmazonDestination} safety-suppressed.`);
+console.log(`APG Amazon catalogue certification v106.1 QA PASS: ${snap.amazon.totalVerifiedDirect} direct, ${snap.investigation.documentedFallbackExceptions} documented fallback exceptions, ${snap.investigation.investigationRequired} investigations required, ${snap.amazon.noSuitableAmazonDestination} safety-suppressed.`);
