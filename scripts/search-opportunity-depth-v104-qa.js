@@ -14,6 +14,29 @@ const TARGETS=['televisions','laptops','washing-machines','coffee-machines','rob
 const req={headers:{host:'australianproductguide.au','x-forwarded-proto':'https'},url:'/'};
 function url(path){return new URL(path,'https://australianproductguide.au');}
 function has(text,token,msg){assert(String(text).includes(token),msg||`Missing ${token}`);}
+function renderRuntime(path){
+  return new Promise((resolve,reject)=>{
+    const headers={};
+    const request={
+      url:path,
+      method:'GET',
+      headers:{host:'australianproductguide.au','x-forwarded-proto':'https'},
+      on(){return this;},
+      destroy(){}
+    };
+    const response={
+      statusCode:200,
+      setHeader(k,v){headers[String(k).toLowerCase()]=v;},
+      getHeader(k){return headers[String(k).toLowerCase()];},
+      removeHeader(k){delete headers[String(k).toLowerCase()];},
+      end(body=''){resolve({status:this.statusCode,headers,body:String(body||'')});}
+    };
+    try{
+      const result=runtime(request,response);
+      if(result&&typeof result.then==='function')result.catch(reject);
+    }catch(error){reject(error);}
+  });
+}
 
 assert.strictEqual(depth.VERSION,'104.0');
 assert.strictEqual(depth.REVIEWED,'2026-08-25');
@@ -102,11 +125,55 @@ assert.strictEqual(depth.transformHtml(untouched,'/categories/air-fryers/'),unto
 const apiEntry=fs.readFileSync(require.resolve('../api/index'),'utf8');
 has(apiEntry,"module.exports=require('../lib/search-opportunity-depth-v104-runtime')",'API entry is not wired to v104 outer runtime');
 
-console.log('SEARCH_OPPORTUNITY_DEPTH_V104=PASS');
-console.log(`TARGET_CATEGORIES=${TARGETS.length}`);
-console.log(`CURATED_PAIR_PAGES_TESTED=${TARGETS.length}`);
-console.log('ABOUT_UPDATES_SOURCE_RECONCILIATION=PASS');
-console.log(`SOCIAL_DISTRIBUTION_ASSETS=${plan.items.length} APPROVAL_GATED=YES`);
-console.log(`EARNED_AUTHORITY_CANDIDATES=${growth.authorityQueue.length} SENT=NO`);
-console.log('SEARCH_EXPANSION_GATE=ENFORCED');
-console.log('NEW_CATALOGUE_ROUTES_CREATED=0');
+(async()=>{
+  let certifiedRuntimeRoutes=0;
+  for(const slug of TARGETS){
+    const featured=growth.featuredPair(slug);
+    assert(featured&&featured.path,`No featured curated pair available for full-runtime certification: ${slug}`);
+    const routes=[
+      {path:`/categories/${slug}/`,section:'category'},
+      {path:`/guides/${slug}-buying-guide/`,section:'guide'},
+      {path:`/compare/${slug}/`,section:'compare-index'},
+      {path:featured.path,section:'pair'}
+    ];
+    for(const route of routes){
+      const rendered=await renderRuntime(route.path);
+      assert.strictEqual(rendered.status,200,`${route.path} full-runtime status`);
+      assert.match(String(rendered.headers['content-type']||''),/text\/html/i,`${route.path} must render HTML through the full runtime`);
+      assert.strictEqual(rendered.headers['x-apg-search-opportunity-depth'],'v104.0',`${route.path} missing full-runtime v104 header`);
+      has(rendered.body,'name="apg-search-opportunity-depth"',`${route.path} missing full-runtime v104 marker`);
+      has(rendered.body,`data-apg-search-depth="${route.section}"`,`${route.path} missing full-runtime ${route.section} section`);
+      if(route.section==='guide')has(rendered.body,'"dateModified":"2026-08-25"',`${route.path} full-runtime guide dateModified not reconciled`);
+      if(route.section==='pair')has(rendered.body,'APG does not award a generic winner',`${route.path} full-runtime pair lacks conditional-choice wording`);
+      certifiedRuntimeRoutes+=1;
+    }
+  }
+
+  for(const slug of ['about','updates']){
+    const rendered=await renderRuntime(`/${slug}/`);
+    assert.strictEqual(rendered.status,200,`/${slug}/ full-runtime status`);
+    assert.match(String(rendered.headers['content-type']||''),/text\/html/i,`/${slug}/ full-runtime HTML`);
+    assert.strictEqual(rendered.headers['x-apg-search-opportunity-depth'],undefined,`/${slug}/ must not carry v104 search-depth header`);
+    assert(!rendered.body.includes('name="apg-search-opportunity-depth"'),`/${slug}/ must not carry v104 search-depth marker`);
+    has(rendered.body,`${facts.products} products`,`${slug} full-runtime current product count`);
+    has(rendered.body,`${facts.categories} populated categories`,`${slug} full-runtime current category count`);
+    assert(!/257 products/i.test(rendered.body),`/${slug}/ full-runtime contains superseded 257-product claim`);
+    assert(!/48 populated categories/i.test(rendered.body),`/${slug}/ full-runtime contains superseded 48-category claim`);
+  }
+
+  const nonTarget=await renderRuntime('/categories/air-fryers/');
+  assert.strictEqual(nonTarget.status,200,'non-target category full-runtime status');
+  assert.strictEqual(nonTarget.headers['x-apg-search-opportunity-depth'],undefined,'non-target category must not carry v104 header');
+  assert(!nonTarget.body.includes('name="apg-search-opportunity-depth"'),'non-target category must not carry v104 marker');
+
+  console.log('SEARCH_OPPORTUNITY_DEPTH_V104=PASS');
+  console.log(`TARGET_CATEGORIES=${TARGETS.length}`);
+  console.log(`CURATED_PAIR_PAGES_TESTED=${TARGETS.length}`);
+  console.log(`FULL_RUNTIME_ROUTES_CERTIFIED=${certifiedRuntimeRoutes}`);
+  console.log('TRUST_RUNTIME_NON_MUTATION=2');
+  console.log('ABOUT_UPDATES_SOURCE_RECONCILIATION=PASS');
+  console.log(`SOCIAL_DISTRIBUTION_ASSETS=${plan.items.length} APPROVAL_GATED=YES`);
+  console.log(`EARNED_AUTHORITY_CANDIDATES=${growth.authorityQueue.length} SENT=NO`);
+  console.log('SEARCH_EXPANSION_GATE=ENFORCED');
+  console.log('NEW_CATALOGUE_ROUTES_CREATED=0');
+})().catch(error=>{console.error(error.stack||error);process.exit(1);});
