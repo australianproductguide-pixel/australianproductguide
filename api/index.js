@@ -68,4 +68,11 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/action5-catalogue-certification-v106-runtime');
+
+// Post-lineage parity guards install only after the authoritative v106 runtime has loaded
+// every current re-ranking layer. They do not replace v106 or create another HTTP runtime.
+const runtime=require('../lib/action5-catalogue-certification-v106-runtime');
+const hardConstraintParity=require('../lib/hard-constraint-result-parity-v1');
+hardConstraintParity.install();
+runtime.HARD_CONSTRAINT_RESULT_PARITY_VERSION=hardConstraintParity.VERSION;
+module.exports=runtime;
