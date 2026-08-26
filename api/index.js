@@ -68,4 +68,6 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/action5-catalogue-certification-v106-runtime');
+const runtime=require('../lib/action5-catalogue-certification-v106-runtime');
+const decisionTransportParity=require('../lib/decision-transport-parity-v1-runtime');
+module.exports=decisionTransportParity.wrap(runtime);
