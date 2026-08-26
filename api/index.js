@@ -81,8 +81,8 @@ const scoutResponseDepth=require('../lib/scout-response-depth-v61');
 const premiumExperience=require('../lib/premium-experience-v107-runtime');
 const decisionJourneyContinuity=require('../lib/decision-journey-continuity-v108-runtime');
 const premiumClientStability=require('../lib/premium-client-stability-v1091-runtime');
-const wholeSiteExperience=require('../lib/whole-site-experience-v109-runtime');
 const premiumMobileDecisionCommerce=require('../lib/premium-mobile-decision-commerce-v112-runtime');
+const wholeSiteExperience=require('../lib/whole-site-experience-v109-runtime');
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
 scoutResponseDepth.install();
@@ -90,14 +90,14 @@ const transportHandler=decisionTransportParity.wrap(runtime);
 const premiumHandler=premiumExperience.wrap(transportHandler);
 const journeyHandler=decisionJourneyContinuity.wrap(premiumHandler);
 // v109.1 fail-closed verifies and serves the intrinsically safe v107 client asset; it adds
-// no route, state or scoring logic. Whole-Site v109 remains the underlying presentation wrapper.
+// no route, state or scoring logic.
 const stableJourneyHandler=premiumClientStability.wrap(journeyHandler);
-const wholeSiteHandler=wholeSiteExperience.wrap(stableJourneyHandler);
-// v112 is deliberately outermost: it can surface decision and retailer evidence after all
-// canonical ranking/state layers have run, without changing those underlying decisions.
-const handler=premiumMobileDecisionCommerce.wrap(wholeSiteHandler);
-// Preserve all established outer-runtime certification metadata through the presentation wrapper.
-Object.assign(handler,wholeSiteHandler);
+// v112 is a narrow evidence/merchandising layer inside the established Whole-Site v109
+// communication boundary. It can surface product, retailer and decision evidence without
+// becoming the public outer runtime, a second router or a recommendation engine.
+const premiumMobileHandler=premiumMobileDecisionCommerce.wrap(stableJourneyHandler);
+// Whole-Site v109 remains the final outer HTML communication layer.
+const handler=wholeSiteExperience.wrap(premiumMobileHandler);
 handler.HARD_CONSTRAINT_RESULT_PARITY_VERSION=hardConstraintParity.VERSION;
 handler.DECISION_TRANSPORT_PARITY_VERSION=decisionTransportParity.VERSION;
 handler.SCOUT_CUSTOMER_INTELLIGENCE_VERSION=scoutCustomerIntelligence.VERSION;
@@ -105,7 +105,7 @@ handler.SCOUT_RESPONSE_DEPTH_VERSION=scoutResponseDepth.VERSION;
 handler.PREMIUM_EXPERIENCE_VERSION=premiumExperience.VERSION;
 handler.DECISION_JOURNEY_CONTINUITY_VERSION=decisionJourneyContinuity.VERSION;
 handler.PREMIUM_CLIENT_STABILITY_VERSION=premiumClientStability.VERSION;
-handler.WHOLE_SITE_EXPERIENCE_VERSION=wholeSiteExperience.VERSION;
 handler.PREMIUM_MOBILE_DECISION_COMMERCE_VERSION=premiumMobileDecisionCommerce.VERSION;
+handler.WHOLE_SITE_EXPERIENCE_VERSION=wholeSiteExperience.VERSION;
 handler.APG_PLATFORM_FACTS=wholeSiteExperience.FACTS;
 module.exports=handler;
