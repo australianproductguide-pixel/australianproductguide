@@ -26,12 +26,18 @@ function count(text,needle){return (String(text).match(new RegExp(needle.replace
   assert.match(premium.css,/\.apg-assistant-launcher\{position:fixed;left:20px;right:auto/,'Scout desktop launcher must be bottom-left, not homepage/right constrained');
   assert.match(premium.css,/--apg-premium-gutter:18px/,'standard mobile gutter must be widened to 18px');
   assert.match(premium.css,/--apg-premium-gutter:16px/,'smallest mobile gutter must remain at least 16px');
+  assert.match(premium.css,/@media\(max-width:340px\)/,'320px-class devices must have an explicit responsive safeguard');
   assert.match(premium.css,/font-size:16px!important;min-height:44px/,'mobile form controls must avoid microscopic text and iPhone focus zoom');
+  assert.match(premium.css,/font-size:12\.5px!important;line-height:1\.45!important/,'mobile secondary information must retain a readable floor');
+  assert.match(premium.css,/\.scout-v5-chip\{min-height:44px;font-size:13px/,'mobile Scout suggestions must be readable touch targets');
+  assert.match(premium.css,/white-space:normal;text-align:center;line-height:1\.3/,'mobile actions must wrap rather than clip at narrow widths');
   assert.match(premium.css,/data-apg-compare-label/,'mobile comparison values must expose product labels');
+  assert.match(premium.css,/\.compare-wrap\{margin-top:18px;max-width:100%;overflow-x:hidden\}/,'mobile Compare must be constrained to the viewport instead of spilling horizontally');
   assert.match(premium.css,/env\(safe-area-inset-bottom\)/,'sticky controls must respect mobile safe areas');
   assert.match(premium.css,/prefers-reduced-motion:reduce/,'premium layer must respect reduced motion');
   assert.match(premium.clientJs,/table\.compare/,'comparison labelling must progressively enhance existing SSR tables');
   assert.match(premium.clientJs,/Useful next questions/,'Scout must add contextual next-question prompts');
+  for(const phrase of ['What should I verify before buying?','Is this good value for the money?','Should I buy now or wait?','What makes APG different?'])assert(premium.clientJs.includes(phrase),`Scout discovery must surface expanded customer question: ${phrase}`);
   assert.match(premium.clientJs,/apg-compare-tray-active/,'Scout launcher must move clear of an active compare tray');
 
   const routes=[
@@ -63,5 +69,5 @@ function count(text,needle){return (String(text).match(new RegExp(needle.replace
   assert.equal(count(twice,premium.CSS_PATH),1,'premium stylesheet injection must be idempotent');
   assert.equal(count(twice,premium.JS_PATH),1,'premium client injection must be idempotent');
 
-  console.log(JSON.stringify({version:premium.VERSION,status:'PASS',routesChecked:routes.length,checks:{scoutEveryPage:true,bottomLeft:true,mobileGutters:true,inputReadability:true,touchTargets:true,safeAreas:true,compareMobileLabels:true,contextPrompts:true,reducedMotion:true,ssrProgressiveEnhancement:true}},null,2));
+  console.log(JSON.stringify({version:premium.VERSION,status:'PASS',routesChecked:routes.length,checks:{scoutEveryPage:true,bottomLeft:true,mobileGutters:true,smallScreen320Guard:true,inputReadability:true,secondaryTextReadability:true,wrappingTouchTargets:true,safeAreas:true,compareMobileLabels:true,compareViewportContainment:true,expandedContextPrompts:true,reducedMotion:true,ssrProgressiveEnhancement:true}},null,2));
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
