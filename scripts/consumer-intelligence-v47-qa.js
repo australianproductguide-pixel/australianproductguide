@@ -120,7 +120,8 @@ check('final consumer layer owns the single evidence-aware product continuity su
   assert.match(product,/category=wireless-headphones/,'product Decision Lab handoff must preserve category context');
   assert.match(product,/Compare closest alternative/);
   assert.match(product,/Ask Scout about this product/,'single product continuity panel must include page-aware Scout');
-  assert.match(product,/min-height:44px/,'product continuity actions must meet practical touch-target height');
+  assert.match(product,/class="ci47-actions"/,'rendered product continuity surface must use the governed action class');
+  assert.match(finalLayer.CSS,/\.ci47-actions :where\(a,button\)\{[^}]*min-height:44px/,'product continuity actions must meet practical touch-target height in the canonical stylesheet contract');
 
   const searched=finalLayer.transform(shell,new URL('https://australianproductguide.au/search/?q=quiet+dishwasher+under+1000'));
   assert.doesNotMatch(searched,/Want a more explicit decision\?/,'v47 must not duplicate v108 Search continuity presentation');
