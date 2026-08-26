@@ -111,19 +111,27 @@ check('Scout product questions expose a direct route into a close comparison',()
   assert.ok(s.meta?.closestMaintainedAlternative?.slug);
 });
 
-check('final consumer layer interconnects product, Search and Decision Lab routes',()=>{
+check('final consumer layer owns the single evidence-aware product continuity surface',()=>{
   const shell='<!doctype html><html><head></head><body><main><h1>APG</h1></main></body></html>';
   const product=finalLayer.transform(shell,new URL('https://australianproductguide.au/products/sony-wh-1000xm6/'));
   assert.match(product,/data-consumer-intelligence-v47="true"/);
   assert.match(product,/Connected decision intelligence/);
   assert.match(product,/Refine in Decision Lab/);
+  assert.match(product,/category=wireless-headphones/,'product Decision Lab handoff must preserve category context');
   assert.match(product,/Compare closest alternative/);
+  assert.match(product,/Ask Scout about this product/,'single product continuity panel must include page-aware Scout');
+  assert.match(product,/class="ci47-actions"/,'rendered product continuity surface must use the governed action class');
+  assert.match(finalLayer.CSS,/\.ci47-actions :where\(a,button\)\{[^}]*min-height:44px/,'product continuity actions must meet practical touch-target height in the canonical stylesheet contract');
+
   const searched=finalLayer.transform(shell,new URL('https://australianproductguide.au/search/?q=quiet+dishwasher+under+1000'));
-  assert.match(searched,/Want a more explicit decision\?/);
-  assert.match(searched,/\/decision-lab\/\?q=/);
+  assert.doesNotMatch(searched,/Want a more explicit decision\?/,'v47 must not duplicate v108 Search continuity presentation');
+  assert.doesNotMatch(searched,/ci47-handoff/,'v47 Search transform must leave journey presentation to v108');
   const lab=finalLayer.transform(shell,new URL('https://australianproductguide.au/decision-lab/?q=quiet+dishwasher+under+1000'));
-  assert.match(lab,/Want to widen the discovery set\?/);
-  assert.match(lab,/\/search\/\?q=/);
+  assert.doesNotMatch(lab,/Want to widen the discovery set\?/,'v47 must not duplicate v108 Decision Lab continuity presentation');
+  assert.doesNotMatch(lab,/ci47-handoff/,'v47 Decision Lab transform must leave journey presentation to v108');
+
+  const legacySearch=finalLayer.handoffPanel(new URL('https://australianproductguide.au/search/?q=quiet+dishwasher+under+1000'));
+  assert.match(legacySearch,/\/decision-lab\/\?q=/,'compatibility helper may remain while runtime ownership is consolidated');
 });
 
 check('consumer intelligence release snapshot preserves trust controls',()=>{
