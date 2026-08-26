@@ -6,7 +6,7 @@
     "@modelcontextprotocol/node": "2.0.0",
     "@modelcontextprotocol/server": "2.0.0",
     "@vercel/oidc": "3.8.4",
-    "zod": "4.1.5"
+    "zod": "4.4.3"
   },
   "scripts": {
     "qa:platform-state": "node scripts/platform-state-v1-qa.js",
