@@ -11,6 +11,7 @@ const api=fs.readFileSync('api/index.js','utf8');
 for(const banned of ['scoreProduct(','rankDecision(','publicDecision(','localStorage.setItem(','sessionStorage.setItem(','affiliateRecommendationWeight:1','commissionWeight'])assert(!source.includes(banned),`v112.1 must remain presentation/compatibility only: ${banned}`);
 assert(source.includes('Object.assign(handler,downstream'),'v112.1 wrapper must preserve downstream runtime metadata');
 assert(source.includes('Open product guide:'),'v112.1 Product Card must retain an explicit accessible product-guide destination');
+assert(source.includes('consumerProductName'),'v112.1 must deduplicate brand when a maintained product name already includes it');
 assert(source.includes('STRICT_NO_MATCH'),'v112.1 must explicitly recognise governed strict no-match Search');
 assert(source.includes('removeConflictingProductArticles'),'v112.1 must fail closed rather than merchandise hard-constraint conflicts');
 assert(api.includes("require('../lib/premium-mobile-card-parity-v1121-runtime')"),'API must wire v112.1 parity');
@@ -20,6 +21,14 @@ assert(api.includes('const handler=wholeSiteExperience.wrap(premiumMobileParityH
 const product=products.find(row=>row&&row.slug&&row.brand&&row.name&&row.source&&Array.isArray(row.highlights)&&row.highlights.length&&row.watch)||products.find(row=>row&&row.slug);
 assert(product,'No product available for v112.1 QA');
 const href=`/products/${product.slug}/`;
+
+const nameKey=value=>String(value||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+const embeddedBrandProduct=products.find(row=>row?.brand&&row?.name&&nameKey(row.name).startsWith(`${nameKey(row.brand)} `));
+assert(embeddedBrandProduct,'Expected at least one maintained product whose name already includes its brand');
+assert.equal(parity.consumerProductName(embeddedBrandProduct),embeddedBrandProduct.name,'consumer product label must not prefix an already-present brand');
+const embeddedBrandCard=parity.productCardV1121(embeddedBrandProduct,{query:embeddedBrandProduct.name});
+assert(!embeddedBrandCard.includes(`Open product guide: ${embeddedBrandProduct.brand} ${embeddedBrandProduct.name}`),'accessible product-guide label must not duplicate an embedded brand');
+assert(embeddedBrandCard.includes(`Open product guide: ${embeddedBrandProduct.name}`),'accessible product-guide label must retain the maintained consumer product name once');
 
 const categoryHtml=`<!doctype html><html><head></head><body><main><article class="product-card v7-product-card" data-old="true"><a href="${href}">${product.name}</a><button data-compare-product="${product.slug}">Compare</button></article></main></body></html>`;
 const categoryUrl=new URL('https://australianproductguide.au/categories/wireless-headphones/');
@@ -63,4 +72,4 @@ const alreadyOut=parity.transform(alreadyHtml,'/search/',searchUrl);
 assert.equal((alreadyOut.match(/data-apg112-product-card=/g)||[]).length,1,'v112.1 must not duplicate an already-upgraded Product Card v2');
 assert.equal(parity.transform(alreadyOut,'/search/',searchUrl),alreadyOut,'v112.1 transform must be idempotent');
 
-console.log(JSON.stringify({status:'PASS',version:parity.VERSION,multiClassCatalogueParity:true,searchProductParity:true,strictNoMatchFailClosed:true,accessibleProductGuideContract:true,nonProductSearchPreserved:true,exactRetailerVisualCompatibility:true,wholeSiteV109Outermost:true,stateMutationOwner:'canonical-app-js'},null,2));
+console.log(JSON.stringify({status:'PASS',version:parity.VERSION,multiClassCatalogueParity:true,searchProductParity:true,strictNoMatchFailClosed:true,accessibleProductGuideContract:true,brandDeduplicatedProductGuideLabels:true,nonProductSearchPreserved:true,exactRetailerVisualCompatibility:true,wholeSiteV109Outermost:true,stateMutationOwner:'canonical-app-js'},null,2));
