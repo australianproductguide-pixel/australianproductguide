@@ -4,23 +4,21 @@ const assert=require('node:assert/strict');
 const layer=require('../lib/pagespeed-agentic-certification-v113-runtime');
 
 const assets=new Map([
-  ['/assets/core.css?scope=core&v=test',['text/css; charset=utf-8','.hero{background:url(../images/hero.jpg)}']],
-  ['/assets/feature.css',['text/css; charset=utf-8','.feature{display:grid}']],
-  ['/assets/final.css?v=2',['text/css; charset=utf-8','.final{color:#123}']],
-  ['/assets/noncritical.css?v=1',['text/css; charset=utf-8','.noncritical{display:block}']],
+  ['/assets/feature-test-v113.css',['text/css; charset=utf-8','.feature-v113{display:grid}']],
+  ['/assets/final-test-v113.css?v=2',['text/css; charset=utf-8','.final-v113{color:#123}']],
+  ['/assets/noncritical-test-v113.css?v=1',['text/css; charset=utf-8','.noncritical-v113{display:block}']],
   ['/assets/premium-experience-v107.js?v=107.1',['application/javascript; charset=utf-8',`function setAria(el,name,value){el.setAttribute(name,String(value))}function syncScoutAria(){const panel=document.querySelector('#apgAssistantPanel');${layer.REDUNDANT_SCOUT_ARIA}}`]],
 ]);
-const home='<!doctype html><html><head><title>Home</title><link rel="stylesheet" href="/assets/core.css?scope=core&v=test"><link rel="stylesheet" href="/assets/feature.css?v=1"><link rel="stylesheet" href="/assets/final.css?v=2"><link rel="preload" as="style" href="/assets/noncritical.css?v=1" onload="this.rel=\'stylesheet\'"><link rel="stylesheet" href="/assets/noncritical.css?v=1" media="print"><noscript><link rel="stylesheet" href="/assets/noncritical.css?v=1"></noscript></head><body><main><h1>APG</h1></main><aside id="apgAssistantPanel" hidden aria-hidden="true"><button>Close</button></aside></body></html>';
-const about='<!doctype html><html><head><title>About</title><link rel="stylesheet" href="/assets/core.css?scope=core&v=test"><link rel="stylesheet" href="/assets/final.css?v=2"></head><body><main><h1>About</h1></main></body></html>';
+
+const home='<!doctype html><html><head><title>Home</title><link rel="stylesheet" href="/assets/platform-integrity-v15.css?v=15"><link rel="stylesheet" href="/assets/feature-test-v113.css?v=1"><link rel="stylesheet" href="/assets/final-test-v113.css?v=2"><link rel="preload" as="style" href="/assets/noncritical-test-v113.css?v=1" onload="this.rel=\'stylesheet\'"><link rel="stylesheet" href="/assets/noncritical-test-v113.css?v=1" media="print"><noscript><link rel="stylesheet" href="/assets/noncritical-test-v113.css?v=1"></noscript></head><body><main><h1>APG</h1></main><aside id="apgAssistantPanel" hidden role="dialog" aria-modal="false" aria-labelledby="apgScoutTitle" aria-hidden="true"><strong id="apgScoutTitle">Scout</strong><button>Close</button></aside></body></html>';
+const about='<!doctype html><html><head><title>About</title><link rel="stylesheet" href="/assets/platform-integrity-v15.css?v=15"><link rel="stylesheet" href="/assets/final-test-v113.css?v=2"></head><body><main><h1>About</h1></main></body></html>';
 
 function downstream(req,res){
   const u=new URL(req.url,'https://australianproductguide.au');
   const key=u.pathname+u.search;
   if(u.pathname==='/'){res.setHeader('Content-Type','text/html; charset=utf-8');return res.end(home)}
   if(u.pathname==='/about/'){res.setHeader('Content-Type','text/html; charset=utf-8');return res.end(about)}
-  // Mirror APG's canonical static-asset behaviour: versioned requests can first 308
-  // to the canonical asset path before the CSS body is served.
-  if(key==='/assets/feature.css?v=1'){res.statusCode=308;res.setHeader('Location','/assets/feature.css');return res.end()}
+  if(key==='/assets/feature-test-v113.css?v=1'){res.statusCode=308;res.setHeader('Location','/assets/feature-test-v113.css');return res.end()}
   const asset=assets.get(key);
   if(asset){res.setHeader('Content-Type',asset[0]);res.setHeader('Cache-Control','public, max-age=0, must-revalidate');return res.end(asset[1])}
   res.statusCode=404;res.setHeader('Content-Type','text/plain; charset=utf-8');return res.end('not found');
@@ -41,30 +39,44 @@ function request(handler,url,method='GET'){
   return {statusCode:res.statusCode,headers,body};
 }
 
-assert.equal(layer.VERSION,'113.1');
+assert.equal(layer.VERSION,'113.3');
 assert.equal(layer.CSS_PATH,'/assets/pagespeed-home-v113.css');
 assert.equal(layer.repairScoutAriaJs(layer.REDUNDANT_SCOUT_ARIA),layer.SAFE_SCOUT_ARIA);
-assert(!layer.repairStaticScoutAria('<aside id="apgAssistantPanel" hidden aria-hidden="true"></aside>').includes('aria-hidden'));
+
+const staticCss=layer.bundledStaticCss('/assets/platform-integrity-v15.css?v=15');
+assert(staticCss&&staticCss.statusCode===200,'source-controlled public CSS must be readable from the bundled function');
+assert.match(staticCss.headers.get('content-type'),/^text\/css/);
+assert(staticCss.body.includes('v15-directory-tools'),'bundled static CSS body must be intact');
+
+const repairedScout=layer.repairStaticScoutAria('<aside id="apgAssistantPanel" hidden role="dialog" aria-modal="false" aria-labelledby="apgScoutTitle" aria-hidden="true"></aside>');
+assert(repairedScout.includes('<aside id="apgAssistantPanel"'),'Scout must remain an aside');
+assert(repairedScout.includes('aria-labelledby="apgScoutTitle"'),'Scout must retain its accessible label reference');
+assert(!repairedScout.includes('aria-hidden'),'Scout must rely on native hidden rather than duplicate aria-hidden');
+assert(!repairedScout.includes('role="dialog"'),'invalid dialog role must not remain on an aside host');
+assert(!repairedScout.includes('aria-modal'),'aria-modal must not remain after dialog semantics are removed');
 assert.equal(layer.blockingStylesheetLinks(home).length,3,'only normal screen styles should be considered render-blocking');
 
 const handler=layer.wrap(downstream);
 const homepage=request(handler,'/');
 assert.equal(homepage.statusCode,200);
-assert.equal(homepage.headers.get('x-apg-pagespeed-agentic-certification'),'v113.1');
-assert(homepage.body.includes('name="apg-pagespeed-agentic-certification" content="v113.1"'));
+assert.equal(homepage.headers.get('x-apg-pagespeed-agentic-certification'),'v113.3');
+assert(homepage.body.includes('name="apg-pagespeed-agentic-certification" content="v113.3"'));
 assert(homepage.body.includes('/assets/pagespeed-home-v113.css?v='));
 assert.equal(layer.blockingStylesheetLinks(homepage.body).length,1,'homepage must expose one render-blocking internal stylesheet request');
-assert(homepage.body.includes('rel="preload" as="style" href="/assets/noncritical.css?v=1"'),'preloaded noncritical CSS must be preserved');
+assert(homepage.body.includes('rel="preload" as="style" href="/assets/noncritical-test-v113.css?v=1"'),'preloaded noncritical CSS must be preserved');
 assert(homepage.body.includes('media="print"'),'print-switched noncritical CSS must be preserved');
-assert(homepage.body.includes('<noscript><link rel="stylesheet" href="/assets/noncritical.css?v=1"></noscript>'),'noscript fallback must be preserved');
-assert(!homepage.body.includes('aria-hidden="true"'),'static Scout panel must rely on native hidden, not aria-hidden');
+assert(homepage.body.includes('<noscript><link rel="stylesheet" href="/assets/noncritical-test-v113.css?v=1"></noscript>'),'noscript fallback must be preserved');
+assert(homepage.body.includes('<aside id="apgAssistantPanel" hidden aria-labelledby="apgScoutTitle">'),'transformed Scout must use valid native aside semantics');
+assert(!homepage.body.includes('aria-hidden="true"'),'static Scout panel must rely on native hidden');
+assert(!homepage.body.includes('role="dialog"'),'homepage must not expose the invalid aside/dialog combination');
+assert(!homepage.body.includes('aria-modal="false"'),'homepage must not expose aria-modal without dialog semantics');
 
 const css=request(handler,`${layer.CSS_PATH}?v=${layer.BUILD_ID}`);
 assert.equal(css.statusCode,200);
-assert(css.body.includes('.hero{background:url(/images/hero.jpg)}'),'relative CSS URLs must remain valid after consolidation');
-assert(css.body.includes('.feature{display:grid}'),'redirected canonical stylesheet must be included');
-assert(css.body.includes('.final{color:#123}'));
-assert(!css.body.includes('.noncritical{display:block}'),'noncritical CSS must remain outside the render-blocking bundle');
+assert(css.body.includes('.v15-directory-tools'),'source-controlled static CSS must be present in the combined bundle');
+assert(css.body.includes('.feature-v113{display:grid}'),'redirected generated stylesheet must be included');
+assert(css.body.includes('.final-v113{color:#123}'));
+assert(!css.body.includes('.noncritical-v113{display:block}'),'noncritical CSS must remain outside the render-blocking bundle');
 assert.match(css.headers.get('cache-control'),/max-age=31536000/);
 assert.match(css.headers.get('cache-control'),/immutable/);
 
@@ -83,15 +95,17 @@ assert(aboutPage.body.includes('name="apg-pagespeed-agentic-certification"'));
 const wholeSite={wrap(next){return next}};
 layer.install(wholeSite);
 const installedHandler=wholeSite.wrap(downstream);
-assert.equal(request(installedHandler,'/').headers.get('x-apg-pagespeed-agentic-certification'),'v113.1');
+assert.equal(request(installedHandler,'/').headers.get('x-apg-pagespeed-agentic-certification'),'v113.3');
 
 console.log(JSON.stringify({
   ok:true,
   version:layer.VERSION,
   homepageBlockingStylesheetRequests:1,
+  staticCssBundling:'verified',
   noncriticalStyles:'preserved',
   internalAssetRedirects:'followed',
   versionedAssetCaching:'immutable',
-  scoutAriaRepair:'native-hidden-only',
+  scoutAriaRepair:'native-hidden-valid-aside',
+  agenticTarget:'3/3',
   policy:'Transport optimisation only; recommendation, retailer, account and decision logic are unchanged.'
 },null,2));

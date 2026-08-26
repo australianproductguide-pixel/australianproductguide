@@ -1,6 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "regions": ["syd1"],
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "public/assets/**/*.css"
+    }
+  },
   "git": {
     "deploymentEnabled": {
       "apg/*": false,

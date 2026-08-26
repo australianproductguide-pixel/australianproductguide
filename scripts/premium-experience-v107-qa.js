@@ -83,7 +83,8 @@ function count(text,needle){return (String(text).match(new RegExp(needle.replace
     assert.equal(count(response.body,'id="apgAssistantLauncher"'),1,`${route} must contain exactly one global Scout launcher`);
     assert.equal(count(response.body,'id="apgAssistantPanel"'),1,`${route} must contain exactly one global Scout panel`);
     assert(response.body.includes('/assets/assistant.js'),`${route} must load Scout client behaviour`);
-    assert(response.body.includes(premium.CSS_PATH),`${route} must load premium responsive CSS`);
+    const premiumCssDelivered=response.body.includes(premium.CSS_PATH)||(route==='/'&&response.body.includes('/assets/pagespeed-home-v113.css'));
+    assert(premiumCssDelivered,`${route} must load premium responsive CSS directly or through the certified homepage bundle`);
     assert(response.body.includes(premium.JS_PATH),`${route} must load premium progressive enhancement JS`);
   }
 
@@ -109,5 +110,5 @@ function count(text,needle){return (String(text).match(new RegExp(needle.replace
   assert.equal(count(twice,premium.CSS_PATH),1,'premium stylesheet injection must be idempotent');
   assert.equal(count(twice,premium.JS_PATH),1,'premium client injection must be idempotent');
 
-  console.log(JSON.stringify({version:premium.VERSION,scoutGlobalSurfaceVersion:stability.SCOUT_GLOBAL_SURFACE_VERSION,status:'PASS',routesChecked:routes.length,checks:{scoutEveryPage:true,bottomRight:true,streamedHtmlBackstop:true,mobileGutters:true,smallScreen320Guard:true,inputReadability:true,secondaryTextReadability:true,wrappingTouchTargets:true,safeAreas:true,compareMobileLabels:true,compareViewportContainment:true,expandedContextPrompts:true,reducedMotion:true,observerLoopGuard:true,ssrProgressiveEnhancement:true}},null,2));
+  console.log(JSON.stringify({version:premium.VERSION,scoutGlobalSurfaceVersion:stability.SCOUT_GLOBAL_SURFACE_VERSION,status:'PASS',routesChecked:routes.length,checks:{scoutEveryPage:true,bottomRight:true,streamedHtmlBackstop:true,mobileGutters:true,smallScreen320Guard:true,inputReadability:true,secondaryTextReadability:true,wrappingTouchTargets:true,safeAreas:true,compareMobileLabels:true,compareViewportContainment:true,expandedContextPrompts:true,reducedMotion:true,observerLoopGuard:true,ssrProgressiveEnhancement:true,homepageBundledCssCompatible:true}},null,2));
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
