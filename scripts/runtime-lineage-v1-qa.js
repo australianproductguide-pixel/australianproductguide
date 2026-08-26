@@ -12,11 +12,20 @@ const compatibility=[...api.matchAll(/Compatibility lineage: module\.exports=req
 const sideEffects=[...api.matchAll(/^require\('([^']+)'\);$/gm)].map(m=>m[1]);
 const outerRuntime=(api.match(/const runtime=require\('([^']+)'\);/)||[])[1]||null;
 const postLineageGuard=(api.match(/const hardConstraintParity=require\('([^']+)'\);/)||[])[1]||null;
+const transportGuard=(api.match(/const decisionTransportParity=require\('([^']+)'\);/)||[])[1]||null;
+const scoutPatch=(api.match(/const scoutCustomerIntelligence=require\('([^']+)'\);/)||[])[1]||null;
+const premiumWrapper=(api.match(/const premiumExperience=require\('([^']+)'\);/)||[])[1]||null;
 
-assert.equal(outerRuntime,'../lib/action5-catalogue-certification-v106-runtime','v106 must remain the canonical outer Production runtime until an explicitly certified successor replaces it');
+assert.equal(outerRuntime,'../lib/action5-catalogue-certification-v106-runtime','v106 must remain the canonical underlying Production runtime until an explicitly certified successor replaces it');
 assert.equal(postLineageGuard,'../lib/hard-constraint-result-parity-v1','hard-constraint proof parity must be installed explicitly after the full re-ranking lineage');
-assert(api.includes('hardConstraintParity.install();'),'post-lineage parity guard must be explicitly installed');
-assert(api.includes('module.exports=runtime;'),'the parity guard must not replace the v106 HTTP runtime');
+assert.equal(transportGuard,'../lib/decision-transport-parity-v1-runtime','public decision JSON must resolve the shared engine through an explicit request-time transport guard');
+assert.equal(scoutPatch,'../lib/scout-customer-intelligence-v6','Scout customer intelligence must remain an explicit post-lineage patch over the existing shared engine');
+assert.equal(premiumWrapper,'../lib/premium-experience-v107-runtime','premium UI must remain an explicit progressive-enhancement wrapper over the current SSR runtime');
+assert(api.includes('hardConstraintParity.install();'),'post-lineage hard-constraint parity must be explicitly installed');
+assert(api.includes('scoutCustomerIntelligence.install();'),'Scout v6 must be explicitly installed after the authoritative runtime lineage');
+assert(api.includes('const transportHandler=decisionTransportParity.wrap(runtime);'),'decision transport wrapper must delegate to v106 rather than replace its business logic');
+assert(api.includes('const handler=premiumExperience.wrap(transportHandler);'),'premium experience must wrap the governed transport without replacing SSR/runtime logic');
+assert(api.includes('module.exports=handler;'),'governed composed handler must be the public export');
 assert(compatibility.length>=40,`expected the documented compatibility chain to remain visible for controlled consolidation; found ${compatibility.length}`);
 assert(compatibility.includes('../lib/search-opportunity-depth-v104-runtime'));
 assert(compatibility.includes('../lib/decision-hard-constraint-fallback-v1036'));
@@ -36,18 +45,24 @@ assert(deploy.includes('canonical-decision-state-v2-qa.js'));
 assert(deploy.includes('category-completion-gate-v1-qa.js'));
 assert(deploy.includes('recommendation-trace-v1-qa.js'));
 assert(deploy.includes('evidence-aware-confidence-v1-qa.js'));
+assert(deploy.includes('decision-transport-parity-v1-qa.js'),'decision transport parity must be a deploy gate');
+assert(deploy.includes('scout-customer-intelligence-v6-qa.js'),'Scout v6 customer intelligence must be a deploy gate');
+assert(deploy.includes('premium-experience-v107-qa.js'),'premium mobile/global Scout experience must be a deploy gate');
 
 const deps=Object.keys(pkg.dependencies||{});
 for(const framework of ['next','react','vue','@angular/core','svelte'])assert(!deps.includes(framework),`complexity guardrail: ${framework} must not be introduced without an approved architecture case`);
 
 console.log(JSON.stringify({
   ok:true,
-  outerRuntime,
+  underlyingRuntime:outerRuntime,
   postLineageGuard,
+  transportGuard,
+  scoutPatch,
+  premiumWrapper,
   compatibilityLayerCount:compatibility.length,
   preRuntimeSideEffectInstallerCount:sideEffects.length,
   preRuntimeSideEffectInstallers:sideEffects,
   brandParityFirstGate:true,
   prohibitedFrameworksAbsent:true,
-  policy:'Inventory before consolidation. Post-lineage guards must be explicit and may not replace the canonical v106 HTTP runtime. No wrapper or side-effect dependency is deleted without route/API/browser/SEO parity proof.'
+  policy:'Inventory before consolidation. v106 remains the underlying governed runtime; narrowly scoped request-time intelligence and progressive-enhancement wrappers may compose around it only with explicit regression gates. No compatibility layer is deleted without route/API/browser/SEO parity proof.'
 },null,2));
