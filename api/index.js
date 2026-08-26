@@ -70,9 +70,12 @@ require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
 
 // Post-lineage parity guards install only after the authoritative v106 runtime has loaded
-// every current re-ranking layer. They do not replace v106 or create another HTTP runtime.
+// every current re-ranking layer. They do not replace v106 or create another recommendation engine.
 const runtime=require('../lib/action5-catalogue-certification-v106-runtime');
 const hardConstraintParity=require('../lib/hard-constraint-result-parity-v1');
+const decisionTransportParity=require('../lib/decision-transport-parity-v1-runtime');
 hardConstraintParity.install();
-runtime.HARD_CONSTRAINT_RESULT_PARITY_VERSION=hardConstraintParity.VERSION;
-module.exports=runtime;
+const handler=decisionTransportParity.wrap(runtime);
+handler.HARD_CONSTRAINT_RESULT_PARITY_VERSION=hardConstraintParity.VERSION;
+handler.DECISION_TRANSPORT_PARITY_VERSION=decisionTransportParity.VERSION;
+module.exports=handler;
