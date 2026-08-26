@@ -1,11 +1,18 @@
 (()=>{'use strict';
-const VERSION='112.0',COMPARE_KEY='apgCompare',MAX_COMPARE=4;
+const VERSION='112.0',COMPARE_KEY='apgCompare',SAVED_KEY='apgSaved',MAX_COMPARE=4,MAX_SAVED=50;
 const body=document.body;if(!body||body.dataset.apgPremiumMobileCommerce!==`v${VERSION}`)return;
 const safeJSON=(value,fallback)=>{try{return JSON.parse(value)||fallback}catch{return fallback}};
-const readCompare=()=>{const rows=safeJSON(localStorage.getItem(COMPARE_KEY),[]);return Array.isArray(rows)?rows.filter(Boolean).slice(0,MAX_COMPARE):[]};
-const writeCompare=rows=>{localStorage.setItem(COMPARE_KEY,JSON.stringify(rows.slice(0,MAX_COMPARE)));window.dispatchEvent(new CustomEvent('apg-workspace-synced',{detail:{type:'compare'}}));};
+const readList=(key,limit)=>{const rows=safeJSON(localStorage.getItem(key),[]);return Array.isArray(rows)?[...new Set(rows.filter(Boolean))].slice(0,limit):[]};
+const readCompare=()=>readList(COMPARE_KEY,MAX_COMPARE),readSaved=()=>readList(SAVED_KEY,MAX_SAVED);
+const writeList=(key,rows,limit,type)=>{localStorage.setItem(key,JSON.stringify([...new Set(rows.filter(Boolean))].slice(0,limit)));window.dispatchEvent(new CustomEvent('apg-workspace-synced',{detail:{type}}));};
+const writeCompare=rows=>writeList(COMPARE_KEY,rows,MAX_COMPARE,'compare');
+const writeSaved=rows=>writeList(SAVED_KEY,rows,MAX_SAVED,'saved');
 const scoutLauncher=()=>document.querySelector('#apgAssistantLauncher,#scout-v5-launcher,[data-scout-v5-launcher]');
 const scoutPanel=()=>document.querySelector('#apgAssistantPanel,#scout-v5-panel,[data-scout-v5-panel]');
+let liveRegion=null;
+function announce(message){if(!liveRegion){liveRegion=document.createElement('p');liveRegion.className='apg112-live';liveRegion.setAttribute('role','status');liveRegion.setAttribute('aria-live','polite');document.body.append(liveRegion);}liveRegion.textContent='';requestAnimationFrame(()=>{liveRegion.textContent=message});}
+function toggleCompare(slug){const current=readCompare(),index=current.indexOf(slug);if(index>=0){current.splice(index,1);writeCompare(current);announce('Removed from comparison.');return false;}if(current.length>=MAX_COMPARE){announce('Comparison is full. Remove a product before adding another.');return null;}current.push(slug);writeCompare(current);announce('Added to comparison.');return true;}
+function toggleSaved(slug){const current=readSaved(),index=current.indexOf(slug);if(index>=0){current.splice(index,1);writeSaved(current);announce('Removed from saved products.');return false;}current.unshift(slug);writeSaved(current);announce('Saved to My APG.');return true;}
 
 function initHomeCategories(){
  const grid=document.querySelector('[data-apg112-home-categories]');if(!grid)return;
@@ -16,7 +23,7 @@ function initHomeCategories(){
  window.addEventListener('resize',sync,{passive:true});sync();
 }
 function comparableRows(){
- const selectors=['[data-compare-row]','.comparison-table tbody tr','.comparison-table .row','.compare-table tbody tr','.comparison-spec-row','.comparison-row','.spec-comparison-row'];
+ const selectors=['[data-compare-row]','table.compare tbody tr','.comparison-table tbody tr','.comparison-table .row','.compare-table tbody tr','.comparison-spec-row','.comparison-row','.spec-comparison-row'];
  return [...new Set(selectors.flatMap(s=>[...document.querySelectorAll(s)]))].filter(row=>!row.closest('[data-apg112-compare-toolbar]'));
 }
 function rowValues(row){
@@ -31,14 +38,33 @@ function initDifferences(){
  const apply=()=>{const only=toggle.getAttribute('aria-pressed')==='true';rows.forEach(row=>{row.hidden=only&&row.dataset.apg112Identical==='true';});toggle.innerHTML=`<span aria-hidden="true">≠</span> ${only?'Only differences':'Show all details'}`;};
  toggle.addEventListener('click',()=>{toggle.setAttribute('aria-pressed',String(toggle.getAttribute('aria-pressed')!=='true'));apply();});apply();
 }
+function syncActionStates(){
+ const compared=readCompare(),saved=readSaved();
+ document.querySelectorAll('[data-compare-product]').forEach(btn=>{const active=compared.includes(btn.dataset.compareProduct);btn.setAttribute('aria-pressed',String(active));btn.textContent=active?'In compare':'Compare';});
+ document.querySelectorAll('[data-save-product]').forEach(btn=>{const active=saved.includes(btn.dataset.saveProduct);btn.setAttribute('aria-pressed',String(active));btn.textContent=active?'♥':'♡';btn.setAttribute('aria-label',active?'Remove from saved products':'Save product');});
+ document.querySelectorAll('[data-apg112-scout-compare]').forEach(btn=>{const active=compared.includes(btn.dataset.apg112ScoutCompare);btn.setAttribute('aria-pressed',String(active));btn.textContent=active?'In compare':'Compare';});
+ document.querySelectorAll('[data-apg112-scout-save]').forEach(btn=>{const active=saved.includes(btn.dataset.apg112ScoutSave);btn.setAttribute('aria-pressed',String(active));btn.textContent=active?'Saved':'Save';});
+}
+function initCardActions(){
+ document.querySelectorAll('[data-compare-product]').forEach(btn=>{if(btn.dataset.apg112Bound)return;btn.dataset.apg112Bound='true';btn.addEventListener('click',()=>{toggleCompare(btn.dataset.compareProduct);syncActionStates();});});
+ document.querySelectorAll('[data-save-product]').forEach(btn=>{if(btn.dataset.apg112Bound)return;btn.dataset.apg112Bound='true';btn.addEventListener('click',()=>{toggleSaved(btn.dataset.saveProduct);syncActionStates();});});
+ syncActionStates();
+}
 function initScoutContext(){
  const launcher=scoutLauncher();if(!launcher)return;
  const product=body.dataset.apg112Product,category=body.dataset.apg112Category,compared=(body.dataset.apg112CompareProducts||'').split(',').filter(Boolean);
- const label=product?'Scout knows the product on this page.':compared.length?`Scout knows the ${compared.length} products in this comparison.`:category?'Scout knows the category you are browsing.':'';
+ const label=product?'Scout knows the product on this page and can explain fit, trade-offs or alternatives.':compared.length?`Scout knows the ${compared.length} products in this comparison and can explain the deciding differences.`:category?'Scout knows this category and its maintained decision criteria.':'';
  const enhance=()=>{
    const panel=scoutPanel();if(!panel)return;
    if(label&&!panel.querySelector('.apg112-scout-context')){const cue=document.createElement('p');cue.className='apg112-scout-context';cue.textContent=label;const target=panel.querySelector('header,.scout-v5-head,.scout-head')||panel.firstElementChild;target?target.insertAdjacentElement('afterend',cue):panel.prepend(cue);}
-   panel.querySelectorAll('a[href^="/products/"]').forEach(link=>{const match=link.getAttribute('href').match(/^\/products\/([^/]+)\//);if(!match)return;const card=link.closest('article,.scout-card,.scout-v5-card,[data-product-card]')||link.parentElement;if(!card||card.querySelector(`[data-apg112-scout-compare="${match[1]}"]`))return;const button=document.createElement('button');button.type='button';button.className='button secondary';button.dataset.apg112ScoutCompare=match[1];button.setAttribute('aria-pressed',String(readCompare().includes(match[1])));button.textContent=readCompare().includes(match[1])?'Added to compare':'Compare';button.addEventListener('click',()=>{const current=readCompare();if(!current.includes(match[1])){if(current.length>=MAX_COMPARE)current.shift();current.push(match[1]);writeCompare(current);}button.textContent='Added to compare';button.setAttribute('aria-pressed','true');});card.append(button);});
+   panel.querySelectorAll('a[href^="/products/"]').forEach(link=>{
+     const match=link.getAttribute('href').match(/^\/products\/([^/]+)\//);if(!match)return;const slug=match[1];
+     const card=link.closest('article,.scout-card,.scout-v5-card,[data-product-card]')||link.parentElement;if(!card||card.querySelector(`[data-apg112-scout-actions="${slug}"]`))return;
+     const actions=document.createElement('div');actions.className='apg112-scout-actions';actions.dataset.apg112ScoutActions=slug;
+     const compare=document.createElement('button');compare.type='button';compare.className='button secondary';compare.dataset.apg112ScoutCompare=slug;compare.addEventListener('click',()=>{toggleCompare(slug);syncActionStates();});
+     const save=document.createElement('button');save.type='button';save.className='button secondary';save.dataset.apg112ScoutSave=slug;save.addEventListener('click',()=>{toggleSaved(slug);syncActionStates();});
+     actions.append(compare,save);card.append(actions);syncActionStates();
+   });
  };
  launcher.addEventListener('click',()=>{[80,280,650].forEach(ms=>window.setTimeout(enhance,ms));});
 }
@@ -53,6 +79,5 @@ function initScoutCollision(){
  const schedule=()=>{if(queued)return;queued=true;requestAnimationFrame(calculate)};
  ['resize','scroll'].forEach(evt=>window.addEventListener(evt,schedule,{passive:true}));window.addEventListener('apg-workspace-synced',schedule);launcher.addEventListener('click',schedule);schedule();
 }
-function syncActionStates(){const compared=readCompare();document.querySelectorAll('[data-compare-product]').forEach(btn=>btn.setAttribute('aria-pressed',String(compared.includes(btn.dataset.compareProduct))));}
-initHomeCategories();initDifferences();initScoutContext();initScoutCollision();syncActionStates();window.addEventListener('apg-workspace-synced',syncActionStates);
+initHomeCategories();initDifferences();initCardActions();initScoutContext();initScoutCollision();window.addEventListener('apg-workspace-synced',syncActionStates);
 })();
