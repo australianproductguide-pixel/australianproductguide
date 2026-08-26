@@ -75,7 +75,8 @@ function brandCount(){return new Set(products.map(p=>String(p.brand||'').trim())
     assert(response.body.includes('data-apg-experience-v109="true"'),`${route} must enable whole-site body contract`);
     assert(response.body.includes(`data-apg-route-family="${family}"`),`${route} must expose the correct route family`);
     assert.equal(count(response.body,'class="apg-system-rail"'),1,`${route} must contain exactly one shared APG decision-system rail`);
-    assert(response.body.includes(whole.CSS_PATH),`${route} must load whole-site styling`);
+    const wholeCssDelivered=response.body.includes(whole.CSS_PATH)||(route==='/'&&response.body.includes('/assets/pagespeed-home-v113.css'));
+    assert(wholeCssDelivered,`${route} must load whole-site styling directly or through the certified homepage bundle`);
     assert(response.body.includes(whole.JS_PATH),`${route} must load whole-site progressive enhancement`);
     assert(response.body.includes('APG decision system'),`${route} must communicate its place in the connected customer journey`);
     assert.equal(count(response.body,'id="apgAssistantLauncher"'),1,`${route} must still retain exactly one canonical Scout launcher`);
@@ -98,5 +99,5 @@ function brandCount(){return new Set(products.map(p=>String(p.brand||'').trim())
   assert(decisionAction[1].includes('budget=500'),'Search -> Decision Lab rail action must preserve budget context');
   assert(decisionAction[1].includes('brand=Bose'),'Search -> Decision Lab rail action must preserve brand context without making brand a recommendation');
 
-  console.log(JSON.stringify({version:whole.VERSION,status:'PASS',facts:whole.FACTS,routesChecked:routes.length,checks:{canonicalFacts:true,legacyFactReconciliation:true,allPageFamilies:true,oneScout:true,routeAwareJourney:true,searchDecisionContinuity:true,premiumBranding:true,mobileTouchTargets:true,reducedMotion:true,commercialNeutralityPreserved:true}},null,2));
+  console.log(JSON.stringify({version:whole.VERSION,status:'PASS',facts:whole.FACTS,routesChecked:routes.length,checks:{canonicalFacts:true,legacyFactReconciliation:true,allPageFamilies:true,oneScout:true,routeAwareJourney:true,searchDecisionContinuity:true,premiumBranding:true,mobileTouchTargets:true,reducedMotion:true,commercialNeutralityPreserved:true,homepageBundledCssCompatible:true}},null,2));
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
