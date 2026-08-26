@@ -7,7 +7,7 @@ const {imageStatus}=require('../data/image-provenance');
 const searchDepth=require('../data/search-opportunity-depth-v104');
 
 const expect=(ok,msg)=>assert.ok(ok,msg);
-expect(runtime.VERSION==='112.0','v112 runtime version mismatch');
+expect(runtime.VERSION==='112.1','v112.1 runtime version mismatch');
 const runtimeSource=fs.readFileSync('lib/premium-mobile-decision-commerce-v112-runtime.js','utf8');
 const clientSource=fs.readFileSync('public/assets/premium-mobile-decision-commerce-v112.js','utf8');
 const cssSource=fs.readFileSync('public/assets/premium-mobile-decision-commerce-v112.css','utf8');
@@ -76,6 +76,17 @@ for(const token of ['Search products','Describe what I need','Browse categories'
 expect(homeOut.includes('<a>E</a>'),'Homepage SSR must retain all category content before progressive collapse');
 expect(runtime.transform(homeOut,'/',hu)===homeOut,'v112 transform must be idempotent');
 
+const homeWithoutTrustStrip=`<!doctype html><html><head><title>x</title></head><body><main><div class="hero-links"><a>x</a></div><div class="category-grid premium-category-grid"><a>A</a></div></main><footer>Footer</footer></body></html>`;
+const fallbackHomeOut=runtime.transform(homeWithoutTrustStrip,'/',hu);
+const fallbackRail=fallbackHomeOut.indexOf('data-apg112-depth-rail="true"');
+const fallbackMainClose=fallbackHomeOut.lastIndexOf('</main>');
+const fallbackFooter=fallbackHomeOut.indexOf('<footer');
+const fallbackHtmlClose=fallbackHomeOut.lastIndexOf('</html>');
+expect(fallbackRail>=0,'Homepage fallback must still render the Priority Decision Areas rail');
+expect(fallbackRail<fallbackMainClose,'Homepage fallback must place Priority Decision Areas inside main');
+expect(fallbackRail<fallbackFooter,'Homepage fallback must place Priority Decision Areas before footer');
+expect(fallbackHomeOut.slice(fallbackHtmlClose+'</html>'.length).trim()==='','Homepage fallback must never append rendered content after </html>');
+
 const productHtml=`<!doctype html><html><head></head><body><section class="product-hero"><div>Hero</div></section><div class="wrap decision-layout"><div>Fit</div></div><div id="where-to-buy" class="wrap"><section class="retailer-panel"><p>legacy</p></section></div><section class="section soft-section full-bleed"><div>Facts</div></section><aside class="evidence-box">Evidence</aside></body></html>`;
 const pu=new URL(`https://australianproductguide.au/products/${candidate.slug}/`);
 const productOut=runtime.transform(productHtml,pu.pathname,pu);
@@ -83,6 +94,6 @@ expect((productOut.match(/id="where-to-buy"/g)||[]).length===1,'Product v112 cre
 for(const token of ['data-apg112-product-nav','apg112-summary','apg112-fit','apg112-facts','apg112-evidence','data-apg112-offer-layer'])expect(productOut.includes(token),`Product progressive disclosure missing ${token}`);
 
 const contexts=['/search/','/categories/','/decision-lab/','/my-apg/'];
-for(const path of contexts){const u=new URL(`https://australianproductguide.au${path}`);const out=runtime.transform('<html><head></head><body><main>ok</main></body></html>',path,u);expect(out.includes('data-apg-premium-mobile-commerce="v112.0"'),`Global v112 marker missing on ${path}`);}
+for(const path of contexts){const u=new URL(`https://australianproductguide.au${path}`);const out=runtime.transform('<html><head></head><body><main>ok</main></body></html>',path,u);expect(out.includes('data-apg-premium-mobile-commerce="v112.1"'),`Global v112.1 marker missing on ${path}`);}
 
-console.log(JSON.stringify({status:'PASS',version:runtime.VERSION,products:products.length,priorityDecisionAreas:Object.keys(searchDepth.categoryDepth||{}).length,formalDecisionGradeClaim:false,imageryTrustGate:true,retailerCommissionWeightingChanged:false,workspaceActions:'established-local-keys',wholeSiteV109Outermost:true,notes:['Priority decision areas are not formal Category Completion Gate certification.','v112 does not close pre-existing Amazon exact-link, imagery, price, stock or category-evidence backlogs.']},null,2));
+console.log(JSON.stringify({status:'PASS',version:runtime.VERSION,products:products.length,priorityDecisionAreas:Object.keys(searchDepth.categoryDepth||{}).length,formalDecisionGradeClaim:false,imageryTrustGate:true,retailerCommissionWeightingChanged:false,workspaceActions:'established-local-keys',wholeSiteV109Outermost:true,documentOrderFallbackCertified:true,notes:['Priority decision areas are not formal Category Completion Gate certification.','v112.1 does not close pre-existing Amazon exact-link, imagery, price, stock or category-evidence backlogs.']},null,2));
