@@ -22,7 +22,7 @@ function render(url){
 }
 
 (async()=>{
-  assert.equal(verification.VERSION,'1.0');
+  assert.equal(verification.VERSION,'1.1');
   assert.deepEqual(Object.values(verification.STATES),['RECOGNISED','VERIFIED','UNVERIFIED','FAILED']);
 
   const absent=verification.explicitNegativeTagEvidence({specs:[['ANC','No']]},'anc');
@@ -46,17 +46,23 @@ function render(url){
   const excludedTrace=verification.constraintVerification(excludedVerified,{requiredTags:[],hardExcludedTags:['gaming']});
   assert.equal(excludedTrace[0]?.state,'VERIFIED');
 
-  const recognised=verification.recognisedConstraints({budgetHard:true,budget:400,requiredTags:['anc'],hardExcludedTags:['gaming'],excludedBrands:['Brand X'],numericConstraints:[{key:'screen-size-inches',label:'screen size',value:75,unit:'in',mode:'exact',hard:true}]});
-  assert.equal(recognised.length,5);
-  assert(recognised.every(x=>x.state==='RECOGNISED'));
+  const requiredBrandTrace=verification.constraintVerification({p:{brand:'Bose'},reasons:['Matches required brand Bose'],hardFailures:[],conflicts:[]},{requiredBrands:['Bose']});
+  assert.equal(requiredBrandTrace[0]?.state,'VERIFIED','maintained exact brand identity must verify a required-brand constraint');
+  const wrongBrandTrace=verification.constraintVerification({p:{brand:'Sony'},reasons:[],hardFailures:['Required brand is Bose'],conflicts:['Sony does not match your required brand']},{requiredBrands:['Bose']});
+  assert.equal(wrongBrandTrace[0]?.state,'FAILED','a different maintained brand must fail a required-brand constraint');
 
-  assert.equal(decision.HARD_CONSTRAINT_VERIFICATION_VERSION,'1.0','shared Decision Engine must expose the verification version after current runtime installation');
+  const recognised=verification.recognisedConstraints({budgetHard:true,budget:400,requiredTags:['anc'],hardExcludedTags:['gaming'],excludedBrands:['Brand X'],requiredBrands:['Bose'],numericConstraints:[{key:'screen-size-inches',label:'screen size',value:75,unit:'in',mode:'exact',hard:true}]});
+  assert.equal(recognised.length,6);
+  assert(recognised.every(x=>x.state==='RECOGNISED'));
+  assert(recognised.some(x=>x.key==='required-brand:bose'));
+
+  assert.equal(decision.HARD_CONSTRAINT_VERIFICATION_VERSION,'1.1','shared Decision Engine must expose the verification version after current runtime installation');
 
   const requiredAnc=await render('/api/decision?q=wireless+headphones+must+have+anc&category=wireless-headphones');
   assert.equal(requiredAnc.status,200);
   const anc=JSON.parse(requiredAnc.body);
   assert.equal(anc.commercialRecommendationWeight,0);
-  assert.equal(anc.constraintVerification?.version,'1.0');
+  assert.equal(anc.constraintVerification?.version,'1.1');
   assert((anc.constraintVerification?.recognised||[]).some(x=>x.key==='required:anc'&&x.state==='RECOGNISED'),'required ANC must be explicitly recognised');
   assert.equal(anc.results[0]?.constraintVerification?.find(x=>x.key==='required:anc')?.state,'VERIFIED','known ANC evidence must verify the must-have');
   assert.equal(anc.results[0]?.hardConstraintStatus,'eligible');
@@ -84,5 +90,5 @@ function render(url){
   assert(noMatch.results.every(row=>row.hardConstraintStatus==='ineligible'));
   assert(noMatch.results.every(row=>row.constraintVerification?.find(x=>x.key==='numeric:screen-size-inches')?.state==='FAILED'),'verified numeric conflicts must be explicit FAILED states');
 
-  console.log('HARD_CONSTRAINT_VERIFICATION_V1=PASS states=RECOGNISED|VERIFIED|UNVERIFIED|FAILED no-evidence-is-not-absence commercialWeight=0');
+  console.log('HARD_CONSTRAINT_VERIFICATION_V1=PASS version=1.1 states=RECOGNISED|VERIFIED|UNVERIFIED|FAILED required-brand=verified no-evidence-is-not-absence commercialWeight=0');
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1);});
