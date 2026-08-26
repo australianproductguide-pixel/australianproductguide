@@ -96,6 +96,8 @@ const wholeSiteHandler=wholeSiteExperience.wrap(stableJourneyHandler);
 // v112 is deliberately outermost: it can surface decision and retailer evidence after all
 // canonical ranking/state layers have run, without changing those underlying decisions.
 const handler=premiumMobileDecisionCommerce.wrap(wholeSiteHandler);
+// Preserve all established outer-runtime certification metadata through the presentation wrapper.
+Object.assign(handler,wholeSiteHandler);
 handler.HARD_CONSTRAINT_RESULT_PARITY_VERSION=hardConstraintParity.VERSION;
 handler.DECISION_TRANSPORT_PARITY_VERSION=decisionTransportParity.VERSION;
 handler.SCOUT_CUSTOMER_INTELLIGENCE_VERSION=scoutCustomerIntelligence.VERSION;
