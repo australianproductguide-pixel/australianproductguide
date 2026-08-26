@@ -19,6 +19,7 @@ const premiumWrapper=(api.match(/const premiumExperience=require\('([^']+)'\);/)
 const journeyWrapper=(api.match(/const decisionJourneyContinuity=require\('([^']+)'\);/)||[])[1]||null;
 const premiumClientStabilityWrapper=(api.match(/const premiumClientStability=require\('([^']+)'\);/)||[])[1]||null;
 const wholeSiteWrapper=(api.match(/const wholeSiteExperience=require\('([^']+)'\);/)||[])[1]||null;
+const speedInsightsWrapper=(api.match(/const vercelSpeedInsights=require\('([^']+)'\);/)||[])[1]||null;
 
 assert.equal(outerRuntime,'../lib/action5-catalogue-certification-v106-runtime','v106 must remain the canonical underlying Production runtime until an explicitly certified successor replaces it');
 assert.equal(postLineageGuard,'../lib/hard-constraint-result-parity-v1','hard-constraint proof parity must be installed explicitly after the full re-ranking lineage');
@@ -29,6 +30,7 @@ assert.equal(premiumWrapper,'../lib/premium-experience-v107-runtime','premium UI
 assert.equal(journeyWrapper,'../lib/decision-journey-continuity-v108-runtime','decision journey continuity must remain a narrow SSR handoff layer without a new state store');
 assert.equal(premiumClientStabilityWrapper,'../lib/premium-client-stability-v1091-runtime','v109.1 must remain a narrow client-stability guard, not another product or decision runtime');
 assert.equal(wholeSiteWrapper,'../lib/whole-site-experience-v109-runtime','whole-site experience must remain a presentation/communication wrapper rather than a second product or decision runtime');
+assert.equal(speedInsightsWrapper,'../lib/vercel-speed-insights-v112-runtime','Vercel Speed Insights must remain a narrow first-party observability wrapper rather than product/runtime logic');
 assert(api.includes('hardConstraintParity.install();'),'post-lineage hard-constraint parity must be explicitly installed');
 assert(api.includes('scoutCustomerIntelligence.install();'),'Scout v6 must be explicitly installed after the authoritative runtime lineage');
 assert(api.includes('scoutResponseDepth.install();'),'Scout response depth must install only after Scout v6');
@@ -37,10 +39,12 @@ assert(api.includes('const transportHandler=decisionTransportParity.wrap(runtime
 assert(api.includes('const premiumHandler=premiumExperience.wrap(transportHandler);'),'premium experience must wrap the governed transport without replacing SSR/runtime logic');
 assert(api.includes('const journeyHandler=decisionJourneyContinuity.wrap(premiumHandler);'),'journey continuity must wrap the premium SSR response without replacing product/decision logic');
 assert(api.includes('const stableJourneyHandler=premiumClientStability.wrap(journeyHandler);'),'v109.1 stability must guard only the premium client asset path without replacing the decision or product runtime');
-assert(api.includes('const handler=wholeSiteExperience.wrap(stableJourneyHandler);'),'whole-site experience must remain the final outer HTML communication layer after the narrow v109.1 stability guard');
+assert(api.includes('const wholeSiteHandler=wholeSiteExperience.wrap(stableJourneyHandler);'),'v109 whole-site presentation must remain the final presentation/communication layer');
+assert(api.includes('const handler=vercelSpeedInsights.wrap(wholeSiteHandler);'),'Speed Insights may wrap the final HTML handler only as narrow first-party observability');
 assert(api.indexOf('const premiumHandler=premiumExperience.wrap(transportHandler);')<api.indexOf('const journeyHandler=decisionJourneyContinuity.wrap(premiumHandler);'),'v108 journey continuity must compose over v107 premium SSR');
 assert(api.indexOf('const journeyHandler=decisionJourneyContinuity.wrap(premiumHandler);')<api.indexOf('const stableJourneyHandler=premiumClientStability.wrap(journeyHandler);'),'v109.1 client stability must compose outside v108 without altering its HTML decisions');
-assert(api.indexOf('const stableJourneyHandler=premiumClientStability.wrap(journeyHandler);')<api.indexOf('const handler=wholeSiteExperience.wrap(stableJourneyHandler);'),'v109 whole-site presentation must remain outermost');
+assert(api.indexOf('const stableJourneyHandler=premiumClientStability.wrap(journeyHandler);')<api.indexOf('const wholeSiteHandler=wholeSiteExperience.wrap(stableJourneyHandler);'),'v109 whole-site presentation must remain outside the application experience wrappers');
+assert(api.indexOf('const wholeSiteHandler=wholeSiteExperience.wrap(stableJourneyHandler);')<api.indexOf('const handler=vercelSpeedInsights.wrap(wholeSiteHandler);'),'observability may wrap v109 only after all presentation logic is composed');
 assert(api.includes('module.exports=handler;'),'governed composed handler must be the public export');
 assert(compatibility.length>=40,`expected the documented compatibility chain to remain visible for controlled consolidation; found ${compatibility.length}`);
 assert(compatibility.includes('../lib/search-opportunity-depth-v104-runtime'));
@@ -60,6 +64,10 @@ assert(responseSource.includes('commercialRecommendationWeight:0'),'Scout respon
 const wholeSiteSource=fs.readFileSync(path.join(root,'lib','whole-site-experience-v109-runtime.js'),'utf8');
 for(const banned of ['scoreProduct(','rankDecision(','publicDecision(','affiliateRecommendationWeight:1','commissionWeight','localStorage.setItem(','sessionStorage.setItem('])assert(!wholeSiteSource.includes(banned),`whole-site experience must remain presentation/communication only: ${banned}`);
 assert(wholeSiteSource.includes("const {categories,products}=require('../data');"),'canonical platform facts must be derived from the shared catalogue rather than copied marketing constants');
+
+const speedInsightsSource=fs.readFileSync(path.join(root,'lib','vercel-speed-insights-v112-runtime.js'),'utf8');
+for(const banned of ['scoreProduct(','rankDecision(','publicDecision(','affiliateRecommendationWeight:1','commissionWeight','localStorage.setItem(','sessionStorage.setItem('])assert(!speedInsightsSource.includes(banned),`Speed Insights must remain observability-only: ${banned}`);
+assert(speedInsightsSource.includes("DEFAULT_SCRIPT='/_vercel/speed-insights/script.js'"),'Speed Insights must retain the Vercel first-party default script route');
 
 const premiumStability=require(path.join(root,'lib','premium-client-stability-v1091-runtime.js'));
 assert.equal(premiumStability.VERSION,'109.1');
@@ -83,7 +91,7 @@ assert(deploy.includes('scout-customer-intelligence-v6-qa.js'),'Scout v6/custome
 assert(deploy.includes('premium-experience-v107-qa.js'),'premium mobile/global Scout experience must be a deploy gate');
 assert(deploy.includes('whole-site-experience-v109-qa.js'),'whole-site professionalisation and communication parity must be a deploy gate');
 assert(deploy.includes('decision-journey-continuity-v108-qa.js'),'connected Search/Scout/Decision Lab/Compare journey continuity must be a deploy gate');
-assert(deploy.includes('runtime-lineage-v1-qa.js'),'runtime lineage, including the v109.1 client stability guard, must itself remain a deploy gate');
+assert(deploy.includes('runtime-lineage-v1-qa.js'),'runtime lineage, including the v109.1 client stability guard and v112 observability wrapper, must itself remain a deploy gate');
 
 const deps=Object.keys(pkg.dependencies||{});
 for(const framework of ['next','react','vue','@angular/core','svelte'])assert(!deps.includes(framework),`complexity guardrail: ${framework} must not be introduced without an approved architecture case`);
@@ -99,13 +107,15 @@ console.log(JSON.stringify({
   journeyWrapper,
   premiumClientStabilityWrapper,
   wholeSiteWrapper,
+  speedInsightsWrapper,
   compatibilityLayerCount:compatibility.length,
   preRuntimeSideEffectInstallerCount:sideEffects.length,
   preRuntimeSideEffectInstallers:sideEffects,
   brandParityFirstGate:true,
   wholeSitePresentationOnly:true,
+  speedInsightsObservabilityOnly:true,
   premiumClientAriaSyncIdempotent:true,
   premiumClientObserverFeedbackLoopAbsent:true,
   prohibitedFrameworksAbsent:true,
-  policy:'Inventory before consolidation. v106 remains the underlying governed runtime; narrowly scoped request-time intelligence and SSR/progressive-enhancement experience wrappers may compose around it only with explicit regression gates. v109 remains outer presentation/communication. Premium v107 owns the safe Scout ARIA implementation directly; v109.1 fail-closed verifies and serves that safe asset without scoring, routing or storing customer state. No compatibility layer is deleted without route/API/browser/SEO parity proof.'
+  policy:'Inventory before consolidation. v106 remains the underlying governed runtime; narrowly scoped request-time intelligence and SSR/progressive-enhancement experience wrappers may compose around it only with explicit regression gates. v109 remains the final presentation/communication layer; a narrow first-party observability wrapper may sit outside it without scoring, routing or storing customer state. Premium v107 owns the safe Scout ARIA implementation directly; v109.1 fail-closed verifies and serves that safe asset. No compatibility layer is deleted without route/API/browser/SEO parity proof.'
 },null,2));

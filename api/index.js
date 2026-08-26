@@ -82,6 +82,7 @@ const premiumExperience=require('../lib/premium-experience-v107-runtime');
 const decisionJourneyContinuity=require('../lib/decision-journey-continuity-v108-runtime');
 const premiumClientStability=require('../lib/premium-client-stability-v1091-runtime');
 const wholeSiteExperience=require('../lib/whole-site-experience-v109-runtime');
+const vercelSpeedInsights=require('../lib/vercel-speed-insights-v112-runtime');
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
 scoutResponseDepth.install();
@@ -91,7 +92,10 @@ const journeyHandler=decisionJourneyContinuity.wrap(premiumHandler);
 // v109.1 fail-closed verifies and serves the intrinsically safe v107 client asset; it adds
 // no route, state or scoring logic. Whole-Site v109 remains the outer presentation wrapper.
 const stableJourneyHandler=premiumClientStability.wrap(journeyHandler);
-const handler=wholeSiteExperience.wrap(stableJourneyHandler);
+const wholeSiteHandler=wholeSiteExperience.wrap(stableJourneyHandler);
+// v112 adds only Vercel's first-party Speed Insights bootstrap to successful SSR HTML.
+// It remains outside product, recommendation, commerce and customer-state logic.
+const handler=vercelSpeedInsights.wrap(wholeSiteHandler);
 handler.HARD_CONSTRAINT_RESULT_PARITY_VERSION=hardConstraintParity.VERSION;
 handler.DECISION_TRANSPORT_PARITY_VERSION=decisionTransportParity.VERSION;
 handler.SCOUT_CUSTOMER_INTELLIGENCE_VERSION=scoutCustomerIntelligence.VERSION;
@@ -100,5 +104,6 @@ handler.PREMIUM_EXPERIENCE_VERSION=premiumExperience.VERSION;
 handler.DECISION_JOURNEY_CONTINUITY_VERSION=decisionJourneyContinuity.VERSION;
 handler.PREMIUM_CLIENT_STABILITY_VERSION=premiumClientStability.VERSION;
 handler.WHOLE_SITE_EXPERIENCE_VERSION=wholeSiteExperience.VERSION;
+handler.VERCEL_SPEED_INSIGHTS_VERSION=vercelSpeedInsights.VERSION;
 handler.APG_PLATFORM_FACTS=wholeSiteExperience.FACTS;
 module.exports=handler;
