@@ -80,6 +80,7 @@ const scoutCustomerIntelligence=require('../lib/scout-customer-intelligence-v6')
 const scoutResponseDepth=require('../lib/scout-response-depth-v61');
 const premiumExperience=require('../lib/premium-experience-v107-runtime');
 const decisionJourneyContinuity=require('../lib/decision-journey-continuity-v108-runtime');
+const premiumClientStability=require('../lib/premium-client-stability-v1091-runtime');
 const wholeSiteExperience=require('../lib/whole-site-experience-v109-runtime');
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
@@ -87,13 +88,17 @@ scoutResponseDepth.install();
 const transportHandler=decisionTransportParity.wrap(runtime);
 const premiumHandler=premiumExperience.wrap(transportHandler);
 const journeyHandler=decisionJourneyContinuity.wrap(premiumHandler);
-const handler=wholeSiteExperience.wrap(journeyHandler);
+// v109.1 only overrides the v107 client asset with an idempotent ARIA sync; it adds no
+// route, state or scoring logic. Whole-Site v109 remains the outer presentation wrapper.
+const stableJourneyHandler=premiumClientStability.wrap(journeyHandler);
+const handler=wholeSiteExperience.wrap(stableJourneyHandler);
 handler.HARD_CONSTRAINT_RESULT_PARITY_VERSION=hardConstraintParity.VERSION;
 handler.DECISION_TRANSPORT_PARITY_VERSION=decisionTransportParity.VERSION;
 handler.SCOUT_CUSTOMER_INTELLIGENCE_VERSION=scoutCustomerIntelligence.VERSION;
 handler.SCOUT_RESPONSE_DEPTH_VERSION=scoutResponseDepth.VERSION;
 handler.PREMIUM_EXPERIENCE_VERSION=premiumExperience.VERSION;
 handler.DECISION_JOURNEY_CONTINUITY_VERSION=decisionJourneyContinuity.VERSION;
+handler.PREMIUM_CLIENT_STABILITY_VERSION=premiumClientStability.VERSION;
 handler.WHOLE_SITE_EXPERIENCE_VERSION=wholeSiteExperience.VERSION;
 handler.APG_PLATFORM_FACTS=wholeSiteExperience.FACTS;
 module.exports=handler;
