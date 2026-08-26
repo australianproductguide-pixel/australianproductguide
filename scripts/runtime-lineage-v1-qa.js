@@ -15,16 +15,19 @@ const postLineageGuard=(api.match(/const hardConstraintParity=require\('([^']+)'
 const transportGuard=(api.match(/const decisionTransportParity=require\('([^']+)'\);/)||[])[1]||null;
 const scoutPatch=(api.match(/const scoutCustomerIntelligence=require\('([^']+)'\);/)||[])[1]||null;
 const premiumWrapper=(api.match(/const premiumExperience=require\('([^']+)'\);/)||[])[1]||null;
+const journeyWrapper=(api.match(/const decisionJourneyContinuity=require\('([^']+)'\);/)||[])[1]||null;
 
 assert.equal(outerRuntime,'../lib/action5-catalogue-certification-v106-runtime','v106 must remain the canonical underlying Production runtime until an explicitly certified successor replaces it');
 assert.equal(postLineageGuard,'../lib/hard-constraint-result-parity-v1','hard-constraint proof parity must be installed explicitly after the full re-ranking lineage');
 assert.equal(transportGuard,'../lib/decision-transport-parity-v1-runtime','public decision JSON must resolve the shared engine through an explicit request-time transport guard');
 assert.equal(scoutPatch,'../lib/scout-customer-intelligence-v6','Scout customer intelligence must remain an explicit post-lineage patch over the existing shared engine');
 assert.equal(premiumWrapper,'../lib/premium-experience-v107-runtime','premium UI must remain an explicit progressive-enhancement wrapper over the current SSR runtime');
+assert.equal(journeyWrapper,'../lib/decision-journey-continuity-v108-runtime','decision journey continuity must remain a narrow SSR handoff layer without a new state store');
 assert(api.includes('hardConstraintParity.install();'),'post-lineage hard-constraint parity must be explicitly installed');
 assert(api.includes('scoutCustomerIntelligence.install();'),'Scout v6 must be explicitly installed after the authoritative runtime lineage');
 assert(api.includes('const transportHandler=decisionTransportParity.wrap(runtime);'),'decision transport wrapper must delegate to v106 rather than replace its business logic');
-assert(api.includes('const handler=premiumExperience.wrap(transportHandler);'),'premium experience must wrap the governed transport without replacing SSR/runtime logic');
+assert(api.includes('const premiumHandler=premiumExperience.wrap(transportHandler);'),'premium experience must wrap the governed transport without replacing SSR/runtime logic');
+assert(api.includes('const handler=decisionJourneyContinuity.wrap(premiumHandler);'),'journey continuity must wrap the premium SSR response without replacing product/decision logic');
 assert(api.includes('module.exports=handler;'),'governed composed handler must be the public export');
 assert(compatibility.length>=40,`expected the documented compatibility chain to remain visible for controlled consolidation; found ${compatibility.length}`);
 assert(compatibility.includes('../lib/search-opportunity-depth-v104-runtime'));
@@ -48,6 +51,7 @@ assert(deploy.includes('evidence-aware-confidence-v1-qa.js'));
 assert(deploy.includes('decision-transport-parity-v1-qa.js'),'decision transport parity must be a deploy gate');
 assert(deploy.includes('scout-customer-intelligence-v6-qa.js'),'Scout v6 customer intelligence must be a deploy gate');
 assert(deploy.includes('premium-experience-v107-qa.js'),'premium mobile/global Scout experience must be a deploy gate');
+assert(deploy.includes('decision-journey-continuity-v108-qa.js'),'connected Search/Scout/Decision Lab/Compare journey continuity must be a deploy gate');
 
 const deps=Object.keys(pkg.dependencies||{});
 for(const framework of ['next','react','vue','@angular/core','svelte'])assert(!deps.includes(framework),`complexity guardrail: ${framework} must not be introduced without an approved architecture case`);
@@ -59,10 +63,11 @@ console.log(JSON.stringify({
   transportGuard,
   scoutPatch,
   premiumWrapper,
+  journeyWrapper,
   compatibilityLayerCount:compatibility.length,
   preRuntimeSideEffectInstallerCount:sideEffects.length,
   preRuntimeSideEffectInstallers:sideEffects,
   brandParityFirstGate:true,
   prohibitedFrameworksAbsent:true,
-  policy:'Inventory before consolidation. v106 remains the underlying governed runtime; narrowly scoped request-time intelligence and progressive-enhancement wrappers may compose around it only with explicit regression gates. No compatibility layer is deleted without route/API/browser/SEO parity proof.'
+  policy:'Inventory before consolidation. v106 remains the underlying governed runtime; narrowly scoped request-time intelligence and SSR/progressive-enhancement experience wrappers may compose around it only with explicit regression gates. No compatibility layer is deleted without route/API/browser/SEO parity proof.'
 },null,2));
