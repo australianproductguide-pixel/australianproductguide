@@ -28,6 +28,7 @@ function render(url,headers={}){
   const exclusion=await render('/api/decision?q=wireless%20headphones%20must%20not%20have%20gaming&category=wireless-headphones');
   assert.equal(exclusion.status,200,'exclusion API status');
   assert.equal(exclusion.headers['x-apg-decision-transport-parity'],guard.VERSION,'API decision must pass through request-time transport guard');
+  assert.equal(exclusion.headers['x-apg-decision-hard-constraint-fallback'],guard.HARD_CONSTRAINT_FALLBACK_VERSION,'request-time transport must preserve v103.6 remediation provenance');
   const payload=JSON.parse(exclusion.body);
   assert.equal(payload.commercialRecommendationWeight,0,'commercial recommendation weight must remain zero');
   assert.equal(payload.audit?.eligibleCount,0,'missing evidence for a hard exclusion must not be promoted to eligible');
@@ -40,16 +41,21 @@ function render(url,headers={}){
   const decisionLab=await render('/decision-lab/?q=wireless%20headphones%20must%20not%20have%20gaming&category=wireless-headphones',{'x-apg-decision-json':'1'});
   assert.equal(decisionLab.status,200,'Decision Lab JSON status');
   assert.equal(decisionLab.headers['x-apg-decision-transport-parity'],guard.VERSION,'Decision Lab JSON must use the same request-time transport guard');
+  assert.equal(decisionLab.headers['x-apg-decision-hard-constraint-fallback'],guard.HARD_CONSTRAINT_FALLBACK_VERSION,'Decision Lab JSON must preserve v103.6 remediation provenance');
   const labPayload=JSON.parse(decisionLab.body);
   assert.equal(labPayload.audit?.eligibleCount,0,'Decision Lab must agree with /api/decision eligibility');
   assert.equal(labPayload.audit?.unverifiedCount,payload.audit?.unverifiedCount,'Decision Lab and API must share candidate verification semantics');
   assert.equal(labPayload.audit?.hardConstraintFallback,true,'Decision Lab must retain hard-constraint fallback');
 
-  const exact75=JSON.parse((await render('/api/decision?q=TV+must+be+exactly+75+inches&category=televisions')).body);
+  const exact75Response=await render('/api/decision?q=TV+must+be+exactly+75+inches&category=televisions');
+  assert.equal(exact75Response.headers['x-apg-decision-hard-constraint-fallback'],guard.HARD_CONSTRAINT_FALLBACK_VERSION,'exact 75-inch benchmark must retain v103.6 provenance');
+  const exact75=JSON.parse(exact75Response.body);
   assert(exact75.audit?.eligibleCount>0,'known exact 75-inch benchmark must remain eligible');
   assert.equal(exact75.audit?.hardConstraintFallback,false,'valid exact 75-inch benchmark must not fall back');
 
-  const impossible999=JSON.parse((await render('/api/decision?q=TV+must+be+exactly+999+inches&category=televisions')).body);
+  const impossible999Response=await render('/api/decision?q=TV+must+be+exactly+999+inches&category=televisions');
+  assert.equal(impossible999Response.headers['x-apg-decision-hard-constraint-fallback'],guard.HARD_CONSTRAINT_FALLBACK_VERSION,'impossible 999-inch benchmark must retain v103.6 provenance');
+  const impossible999=JSON.parse(impossible999Response.body);
   assert.equal(impossible999.audit?.eligibleCount,0,'impossible 999-inch benchmark must have zero eligible products');
   assert.equal(impossible999.audit?.hardConstraintFallback,true,'impossible 999-inch benchmark must retain fallback');
 
@@ -58,5 +64,5 @@ function render(url,headers={}){
   assert(!appSource.includes("const {publicDecision}=require('./decision-engine')"),'base app must not capture the legacy publicDecision function');
   assert(appSource.includes('decision.publicDecision('),'base app must resolve publicDecision dynamically at request time');
 
-  console.log(JSON.stringify({version:guard.VERSION,status:'PASS',checks:{apiDynamicBinding:true,decisionLabDynamicBinding:true,hardExclusionFailClosed:true,exact75:true,impossible999:true,commercialWeightZero:true}},null,2));
+  console.log(JSON.stringify({version:guard.VERSION,status:'PASS',checks:{apiDynamicBinding:true,decisionLabDynamicBinding:true,legacyRemediationProvenance:true,hardExclusionFailClosed:true,exact75:true,impossible999:true,commercialWeightZero:true}},null,2));
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
