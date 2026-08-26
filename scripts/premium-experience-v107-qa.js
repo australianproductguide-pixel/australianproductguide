@@ -3,27 +3,37 @@
 const assert=require('node:assert/strict');
 const app=require('../api/index');
 const premium=require('../lib/premium-experience-v107-runtime');
+const stability=require('../lib/premium-client-stability-v1091-runtime');
 
-function render(url){
+function invoke(handler,url){
   return new Promise((resolve,reject)=>{
-    const headers={};
+    const headers={},written=[];
     const req={url,method:'GET',headers:{host:'australianproductguide.au'},on(){},destroy(){}};
     const res={
       statusCode:200,
       setHeader(k,v){headers[String(k).toLowerCase()]=String(v)},
       getHeader(k){return headers[String(k).toLowerCase()]},
       removeHeader(k){delete headers[String(k).toLowerCase()]},
-      write(){return true},
-      end(body=''){resolve({status:this.statusCode,headers,body:String(body||'')})}
+      write(body=''){written.push(Buffer.isBuffer(body)?body.toString('utf8'):String(body||''));return true},
+      end(body=''){resolve({status:this.statusCode,headers,body:written.join('')+(Buffer.isBuffer(body)?body.toString('utf8'):String(body||''))})}
     };
-    try{const result=app(req,res);if(result&&typeof result.then==='function')result.catch(reject)}catch(error){reject(error)}
+    try{const result=handler(req,res);if(result&&typeof result.then==='function')result.catch(reject)}catch(error){reject(error)}
   });
 }
+function render(url){return invoke(app,url)}
 function count(text,needle){return (String(text).match(new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'g'))||[]).length}
 
 (async()=>{
   assert.equal(app.PREMIUM_EXPERIENCE_VERSION,premium.VERSION,'outer runtime must expose premium experience version');
-  assert.match(premium.css,/\.apg-assistant-launcher\{position:fixed;left:20px;right:auto/,'Scout desktop launcher must be bottom-left, not homepage/right constrained');
+  assert.equal(app.PREMIUM_CLIENT_STABILITY_VERSION,stability.VERSION,'outer runtime must expose premium client stability version');
+  assert.equal(app.SCOUT_GLOBAL_SURFACE_VERSION,stability.SCOUT_GLOBAL_SURFACE_VERSION,'outer runtime must expose Scout global surface version');
+
+  // v107's historical left rule is deliberately superseded by the effective v110 surface.
+  assert.match(stability.scoutGlobalSurfaceCss,/\.apg-assistant-launcher\{[\s\S]*left:auto!important;[\s\S]*right:max\(20px,env\(safe-area-inset-right\)\)!important;[\s\S]*display:flex!important/,'Scout desktop launcher must be fixed to the right and globally visible');
+  assert.match(stability.scoutGlobalSurfaceCss,/\.apg-assistant-panel\{[\s\S]*left:auto!important;[\s\S]*right:max\(20px,env\(safe-area-inset-right\)\)!important/,'Scout desktop panel must open from the right');
+  assert.match(stability.scoutGlobalSurfaceCss,/@media\(max-width:760px\)[\s\S]*\.apg-assistant-launcher\{[\s\S]*left:auto!important;[\s\S]*right:max\(var\(--apg-premium-gutter\),env\(safe-area-inset-right\)\)!important/,'Scout mobile launcher must stay on the right with safe-area-aware gutters');
+  assert(stability.effectiveCss.endsWith(stability.scoutGlobalSurfaceCss),'right-side Scout rules must be appended after v107 so they win the cascade');
+
   assert.match(premium.css,/--apg-premium-gutter:18px/,'standard mobile gutter must be widened to 18px');
   assert.match(premium.css,/--apg-premium-gutter:16px/,'smallest mobile gutter must remain at least 16px');
   assert.match(premium.css,/@media\(max-width:340px\)/,'320px-class devices must have an explicit responsive safeguard');
@@ -43,13 +53,24 @@ function count(text,needle){return (String(text).match(new RegExp(needle.replace
   assert.match(premium.clientJs,/attributeFilter:\['hidden'\]/,'Premium observer may watch hidden state but must not watch aria-expanded that it synchronises');
   assert(!/attributeFilter:\[[^\]]*aria-expanded/.test(premium.clientJs),'Premium observer must not observe aria-expanded and write it in the same callback');
 
+  const cssResponse=await render(`${premium.CSS_PATH}?v=${premium.VERSION}`);
+  assert.equal(cssResponse.status,200,'effective premium stylesheet must render');
+  assert.equal(cssResponse.headers['x-apg-scout-global-surface'],'v'+stability.SCOUT_GLOBAL_SURFACE_VERSION,'effective CSS must expose Scout global-surface header');
+  assert(cssResponse.body.includes('APG Scout Global Surface v110.0'),'effective stylesheet must include right-side Scout override');
+
   const routes=[
     '/',
     '/search/?q=wireless+headphones',
+    '/categories/',
     '/categories/wireless-headphones/',
+    '/categories/wireless-headphones/finder/',
     '/products/bose-quietcomfort-ultra-headphones/',
     '/compare/wireless-headphones/',
     '/decision-lab/',
+    '/my-apg/',
+    '/guides/wireless-headphones-buying-guide/',
+    '/retailers/',
+    '/deals/',
     '/methodology/',
     '/this-route-does-not-exist/'
   ];
@@ -57,6 +78,7 @@ function count(text,needle){return (String(text).match(new RegExp(needle.replace
     const response=await render(route);
     assert(response.status===200||response.status===404,`${route} must render a valid document response`);
     assert.equal(response.headers['x-apg-premium-experience'],'v'+premium.VERSION,`${route} must pass through premium experience wrapper`);
+    assert.equal(response.headers['x-apg-scout-global-surface'],'v'+stability.SCOUT_GLOBAL_SURFACE_VERSION,`${route} must pass through the global Scout backstop`);
     assert(response.body.includes('data-apg-premium-v107="true"'),`${route} must enable premium body contract`);
     assert.equal(count(response.body,'id="apgAssistantLauncher"'),1,`${route} must contain exactly one global Scout launcher`);
     assert.equal(count(response.body,'id="apgAssistantPanel"'),1,`${route} must contain exactly one global Scout panel`);
@@ -65,6 +87,21 @@ function count(text,needle){return (String(text).match(new RegExp(needle.replace
     assert(response.body.includes(premium.JS_PATH),`${route} must load premium progressive enhancement JS`);
   }
 
+  // Prove the v109.1 compatibility layer now repairs chunked/Buffer SSR as well as a
+  // single-string res.end response. This closes the gap where a route could render without
+  // receiving the complete global Scout shell/assets/body marker.
+  const streamed=stability.wrap((req,res)=>{
+    res.setHeader('Content-Type','text/html; charset=utf-8');
+    res.write(Buffer.from('<!doctype html><html><head><title>Streamed</title></head><body><main>Streamed page</main>'));
+    res.end(Buffer.from('</body></html>'));
+  });
+  const streamedResponse=await invoke(streamed,'/streamed-test/');
+  assert.equal(count(streamedResponse.body,'id="apgAssistantLauncher"'),1,'chunked SSR must receive exactly one Scout launcher');
+  assert.equal(count(streamedResponse.body,'id="apgAssistantPanel"'),1,'chunked SSR must receive exactly one Scout panel');
+  assert(streamedResponse.body.includes('data-apg-premium-v107="true"'),'chunked SSR must receive premium body marker');
+  assert(streamedResponse.body.includes(premium.CSS_PATH),'chunked SSR must receive effective premium stylesheet');
+  assert.equal(streamedResponse.headers['x-apg-scout-global-surface'],'v'+stability.SCOUT_GLOBAL_SURFACE_VERSION,'chunked SSR must expose Scout global-surface header');
+
   const sample='<!doctype html><html><head></head><body><main>Sample</main></body></html>';
   const once=premium.inject(sample),twice=premium.inject(once);
   assert.equal(count(once,'id="apgAssistantLauncher"'),1,'plain SSR page must receive Scout shell');
@@ -72,5 +109,5 @@ function count(text,needle){return (String(text).match(new RegExp(needle.replace
   assert.equal(count(twice,premium.CSS_PATH),1,'premium stylesheet injection must be idempotent');
   assert.equal(count(twice,premium.JS_PATH),1,'premium client injection must be idempotent');
 
-  console.log(JSON.stringify({version:premium.VERSION,status:'PASS',routesChecked:routes.length,checks:{scoutEveryPage:true,bottomLeft:true,mobileGutters:true,smallScreen320Guard:true,inputReadability:true,secondaryTextReadability:true,wrappingTouchTargets:true,safeAreas:true,compareMobileLabels:true,compareViewportContainment:true,expandedContextPrompts:true,reducedMotion:true,observerLoopGuard:true,ssrProgressiveEnhancement:true}},null,2));
+  console.log(JSON.stringify({version:premium.VERSION,scoutGlobalSurfaceVersion:stability.SCOUT_GLOBAL_SURFACE_VERSION,status:'PASS',routesChecked:routes.length,checks:{scoutEveryPage:true,bottomRight:true,streamedHtmlBackstop:true,mobileGutters:true,smallScreen320Guard:true,inputReadability:true,secondaryTextReadability:true,wrappingTouchTargets:true,safeAreas:true,compareMobileLabels:true,compareViewportContainment:true,expandedContextPrompts:true,reducedMotion:true,observerLoopGuard:true,ssrProgressiveEnhancement:true}},null,2));
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
