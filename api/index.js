@@ -68,4 +68,15 @@ require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
-module.exports=require('../lib/action5-catalogue-certification-v106-runtime');
+
+// The full legacy lineage can legitimately re-rank after the initial verification layer.
+// Reapply evidence-bound hard-constraint eligibility after v106 has loaded, then expose
+// exactly that shared Decision Engine through the two public JSON transports.
+const runtime=require('../lib/action5-catalogue-certification-v106-runtime');
+const hardConstraintParity=require('../lib/hard-constraint-result-parity-v1');
+const decisionTransportParity=require('../lib/decision-transport-parity-v1-runtime');
+hardConstraintParity.install();
+const handler=decisionTransportParity.wrap(runtime);
+handler.HARD_CONSTRAINT_RESULT_PARITY_VERSION=hardConstraintParity.VERSION;
+handler.DECISION_TRANSPORT_PARITY_VERSION=decisionTransportParity.VERSION;
+module.exports=handler;
