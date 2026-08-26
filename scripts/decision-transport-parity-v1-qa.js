@@ -36,7 +36,7 @@ function render(url,headers={}){
   assert.equal(payload.audit?.hardConstraintFallback,true,'zero verified eligible candidates under a recognised hard constraint must enter fallback');
   assert(payload.results.length>0,'fallback must expose maintained alternatives');
   assert(payload.results.every(row=>row.hardConstraintStatus==='unverified'),'all exposed candidates must remain unverified, not silently eligible');
-  assert(payload.results.every(row=>(row.constraintVerification||[]).some(proof=>String(proof?.constraint||'').includes('excluded:gaming')&&proof.state==='UNVERIFIED')),'each candidate must expose UNVERIFIED proof for excluded:gaming');
+  assert(payload.results.every(row=>(row.constraintVerification||[]).some(proof=>proof?.key==='excluded:gaming'&&proof.state==='UNVERIFIED')),'each candidate must expose UNVERIFIED proof for excluded:gaming');
 
   const decisionLab=await render('/decision-lab/?q=wireless%20headphones%20must%20not%20have%20gaming&category=wireless-headphones',{'x-apg-decision-json':'1'});
   assert.equal(decisionLab.status,200,'Decision Lab JSON status');
@@ -46,6 +46,7 @@ function render(url,headers={}){
   assert.equal(labPayload.audit?.eligibleCount,0,'Decision Lab must agree with /api/decision eligibility');
   assert.equal(labPayload.audit?.unverifiedCount,payload.audit?.unverifiedCount,'Decision Lab and API must share candidate verification semantics');
   assert.equal(labPayload.audit?.hardConstraintFallback,true,'Decision Lab must retain hard-constraint fallback');
+  assert(labPayload.results.every(row=>(row.constraintVerification||[]).some(proof=>proof?.key==='excluded:gaming'&&proof.state==='UNVERIFIED')),'Decision Lab must expose the same excluded:gaming evidence boundary');
 
   const exact75Response=await render('/api/decision?q=TV+must+be+exactly+75+inches&category=televisions');
   assert.equal(exact75Response.headers['x-apg-decision-hard-constraint-fallback'],guard.HARD_CONSTRAINT_FALLBACK_VERSION,'exact 75-inch benchmark must retain v103.6 provenance');
@@ -64,5 +65,5 @@ function render(url,headers={}){
   assert(!appSource.includes("const {publicDecision}=require('./decision-engine')"),'base app must not capture the legacy publicDecision function');
   assert(appSource.includes('decision.publicDecision('),'base app must resolve publicDecision dynamically at request time');
 
-  console.log(JSON.stringify({version:guard.VERSION,status:'PASS',checks:{apiDynamicBinding:true,decisionLabDynamicBinding:true,legacyRemediationProvenance:true,hardExclusionFailClosed:true,exact75:true,impossible999:true,commercialWeightZero:true}},null,2));
+  console.log(JSON.stringify({version:guard.VERSION,status:'PASS',checks:{apiDynamicBinding:true,decisionLabDynamicBinding:true,legacyRemediationProvenance:true,hardExclusionFailClosed:true,hardExclusionProofParity:true,exact75:true,impossible999:true,commercialWeightZero:true}},null,2));
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
