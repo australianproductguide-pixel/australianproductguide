@@ -14,6 +14,7 @@ const outerRuntime=(api.match(/const runtime=require\('([^']+)'\);/)||[])[1]||nu
 const postLineageGuard=(api.match(/const hardConstraintParity=require\('([^']+)'\);/)||[])[1]||null;
 const transportGuard=(api.match(/const decisionTransportParity=require\('([^']+)'\);/)||[])[1]||null;
 const scoutPatch=(api.match(/const scoutCustomerIntelligence=require\('([^']+)'\);/)||[])[1]||null;
+const scoutResponsePatch=(api.match(/const scoutResponseDepth=require\('([^']+)'\);/)||[])[1]||null;
 const premiumWrapper=(api.match(/const premiumExperience=require\('([^']+)'\);/)||[])[1]||null;
 const journeyWrapper=(api.match(/const decisionJourneyContinuity=require\('([^']+)'\);/)||[])[1]||null;
 
@@ -21,10 +22,13 @@ assert.equal(outerRuntime,'../lib/action5-catalogue-certification-v106-runtime',
 assert.equal(postLineageGuard,'../lib/hard-constraint-result-parity-v1','hard-constraint proof parity must be installed explicitly after the full re-ranking lineage');
 assert.equal(transportGuard,'../lib/decision-transport-parity-v1-runtime','public decision JSON must resolve the shared engine through an explicit request-time transport guard');
 assert.equal(scoutPatch,'../lib/scout-customer-intelligence-v6','Scout customer intelligence must remain an explicit post-lineage patch over the existing shared engine');
+assert.equal(scoutResponsePatch,'../lib/scout-response-depth-v61','Scout response depth must remain a narrow conversational layer after Scout v6, not a second recommender');
 assert.equal(premiumWrapper,'../lib/premium-experience-v107-runtime','premium UI must remain an explicit progressive-enhancement wrapper over the current SSR runtime');
 assert.equal(journeyWrapper,'../lib/decision-journey-continuity-v108-runtime','decision journey continuity must remain a narrow SSR handoff layer without a new state store');
 assert(api.includes('hardConstraintParity.install();'),'post-lineage hard-constraint parity must be explicitly installed');
 assert(api.includes('scoutCustomerIntelligence.install();'),'Scout v6 must be explicitly installed after the authoritative runtime lineage');
+assert(api.includes('scoutResponseDepth.install();'),'Scout response depth must install only after Scout v6');
+assert(api.indexOf('scoutCustomerIntelligence.install();')<api.indexOf('scoutResponseDepth.install();'),'Scout response depth must compose over the already-installed v6 intelligence layer');
 assert(api.includes('const transportHandler=decisionTransportParity.wrap(runtime);'),'decision transport wrapper must delegate to v106 rather than replace its business logic');
 assert(api.includes('const premiumHandler=premiumExperience.wrap(transportHandler);'),'premium experience must wrap the governed transport without replacing SSR/runtime logic');
 assert(api.includes('const handler=decisionJourneyContinuity.wrap(premiumHandler);'),'journey continuity must wrap the premium SSR response without replacing product/decision logic');
@@ -40,6 +44,10 @@ assert(compatibility.includes('../lib/analytics-funnel-v79'));
 const expectedSideEffects=['../lib/scout-concierge-v5-runtime','../lib/consumer-intelligence-v47-runtime','../lib/catalogue-decision-v48-runtime','../lib/brand-system-v46','../lib/consumer-intelligence-v47'];
 assert.deepEqual(sideEffects,expectedSideEffects,'hidden/order-sensitive pre-runtime side-effect installers must remain explicitly inventoried until deliberately composed or removed with parity proof');
 
+const responseSource=fs.readFileSync(path.join(root,'lib','scout-response-depth-v61.js'),'utf8');
+for(const banned of ['scoreProduct(','rankDecision(','publicDecision(','affiliateRecommendationWeight:1','commissionWeight'])assert(!responseSource.includes(banned),`Scout response depth must not become a recommendation/commercial scoring layer: ${banned}`);
+assert(responseSource.includes('commercialRecommendationWeight:0'),'Scout response depth must keep commercial recommendation weight explicitly zero');
+
 const deploy=String(pkg.scripts&&pkg.scripts['qa:deploy']||'');
 assert(deploy.startsWith('node scripts/brand-mark-canonical-parity-v91-qa.js'),'Brand Parity v91 must remain the first deploy gate');
 assert(deploy.includes('platform-state-v1-qa.js'));
@@ -49,7 +57,7 @@ assert(deploy.includes('category-completion-gate-v1-qa.js'));
 assert(deploy.includes('recommendation-trace-v1-qa.js'));
 assert(deploy.includes('evidence-aware-confidence-v1-qa.js'));
 assert(deploy.includes('decision-transport-parity-v1-qa.js'),'decision transport parity must be a deploy gate');
-assert(deploy.includes('scout-customer-intelligence-v6-qa.js'),'Scout v6 customer intelligence must be a deploy gate');
+assert(deploy.includes('scout-customer-intelligence-v6-qa.js'),'Scout v6/customer-response depth must be a deploy gate');
 assert(deploy.includes('premium-experience-v107-qa.js'),'premium mobile/global Scout experience must be a deploy gate');
 assert(deploy.includes('decision-journey-continuity-v108-qa.js'),'connected Search/Scout/Decision Lab/Compare journey continuity must be a deploy gate');
 
@@ -62,6 +70,7 @@ console.log(JSON.stringify({
   postLineageGuard,
   transportGuard,
   scoutPatch,
+  scoutResponsePatch,
   premiumWrapper,
   journeyWrapper,
   compatibilityLayerCount:compatibility.length,
