@@ -30,6 +30,7 @@ jobs:
           for f in api/*.js data/*.js lib/*.js scripts/*.js; do node --check "$f"; done
           npm run qa:full
           node scripts/premium-mobile-decision-commerce-v112-qa.js
+          node scripts/premium-mobile-card-parity-v1121-qa.js
           node scripts/premium-mobile-decision-commerce-v112-depth-audit.js
           node scripts/scout-global-surface-v111-qa.js
           node scripts/runtime-chain-qa.js \

@@ -13,19 +13,25 @@ const clientSource=fs.readFileSync('public/assets/premium-mobile-decision-commer
 const cssSource=fs.readFileSync('public/assets/premium-mobile-decision-commerce-v112.css','utf8');
 const apiSource=fs.readFileSync('api/index.js','utf8');
 expect(apiSource.includes("premium-mobile-decision-commerce-v112-runtime"),'api/index.js does not wire v112');
-expect(apiSource.includes('const premiumMobileHandler=premiumMobileDecisionCommerce.wrap(stableJourneyHandler);'),'v112 must sit outside v109.1 stability and inside Whole-Site v109');
-expect(apiSource.includes('const handler=wholeSiteExperience.wrap(premiumMobileHandler);'),'Whole-Site v109 must remain the final outer HTML communication layer');
+expect(apiSource.includes('const premiumMobileHandler=premiumMobileDecisionCommerce.wrap(stableJourneyHandler);'),'v112 must sit outside v109.1 stability and inside the parity/Whole-Site layers');
+expect(apiSource.includes('const premiumMobileParityHandler=premiumMobileCardParity.wrap(premiumMobileHandler);'),'v112.1 parity must compose over v112 without replacing it');
+expect(apiSource.includes('const handler=wholeSiteExperience.wrap(premiumMobileParityHandler);'),'Whole-Site v109 must remain the final outer HTML communication layer');
 expect(runtimeSource.includes('Object.assign(handler,downstream'),'v112 wrapper must preserve downstream runtime certification metadata');
 expect(!clientSource.includes('MutationObserver'),'v112 must not introduce MutationObserver');
 expect(clientSource.includes("COMPARE_KEY='apgCompare'"),'v112 must reuse established compare storage');
 expect(clientSource.includes("SAVED_KEY='apgSaved'"),'v112 must reuse established saved-product storage');
 expect(clientSource.includes("'apg-workspace-synced'"),'v112 must reuse workspace sync event');
-expect(clientSource.includes('toggleCompare'),'v112 product-card Compare actions must be interactive');
-expect(clientSource.includes('toggleSaved'),'v112 product-card Save actions must be interactive');
+expect(!clientSource.includes('function toggleCompare'),'v112 must not own a second Compare mutation handler');
+expect(!clientSource.includes('function toggleSaved'),'v112 must not own a second Save mutation handler');
+expect(!clientSource.includes('writeCompare='),'v112 must not write the canonical compare store directly');
+expect(!clientSource.includes('writeSaved='),'v112 must not write the canonical saved store directly');
+expect(clientSource.includes('canonical /assets/app.js owns delegated Compare/Save mutations'),'workspace mutation ownership must be documented in the client');
+expect(clientSource.includes('compare.dataset.compareProduct=slug'),'Scout Compare must delegate through the canonical data-compare-product contract');
+expect(clientSource.includes('save.dataset.saveProduct=slug'),'Scout Save must delegate through the canonical data-save-product contract');
 expect(clientSource.includes('#apgAssistantLauncher'),'v112 must target the certified current Scout launcher');
 expect(clientSource.includes('#apgAssistantPanel'),'v112 must target the certified current Scout panel');
-expect(clientSource.includes('dataset.apg112ScoutSave'),'Scout must expose an explicit user-triggered Save action on product suggestions');
-expect(clientSource.includes('dataset.apg112ScoutCompare'),'Scout must expose an explicit user-triggered Compare action on product suggestions');
+expect(clientSource.includes('dataset.apg112ScoutSave'),'Scout must retain an explicit v112 Save marker on product suggestions');
+expect(clientSource.includes('dataset.apg112ScoutCompare'),'Scout must retain an explicit v112 Compare marker on product suggestions');
 expect(cssSource.includes('--apg112-scout-lift'),'Scout collision lift variable missing');
 expect(cssSource.includes('#apgAssistantLauncher'),'v112 collision CSS must include the certified current Scout launcher');
 expect(!cssSource.match(/#apgAssistantLauncher[^}]*visibility\s*:/),'v112 must not override Scout visibility guard');
@@ -83,6 +89,6 @@ expect((productOut.match(/id="where-to-buy"/g)||[]).length===1,'Product v112 cre
 for(const token of ['data-apg112-product-nav','apg112-summary','apg112-fit','apg112-facts','apg112-evidence','data-apg112-offer-layer'])expect(productOut.includes(token),`Product progressive disclosure missing ${token}`);
 
 const contexts=['/search/','/categories/','/decision-lab/','/my-apg/'];
-for(const path of contexts){const u=new URL(`https://australianproductguide.au${path}`);const out=runtime.transform('<html><head></head><body><main>ok</main></body></html>',path,u);expect(out.includes('data-apg-premium-mobile-commerce="v112.0"'),`Global v112 marker missing on ${path}`);}
+for(const route of contexts){const u=new URL(`https://australianproductguide.au${route}`);const out=runtime.transform('<html><head></head><body><main>ok</main></body></html>',route,u);expect(out.includes('data-apg-premium-mobile-commerce="v112.0"'),`Global v112 marker missing on ${route}`);}
 
-console.log(JSON.stringify({status:'PASS',version:runtime.VERSION,products:products.length,priorityDecisionAreas:Object.keys(searchDepth.categoryDepth||{}).length,formalDecisionGradeClaim:false,imageryTrustGate:true,retailerCommissionWeightingChanged:false,workspaceActions:'established-local-keys',wholeSiteV109Outermost:true,notes:['Priority decision areas are not formal Category Completion Gate certification.','v112 does not close pre-existing Amazon exact-link, imagery, price, stock or category-evidence backlogs.']},null,2));
+console.log(JSON.stringify({status:'PASS',version:runtime.VERSION,products:products.length,priorityDecisionAreas:Object.keys(searchDepth.categoryDepth||{}).length,formalDecisionGradeClaim:false,imageryTrustGate:true,retailerCommissionWeightingChanged:false,workspaceActions:'delegated-to-canonical-app-handler',wholeSiteV109Outermost:true,notes:['Priority decision areas are not formal Category Completion Gate certification.','v112 does not close pre-existing Amazon exact-link, imagery, price, stock or category-evidence backlogs.']},null,2));

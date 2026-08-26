@@ -4,15 +4,8 @@ const body=document.body;if(!body||body.dataset.apgPremiumMobileCommerce!==`v${V
 const safeJSON=(value,fallback)=>{try{return JSON.parse(value)||fallback}catch{return fallback}};
 const readList=(key,limit)=>{const rows=safeJSON(localStorage.getItem(key),[]);return Array.isArray(rows)?[...new Set(rows.filter(Boolean))].slice(0,limit):[]};
 const readCompare=()=>readList(COMPARE_KEY,MAX_COMPARE),readSaved=()=>readList(SAVED_KEY,MAX_SAVED);
-const writeList=(key,rows,limit,type)=>{localStorage.setItem(key,JSON.stringify([...new Set(rows.filter(Boolean))].slice(0,limit)));window.dispatchEvent(new CustomEvent('apg-workspace-synced',{detail:{type}}));};
-const writeCompare=rows=>writeList(COMPARE_KEY,rows,MAX_COMPARE,'compare');
-const writeSaved=rows=>writeList(SAVED_KEY,rows,MAX_SAVED,'saved');
 const scoutLauncher=()=>document.querySelector('#apgAssistantLauncher,#scout-v5-launcher,[data-scout-v5-launcher]');
 const scoutPanel=()=>document.querySelector('#apgAssistantPanel,#scout-v5-panel,[data-scout-v5-panel]');
-let liveRegion=null;
-function announce(message){if(!liveRegion){liveRegion=document.createElement('p');liveRegion.className='apg112-live';liveRegion.setAttribute('role','status');liveRegion.setAttribute('aria-live','polite');document.body.append(liveRegion);}liveRegion.textContent='';requestAnimationFrame(()=>{liveRegion.textContent=message});}
-function toggleCompare(slug){const current=readCompare(),index=current.indexOf(slug);if(index>=0){current.splice(index,1);writeCompare(current);announce('Removed from comparison.');return false;}if(current.length>=MAX_COMPARE){announce('Comparison is full. Remove a product before adding another.');return null;}current.push(slug);writeCompare(current);announce('Added to comparison.');return true;}
-function toggleSaved(slug){const current=readSaved(),index=current.indexOf(slug);if(index>=0){current.splice(index,1);writeSaved(current);announce('Removed from saved products.');return false;}current.unshift(slug);writeSaved(current);announce('Saved to My APG.');return true;}
 
 function initHomeCategories(){
  const grid=document.querySelector('[data-apg112-home-categories]');if(!grid)return;
@@ -38,18 +31,14 @@ function initDifferences(){
  const apply=()=>{const only=toggle.getAttribute('aria-pressed')==='true';rows.forEach(row=>{row.hidden=only&&row.dataset.apg112Identical==='true';});toggle.innerHTML=`<span aria-hidden="true">≠</span> ${only?'Only differences':'Show all details'}`;};
  toggle.addEventListener('click',()=>{toggle.setAttribute('aria-pressed',String(toggle.getAttribute('aria-pressed')!=='true'));apply();});apply();
 }
+// APG's canonical /assets/app.js owns delegated Compare/Save mutations. v112 only
+// mirrors state for newly inserted surfaces; it must never bind a second mutation handler.
 function syncActionStates(){
  const compared=readCompare(),saved=readSaved();
- document.querySelectorAll('[data-compare-product]').forEach(btn=>{const active=compared.includes(btn.dataset.compareProduct);btn.setAttribute('aria-pressed',String(active));btn.textContent=active?'In compare':'Compare';});
- document.querySelectorAll('[data-save-product]').forEach(btn=>{const active=saved.includes(btn.dataset.saveProduct);btn.setAttribute('aria-pressed',String(active));btn.textContent=active?'♥':'♡';btn.setAttribute('aria-label',active?'Remove from saved products':'Save product');});
- document.querySelectorAll('[data-apg112-scout-compare]').forEach(btn=>{const active=compared.includes(btn.dataset.apg112ScoutCompare);btn.setAttribute('aria-pressed',String(active));btn.textContent=active?'In compare':'Compare';});
- document.querySelectorAll('[data-apg112-scout-save]').forEach(btn=>{const active=saved.includes(btn.dataset.apg112ScoutSave);btn.setAttribute('aria-pressed',String(active));btn.textContent=active?'Saved':'Save';});
+ document.querySelectorAll('[data-compare-product]').forEach(btn=>{const active=compared.includes(btn.dataset.compareProduct);btn.classList.toggle('selected',active);btn.setAttribute('aria-pressed',String(active));btn.textContent=active?'Added':'Compare';});
+ document.querySelectorAll('[data-save-product]').forEach(btn=>{const active=saved.includes(btn.dataset.saveProduct);btn.classList.toggle('saved',active);btn.setAttribute('aria-pressed',String(active));btn.textContent=active?'♥':'♡';btn.title=active?'Remove from saved products':'Save product on this device';});
 }
-function initCardActions(){
- document.querySelectorAll('[data-compare-product]').forEach(btn=>{if(btn.dataset.apg112Bound)return;btn.dataset.apg112Bound='true';btn.addEventListener('click',()=>{toggleCompare(btn.dataset.compareProduct);syncActionStates();});});
- document.querySelectorAll('[data-save-product]').forEach(btn=>{if(btn.dataset.apg112Bound)return;btn.dataset.apg112Bound='true';btn.addEventListener('click',()=>{toggleSaved(btn.dataset.saveProduct);syncActionStates();});});
- syncActionStates();
-}
+function initCardActions(){syncActionStates();}
 function initScoutContext(){
  const launcher=scoutLauncher();if(!launcher)return;
  const product=body.dataset.apg112Product,category=body.dataset.apg112Category,compared=(body.dataset.apg112CompareProducts||'').split(',').filter(Boolean);
@@ -61,8 +50,8 @@ function initScoutContext(){
      const match=link.getAttribute('href').match(/^\/products\/([^/]+)\//);if(!match)return;const slug=match[1];
      const card=link.closest('article,.scout-card,.scout-v5-card,[data-product-card]')||link.parentElement;if(!card||card.querySelector(`[data-apg112-scout-actions="${slug}"]`))return;
      const actions=document.createElement('div');actions.className='apg112-scout-actions';actions.dataset.apg112ScoutActions=slug;
-     const compare=document.createElement('button');compare.type='button';compare.className='button secondary';compare.dataset.apg112ScoutCompare=slug;compare.addEventListener('click',()=>{toggleCompare(slug);syncActionStates();});
-     const save=document.createElement('button');save.type='button';save.className='button secondary';save.dataset.apg112ScoutSave=slug;save.addEventListener('click',()=>{toggleSaved(slug);syncActionStates();});
+     const compare=document.createElement('button');compare.type='button';compare.className='button secondary';compare.dataset.compareProduct=slug;compare.dataset.apg112ScoutCompare=slug;compare.setAttribute('aria-pressed','false');compare.textContent='Compare';
+     const save=document.createElement('button');save.type='button';save.className='button secondary';save.dataset.saveProduct=slug;save.dataset.apg112ScoutSave=slug;save.setAttribute('aria-pressed','false');save.textContent='♡';save.setAttribute('aria-label','Save product');
      actions.append(compare,save);card.append(actions);syncActionStates();
    });
  };
@@ -77,7 +66,7 @@ function initScoutCollision(){
    document.querySelectorAll('[data-compare-tray],.compare-tray,[data-sticky-actions],.sticky-actions,.mobile-sticky-actions').forEach(el=>{if(el===launcher||el.contains(launcher))return;const cs=getComputedStyle(el);if(cs.display==='none'||cs.visibility==='hidden'||Number(cs.opacity)===0)return;const r=el.getBoundingClientRect();if(r.width<40||r.height<20||r.bottom<vh-180||r.right<vw*.55)return;const overlaps=!(lr.right<r.left||lr.left>r.right||lr.bottom<r.top||lr.top>r.bottom);if(overlaps||r.bottom>=vh-8)lift=Math.max(lift,r.height+12);});setLift(lift);
  };
  const schedule=()=>{if(queued)return;queued=true;requestAnimationFrame(calculate)};
- ['resize','scroll'].forEach(evt=>window.addEventListener(evt,schedule,{passive:true}));window.addEventListener('apg-workspace-synced',schedule);launcher.addEventListener('click',schedule);schedule();
+ ['resize','scroll'].forEach(evt=>window.addEventListener(evt,schedule,{passive:true}));window.addEventListener('apg-workspace-synced',()=>{syncActionStates();schedule();});launcher.addEventListener('click',schedule);schedule();
 }
 initHomeCategories();initDifferences();initCardActions();initScoutContext();initScoutCollision();window.addEventListener('apg-workspace-synced',syncActionStates);
 })();
