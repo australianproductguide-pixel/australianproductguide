@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const VERSION='112.0',COMPARE_KEY='apgCompare',SAVED_KEY='apgSaved',MAX_COMPARE=4,MAX_SAVED=50;
+const VERSION='112.1',COMPARE_KEY='apgCompare',SAVED_KEY='apgSaved',MAX_COMPARE=4,MAX_SAVED=50;
 const body=document.body;if(!body||body.dataset.apgPremiumMobileCommerce!==`v${VERSION}`)return;
 const safeJSON=(value,fallback)=>{try{return JSON.parse(value)||fallback}catch{return fallback}};
 const readList=(key,limit)=>{const rows=safeJSON(localStorage.getItem(key),[]);return Array.isArray(rows)?[...new Set(rows.filter(Boolean))].slice(0,limit):[]};
