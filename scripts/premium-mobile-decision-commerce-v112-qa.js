@@ -24,8 +24,8 @@ expect(clientSource.includes('toggleCompare'),'v112 product-card Compare actions
 expect(clientSource.includes('toggleSaved'),'v112 product-card Save actions must be interactive');
 expect(clientSource.includes('#apgAssistantLauncher'),'v112 must target the certified current Scout launcher');
 expect(clientSource.includes('#apgAssistantPanel'),'v112 must target the certified current Scout panel');
-expect(clientSource.includes('data-apg112ScoutSave'),'Scout must expose an explicit user-triggered Save action on product suggestions');
-expect(clientSource.includes('data-apg112ScoutCompare'),'Scout must expose an explicit user-triggered Compare action on product suggestions');
+expect(clientSource.includes('dataset.apg112ScoutSave'),'Scout must expose an explicit user-triggered Save action on product suggestions');
+expect(clientSource.includes('dataset.apg112ScoutCompare'),'Scout must expose an explicit user-triggered Compare action on product suggestions');
 expect(cssSource.includes('--apg112-scout-lift'),'Scout collision lift variable missing');
 expect(cssSource.includes('#apgAssistantLauncher'),'v112 collision CSS must include the certified current Scout launcher');
 expect(!cssSource.match(/#apgAssistantLauncher[^}]*visibility\s*:/),'v112 must not override Scout visibility guard');
