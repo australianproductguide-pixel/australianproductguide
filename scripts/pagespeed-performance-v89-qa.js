@@ -18,3 +18,4 @@ assert.ok(nonHome.includes('href="/assets/privacy-experience.css?v='));
 assert.ok(!nonHome.includes('/assets/home-critical-v89.css'));
 assert.equal(layer.HOME_CRITICAL_CSS.length,17);
 console.log('PAGESPEED_PERFORMANCE_V89_OK');
+require('./pagespeed-agentic-certification-v113-qa');
