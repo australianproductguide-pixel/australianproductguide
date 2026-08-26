@@ -35,17 +35,37 @@ const hardExclusionState={
   softExclusions:[],numericConstraints:[],categoryIntent:{},brandPreference:null,
   shortlist:[],rejectedProducts:[],evidenceGaps:[],pendingQuestion:null,lastTrace:null
 };
-const aligned=patch.structuredRecommendationParity({intent:'product_recommendation',message:'legacy text',decisionState:hardExclusionState,products:[{slug:'legacy'}],actions:[],meta:{}},{text:'recommend now'},{path:'/categories/wireless-headphones/',pageType:'category',categorySlug:'wireless-headphones',comparisonProductSlugs:[],currentSearchQuery:'',currentFilters:{}});
+const pageContext={path:'/categories/wireless-headphones/',pageType:'category',categorySlug:'wireless-headphones',comparisonProductSlugs:[],currentSearchQuery:'',currentFilters:{}};
+const aligned=patch.structuredRecommendationParity({intent:'product_recommendation',message:'legacy text',decisionState:hardExclusionState,products:[{slug:'legacy'}],actions:[],meta:{}},{text:'recommend now'},pageContext);
 assert.equal(aligned.meta?.decisionStateSchema,decisionState.VERSION,'Scout recommendation must identify canonical Decision State v2');
 assert.equal(aligned.meta?.decisionInputMode,'structured-state','Scout internal recommendation evaluation must use structured state');
+assert.equal(aligned.meta?.decisionLabHandoff,'context-preserving-navigation-only','Scout must distinguish URL handoff text from structured-state scoring');
 assert.equal(aligned.meta?.commercialRecommendationWeight,0,'commercial recommendation weight must remain zero');
 assert.equal(aligned.meta?.hardConstraintFallback,true,'unsupported hard exclusion must remain fail-closed rather than silently eligible');
 assert(Array.isArray(aligned.products)&&aligned.products.length>0,'qualified maintained alternatives must remain available to the customer');
 assert.equal(aligned.decisionState?.pendingQuestion,null,'existing pending-question field must be preserved');
 assert(Array.isArray(aligned.decisionState?.rejectedProducts),'existing rejected-products state must be preserved');
 
+const refine=aligned.actions.find(action=>action.label==='Refine in Decision Lab');
+assert(refine&&refine.url,'structured Scout result must provide a Decision Lab handoff');
+const handoff=new URL(refine.url,'https://australianproductguide.au');
+assert.equal(handoff.pathname,'/decision-lab/');
+assert.equal(handoff.searchParams.get('category'),'wireless-headphones','Decision Lab handoff must preserve category');
+assert.equal(handoff.searchParams.get('budget'),'500','Decision Lab handoff must preserve AUD budget amount');
+assert.match(handoff.searchParams.get('q')||'',/must not have gaming/i,'Decision Lab handoff must preserve the active hard exclusion as navigation context');
+assert.match(handoff.searchParams.get('q')||'',/comfort/i,'Decision Lab handoff must preserve meaningful soft priority context');
+
+const requiredBrandUrl=new URL(patch.decisionLabHandoff({...hardExclusionState,hardConstraints:{...hardExclusionState.hardConstraints,excludedTags:[],requiredBrands:['Bose']}},pageContext),'https://australianproductguide.au');
+assert.match(requiredBrandUrl.searchParams.get('q')||'',/Bose only/i,'required-brand context must survive navigation even though internal scoring stays structured');
+assert.equal(requiredBrandUrl.searchParams.get('category'),'wireless-headphones');
+
+const searchHandoff=core.buildResponse({text:'Help me with this page',pageContext:{path:'/search/?q=quiet%20headphones%20for%20travel',currentSearchQuery:'quiet headphones for travel'}});
+const searchLab=searchHandoff.actions.find(action=>action.url&&action.url.startsWith('/decision-lab/'));
+assert(searchLab,'Search-context Scout help must offer Decision Lab');
+assert.match(new URL(searchLab.url,'https://australianproductguide.au').searchParams.get('q')||'',/quiet headphones for travel/i,'Search-to-Scout-to-Decision Lab must retain the current search intent');
+
 const uncertainty=core.buildResponse({text:'What is uncertain or unverified?',pageContext:{path:'/decision-lab/'},decisionState:{...hardExclusionState,lastTrace:{productSlug:'bose-quietcomfort-ultra-headphones',evidenceState:'WEAK_EVIDENCE',verificationNeeds:['Gaming exclusion is not verified for this candidate.'],gaps:[],conflicts:[],confidence:{level:'LOW'}}}});
 assert.match(uncertainty.message,/same APG evidence|maintained APG evidence/i);
 assert((uncertainty.bullets||[]).some(item=>/evidence boundary/i.test(item)),'uncertainty answer must make the evidence boundary visible');
 
-console.log(JSON.stringify({version:patch.VERSION,status:'PASS',checks:{connectedJourneys:true,pageAwareHelp:true,categoryFactors:true,structuredDecisionState:true,hardConstraintFailClosed:true,evidenceConfidence:true,commercialWeightZero:true}},null,2));
+console.log(JSON.stringify({version:patch.VERSION,status:'PASS',checks:{connectedJourneys:true,pageAwareHelp:true,categoryFactors:true,structuredDecisionState:true,hardConstraintFailClosed:true,contextPreservingDecisionLabHandoff:true,requiredBrandHandoff:true,searchIntentHandoff:true,evidenceConfidence:true,commercialWeightZero:true}},null,2));
