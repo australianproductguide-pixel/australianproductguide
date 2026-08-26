@@ -4,6 +4,8 @@ const assert=require('node:assert/strict');
 const app=require('../api/index');
 const stability=require('../lib/premium-client-stability-v1091-runtime');
 
+const PAGESPEED_HOME_CSS_PATH='/assets/pagespeed-home-v113.css';
+
 function invoke(handler,url,method='GET'){
   return new Promise((resolve,reject)=>{
     const headers={},written=[];
@@ -62,19 +64,37 @@ function count(text,needle){return String(text).split(needle).length-1}
     '/methodology/',
     '/this-route-does-not-exist/'
   ];
+  let homepageBundleHref='';
   for(const route of routes){
     const response=await invoke(app,route);
     assert(response.status===200||response.status===404,`${route}: invalid status ${response.status}`);
     assert.equal(response.headers['x-apg-scout-global-surface'],'v111.1',`${route}: v111.1 header missing`);
     assert.equal(count(response.body,'id="apgAssistantLauncher"'),1,`${route}: expected exactly one launcher`);
     assert.equal(count(response.body,'id="apgAssistantPanel"'),1,`${route}: expected exactly one panel`);
-    assert.equal(count(response.body,stability.SCOUT_GLOBAL_CSS_PATH),1,`${route}: v111 CSS must be injected exactly once`);
+    const directCssCount=count(response.body,stability.SCOUT_GLOBAL_CSS_PATH);
+    const bundledCssCount=count(response.body,PAGESPEED_HOME_CSS_PATH);
+    if(route==='/'){
+      assert.equal(directCssCount,0,`${route}: v111 CSS must not remain a separate render-blocking homepage request`);
+      assert.equal(bundledCssCount,1,`${route}: certified PageSpeed CSS bundle must be injected exactly once`);
+      const match=response.body.match(/href=["']([^"']*\/assets\/pagespeed-home-v113\.css[^"']*)["']/i);
+      assert(match,`${route}: certified homepage CSS href must be discoverable`);
+      homepageBundleHref=match[1];
+    }else{
+      assert.equal(directCssCount,1,`${route}: v111 CSS must be injected exactly once`);
+    }
     assert.equal(count(response.body,stability.SCOUT_GLOBAL_JS_PATH),1,`${route}: v111 JS must be injected exactly once`);
     assert(response.body.includes('data-apg-scout-global-surface="v111.1"'),`${route}: v111.1 body marker missing`);
     const headEnd=response.body.indexOf('</head>');
-    const globalCss=response.body.indexOf(stability.SCOUT_GLOBAL_CSS_PATH);
-    assert(globalCss>0&&globalCss<headEnd,`${route}: v111 CSS must be in head`);
+    const effectiveCss=response.body.indexOf(route==='/'?PAGESPEED_HOME_CSS_PATH:stability.SCOUT_GLOBAL_CSS_PATH);
+    assert(effectiveCss>0&&effectiveCss<headEnd,`${route}: effective Scout CSS must be delivered from head`);
   }
+
+  assert(homepageBundleHref,'homepage PageSpeed bundle href must be captured');
+  const homepageBundle=await invoke(app,homepageBundleHref);
+  assert.equal(homepageBundle.status,200,'homepage PageSpeed CSS bundle must render');
+  assert(homepageBundle.body.includes('APG Scout Global Surface v111.1'),'homepage PageSpeed bundle must contain the governed v111 Scout CSS');
+  assert.match(String(homepageBundle.headers['cache-control']||''),/max-age=31536000/,'homepage PageSpeed bundle must be long-lived');
+  assert.match(String(homepageBundle.headers['cache-control']||''),/immutable/,'homepage PageSpeed bundle must be immutable');
 
   const raw='<!doctype html><html><head><link rel="stylesheet" href="/assets/whole-site-experience-v109.css?v=109.0"></head><body><main>test</main></body></html>';
   const once=stability.injectGlobalSurface(raw),twice=stability.injectGlobalSurface(once);
@@ -82,5 +102,5 @@ function count(text,needle){return String(text).split(needle).length-1}
   assert.equal(count(twice,stability.SCOUT_GLOBAL_JS_PATH),1,'v111 JS injection must be idempotent');
   assert.equal(count(twice,'id="apgAssistantLauncher"'),1,'Scout shell injection must remain idempotent');
 
-  console.log(JSON.stringify({suite:'scout-global-surface-v111',version:stability.SCOUT_GLOBAL_SURFACE_VERSION,status:'PASS',routesChecked:routes.length,checks:{dedicatedCacheDistinctAsset:true,routeIndependentVisibility:true,importantIdOwnership:true,rightAligned:true,closedStateGuard:true,compareTrayAvoidance:true,footerOverlapGuard:true,idempotentSsr:true,browserComputedVisibilityRequired:true}},null,2));
+  console.log(JSON.stringify({suite:'scout-global-surface-v111',version:stability.SCOUT_GLOBAL_SURFACE_VERSION,status:'PASS',routesChecked:routes.length,checks:{dedicatedCacheDistinctAsset:true,routeIndependentVisibility:true,importantIdOwnership:true,rightAligned:true,closedStateGuard:true,compareTrayAvoidance:true,footerOverlapGuard:true,idempotentSsr:true,browserComputedVisibilityRequired:true,homepageBundledCssCertified:true}},null,2));
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
