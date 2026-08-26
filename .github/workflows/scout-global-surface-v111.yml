@@ -1,0 +1,80 @@
+name: APG Scout Global Surface v111
+
+on:
+  pull_request:
+    paths:
+      - 'lib/premium-client-stability-v1091-runtime.js'
+      - 'scripts/scout-global-surface-v111-qa.js'
+      - 'scripts/production-scout-global-browser-v111.js'
+      - '.github/workflows/scout-global-surface-v111.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'lib/premium-client-stability-v1091-runtime.js'
+      - 'scripts/scout-global-surface-v111-qa.js'
+      - 'scripts/production-scout-global-browser-v111.js'
+      - '.github/workflows/scout-global-surface-v111.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apg-scout-global-v111-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-contract:
+    name: Scout v111 Source Contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install runtime dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund >/dev/null 2>&1
+      - name: Verify global Scout source and SSR contract
+        run: |
+          set -euo pipefail
+          node scripts/scout-global-surface-v111-qa.js
+          node scripts/premium-experience-v107-qa.js
+
+  production-browser:
+    name: Scout v111 Non-Home Browser Certification
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs: source-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      BASE_URL: https://australianproductguide.au
+      APG_EXPECTED_SHA: ${{ github.sha }}
+      SCOUT_GLOBAL_BROWSER_OUT: artifacts/production-scout-global-v111
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install browser certification dependencies
+        run: |
+          set -euo pipefail
+          CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)
+          if [ -z "$CHROME" ]; then
+            echo 'ERROR No Chrome/Chromium executable is available on the runner'
+            exit 1
+          fi
+          echo "CHROME=$CHROME" >> "$GITHUB_ENV"
+          npm install --no-save --package-lock=false puppeteer-core@24.16.0 >/dev/null 2>&1
+      - name: Prove visible and clickable Scout on non-home routes
+        run: node scripts/production-scout-global-browser-v111.js
+      - name: Upload Scout v111 browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apg-scout-global-v111-${{ github.run_id }}
+          path: artifacts/production-scout-global-v111
+          retention-days: 30
+          if-no-files-found: warn
