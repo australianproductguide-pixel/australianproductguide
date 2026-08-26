@@ -29,6 +29,7 @@ jobs:
           set -euo pipefail
           for f in api/*.js data/*.js lib/*.js scripts/*.js; do node --check "$f"; done
           npm run qa:full
+          node scripts/premium-mobile-decision-commerce-v112-qa.js
           node scripts/scout-global-surface-v111-qa.js
           node scripts/runtime-chain-qa.js \
             vercel-analytics-v38 \
