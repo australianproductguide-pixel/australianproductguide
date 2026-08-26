@@ -13,16 +13,29 @@ const clientSource=fs.readFileSync('public/assets/premium-mobile-decision-commer
 const cssSource=fs.readFileSync('public/assets/premium-mobile-decision-commerce-v112.css','utf8');
 const apiSource=fs.readFileSync('api/index.js','utf8');
 expect(apiSource.includes("premium-mobile-decision-commerce-v112-runtime"),'api/index.js does not wire v112');
-expect(apiSource.includes('premiumMobileDecisionCommerce.wrap(wholeSiteHandler)'),'v112 is not outermost over whole-site experience');
+expect(apiSource.includes('const premiumMobileHandler=premiumMobileDecisionCommerce.wrap(stableJourneyHandler);'),'v112 must sit outside v109.1 stability and inside Whole-Site v109');
+expect(apiSource.includes('const handler=wholeSiteExperience.wrap(premiumMobileHandler);'),'Whole-Site v109 must remain the final outer HTML communication layer');
+expect(runtimeSource.includes('Object.assign(handler,downstream'),'v112 wrapper must preserve downstream runtime certification metadata');
 expect(!clientSource.includes('MutationObserver'),'v112 must not introduce MutationObserver');
 expect(clientSource.includes("COMPARE_KEY='apgCompare'"),'v112 must reuse established compare storage');
+expect(clientSource.includes("SAVED_KEY='apgSaved'"),'v112 must reuse established saved-product storage');
 expect(clientSource.includes("'apg-workspace-synced'"),'v112 must reuse workspace sync event');
+expect(clientSource.includes('toggleCompare'),'v112 product-card Compare actions must be interactive');
+expect(clientSource.includes('toggleSaved'),'v112 product-card Save actions must be interactive');
+expect(clientSource.includes('#apgAssistantLauncher'),'v112 must target the certified current Scout launcher');
+expect(clientSource.includes('#apgAssistantPanel'),'v112 must target the certified current Scout panel');
+expect(clientSource.includes('data-apg112ScoutSave'),'Scout must expose an explicit user-triggered Save action on product suggestions');
+expect(clientSource.includes('data-apg112ScoutCompare'),'Scout must expose an explicit user-triggered Compare action on product suggestions');
 expect(cssSource.includes('--apg112-scout-lift'),'Scout collision lift variable missing');
-expect(!cssSource.match(/#scout-v5-launcher[^}]*visibility\s*:/),'v112 must not override Scout visibility guard');
-expect(!cssSource.match(/#scout-v5-launcher[^}]*pointer-events\s*:/),'v112 must not override Scout pointer guard');
+expect(cssSource.includes('#apgAssistantLauncher'),'v112 collision CSS must include the certified current Scout launcher');
+expect(!cssSource.match(/#apgAssistantLauncher[^}]*visibility\s*:/),'v112 must not override Scout visibility guard');
+expect(!cssSource.match(/#apgAssistantLauncher[^}]*pointer-events\s*:/),'v112 must not override Scout pointer guard');
+expect(cssSource.includes('[data-apg-route-family="home"] .apg-system-rail{display:none}'),'mobile homepage must remove the duplicated journey rail while preserving it in SSR');
 expect(!runtimeSource.includes("||'2026-08-15'"),'v112 must not invent product review freshness');
 expect(!runtimeSource.includes('Deep maintained category'),'v112 must not present priority depth as formal Decision Grade');
 expect(runtimeSource.includes('does not imply every category-completion gate'),'priority-depth disclaimer missing');
+
+for(const banned of ['scoreProduct(','rankDecision(','publicDecision(','affiliateRecommendationWeight:1','commissionWeight'])expect(!runtimeSource.includes(banned),`v112 runtime must not become a recommendation/commercial scoring layer: ${banned}`);
 
 const candidate=products.find(p=>p&&p.slug&&p.brand&&p.name&&p.source&&Array.isArray(p.highlights)&&p.highlights.length&&p.watch)||products.find(p=>p&&p.slug&&p.source);
 expect(candidate,'No product available for v112 source QA');
@@ -34,11 +47,12 @@ expect(!card.includes('undefined'),'Product Card v2 exposed undefined data');
 
 const combined=products.find(p=>Array.isArray(p.retailers)&&p.retailers.length&&Array.isArray(p.offers)&&p.offers.length);
 if(combined)expect(runtime.retailerRows(combined).length>=Math.max(combined.retailers.length,combined.offers.length),'Retailer layer did not combine maintained retailer sources');
-const exact=products.flatMap(p=>runtime.retailerRows(p)).find(r=>String(r.amazonMatchStatus||'').toUpperCase()==='EXACT_VERIFIED'||r.amazonModelMatch==='exact');
+const allRetailerRows=products.flatMap(p=>runtime.retailerRows(p));
+const exact=allRetailerRows.find(r=>String(r.amazonMatchStatus||'').toUpperCase()==='EXACT_VERIFIED'||r.amazonModelMatch==='exact');
 if(exact)expect(runtime.retailerState(exact).key==='exact','Exact verified Amazon state misclassified');
-const variant=products.flatMap(p=>runtime.retailerRows(p)).find(r=>String(r.amazonMatchStatus||'').toUpperCase()==='VARIANT_VERIFIED'||r.amazonModelMatch==='verified-variant');
+const variant=allRetailerRows.find(r=>String(r.amazonMatchStatus||'').toUpperCase()==='VARIANT_VERIFIED'||r.amazonModelMatch==='verified-variant');
 if(variant)expect(runtime.retailerState(variant).key==='variant','Verified variant state misclassified');
-const fallback=products.flatMap(p=>runtime.retailerRows(p)).find(r=>r.kind==='affiliate-search'||String(r.amazonMatchStatus||'').toUpperCase()==='SEARCH_FALLBACK');
+const fallback=allRetailerRows.find(r=>r.kind==='affiliate-search'||String(r.amazonMatchStatus||'').toUpperCase()==='SEARCH_FALLBACK');
 if(fallback)expect(runtime.retailerState(fallback).key==='fallback','Model-search fallback state misclassified');
 const panel=runtime.retailerPanelV2(candidate);
 expect(panel.includes('Retailers contribute 0 recommendation points'),'Retailer independence statement missing');
@@ -47,6 +61,7 @@ expect(!panel.includes('id="where-to-buy"'),'Retailer inner panel must not dupli
 
 const compared=products.filter(p=>p.category===candidate.category).slice(0,2);
 if(compared.length===2){const toolbar=runtime.comparisonToolbar(compared);expect(toolbar.includes('Only differences'),'Comparison difference-first control missing');expect((toolbar.match(/apg112-compare-identity/g)||[]).length>=2,'Comparison must keep both product identities visible');}
+expect(clientSource.includes("'table.compare tbody tr'"),'Only-differences client must understand the current compare table DOM');
 
 const prioritySlug=Object.keys(searchDepth.categoryDepth||{}).find(slug=>categories[slug]);
 expect(prioritySlug,'No priority-depth category found');
@@ -70,4 +85,4 @@ for(const token of ['data-apg112-product-nav','apg112-summary','apg112-fit','apg
 const contexts=['/search/','/categories/','/decision-lab/','/my-apg/'];
 for(const path of contexts){const u=new URL(`https://australianproductguide.au${path}`);const out=runtime.transform('<html><head></head><body><main>ok</main></body></html>',path,u);expect(out.includes('data-apg-premium-mobile-commerce="v112.0"'),`Global v112 marker missing on ${path}`);}
 
-console.log(JSON.stringify({status:'PASS',version:runtime.VERSION,products:products.length,priorityDecisionAreas:Object.keys(searchDepth.categoryDepth||{}).length,formalDecisionGradeClaim:false,imageryTrustGate:true,retailerCommissionWeightingChanged:false,notes:['Priority decision areas are not formal Category Completion Gate certification.','v112 does not close pre-existing Amazon exact-link, imagery, price, stock or category-evidence backlogs.']},null,2));
+console.log(JSON.stringify({status:'PASS',version:runtime.VERSION,products:products.length,priorityDecisionAreas:Object.keys(searchDepth.categoryDepth||{}).length,formalDecisionGradeClaim:false,imageryTrustGate:true,retailerCommissionWeightingChanged:false,workspaceActions:'established-local-keys',wholeSiteV109Outermost:true,notes:['Priority decision areas are not formal Category Completion Gate certification.','v112 does not close pre-existing Amazon exact-link, imagery, price, stock or category-evidence backlogs.']},null,2));
