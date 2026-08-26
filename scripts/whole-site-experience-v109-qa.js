@@ -89,6 +89,17 @@ function brandCount(){return new Set(products.map(p=>String(p.brand||'').trim())
   assert(!homepage.body.includes('37 maintained products'),'homepage must not expose superseded maintained-product count');
   assert(!homepage.body.includes('4 live decision categories'),'homepage must not expose superseded four-category state');
 
+  const priorityRail=homepage.body.indexOf('data-apg112-depth-rail="true"');
+  const mainClose=homepage.body.lastIndexOf('</main>');
+  const footerStart=homepage.body.indexOf('<footer');
+  const htmlClose=homepage.body.lastIndexOf('</html>');
+  assert.equal(count(homepage.body,'data-apg112-depth-rail="true"'),1,'homepage must contain exactly one Priority Decision Areas rail');
+  assert(priorityRail>=0,'homepage must render the Priority Decision Areas rail');
+  assert(mainClose>priorityRail,'Priority Decision Areas must remain inside main content');
+  assert(footerStart>priorityRail,'Priority Decision Areas must render before the footer on every viewport');
+  assert(htmlClose>=0,'homepage must close the HTML document');
+  assert.equal(homepage.body.slice(htmlClose+'</html>'.length).trim(),'','homepage must never append rendered content after </html>');
+
   const categoriesPage=await render('/categories/');
   assert(!categoriesPage.body.includes('Four categories are fully maintained today'),'category directory must not communicate the superseded four-category platform state');
   assert(!categoriesPage.body.includes('48 category pathways'),'category directory must not communicate a superseded pathway count as current truth');
@@ -99,5 +110,5 @@ function brandCount(){return new Set(products.map(p=>String(p.brand||'').trim())
   assert(decisionAction[1].includes('budget=500'),'Search -> Decision Lab rail action must preserve budget context');
   assert(decisionAction[1].includes('brand=Bose'),'Search -> Decision Lab rail action must preserve brand context without making brand a recommendation');
 
-  console.log(JSON.stringify({version:whole.VERSION,status:'PASS',facts:whole.FACTS,routesChecked:routes.length,checks:{canonicalFacts:true,legacyFactReconciliation:true,allPageFamilies:true,oneScout:true,routeAwareJourney:true,searchDecisionContinuity:true,premiumBranding:true,mobileTouchTargets:true,reducedMotion:true,commercialNeutralityPreserved:true,homepageBundledCssCompatible:true}},null,2));
+  console.log(JSON.stringify({version:whole.VERSION,status:'PASS',facts:whole.FACTS,routesChecked:routes.length,checks:{canonicalFacts:true,legacyFactReconciliation:true,allPageFamilies:true,oneScout:true,routeAwareJourney:true,searchDecisionContinuity:true,premiumBranding:true,mobileTouchTargets:true,reducedMotion:true,commercialNeutralityPreserved:true,homepageBundledCssCompatible:true,priorityDecisionRailBeforeFooter:true,noContentAfterHtml:true}},null,2));
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
