@@ -8,7 +8,7 @@ const puppeteer=require('puppeteer-core');
 const BASE=(process.env.BASE_URL||'https://australianproductguide.au').replace(/\/$/,'');
 const CHROME=process.env.CHROME||'/usr/bin/google-chrome';
 const OUT=process.env.SCOUT_GLOBAL_BROWSER_OUT||'artifacts/production-scout-global-v111';
-const EXPECTED='v111.0';
+const EXPECTED='v111.1';
 const SHA=(process.env.APG_EXPECTED_SHA||process.env.GITHUB_SHA||'').trim();
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
@@ -22,7 +22,7 @@ async function waitForProduction(){
       const response=await fetch(BASE+'/categories/?apg-scout-cert='+Date.now(),{headers:{'cache-control':'no-cache'}});
       const surface=response.headers.get('x-apg-scout-global-surface')||'';
       const text=await response.text();
-      if(response.ok&&surface===EXPECTED&&text.includes('data-apg-scout-global-surface="v111.0"'))return;
+      if(response.ok&&surface===EXPECTED&&text.includes('data-apg-scout-global-surface="v111.1"'))return;
       console.log(`Waiting for ${EXPECTED}: attempt=${attempt} status=${response.status} surface=${surface||'none'}`);
     }catch(error){console.log(`Waiting for ${EXPECTED}: attempt=${attempt} transport=${error.message}`)}
     await sleep(4000);
@@ -116,11 +116,8 @@ async function certifyRoute(browser,route,viewport,label){
     assert(state.rightGap>=0&&state.rightGap<=36,`${label} ${route}: right gap out of range ${JSON.stringify(state)}`);
     assert(state.bottomGap>=0&&state.bottomGap<=40,`${label} ${route}: bottom gap out of range ${JSON.stringify(state)}`);
     assert(!state.occluded,`${label} ${route}: launcher is occluded by ${state.occluder}`);
-    assert(state.bodySurface==='v111.0',`${label} ${route}: body surface marker missing ${JSON.stringify(state)}`);
+    assert(state.bodySurface==='v111.1',`${label} ${route}: body surface marker missing ${JSON.stringify(state)}`);
 
-    // Dispatch through DOM click semantics after geometry/occlusion has been certified.
-    // This keeps the functional check stable on emulated touch viewports while still
-    // proving that the user-visible launcher is the unobstructed hit target above.
     const opened=await page.evaluate(()=>{const launcher=document.getElementById('apgAssistantLauncher');if(!launcher)return false;launcher.click();return true});
     assert(opened,`${label} ${route}: launcher could not receive click activation`);
     await page.waitForSelector('#apgAssistantPanel:not([hidden])',{timeout:5000});

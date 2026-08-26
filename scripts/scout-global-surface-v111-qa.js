@@ -22,8 +22,8 @@ function invoke(handler,url,method='GET'){
 function count(text,needle){return String(text).split(needle).length-1}
 
 (async()=>{
-  assert.equal(stability.SCOUT_GLOBAL_SURFACE_VERSION,'111.0');
-  assert.equal(app.SCOUT_GLOBAL_SURFACE_VERSION,'111.0','outer runtime must expose current Scout global surface');
+  assert.equal(stability.SCOUT_GLOBAL_SURFACE_VERSION,'111.1');
+  assert.equal(app.SCOUT_GLOBAL_SURFACE_VERSION,'111.1','outer runtime must expose current Scout global surface');
   assert.equal(stability.SCOUT_GLOBAL_CSS_PATH,'/assets/scout-global-surface-v111.css');
   assert.equal(stability.SCOUT_GLOBAL_JS_PATH,'/assets/scout-global-surface-v111.js');
 
@@ -33,17 +33,18 @@ function count(text,needle){return String(text).split(needle).length-1}
   }
   assert.match(stability.scoutGlobalSurfaceCss,/@media\(max-width:760px\)[\s\S]*#apgAssistantLauncher\.apg-assistant-launcher[\s\S]*right:max\(18px,env\(safe-area-inset-right\)\)!important/,'mobile right-side rule missing');
   assert.match(stability.scoutGlobalSurfaceCss,/body\.apg-compare-tray-active:not\(\.scout-v5-open\) #apgAssistantLauncher/,'compare-tray avoidance must be preserved');
+  assert.match(stability.scoutGlobalSurfaceCss,/#apgAssistantLauncher\.apg-assistant-launcher\.apg-footer-overlap-guard\{[\s\S]*visibility:hidden!important;[\s\S]*opacity:0!important;[\s\S]*pointer-events:none!important;/,'footer overlap guard must outrank global visibility so Scout never blocks footer controls');
   assert(!/MutationObserver/.test(stability.scoutGlobalSurfaceJs),'v111 integrity guard must not create another mutation observer');
   assert(stability.scoutGlobalSurfaceJs.includes("document.body.classList.remove('scout-v5-open')"),'closed-panel restore must clear stale open state');
 
   const css=await invoke(app,stability.SCOUT_GLOBAL_CSS_PATH);
   assert.equal(css.status,200);
-  assert.equal(css.headers['x-apg-scout-global-surface'],'v111.0');
-  assert(css.body.includes('APG Scout Global Surface v111.0'));
+  assert.equal(css.headers['x-apg-scout-global-surface'],'v111.1');
+  assert(css.body.includes('APG Scout Global Surface v111.1'));
   const js=await invoke(app,stability.SCOUT_GLOBAL_JS_PATH);
   assert.equal(js.status,200);
-  assert.equal(js.headers['x-apg-scout-global-surface'],'v111.0');
-  assert(js.body.includes("const VERSION='111.0'"));
+  assert.equal(js.headers['x-apg-scout-global-surface'],'v111.1');
+  assert(js.body.includes("const VERSION='111.1'"));
 
   const routes=[
     '/',
@@ -64,18 +65,15 @@ function count(text,needle){return String(text).split(needle).length-1}
   for(const route of routes){
     const response=await invoke(app,route);
     assert(response.status===200||response.status===404,`${route}: invalid status ${response.status}`);
-    assert.equal(response.headers['x-apg-scout-global-surface'],'v111.0',`${route}: v111 header missing`);
+    assert.equal(response.headers['x-apg-scout-global-surface'],'v111.1',`${route}: v111.1 header missing`);
     assert.equal(count(response.body,'id="apgAssistantLauncher"'),1,`${route}: expected exactly one launcher`);
     assert.equal(count(response.body,'id="apgAssistantPanel"'),1,`${route}: expected exactly one panel`);
     assert.equal(count(response.body,stability.SCOUT_GLOBAL_CSS_PATH),1,`${route}: v111 CSS must be injected exactly once`);
     assert.equal(count(response.body,stability.SCOUT_GLOBAL_JS_PATH),1,`${route}: v111 JS must be injected exactly once`);
-    assert(response.body.includes('data-apg-scout-global-surface="v111.0"'),`${route}: v111 body marker missing`);
+    assert(response.body.includes('data-apg-scout-global-surface="v111.1"'),`${route}: v111.1 body marker missing`);
     const headEnd=response.body.indexOf('</head>');
     const globalCss=response.body.indexOf(stability.SCOUT_GLOBAL_CSS_PATH);
     assert(globalCss>0&&globalCss<headEnd,`${route}: v111 CSS must be in head`);
-    // Whole-Site v109 is the current outer wrapper, so its link may be injected after this
-    // inner compatibility layer. v111 therefore owns visibility by ID specificity + !important,
-    // rather than relying on stylesheet source order. The browser gate proves the computed result.
   }
 
   const raw='<!doctype html><html><head><link rel="stylesheet" href="/assets/whole-site-experience-v109.css?v=109.0"></head><body><main>test</main></body></html>';
@@ -84,5 +82,5 @@ function count(text,needle){return String(text).split(needle).length-1}
   assert.equal(count(twice,stability.SCOUT_GLOBAL_JS_PATH),1,'v111 JS injection must be idempotent');
   assert.equal(count(twice,'id="apgAssistantLauncher"'),1,'Scout shell injection must remain idempotent');
 
-  console.log(JSON.stringify({suite:'scout-global-surface-v111',version:stability.SCOUT_GLOBAL_SURFACE_VERSION,status:'PASS',routesChecked:routes.length,checks:{dedicatedCacheDistinctAsset:true,routeIndependentVisibility:true,importantIdOwnership:true,rightAligned:true,closedStateGuard:true,compareTrayAvoidance:true,idempotentSsr:true,browserComputedVisibilityRequired:true}},null,2));
+  console.log(JSON.stringify({suite:'scout-global-surface-v111',version:stability.SCOUT_GLOBAL_SURFACE_VERSION,status:'PASS',routesChecked:routes.length,checks:{dedicatedCacheDistinctAsset:true,routeIndependentVisibility:true,importantIdOwnership:true,rightAligned:true,closedStateGuard:true,compareTrayAvoidance:true,footerOverlapGuard:true,idempotentSsr:true,browserComputedVisibilityRequired:true}},null,2));
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
