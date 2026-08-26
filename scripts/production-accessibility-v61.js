@@ -13,6 +13,18 @@ const SUITE = 'production-accessibility-v61';
 const startedAt = new Date().toISOString();
 const rows = [];
 
+// Exact rule set used by Lighthouse 13.4.1 agent-accessibility-tree (26 Aug 2026).
+// Keeping this explicit means APG's Production gate catches agentic accessibility defects
+// that are not necessarily part of the standard WCAG-tagged Lighthouse score.
+const AGENTIC_RULE_IDS = [
+  'button-name','input-button-name','input-image-alt','label','link-name','select-name','document-title',
+  'aria-allowed-attr','aria-allowed-role','aria-command-name','aria-conditional-attr','aria-dialog-name',
+  'aria-hidden-body','aria-hidden-focus','aria-input-field-name','aria-prohibited-attr','aria-required-attr',
+  'aria-required-children','aria-required-parent','aria-roles','aria-text','aria-toggle-field-name',
+  'aria-tooltip-name','aria-treeitem-name','aria-valid-attr','aria-valid-attr-value','duplicate-id-aria',
+  'definition-list','table-duplicate-name','tabindex','autocomplete-valid','presentation-role-conflict','svg-img-alt',
+];
+
 fs.mkdirSync(OUT_DIR, { recursive: true });
 
 const TARGETS = [
@@ -75,9 +87,11 @@ async function main() {
         runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
         resultTypes: ['violations'],
       }));
+      const allAxe = await page.evaluate(async () => window.axe.run(document, { resultTypes: ['violations'] }));
 
       const serious = axe.violations.filter(v => v.impact === 'serious' || v.impact === 'critical');
       const moderate = axe.violations.filter(v => v.impact === 'moderate');
+      const agentic = allAxe.violations.filter(v => AGENTIC_RULE_IDS.includes(v.id));
 
       const custom = await page.evaluate(() => {
         const visible = el => {
@@ -110,6 +124,7 @@ async function main() {
         status: response.status(),
         seriousCritical: serious.map(compactViolation),
         moderate: moderate.map(compactViolation),
+        lighthouseAgentAccessibility: agentic.map(compactViolation),
         custom,
         runtimeErrors,
         failedRequests: failedRequests.filter(x => !/doubleclick|google-analytics|googletagmanager/i.test(x.url)).slice(0, 20),
@@ -117,6 +132,7 @@ async function main() {
       rows.push(row);
 
       if (serious.length) blockers.push(`${name}: ${serious.length} serious/critical axe violation(s)`);
+      if (agentic.length) blockers.push(`${name}: ${agentic.length} Lighthouse agent accessibility-tree violation(s): ${agentic.map(v => v.id).join(', ')}`);
       if (custom.unlabeledForms.length) blockers.push(`${name}: ${custom.unlabeledForms.length} visible form control(s) without accessible label`);
       if (custom.unnamedButtons.length) blockers.push(`${name}: ${custom.unnamedButtons.length} visible unnamed button(s)`);
       if (custom.heading1 < 1) blockers.push(`${name}: no h1`);
@@ -125,7 +141,7 @@ async function main() {
       if (moderate.length) warnings.push(`${name}: ${moderate.length} moderate axe violation(s)`);
       if (row.failedRequests.length) warnings.push(`${name}: ${row.failedRequests.length} non-analytics failed request(s)`);
 
-      console.log(`A11Y ${name} serious=${serious.length} moderate=${moderate.length} labels=${custom.unlabeledForms.length} buttons=${custom.unnamedButtons.length} overflow=${custom.horizontalOverflow}`);
+      console.log(`A11Y ${name} serious=${serious.length} moderate=${moderate.length} agentic=${agentic.length} labels=${custom.unlabeledForms.length} buttons=${custom.unnamedButtons.length} overflow=${custom.horizontalOverflow}`);
     } catch (error) {
       blockers.push(`${name}: ${error.message}`);
       rows.push({ name, route, viewport: { width, height }, fatal: error.message, runtimeErrors, failedRequests });
@@ -149,7 +165,8 @@ async function main() {
     qaStarted: startedAt,
     qaCompleted: new Date().toISOString(),
     result: blockers.length ? 'FAIL' : 'PASS',
-    policy: 'Serious/critical axe findings and material custom barriers fail; moderate findings are reported for triage.',
+    policy: 'Serious/critical WCAG axe findings, Lighthouse 13.4.1 agent-accessibility-tree rule findings and material custom barriers fail; moderate WCAG findings are reported for triage.',
+    agenticRuleIds: AGENTIC_RULE_IDS,
     blockers,
     warnings,
     rows,
@@ -162,7 +179,7 @@ async function main() {
     console.error(`APG_ACCESSIBILITY=FAIL blockers=${blockers.length}`);
     process.exit(1);
   }
-  console.log(`APG_ACCESSIBILITY=PASS targets=${rows.length}`);
+  console.log(`APG_ACCESSIBILITY=PASS targets=${rows.length} lighthouseAgentAccessibility=PASS`);
 }
 
 main().catch(error => {

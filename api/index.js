@@ -84,9 +84,14 @@ const premiumClientStability=require('../lib/premium-client-stability-v1091-runt
 const premiumMobileDecisionCommerce=require('../lib/premium-mobile-decision-commerce-v112-runtime');
 const premiumMobileCardParity=require('../lib/premium-mobile-card-parity-v1121-runtime');
 const wholeSiteExperience=require('../lib/whole-site-experience-v109-runtime');
+const pagespeedAgenticCertification=require('../lib/pagespeed-agentic-certification-v113-runtime');
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
 scoutResponseDepth.install();
+// v113 augments the Whole-Site wrapper factory with transport-only delivery optimisation.
+// Whole-Site v109 still owns the final semantic/presentation transform; v113 only consolidates
+// its finished CSS delivery, strengthens immutable caching and repairs redundant Scout ARIA.
+pagespeedAgenticCertification.install(wholeSiteExperience);
 const transportHandler=decisionTransportParity.wrap(runtime);
 const premiumHandler=premiumExperience.wrap(transportHandler);
 const journeyHandler=decisionJourneyContinuity.wrap(premiumHandler);
@@ -98,9 +103,10 @@ const stableJourneyHandler=premiumClientStability.wrap(journeyHandler);
 // becoming the public outer runtime, a second router or a recommendation engine.
 const premiumMobileHandler=premiumMobileDecisionCommerce.wrap(stableJourneyHandler);
 // v112.1 closes only legacy server-rendered Product Card and exact-retailer visual parity.
-// It deliberately remains inside Whole-Site v109 and delegates state mutation to app.js.
+// It delegates Compare/Save mutation to the canonical app.js state contract.
 const premiumMobileParityHandler=premiumMobileCardParity.wrap(premiumMobileHandler);
-// Whole-Site v109 remains the final outer HTML communication layer.
+// Whole-Site v109 remains the final semantic HTML communication layer; its returned handler
+// includes the installed v113 transport certification around the completed response.
 const handler=wholeSiteExperience.wrap(premiumMobileParityHandler);
 handler.HARD_CONSTRAINT_RESULT_PARITY_VERSION=hardConstraintParity.VERSION;
 handler.DECISION_TRANSPORT_PARITY_VERSION=decisionTransportParity.VERSION;
@@ -112,5 +118,6 @@ handler.PREMIUM_CLIENT_STABILITY_VERSION=premiumClientStability.VERSION;
 handler.PREMIUM_MOBILE_DECISION_COMMERCE_VERSION=premiumMobileDecisionCommerce.VERSION;
 handler.PREMIUM_MOBILE_CARD_PARITY_VERSION=premiumMobileCardParity.VERSION;
 handler.WHOLE_SITE_EXPERIENCE_VERSION=wholeSiteExperience.VERSION;
+handler.PAGESPEED_AGENTIC_CERTIFICATION_VERSION=pagespeedAgenticCertification.VERSION;
 handler.APG_PLATFORM_FACTS=wholeSiteExperience.FACTS;
 module.exports=handler;
