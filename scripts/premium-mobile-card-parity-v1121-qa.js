@@ -11,6 +11,8 @@ const api=fs.readFileSync('api/index.js','utf8');
 for(const banned of ['scoreProduct(','rankDecision(','publicDecision(','localStorage.setItem(','sessionStorage.setItem(','affiliateRecommendationWeight:1','commissionWeight'])assert(!source.includes(banned),`v112.1 must remain presentation/compatibility only: ${banned}`);
 assert(source.includes('Object.assign(handler,downstream'),'v112.1 wrapper must preserve downstream runtime metadata');
 assert(source.includes('Open product guide:'),'v112.1 Product Card must retain an explicit accessible product-guide destination');
+assert(source.includes('STRICT_NO_MATCH'),'v112.1 must explicitly recognise governed strict no-match Search');
+assert(source.includes('removeConflictingProductArticles'),'v112.1 must fail closed rather than merchandise hard-constraint conflicts');
 assert(api.includes("require('../lib/premium-mobile-card-parity-v1121-runtime')"),'API must wire v112.1 parity');
 assert(api.includes('const premiumMobileParityHandler=premiumMobileCardParity.wrap(premiumMobileHandler);'),'v112.1 must compose over v112');
 assert(api.includes('const handler=wholeSiteExperience.wrap(premiumMobileParityHandler);'),'Whole-Site v109 must remain outermost after v112.1');
@@ -36,6 +38,14 @@ assert(searchOut.includes('href="/categories/wireless-headphones/"'),'non-produc
 assert.equal((searchOut.match(/data-apg112-product-card=/g)||[]).length,1,'Search parity upgraded a non-product feature card');
 assert(searchOut.includes('Why this matched:'),'Search Product Card v2 must retain why-match explanation');
 
+const strictSearchUrl=new URL('https://australianproductguide.au/search/?q=TV+must+be+exactly+999+inches');
+const strictHtml=`<!doctype html><html><head></head><body><main><p>${parity.STRICT_NO_MATCH}</p><article class="product-card v7-product-card"><a href="${href}">${product.name}</a></article><article class="feature-card"><a href="${href}">Conflicting maintained product</a></article><article class="feature-card"><a href="/decision-lab/">Refine requirements</a></article></main></body></html>`;
+const strictOut=parity.transform(strictHtml,strictSearchUrl.pathname,strictSearchUrl);
+assert(strictOut.includes(parity.STRICT_NO_MATCH),'strict no-match explanation must remain visible');
+assert(!strictOut.includes(href),'strict no-match Search must remove maintained product articles rather than legitimise hard-constraint conflicts');
+assert(!/class="[^"]*product-card/.test(strictOut),'strict no-match Search must not reintroduce Product Card merchandising');
+assert(strictOut.includes('href="/decision-lab/"'),'strict no-match Search must preserve non-product recovery guidance');
+
 const nonSearchUrl=new URL('https://australianproductguide.au/decision-lab/');
 const nonSearchOut=parity.transform(searchHtml,nonSearchUrl.pathname,nonSearchUrl);
 assert(!nonSearchOut.includes('data-apg112-product-card='),'generic feature-card outside Search must not be blindly expanded');
@@ -53,4 +63,4 @@ const alreadyOut=parity.transform(alreadyHtml,'/search/',searchUrl);
 assert.equal((alreadyOut.match(/data-apg112-product-card=/g)||[]).length,1,'v112.1 must not duplicate an already-upgraded Product Card v2');
 assert.equal(parity.transform(alreadyOut,'/search/',searchUrl),alreadyOut,'v112.1 transform must be idempotent');
 
-console.log(JSON.stringify({status:'PASS',version:parity.VERSION,multiClassCatalogueParity:true,searchProductParity:true,accessibleProductGuideContract:true,nonProductSearchPreserved:true,exactRetailerVisualCompatibility:true,wholeSiteV109Outermost:true,stateMutationOwner:'canonical-app-js'},null,2));
+console.log(JSON.stringify({status:'PASS',version:parity.VERSION,multiClassCatalogueParity:true,searchProductParity:true,strictNoMatchFailClosed:true,accessibleProductGuideContract:true,nonProductSearchPreserved:true,exactRetailerVisualCompatibility:true,wholeSiteV109Outermost:true,stateMutationOwner:'canonical-app-js'},null,2));
