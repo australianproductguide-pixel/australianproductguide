@@ -88,8 +88,8 @@ scoutResponseDepth.install();
 const transportHandler=decisionTransportParity.wrap(runtime);
 const premiumHandler=premiumExperience.wrap(transportHandler);
 const journeyHandler=decisionJourneyContinuity.wrap(premiumHandler);
-// v109.1 only overrides the v107 client asset with an idempotent ARIA sync; it adds no
-// route, state or scoring logic. Whole-Site v109 remains the outer presentation wrapper.
+// v109.1 fail-closed verifies and serves the intrinsically safe v107 client asset; it adds
+// no route, state or scoring logic. Whole-Site v109 remains the outer presentation wrapper.
 const stableJourneyHandler=premiumClientStability.wrap(journeyHandler);
 const handler=wholeSiteExperience.wrap(stableJourneyHandler);
 handler.HARD_CONSTRAINT_RESULT_PARITY_VERSION=hardConstraintParity.VERSION;
