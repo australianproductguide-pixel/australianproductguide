@@ -10,7 +10,7 @@ const CHROME=process.env.CHROME||'/usr/bin/google-chrome';
 fs.mkdirSync(OUT,{recursive:true});
 
 const report={
-  version:'v51',
+  version:'v51.1',
   base:BASE,
   startedAt:new Date().toISOString(),
   viewports:[],
@@ -53,8 +53,9 @@ async function dismissConsent(page){
 }
 
 async function goto(page,pathname){
-  const res=await page.goto(BASE+pathname,{waitUntil:'networkidle2',timeout:45000});
+  const res=await page.goto(BASE+pathname,{waitUntil:'domcontentloaded',timeout:45000});
   assert(res&&res.status()===200,`${pathname}: expected HTTP 200, got ${res&&res.status()}`);
+  await page.waitForSelector('main',{timeout:12000});
   await wait(page,250);
   await dismissConsent(page);
 }
