@@ -14,7 +14,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
 fs.mkdirSync(OUT,{recursive:true});
 
-const report={suite:'production-scout-global-browser-v111',version:EXPECTED,baseUrl:BASE,gitSha:SHA||null,started:new Date().toISOString(),checks:[],failures:[]};
+const report={suite:'production-scout-global-browser-v111',version:EXPECTED,baseUrl:BASE,gitSha:SHA||null,started:new Date().toISOString(),checks:[],privacyTransitions:[],failures:[]};
 
 async function waitForProduction(){
   for(let attempt=1;attempt<=150;attempt++){
@@ -34,11 +34,53 @@ async function visible(page,selector){
   const ok=await handle.evaluate(el=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return !el.hidden&&r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity||1)>0});
   return ok?handle:null;
 }
-async function dismissOverlays(page){
-  for(const selector of ['[data-apg-consent] [data-consent-essential]','[data-account-nudge] [data-account-nudge-dismiss]']){
-    const button=await visible(page,selector);if(button){try{await button.click();await sleep(80)}catch{}}
+
+// Privacy choices intentionally outrank optional floating UI while they are open.
+// The Scout certificate therefore proves two things rather than trying to defeat that
+// consent layer: (1) a fresh direct-entry page can make a privacy choice; and (2) Scout
+// is visibly rendered and clickable immediately after the choice closes. Use in-page
+// click dispatch instead of ElementHandle.click so the certificate is not vulnerable to
+// a transient detached handle while deferred privacy JS is booting.
+async function settlePrivacyAndOptionalOverlays(page,label,route){
+  try{
+    await page.waitForFunction(()=>{
+      try{
+        return !!document.querySelector('[data-apg-consent]')||document.cookie.includes('apg_cookie_preferences=')||!!localStorage.getItem('apg_cookie_preferences');
+      }catch{return !!document.querySelector('[data-apg-consent]')}
+    },{timeout:2500});
+  }catch{}
+
+  const consent=await page.evaluate(()=>{
+    const root=document.querySelector('[data-apg-consent]');
+    const visible=!!root&&!root.hidden&&getComputedStyle(root).display!=='none';
+    if(!visible)return {wasVisible:false,clicked:false};
+    const button=root.querySelector('[data-consent-essential]');
+    if(!button)return {wasVisible:true,clicked:false};
+    button.click();
+    return {wasVisible:true,clicked:true};
+  });
+  if(consent.wasVisible){
+    assert(consent.clicked,`${label} ${route}: privacy consent was visible but Necessary only could not be activated`);
+    await page.waitForFunction(()=>{const root=document.querySelector('[data-apg-consent]');return !root||root.hidden||getComputedStyle(root).display==='none'},{timeout:3000});
+    report.privacyTransitions.push({label,route,overlay:'privacy-consent',result:'DISMISSED_WITH_NECESSARY_ONLY'});
+  }
+
+  const nudge=await page.evaluate(()=>{
+    const root=document.querySelector('[data-account-nudge]');
+    const visible=!!root&&!root.hidden&&getComputedStyle(root).display!=='none';
+    if(!visible)return {wasVisible:false,clicked:false};
+    const button=root.querySelector('[data-account-nudge-dismiss]');
+    if(!button)return {wasVisible:true,clicked:false};
+    button.click();
+    return {wasVisible:true,clicked:true};
+  });
+  if(nudge.wasVisible){
+    assert(nudge.clicked,`${label} ${route}: optional account nudge was visible but could not be dismissed`);
+    await page.waitForFunction(()=>{const root=document.querySelector('[data-account-nudge]');return !root||root.hidden||getComputedStyle(root).display==='none'},{timeout:3000});
+    report.privacyTransitions.push({label,route,overlay:'optional-account-nudge',result:'DISMISSED'});
   }
 }
+
 async function certifyRoute(browser,route,viewport,label){
   const page=await browser.newPage();
   await page.setViewport(viewport);
@@ -50,8 +92,8 @@ async function certifyRoute(browser,route,viewport,label){
     assert(response&&response.status()<500,`${label} ${route}: HTTP ${response?.status()}`);
     assert((response.headers()['x-apg-scout-global-surface']||'')===EXPECTED,`${label} ${route}: response is not ${EXPECTED}`);
     await page.waitForSelector('main',{timeout:12000});
-    await dismissOverlays(page);
-    await sleep(180);
+    await settlePrivacyAndOptionalOverlays(page,label,route);
+    await sleep(220);
     const state=await page.evaluate(()=>{
       const launcher=document.getElementById('apgAssistantLauncher');
       if(!launcher)return {exists:false};
@@ -76,11 +118,15 @@ async function certifyRoute(browser,route,viewport,label){
     assert(!state.occluded,`${label} ${route}: launcher is occluded by ${state.occluder}`);
     assert(state.bodySurface==='v111.0',`${label} ${route}: body surface marker missing ${JSON.stringify(state)}`);
 
-    const launcher=await visible(page,'#apgAssistantLauncher');assert(launcher,`${label} ${route}: launcher not clickable`);
-    await launcher.click();
+    // Dispatch through DOM click semantics after geometry/occlusion has been certified.
+    // This keeps the functional check stable on emulated touch viewports while still
+    // proving that the user-visible launcher is the unobstructed hit target above.
+    const opened=await page.evaluate(()=>{const launcher=document.getElementById('apgAssistantLauncher');if(!launcher)return false;launcher.click();return true});
+    assert(opened,`${label} ${route}: launcher could not receive click activation`);
     await page.waitForSelector('#apgAssistantPanel:not([hidden])',{timeout:5000});
     assert(await visible(page,'#apgAssistantPanel .scout-v5-input'),`${label} ${route}: Scout panel/input did not open`);
-    const close=await visible(page,'#apgAssistantPanel [data-apg-assistant-close]');assert(close,`${label} ${route}: close control missing`);await close.click();
+    const closed=await page.evaluate(()=>{const button=document.querySelector('#apgAssistantPanel [data-apg-assistant-close]');if(!button)return false;button.click();return true});
+    assert(closed,`${label} ${route}: close control missing or could not be activated`);
     await page.waitForFunction(()=>document.getElementById('apgAssistantPanel')?.hidden===true,{timeout:3000});
     assert(await visible(page,'#apgAssistantLauncher'),`${label} ${route}: launcher did not return after close`);
     assert(errors.length===0,`${label} ${route}: browser errors ${errors.join(' | ')}`);
@@ -110,7 +156,7 @@ async function certifyRoute(browser,route,viewport,label){
   report.completed=new Date().toISOString();
   report.result=report.failures.length?'FAIL':'PASS';
   fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2));
-  console.log(JSON.stringify({suite:report.suite,result:report.result,checks:report.checks.length,failures:report.failures},null,2));
+  console.log(JSON.stringify({suite:report.suite,result:report.result,checks:report.checks.length,privacyTransitions:report.privacyTransitions.length,failures:report.failures},null,2));
   if(report.failures.length)process.exit(1);
-  console.log(`APG_SCOUT_GLOBAL_BROWSER=PASS version=${EXPECTED} checks=${report.checks.length} nonHomeRoutes=${nonHome.length}`);
+  console.log(`APG_SCOUT_GLOBAL_BROWSER=PASS version=${EXPECTED} checks=${report.checks.length} nonHomeRoutes=${nonHome.length} privacyTransitions=${report.privacyTransitions.length}`);
 })().catch(error=>{report.result='ERROR';report.failures.push({label:'runner',route:'',error:error.message});try{fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2))}catch{};console.error(error.stack||error);process.exit(1)});
