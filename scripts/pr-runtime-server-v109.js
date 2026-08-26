@@ -1,12 +1,85 @@
 'use strict';
 
+const fs=require('node:fs');
 const http=require('node:http');
+const path=require('node:path');
 const app=require('../api/index');
 
 const host=process.env.HOST||'127.0.0.1';
 const port=Number(process.env.PORT||4173);
+const publicRoot=path.resolve(__dirname,'..','public');
+const mime={
+  '.css':'text/css; charset=utf-8',
+  '.js':'application/javascript; charset=utf-8',
+  '.mjs':'application/javascript; charset=utf-8',
+  '.json':'application/json; charset=utf-8',
+  '.webmanifest':'application/manifest+json; charset=utf-8',
+  '.svg':'image/svg+xml',
+  '.png':'image/png',
+  '.jpg':'image/jpeg',
+  '.jpeg':'image/jpeg',
+  '.webp':'image/webp',
+  '.gif':'image/gif',
+  '.ico':'image/x-icon',
+  '.txt':'text/plain; charset=utf-8',
+  '.xml':'application/xml; charset=utf-8'
+};
+
+function requestPath(req){
+  let pathname='/';
+  try{pathname=decodeURIComponent(new URL(req.url||'/','http://127.0.0.1').pathname)}catch{}
+  // Some legacy APG asset references contain a slash after a filename, e.g. foo.css/?v=1.
+  // Vercel filesystem routing resolves the file; normalise only that file-shaped suffix.
+  pathname=pathname.replace(/(\.[a-z0-9]{1,12})\/$/i,'$1');
+  return pathname;
+}
+
+function staticFileFor(pathname){
+  if(!pathname.startsWith('/'))return null;
+  const candidate=path.resolve(publicRoot,'.'+pathname);
+  if(candidate!==publicRoot&&!candidate.startsWith(publicRoot+path.sep))return null;
+  try{
+    const stat=fs.statSync(candidate);
+    return stat.isFile()?candidate:null;
+  }catch{return null}
+}
+
+function serveStatic(req,res,filename){
+  const type=mime[path.extname(filename).toLowerCase()]||'application/octet-stream';
+  res.statusCode=200;
+  res.setHeader('Content-Type',type);
+  res.setHeader('Cache-Control','public, max-age=0, must-revalidate');
+  res.setHeader('X-Content-Type-Options','nosniff');
+  if(req.method==='HEAD')return res.end();
+  return fs.createReadStream(filename)
+    .on('error',error=>{
+      console.error('APG_PR_STATIC_ERROR',filename,error&&error.stack||error);
+      if(!res.headersSent)res.statusCode=500;
+      if(!res.writableEnded)res.end('Static asset error');
+    })
+    .pipe(res);
+}
 
 const server=http.createServer((req,res)=>{
+  const pathname=requestPath(req);
+
+  // Vercel injects this platform asset in Production. It is not part of the repository and
+  // has no bearing on APG interaction behaviour, so the local PR harness provides an explicit
+  // inert JavaScript response instead of manufacturing a 404/MIME error.
+  if(pathname==='/_vercel/insights/script.js'){
+    res.statusCode=200;
+    res.setHeader('Content-Type','application/javascript; charset=utf-8');
+    res.setHeader('Cache-Control','no-store');
+    res.setHeader('X-Content-Type-Options','nosniff');
+    return res.end(req.method==='HEAD'?'':'/* PR harness: Vercel Insights unavailable on loopback. */');
+  }
+
+  // Mirror Vercel `{handle:"filesystem"}`: real repository assets are served before the
+  // catch-all API runtime. Dynamic assets such as Premium v107/v109 are absent from public/
+  // and therefore continue into the real application handler below.
+  const staticFile=staticFileFor(pathname);
+  if(staticFile&&['GET','HEAD'].includes(req.method||'GET'))return serveStatic(req,res,staticFile);
+
   // This harness serves the exact application runtime over loopback HTTP. Production's
   // `upgrade-insecure-requests` CSP directive is correct for the public HTTPS site, but on
   // loopback it would rewrite relative assets to https://127.0.0.1 and manufacture SSL
