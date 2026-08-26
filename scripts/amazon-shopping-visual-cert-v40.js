@@ -53,10 +53,16 @@ async function dismissConsent(page){
 }
 
 async function goto(page,pathname){
-  const res=await page.goto(BASE+pathname,{waitUntil:'networkidle2',timeout:45000});
+  // APG is deliberately SSR-first. Certify the returned document and the rendered APG
+  // DOM explicitly rather than treating third-party/persistent network idleness as a
+  // product-readiness signal. All geometry, interaction, affiliate and browser-error
+  // assertions below remain unchanged and continue to fail closed.
+  const res=await page.goto(BASE+pathname,{waitUntil:'domcontentloaded',timeout:30000});
   assert(res&&res.status()===200,`${pathname}: expected HTTP 200, got ${res&&res.status()}`);
-  await wait(page,250);
+  await page.waitForSelector('main',{timeout:12000});
+  await page.waitForFunction(()=>document.readyState==='interactive'||document.readyState==='complete',{timeout:12000});
   await dismissConsent(page);
+  await wait(page,250);
 }
 
 async function screenshot(page,name,{fullPage=true}={}){
