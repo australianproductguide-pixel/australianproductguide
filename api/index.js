@@ -69,13 +69,20 @@ require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
 
-// Post-lineage parity guards install only after the authoritative v106 runtime has loaded
-// every current re-ranking layer. They do not replace v106 or create another recommendation engine.
+// Post-lineage parity and experience controls install only after the authoritative v106
+// runtime has loaded every current re-ranking layer. They preserve v106 as the underlying
+// HTTP/runtime lineage and do not introduce another recommendation engine.
 const runtime=require('../lib/action5-catalogue-certification-v106-runtime');
 const hardConstraintParity=require('../lib/hard-constraint-result-parity-v1');
 const decisionTransportParity=require('../lib/decision-transport-parity-v1-runtime');
+const scoutCustomerIntelligence=require('../lib/scout-customer-intelligence-v6');
+const premiumExperience=require('../lib/premium-experience-v107-runtime');
 hardConstraintParity.install();
-const handler=decisionTransportParity.wrap(runtime);
+scoutCustomerIntelligence.install();
+const transportHandler=decisionTransportParity.wrap(runtime);
+const handler=premiumExperience.wrap(transportHandler);
 handler.HARD_CONSTRAINT_RESULT_PARITY_VERSION=hardConstraintParity.VERSION;
 handler.DECISION_TRANSPORT_PARITY_VERSION=decisionTransportParity.VERSION;
+handler.SCOUT_CUSTOMER_INTELLIGENCE_VERSION=scoutCustomerIntelligence.VERSION;
+handler.PREMIUM_EXPERIENCE_VERSION=premiumExperience.VERSION;
 module.exports=handler;
