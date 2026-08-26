@@ -73,6 +73,19 @@ assert.equal(difference.intent,'apg_information');
 assert((difference.bullets||[]).some(item=>/commission adds zero suitability points/i.test(item)),'APG differentiation must preserve commercial neutrality');
 assert(difference.actions.some(action=>action.url==='/corrections-policy/'),'Scout must understand APG Corrections as part of site trust knowledge');
 
+const institutionalRoutes=[
+  ['/methodology/',/hard constraints|recommendations/i],['/sources/',/evidence hierarchy|provenance/i],['/corrections-policy/',/reported errors|corrections/i],['/affiliate-disclosure/',/commission contributes zero recommendation points/i],['/privacy/',/privacy boundaries|consented analytics/i],['/terms/',/conditions for using APG/i],['/coverage/',/catalogue|coverage/i],['/updates/',/freshness|maintenance activity/i],['/about/',/Australian shoppers|decision-first/i],['/contact/',/feedback|correction reports/i],['/retailers/',/exact-model|verified-variant/i],['/brands/',/brand directory/i],['/categories/',/product-category directory/i],['/guides/',/buying guidance/i]
+];
+assert.equal(Object.keys(responseDepth.SITE_CONTEXT).length,institutionalRoutes.length,'every governed institutional route in this response layer must be explicitly tested');
+for(const [path,expected] of institutionalRoutes){
+  const answer=core.buildResponse({text:'Help me with this page',pageContext:{path}});
+  assert.equal(answer.intent,'apg_information',`${path} should produce page-aware APG guidance`);
+  assert.match(answer.message,expected,`${path} must explain its maintained purpose rather than give a generic page response`);
+  assert.equal(answer.meta?.siteKnowledge,'maintained-route-context',`${path} must identify maintained route context`);
+  assert.equal(answer.meta?.commercialRecommendationWeight,0,`${path} must not become a ranking signal`);
+}
+assert.equal(core.classifyIntent('Help me with this page',{path:'/methodology/'}),'customer_decision_support','trust-page help must be recognised by the response-depth classifier');
+
 const nextStep=core.buildResponse({text:'What should I do next?',pageContext:{path:'/search/?q=wireless%20headphones',currentSearchQuery:'wireless headphones'}});
 assert.equal(nextStep.intent,'contextual_decision_help');
 assert((nextStep.bullets||[]).length>=1);
@@ -119,4 +132,4 @@ const uncertainty=core.buildResponse({text:'What is uncertain or unverified?',pa
 assert.match(uncertainty.message,/same APG evidence|maintained APG evidence/i);
 assert((uncertainty.bullets||[]).some(item=>/evidence boundary/i.test(item)),'uncertainty answer must make the evidence boundary visible');
 
-console.log(JSON.stringify({version:patch.VERSION,responseDepthVersion:responseDepth.VERSION,status:'PASS',checks:{connectedJourneys:true,pageAwareHelp:true,categoryFactors:true,structuredDecisionState:true,hardConstraintFailClosed:true,contextPreservingDecisionLabHandoff:true,requiredBrandHandoff:true,searchIntentHandoff:true,evidenceConfidence:true,expandedCustomerResponses:true,purchaseReadiness:true,freshnessAwareness:true,badFitReasoning:true,buyWaitBoundary:true,valueReasoning:true,pageSummaries:true,siteTrustKnowledge:true,commercialWeightZero:true}},null,2));
+console.log(JSON.stringify({version:patch.VERSION,responseDepthVersion:responseDepth.VERSION,status:'PASS',checks:{connectedJourneys:true,pageAwareHelp:true,categoryFactors:true,structuredDecisionState:true,hardConstraintFailClosed:true,contextPreservingDecisionLabHandoff:true,requiredBrandHandoff:true,searchIntentHandoff:true,evidenceConfidence:true,expandedCustomerResponses:true,purchaseReadiness:true,freshnessAwareness:true,badFitReasoning:true,buyWaitBoundary:true,valueReasoning:true,pageSummaries:true,institutionalRouteKnowledge:true,siteTrustKnowledge:true,commercialWeightZero:true}},null,2));
