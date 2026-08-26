@@ -39,6 +39,9 @@ function count(text,needle){return (String(text).match(new RegExp(needle.replace
   assert.match(premium.clientJs,/Useful next questions/,'Scout must add contextual next-question prompts');
   for(const phrase of ['What should I verify before buying?','Is this good value for the money?','Should I buy now or wait?','What makes APG different?'])assert(premium.clientJs.includes(phrase),`Scout discovery must surface expanded customer question: ${phrase}`);
   assert.match(premium.clientJs,/apg-compare-tray-active/,'Scout launcher must move clear of an active compare tray');
+  assert.match(premium.clientJs,/function setAria\(/,'Scout ARIA sync must avoid redundant attribute writes');
+  assert.match(premium.clientJs,/attributeFilter:\['hidden'\]/,'Premium observer may watch hidden state but must not watch aria-expanded that it synchronises');
+  assert(!/attributeFilter:\[[^\]]*aria-expanded/.test(premium.clientJs),'Premium observer must not observe aria-expanded and write it in the same callback');
 
   const routes=[
     '/',
@@ -69,5 +72,5 @@ function count(text,needle){return (String(text).match(new RegExp(needle.replace
   assert.equal(count(twice,premium.CSS_PATH),1,'premium stylesheet injection must be idempotent');
   assert.equal(count(twice,premium.JS_PATH),1,'premium client injection must be idempotent');
 
-  console.log(JSON.stringify({version:premium.VERSION,status:'PASS',routesChecked:routes.length,checks:{scoutEveryPage:true,bottomLeft:true,mobileGutters:true,smallScreen320Guard:true,inputReadability:true,secondaryTextReadability:true,wrappingTouchTargets:true,safeAreas:true,compareMobileLabels:true,compareViewportContainment:true,expandedContextPrompts:true,reducedMotion:true,ssrProgressiveEnhancement:true}},null,2));
+  console.log(JSON.stringify({version:premium.VERSION,status:'PASS',routesChecked:routes.length,checks:{scoutEveryPage:true,bottomLeft:true,mobileGutters:true,smallScreen320Guard:true,inputReadability:true,secondaryTextReadability:true,wrappingTouchTargets:true,safeAreas:true,compareMobileLabels:true,compareViewportContainment:true,expandedContextPrompts:true,reducedMotion:true,observerLoopGuard:true,ssrProgressiveEnhancement:true}},null,2));
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});

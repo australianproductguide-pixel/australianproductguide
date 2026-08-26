@@ -47,6 +47,36 @@ jobs:
           node-version: '24'
           package-manager-cache: false
 
+      - name: Start exact pull-request runtime
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          PORT=4173 node scripts/pr-runtime-server-v109.js >/tmp/apg-pr-runtime.log 2>&1 &
+          echo $! >/tmp/apg-pr-runtime.pid
+          ready=0
+          for attempt in $(seq 1 40); do
+            if curl -fsSL http://127.0.0.1:4173/deals/ -o /tmp/apg-pr-deals.html; then
+              ready=1
+              break
+            fi
+            sleep 0.5
+          done
+          if [ "$ready" != 1 ]; then
+            cat /tmp/apg-pr-runtime.log || true
+            echo 'Exact PR runtime did not become ready'
+            exit 1
+          fi
+          curl -fsSL http://127.0.0.1:4173/assets/premium-experience-v107.js -o /tmp/apg-pr-premium.js
+          grep -F "function setAria(el,name,value)" /tmp/apg-pr-premium.js >/dev/null
+          grep -F "attributeFilter:['hidden']" /tmp/apg-pr-premium.js >/dev/null
+          if grep -E "attributeFilter:\[[^]]*aria-expanded" /tmp/apg-pr-premium.js >/dev/null; then
+            echo 'Unsafe aria-expanded observer detected in exact PR runtime'
+            exit 1
+          fi
+          grep -F 'data-apg-experience-v109="true"' /tmp/apg-pr-deals.html >/dev/null
+          echo 'BASE_URL=http://127.0.0.1:4173' >> "$GITHUB_ENV"
+          echo "Exact PR runtime verified at $(git rev-parse HEAD)"
+
       - name: Wait for exact Production deployment
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
@@ -92,6 +122,12 @@ jobs:
           set -euo pipefail
           node scripts/amazon-shopping-visual-cert-v40.js
 
+      - name: Stop exact pull-request runtime
+        if: always() && github.event_name == 'pull_request'
+        run: |
+          if [ -f /tmp/apg-pr-runtime.pid ]; then kill "$(cat /tmp/apg-pr-runtime.pid)" 2>/dev/null || true; fi
+          cat /tmp/apg-pr-runtime.log || true
+
       - name: Publish visual certification summary
         if: always()
         run: |
@@ -101,7 +137,7 @@ jobs:
           const r=JSON.parse(fs.readFileSync('artifacts/amazon-shopping-visual-v40/report.json','utf8'));
           console.log('## Amazon Shopping visual certification — inspect only');
           console.log(`**Status:** ${r.status || 'UNKNOWN'}`);
-          console.log(`\n**Production:** ${r.base}`);
+          console.log(`\n**Certified base:** ${r.base}`);
           console.log('\n**Outbound Amazon navigation:** prohibited by v51 compliance control');
           console.log(`\n**Viewports certified:** ${(r.viewports||[]).map(v=>`${v.label} (${v.viewport.width}×${v.viewport.height})`).join(', ') || 'none'}`);
           console.log(`\n**Journeys:** ${(r.journeys||[]).filter(x=>x.ok).length}/${(r.journeys||[]).length} passed`);
