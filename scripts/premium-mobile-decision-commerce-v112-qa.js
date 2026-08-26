@@ -12,6 +12,10 @@ const runtimeSource=fs.readFileSync('lib/premium-mobile-decision-commerce-v112-r
 const clientSource=fs.readFileSync('public/assets/premium-mobile-decision-commerce-v112.js','utf8');
 const cssSource=fs.readFileSync('public/assets/premium-mobile-decision-commerce-v112.css','utf8');
 const apiSource=fs.readFileSync('api/index.js','utf8');
+expect(clientSource.includes("const VERSION='112.1'"),'v112.1 client runtime version must match the server contract');
+expect(!clientSource.includes("const VERSION='112.0'"),'stale v112.0 client guard must not disable v112.1 progressive enhancement');
+expect(cssSource.includes('data-apg-premium-mobile-commerce="v112.1"'),'v112.1 CSS selectors must match the server body contract');
+expect(!cssSource.includes('data-apg-premium-mobile-commerce="v112.0"'),'stale v112.0 CSS body selectors must not survive the v112.1 release');
 expect(apiSource.includes("premium-mobile-decision-commerce-v112-runtime"),'api/index.js does not wire v112');
 expect(apiSource.includes('const premiumMobileHandler=premiumMobileDecisionCommerce.wrap(stableJourneyHandler);'),'v112 must sit outside v109.1 stability and inside Whole-Site v109');
 expect(apiSource.includes('const handler=wholeSiteExperience.wrap(premiumMobileHandler);'),'Whole-Site v109 must remain the final outer HTML communication layer');
@@ -96,4 +100,4 @@ for(const token of ['data-apg112-product-nav','apg112-summary','apg112-fit','apg
 const contexts=['/search/','/categories/','/decision-lab/','/my-apg/'];
 for(const path of contexts){const u=new URL(`https://australianproductguide.au${path}`);const out=runtime.transform('<html><head></head><body><main>ok</main></body></html>',path,u);expect(out.includes('data-apg-premium-mobile-commerce="v112.1"'),`Global v112.1 marker missing on ${path}`);}
 
-console.log(JSON.stringify({status:'PASS',version:runtime.VERSION,products:products.length,priorityDecisionAreas:Object.keys(searchDepth.categoryDepth||{}).length,formalDecisionGradeClaim:false,imageryTrustGate:true,retailerCommissionWeightingChanged:false,workspaceActions:'established-local-keys',wholeSiteV109Outermost:true,documentOrderFallbackCertified:true,notes:['Priority decision areas are not formal Category Completion Gate certification.','v112.1 does not close pre-existing Amazon exact-link, imagery, price, stock or category-evidence backlogs.']},null,2));
+console.log(JSON.stringify({status:'PASS',version:runtime.VERSION,products:products.length,priorityDecisionAreas:Object.keys(searchDepth.categoryDepth||{}).length,formalDecisionGradeClaim:false,imageryTrustGate:true,retailerCommissionWeightingChanged:false,workspaceActions:'established-local-keys',wholeSiteV109Outermost:true,documentOrderFallbackCertified:true,clientStyleVersionParity:true,notes:['Priority decision areas are not formal Category Completion Gate certification.','v112.1 does not close pre-existing Amazon exact-link, imagery, price, stock or category-evidence backlogs.']},null,2));
