@@ -27,7 +27,7 @@ assert.equal(scoutPatch,'../lib/scout-customer-intelligence-v6','Scout customer 
 assert.equal(scoutResponsePatch,'../lib/scout-response-depth-v61','Scout response depth must remain a narrow conversational layer after Scout v6, not a second recommender');
 assert.equal(premiumWrapper,'../lib/premium-experience-v107-runtime','premium UI must remain an explicit progressive-enhancement wrapper over the current SSR runtime');
 assert.equal(journeyWrapper,'../lib/decision-journey-continuity-v108-runtime','decision journey continuity must remain a narrow SSR handoff layer without a new state store');
-assert.equal(premiumClientStabilityWrapper,'../lib/premium-client-stability-v1091-runtime','v109.1 must remain a narrow client-stability compatibility layer, not another product or decision runtime');
+assert.equal(premiumClientStabilityWrapper,'../lib/premium-client-stability-v1091-runtime','v109.1 must remain a narrow client-stability guard, not another product or decision runtime');
 assert.equal(wholeSiteWrapper,'../lib/whole-site-experience-v109-runtime','whole-site experience must remain a presentation/communication wrapper rather than a second product or decision runtime');
 assert(api.includes('hardConstraintParity.install();'),'post-lineage hard-constraint parity must be explicitly installed');
 assert(api.includes('scoutCustomerIntelligence.install();'),'Scout v6 must be explicitly installed after the authoritative runtime lineage');
@@ -36,8 +36,8 @@ assert(api.indexOf('scoutCustomerIntelligence.install();')<api.indexOf('scoutRes
 assert(api.includes('const transportHandler=decisionTransportParity.wrap(runtime);'),'decision transport wrapper must delegate to v106 rather than replace its business logic');
 assert(api.includes('const premiumHandler=premiumExperience.wrap(transportHandler);'),'premium experience must wrap the governed transport without replacing SSR/runtime logic');
 assert(api.includes('const journeyHandler=decisionJourneyContinuity.wrap(premiumHandler);'),'journey continuity must wrap the premium SSR response without replacing product/decision logic');
-assert(api.includes('const stableJourneyHandler=premiumClientStability.wrap(journeyHandler);'),'v109.1 stability must wrap only the journey response/asset path without replacing the decision or product runtime');
-assert(api.includes('const handler=wholeSiteExperience.wrap(stableJourneyHandler);'),'whole-site experience must remain the final outer HTML communication layer after the narrow v109.1 asset stability guard');
+assert(api.includes('const stableJourneyHandler=premiumClientStability.wrap(journeyHandler);'),'v109.1 stability must guard only the premium client asset path without replacing the decision or product runtime');
+assert(api.includes('const handler=wholeSiteExperience.wrap(stableJourneyHandler);'),'whole-site experience must remain the final outer HTML communication layer after the narrow v109.1 stability guard');
 assert(api.indexOf('const premiumHandler=premiumExperience.wrap(transportHandler);')<api.indexOf('const journeyHandler=decisionJourneyContinuity.wrap(premiumHandler);'),'v108 journey continuity must compose over v107 premium SSR');
 assert(api.indexOf('const journeyHandler=decisionJourneyContinuity.wrap(premiumHandler);')<api.indexOf('const stableJourneyHandler=premiumClientStability.wrap(journeyHandler);'),'v109.1 client stability must compose outside v108 without altering its HTML decisions');
 assert(api.indexOf('const stableJourneyHandler=premiumClientStability.wrap(journeyHandler);')<api.indexOf('const handler=wholeSiteExperience.wrap(stableJourneyHandler);'),'v109 whole-site presentation must remain outermost');
@@ -63,11 +63,12 @@ assert(wholeSiteSource.includes("const {categories,products}=require('../data');
 
 const premiumStability=require(path.join(root,'lib','premium-client-stability-v1091-runtime.js'));
 assert.equal(premiumStability.VERSION,'109.1');
-assert(premiumStability.clientJs.includes("if(launcher.getAttribute('aria-expanded')!==expanded)launcher.setAttribute('aria-expanded',expanded)"),'v109.1 must make Scout aria-expanded updates idempotent');
-assert(premiumStability.clientJs.includes("if(panel.getAttribute('aria-hidden')!==hidden)panel.setAttribute('aria-hidden',hidden)"),'v109.1 must make Scout aria-hidden updates idempotent');
-assert(!premiumStability.clientJs.includes(premiumStability.UNSAFE),'served premium client must not retain the non-idempotent v107 Scout ARIA sync');
+assert(premiumStability.clientJs.includes("function setAria(el,name,value){const next=String(value);if(el.getAttribute(name)!==next)el.setAttribute(name,next)}"),'Premium v107 must own idempotent Scout ARIA writes directly');
+assert(premiumStability.clientJs.includes("attributeFilter:['hidden']"),'Premium observer must react to Scout hidden state without observing the ARIA attribute it synchronises');
+assert(!/attributeFilter:\[[^\]]*aria-expanded/.test(premiumStability.clientJs),'served premium client must not observe aria-expanded and write it from the same observer callback');
+assert(!premiumStability.clientJs.includes(premiumStability.UNSAFE),'served premium client must not retain the superseded non-idempotent Scout ARIA sync');
 const premiumStabilitySource=fs.readFileSync(path.join(root,'lib','premium-client-stability-v1091-runtime.js'),'utf8');
-for(const banned of ['scoreProduct(','rankDecision(','publicDecision(','affiliateRecommendationWeight:1','commissionWeight','localStorage.setItem(','sessionStorage.setItem('])assert(!premiumStabilitySource.includes(banned),`premium client stability must remain an asset-only compatibility layer: ${banned}`);
+for(const banned of ['scoreProduct(','rankDecision(','publicDecision(','affiliateRecommendationWeight:1','commissionWeight','localStorage.setItem(','sessionStorage.setItem('])assert(!premiumStabilitySource.includes(banned),`premium client stability must remain an asset-only compatibility guard: ${banned}`);
 
 const deploy=String(pkg.scripts&&pkg.scripts['qa:deploy']||'');
 assert(deploy.startsWith('node scripts/brand-mark-canonical-parity-v91-qa.js'),'Brand Parity v91 must remain the first deploy gate');
@@ -104,6 +105,7 @@ console.log(JSON.stringify({
   brandParityFirstGate:true,
   wholeSitePresentationOnly:true,
   premiumClientAriaSyncIdempotent:true,
+  premiumClientObserverFeedbackLoopAbsent:true,
   prohibitedFrameworksAbsent:true,
-  policy:'Inventory before consolidation. v106 remains the underlying governed runtime; narrowly scoped request-time intelligence and SSR/progressive-enhancement experience wrappers may compose around it only with explicit regression gates. v109 remains outer presentation/communication. v109.1 is asset-only stability for the v107 Scout ARIA observer and does not score, route or store customer state. No compatibility layer is deleted without route/API/browser/SEO parity proof.'
+  policy:'Inventory before consolidation. v106 remains the underlying governed runtime; narrowly scoped request-time intelligence and SSR/progressive-enhancement experience wrappers may compose around it only with explicit regression gates. v109 remains outer presentation/communication. Premium v107 owns the safe Scout ARIA implementation directly; v109.1 fail-closed verifies and serves that safe asset without scoring, routing or storing customer state. No compatibility layer is deleted without route/API/browser/SEO parity proof.'
 },null,2));
