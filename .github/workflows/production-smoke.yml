@@ -107,13 +107,14 @@ jobs:
     name: Production Browser, Visual & Accessibility
     needs: production-smoke
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     env:
       BASE_URL: https://australianproductguide.au
       APG_EXPECTED_SHA: ${{ github.sha }}
       APG_GITHUB_DEPLOYMENT_ID: ${{ needs.production-smoke.outputs.github_deployment_id }}
       CRITICAL_BROWSER_OUT: artifacts/production-critical-browser-v61
       SCOUT_GLOBAL_BROWSER_OUT: artifacts/production-scout-global-v111
+      PREMIUM_MOBILE_V112_OUT: artifacts/production-premium-mobile-v112
       MEASUREMENT_CERT_OUT: artifacts/production-measurement-certification-v89
       FOOTER_BROWSER_OUT: artifacts/production-footer-browser-v83
       BRAND_PARITY_OUT: artifacts/production-brand-parity-v91
@@ -144,6 +145,9 @@ jobs:
       - name: Certify Scout is visible and clickable on non-home routes
         run: node scripts/production-scout-global-browser-v111.js
 
+      - name: Certify premium mobile decision-commerce v112
+        run: node scripts/production-premium-mobile-v112.js
+
       - name: Certify Production GA consent, privacy and transport
         run: node scripts/production-measurement-certification-v89.js
 
@@ -165,7 +169,7 @@ jobs:
         if: always()
         run: node scripts/production-accessibility-v61.js
 
-      - name: Upload browser, Scout, measurement, brand, visual and accessibility evidence
+      - name: Upload browser, Scout, premium-mobile, measurement, brand, visual and accessibility evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -173,6 +177,7 @@ jobs:
           path: |
             artifacts/production-critical-browser-v61
             artifacts/production-scout-global-v111
+            artifacts/production-premium-mobile-v112
             artifacts/production-measurement-certification-v89
             artifacts/production-footer-browser-v83
             artifacts/production-brand-parity-v91
@@ -238,6 +243,7 @@ jobs:
         run: |
           set -euo pipefail
           npm run qa:full
+          node scripts/premium-mobile-decision-commerce-v112-qa.js
           node scripts/scout-global-surface-v111-qa.js
           node scripts/account-profile-v24-qa.js
           node scripts/account-governance-v25-qa.js
