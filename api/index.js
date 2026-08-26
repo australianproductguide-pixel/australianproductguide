@@ -69,14 +69,31 @@ require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
 
-// The full legacy lineage can legitimately re-rank after the initial verification layer.
-// Reapply evidence-bound hard-constraint eligibility after v106 has loaded, then expose
-// exactly that shared Decision Engine through the two public JSON transports.
+// Post-lineage parity, intelligence and experience controls install only after the
+// authoritative v106 runtime has loaded every current re-ranking layer. They preserve
+// v106 as the underlying HTTP/business runtime and add no second recommendation engine,
+// browser router or customer-state store.
 const runtime=require('../lib/action5-catalogue-certification-v106-runtime');
 const hardConstraintParity=require('../lib/hard-constraint-result-parity-v1');
 const decisionTransportParity=require('../lib/decision-transport-parity-v1-runtime');
+const scoutCustomerIntelligence=require('../lib/scout-customer-intelligence-v6');
+const scoutResponseDepth=require('../lib/scout-response-depth-v61');
+const premiumExperience=require('../lib/premium-experience-v107-runtime');
+const decisionJourneyContinuity=require('../lib/decision-journey-continuity-v108-runtime');
+const wholeSiteExperience=require('../lib/whole-site-experience-v109-runtime');
 hardConstraintParity.install();
-const handler=decisionTransportParity.wrap(runtime);
+scoutCustomerIntelligence.install();
+scoutResponseDepth.install();
+const transportHandler=decisionTransportParity.wrap(runtime);
+const premiumHandler=premiumExperience.wrap(transportHandler);
+const journeyHandler=decisionJourneyContinuity.wrap(premiumHandler);
+const handler=wholeSiteExperience.wrap(journeyHandler);
 handler.HARD_CONSTRAINT_RESULT_PARITY_VERSION=hardConstraintParity.VERSION;
 handler.DECISION_TRANSPORT_PARITY_VERSION=decisionTransportParity.VERSION;
+handler.SCOUT_CUSTOMER_INTELLIGENCE_VERSION=scoutCustomerIntelligence.VERSION;
+handler.SCOUT_RESPONSE_DEPTH_VERSION=scoutResponseDepth.VERSION;
+handler.PREMIUM_EXPERIENCE_VERSION=premiumExperience.VERSION;
+handler.DECISION_JOURNEY_CONTINUITY_VERSION=decisionJourneyContinuity.VERSION;
+handler.WHOLE_SITE_EXPERIENCE_VERSION=wholeSiteExperience.VERSION;
+handler.APG_PLATFORM_FACTS=wholeSiteExperience.FACTS;
 module.exports=handler;
