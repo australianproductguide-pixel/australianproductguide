@@ -10,6 +10,7 @@ const source=fs.readFileSync('lib/premium-mobile-card-parity-v1121-runtime.js','
 const api=fs.readFileSync('api/index.js','utf8');
 for(const banned of ['scoreProduct(','rankDecision(','publicDecision(','localStorage.setItem(','sessionStorage.setItem(','affiliateRecommendationWeight:1','commissionWeight'])assert(!source.includes(banned),`v112.1 must remain presentation/compatibility only: ${banned}`);
 assert(source.includes('Object.assign(handler,downstream'),'v112.1 wrapper must preserve downstream runtime metadata');
+assert(source.includes('Open product guide:'),'v112.1 Product Card must retain an explicit accessible product-guide destination');
 assert(api.includes("require('../lib/premium-mobile-card-parity-v1121-runtime')"),'API must wire v112.1 parity');
 assert(api.includes('const premiumMobileParityHandler=premiumMobileCardParity.wrap(premiumMobileHandler);'),'v112.1 must compose over v112');
 assert(api.includes('const handler=wholeSiteExperience.wrap(premiumMobileParityHandler);'),'Whole-Site v109 must remain outermost after v112.1');
@@ -22,6 +23,7 @@ const categoryHtml=`<!doctype html><html><head></head><body><main><article class
 const categoryUrl=new URL('https://australianproductguide.au/categories/wireless-headphones/');
 const categoryOut=parity.transform(categoryHtml,categoryUrl.pathname,categoryUrl);
 assert(categoryOut.includes(`data-apg112-product-card="${product.slug}"`),'multi-class catalogue product card was not upgraded to Product Card v2');
+assert(categoryOut.includes('aria-label="Open product guide:'),'Product Card v2 must preserve the explicit accessible product-guide action');
 assert(!categoryOut.includes('v7-product-card'),'legacy catalogue card remained after parity transform');
 assert(categoryOut.includes('data-apg-premium-card-parity="v112.1"'),'v112.1 body marker missing');
 
@@ -29,6 +31,7 @@ const searchHtml=`<!doctype html><html><head></head><body><main><article class="
 const searchUrl=new URL('https://australianproductguide.au/search/?q=wireless+headphones');
 const searchOut=parity.transform(searchHtml,searchUrl.pathname,searchUrl);
 assert(searchOut.includes(`data-apg112-product-card="${product.slug}"`),'Search product feature-card was not upgraded to Product Card v2');
+assert(searchOut.includes('aria-label="Open product guide:'),'Search Product Card v2 must retain the product-guide interaction contract without another visible CTA');
 assert(searchOut.includes('href="/categories/wireless-headphones/"'),'non-product Search feature-card must remain intact');
 assert.equal((searchOut.match(/data-apg112-product-card=/g)||[]).length,1,'Search parity upgraded a non-product feature card');
 assert(searchOut.includes('Why this matched:'),'Search Product Card v2 must retain why-match explanation');
@@ -50,4 +53,4 @@ const alreadyOut=parity.transform(alreadyHtml,'/search/',searchUrl);
 assert.equal((alreadyOut.match(/data-apg112-product-card=/g)||[]).length,1,'v112.1 must not duplicate an already-upgraded Product Card v2');
 assert.equal(parity.transform(alreadyOut,'/search/',searchUrl),alreadyOut,'v112.1 transform must be idempotent');
 
-console.log(JSON.stringify({status:'PASS',version:parity.VERSION,multiClassCatalogueParity:true,searchProductParity:true,nonProductSearchPreserved:true,exactRetailerVisualCompatibility:true,wholeSiteV109Outermost:true,stateMutationOwner:'canonical-app-js'},null,2));
+console.log(JSON.stringify({status:'PASS',version:parity.VERSION,multiClassCatalogueParity:true,searchProductParity:true,accessibleProductGuideContract:true,nonProductSearchPreserved:true,exactRetailerVisualCompatibility:true,wholeSiteV109Outermost:true,stateMutationOwner:'canonical-app-js'},null,2));
