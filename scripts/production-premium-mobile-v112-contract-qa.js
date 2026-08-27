@@ -1,13 +1,18 @@
 'use strict';
 const fs=require('node:fs'),assert=require('node:assert/strict'),runtime=require('../lib/premium-mobile-decision-commerce-v112-runtime');
-const source=fs.readFileSync(require.resolve('./production-premium-mobile-v112'),'utf8'),expected=`v${runtime.VERSION}`;
+const source=fs.readFileSync(require.resolve('./production-premium-mobile-v112'),'utf8'),criticalSource=fs.readFileSync(require.resolve('./production-critical-browser-v61'),'utf8'),expected=`v${runtime.VERSION}`;
 assert.equal(expected,'v112.1','Protected v112 runtime version changed; review the Production certification contract deliberately');
 assert.match(source,/EXPECTED='v112\.1'/,'Production certification must wait for v112.1');
 assert.match(source,/data-apg-premium-mobile-commerce=\\?"v112\.1\\?"/,'Production certification must select the v112.1 body contract');
-assert.match(source,/contract:'current-consumer-semantics-v2'/,'Production certification must use the current consumer-semantic contract');
+assert.match(source,/contract:'current-consumer-semantics-v3'/,'Production certification must use the current consumer-semantic contract');
 assert.match(source,/\/search\/\?q=Sony\+WH-1000XM6/,'Search certification must use the exact maintained Sony query already proven by the critical browser journey');
-assert.match(source,/exact product result actions missing/,'Search/category certification must retain exact product Compare and Save checks');
-assert.match(source,/touch target below 44px/,'Mobile result actions must retain touch-target checks');
+assert.match(source,/exact product result\/Compare actions missing/,'Search/category certification must retain the exact maintained product link and Compare action');
+assert.match(source,/Compare touch target below 44px/,'Mobile Search/category Compare actions must retain touch-target checks');
+assert.match(source,/Compare persistence failed/,'Search/category certification must retain established shortlist persistence checks');
+assert.doesNotMatch(source,/data-save-product|apgSaved/,'Search/category v112 certification must not invent a Save control that is not part of the current result-surface contract');
+assert.match(criticalSource,/desktop-product-save-compare-result-remove/,'The authoritative critical-browser suite must continue to certify the broader Save/Compare journey');
+assert.match(criticalSource,/Sony save missing/,'Save must remain explicitly certified on the product surface where the control is designed to exist');
+assert.match(criticalSource,/data-save-product="sony-wh-1000xm6"/,'Critical-browser Save certification must target the exact maintained Sony product');
 assert.match(source,/product offer integrity failed/,'Product certification must retain retailer and price-truth checks');
 assert.match(source,/compare identities\/default differences failed/,'Comparison certification must retain v112 decision checks');
 assert.match(source,/global Scout launcher is not interactive before opening/,'Scout launcher interactivity must be certified');
@@ -17,4 +22,4 @@ assert.doesNotMatch(source,/\.home-hero,\.premium-home|main \.category-grid/,'Do
 assert.doesNotMatch(source,/\/search\/\?q=wireless\+headphones/,'Do not use the ambiguous search query that failed to return the intended exact product');
 assert.doesNotMatch(source,/\[data-apg112-product-card\]|\[data-apg112-home-primary\]/,'Do not depend on superseded v112-owned home/card selectors');
 assert.doesNotMatch(source,/EXPECTED='v112\.0'|expose v112\.0/,'Stale v112.0 contract survived');
-console.log(`PRODUCTION_PREMIUM_MOBILE_V112_CONTRACT=PASS runtime=${runtime.VERSION} contract=current-consumer-semantics-v2`);
+console.log(`PRODUCTION_PREMIUM_MOBILE_V112_CONTRACT=PASS runtime=${runtime.VERSION} contract=current-consumer-semantics-v3 saveCoverage=critical-browser-product-surface`);
