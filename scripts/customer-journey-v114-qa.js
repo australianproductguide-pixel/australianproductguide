@@ -172,7 +172,7 @@ const sonyPanel=v112.retailerPanelV2(sony);
 assert.match(sonyPanel,/JB Hi-Fi/,'Sony v112 retailer panel lost JB Hi-Fi');
 assert.match(sonyPanel,/Identity checked 27 Aug 2026/,'Sony visible retailer panel still exposes the stale 18 August check date');
 assert.match(sonyPanel,/Verified variant/,'Sony Amazon pathway lost explicit variant semantics');
-assert.match(sonyPanel,/Variant: Platinum Silver/,'Sony Amazon verified variant description was lost');
+assert.match(sonyPanel,/Variant: Sony WH-1000XM6, Platinum Silver/,'Sony Amazon verified variant description was lost');
 assert.match(sonyPanel,/Retailers contribute 0 recommendation points/,'Canonical retailer refresh changed commercial-neutrality disclosure');
 
 const compareUrl=new URL('https://australianproductguide.au/compare/custom/?products=breville-barista-touch-bes880,bose-quietcomfort-ultra-headphones');
