@@ -4,10 +4,13 @@ const source=fs.readFileSync(require.resolve('./production-premium-mobile-v112')
 assert.equal(expected,'v112.1','Protected v112 runtime version changed; review the Production certification contract deliberately');
 assert.match(source,/EXPECTED='v112\.1'/,'Production certification must wait for v112.1');
 assert.match(source,/data-apg-premium-mobile-commerce=\\?"v112\.1\\?"/,'Production certification must select the v112.1 body contract');
-assert.match(source,/contract:'current-consumer-semantics-v3'/,'Production certification must use the current consumer-semantic contract');
+assert.match(source,/contract:'current-consumer-semantics-v4'/,'Production certification must use the current consumer-semantic contract');
 assert.match(source,/\/search\/\?q=Sony\+WH-1000XM6/,'Search certification must use the exact maintained Sony query already proven by the critical browser journey');
 assert.match(source,/exact product result\/Compare actions missing/,'Search/category certification must retain the exact maintained product link and Compare action');
 assert.match(source,/Compare touch target below 44px/,'Mobile Search/category Compare actions must retain touch-target checks');
+assert.match(source,/visible Compare control could not be clicked/,'Search/category certification must click the same visible Compare control that it certified');
+assert.match(source,/\[\.\.\.document\.querySelectorAll\(`\[data-compare-product=.*?\]\`\)\]\.find\(visible\)/,'Search/category certification must resolve visible Compare controls rather than arbitrary duplicate DOM matches');
+assert.doesNotMatch(source,/await p\.click\(`\[data-compare-product=/,'Search/category certification must not click the first duplicate Compare node blindly');
 assert.match(source,/Compare persistence failed/,'Search/category certification must retain established shortlist persistence checks');
 assert.doesNotMatch(source,/data-save-product|apgSaved/,'Search/category v112 certification must not invent a Save control that is not part of the current result-surface contract');
 assert.match(criticalSource,/desktop-product-save-compare-result-remove/,'The authoritative critical-browser suite must continue to certify the broader Save/Compare journey');
@@ -22,4 +25,4 @@ assert.doesNotMatch(source,/\.home-hero,\.premium-home|main \.category-grid/,'Do
 assert.doesNotMatch(source,/\/search\/\?q=wireless\+headphones/,'Do not use the ambiguous search query that failed to return the intended exact product');
 assert.doesNotMatch(source,/\[data-apg112-product-card\]|\[data-apg112-home-primary\]/,'Do not depend on superseded v112-owned home/card selectors');
 assert.doesNotMatch(source,/EXPECTED='v112\.0'|expose v112\.0/,'Stale v112.0 contract survived');
-console.log(`PRODUCTION_PREMIUM_MOBILE_V112_CONTRACT=PASS runtime=${runtime.VERSION} contract=current-consumer-semantics-v3 saveCoverage=critical-browser-product-surface`);
+console.log(`PRODUCTION_PREMIUM_MOBILE_V112_CONTRACT=PASS runtime=${runtime.VERSION} contract=current-consumer-semantics-v4 compareTarget=visible-certified-node saveCoverage=critical-browser-product-surface`);
