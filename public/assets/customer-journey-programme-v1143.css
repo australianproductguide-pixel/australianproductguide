@@ -1,0 +1,15 @@
+/* APG Customer Journey Programme v114.3 — public category shopper trust + mobile containment. */
+@media(max-width:560px){
+  body[data-apg-route-family="category"] .pick-card .product-visual,
+  body[data-apg-route-family="category"] .visual-comparison .comparison-visuals{
+    width:100%!important;
+    max-width:100%!important;
+    margin-left:0!important;
+    margin-right:0!important;
+    box-sizing:border-box!important;
+  }
+  body[data-apg-route-family="category"] .comparison-visuals>*{
+    min-width:0!important;
+    max-width:100%!important;
+  }
+}

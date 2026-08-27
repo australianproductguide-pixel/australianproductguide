@@ -31,6 +31,7 @@ assert(!cards.some(card=>['AU','SRC','FIT'].includes(card.value)),'cryptic proof
 const html=proof.ApgProofRail(stats);
 assert(proof.VERSION==='103.5','Proof Rail version must identify the three-second seamless-loop release');
 assert((html.match(/data-proof-card/g)||[]).length===5,'SSR output must contain five canonical proof cards');
+assert(!/<article class="apg-proof-card-v103"[^>]*\srole="group"/i.test(html),'semantic proof articles must not use the invalid redundant group role');
 assert((html.match(/data-proof-dot>/g)||[]).length===5,'SSR output must contain five progress indicators');
 assert(html.includes('aria-label="Australian Product Guide proof rail"'),'semantic section label missing');
 assert(html.includes('aria-label="Previous proof"'),'previous control accessible label missing');

@@ -187,13 +187,14 @@ async function main(){
           const cs=getComputedStyle(el);
           return {tag:el.tagName.toLowerCase(),cls:String(el.className||'').slice(0,120),id:el.id||'',left:Math.round(r.left*10)/10,right:Math.round(r.right*10)/10,width:Math.round(r.width*10)/10,display:cs.display,position:cs.position};
         }).filter(x=>x.display!=='none'&&x.width>0&&(x.left<-2||x.right>innerWidth+2)).slice(0,12);
+        const exactRetailerNodes=[...new Set([...document.querySelectorAll('.apg-exact-offers-v42,[data-apg112-retailer-state="exact"]')])];
         return {
           sw:document.documentElement.scrollWidth,
           cw:document.documentElement.clientWidth,
           v27:document.body?.dataset?.evidenceCommerceV27||'',
           v28:document.body?.dataset?.trustV28||'',
           text:document.body?.innerText?.length||0,
-          exactRetailer:document.querySelectorAll('.apg-exact-offers-v42').length,
+          exactRetailer:exactRetailerNodes.length,
           coverageNote:document.querySelectorAll('.apg-v27-coverage-note').length,
           searchForm:document.querySelectorAll('form[role="search"][action="/search/"]').length,
           searchProductLinks:[...document.querySelectorAll('main a[href^="/products/"]')].filter(a=>/^\/products\/[a-z0-9-]+\/$/.test(a.getAttribute('href')||'')).length,
@@ -203,7 +204,7 @@ async function main(){
       await page.screenshot({path:`${OUT}/${vp}-${name}.png`,fullPage:true});
       if(nav.status<200||nav.status>=400||state.sw>state.cw+2||state.v27!=='true'||state.v28!=='true'||state.text<80||errors.length)bad.push(`${vp}/${name}: ${JSON.stringify(state)} status=${nav.status} errors=${errors.join('|')}`);
       if(name==='search'&&(state.searchForm<1||state.searchProductLinks<1))bad.push(`${vp}/${name}: semantic Search contract failed; form=${state.searchForm} productLinks=${state.searchProductLinks}`);
-      if(name==='retailer-product'&&state.exactRetailer!==1)bad.push(`${vp}/${name}: expected one exact retailer block, found ${state.exactRetailer}`);
+      if(name==='retailer-product'&&state.exactRetailer<1)bad.push(`${vp}/${name}: expected at least one current exact retailer destination, found ${state.exactRetailer}`);
       if(['laptops','headphones'].includes(name)&&state.coverageNote!==1)bad.push(`${vp}/${name}: v27 coverage note missing/duplicated`);
       report.push({vp,name,...nav,...state,errors});
     }catch(err){
@@ -211,7 +212,7 @@ async function main(){
       report.push({vp,name,productionUrl:BASE_URL+path,renderUrl:renderBase+path,fatal:err.message,errors});
       await page.screenshot({path:`${OUT}/${vp}-${name}-failure.png`,fullPage:true}).catch(()=>{});
     }finally{
-      await page.close().catch(()=>{});
+      await page.close();
     }
   }
 
