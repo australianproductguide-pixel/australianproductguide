@@ -81,8 +81,7 @@ const scoutResponseDepth=require('../lib/scout-response-depth-v61');
 const premiumExperience=require('../lib/premium-experience-v107-runtime');
 const decisionJourneyContinuity=require('../lib/decision-journey-continuity-v108-runtime');
 const premiumClientStability=require('../lib/premium-client-stability-v1091-runtime');
-// Compatibility base retained under v112.2: require('../lib/premium-mobile-decision-commerce-v112-runtime');
-const premiumMobileDecisionCommerce=require('../lib/premium-mobile-decision-commerce-v1122-runtime');
+const premiumMobileDecisionCommerce=require('../lib/premium-mobile-decision-commerce-v112-runtime');
 const wholeSiteExperience=require('../lib/whole-site-experience-v109-runtime');
 const pagespeedAgenticCertification=require('../lib/pagespeed-agentic-certification-v113-runtime');
 const customerJourneyProgramme=require('../lib/customer-journey-programme-v1144-runtime');
@@ -103,9 +102,9 @@ const journeyHandler=decisionJourneyContinuity.wrap(premiumHandler);
 // v109.1 fail-closed verifies and serves the intrinsically safe v107 client asset; it adds
 // no route, state or scoring logic.
 const stableJourneyHandler=premiumClientStability.wrap(journeyHandler);
-// v112.2 preserves v112.1 evidence/merchandising behaviour and only reconciles the rendered
-// retailer check date with APG's dated retailer-verification overlay. It remains inside
-// Whole-Site v109 and contributes zero recommendation points.
+// v112 remains the approved narrow evidence/merchandising layer inside Whole-Site v109.
+// Dated retailer evidence is reconciled earlier during canonical data composition so this
+// protected runtime topology does not need a second presentation wrapper.
 const premiumMobileHandler=premiumMobileDecisionCommerce.wrap(stableJourneyHandler);
 // Whole-Site v109 remains the final semantic HTML communication layer; its returned handler
 // includes the installed v114.4 CSP-safe journey controls and v113 transport certification.
