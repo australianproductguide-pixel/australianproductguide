@@ -84,13 +84,13 @@ const premiumClientStability=require('../lib/premium-client-stability-v1091-runt
 const premiumMobileDecisionCommerce=require('../lib/premium-mobile-decision-commerce-v112-runtime');
 const wholeSiteExperience=require('../lib/whole-site-experience-v109-runtime');
 const pagespeedAgenticCertification=require('../lib/pagespeed-agentic-certification-v113-runtime');
-const customerJourneyProgramme=require('../lib/customer-journey-programme-v1143-runtime');
+const customerJourneyProgramme=require('../lib/customer-journey-programme-v1144-runtime');
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
 scoutResponseDepth.install();
-// v114.3 keeps v114.2 maturity/search/filter/continuity governance inside Whole-Site v109,
-// removes internal category-certification mechanics from customer HTML, contains mobile
-// decision visuals and prevents v112 from double-binding app.js-owned Compare/Save controls.
+// v114.4 preserves the v114.3 shopper-trust/category boundary and moves the inherited
+// v114 accessibility/search/continuity style block to a same-origin asset so APG can keep
+// style-src 'self' without Production browser CSP violations.
 customerJourneyProgramme.install(wholeSiteExperience);
 // v113 augments the Whole-Site wrapper factory with transport-only delivery optimisation.
 // Whole-Site v109 still owns the final semantic/presentation transform; v113 only consolidates
@@ -102,12 +102,12 @@ const journeyHandler=decisionJourneyContinuity.wrap(premiumHandler);
 // v109.1 fail-closed verifies and serves the intrinsically safe v107 client asset; it adds
 // no route, state or scoring logic.
 const stableJourneyHandler=premiumClientStability.wrap(journeyHandler);
-// v112 is a narrow evidence/merchandising layer inside the established Whole-Site v109
-// communication boundary. It can surface product, retailer and decision evidence without
-// becoming the public outer runtime, a second router or a recommendation engine.
+// v112 remains the approved narrow evidence/merchandising layer inside Whole-Site v109.
+// Dated retailer evidence is reconciled earlier during canonical data composition so this
+// protected runtime topology does not need a second presentation wrapper.
 const premiumMobileHandler=premiumMobileDecisionCommerce.wrap(stableJourneyHandler);
 // Whole-Site v109 remains the final semantic HTML communication layer; its returned handler
-// includes the installed v114.3 journey controls and v113 transport certification.
+// includes the installed v114.4 CSP-safe journey controls and v113 transport certification.
 const handler=wholeSiteExperience.wrap(premiumMobileHandler);
 handler.HARD_CONSTRAINT_RESULT_PARITY_VERSION=hardConstraintParity.VERSION;
 handler.DECISION_TRANSPORT_PARITY_VERSION=decisionTransportParity.VERSION;

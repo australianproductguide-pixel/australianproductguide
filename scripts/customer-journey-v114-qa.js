@@ -1,21 +1,28 @@
 'use strict';
 const fs=require('node:fs');
 const assert=require('node:assert/strict');
-const modulePath=require.resolve('../lib/customer-journey-programme-v1143-runtime');
+const modulePath=require.resolve('../lib/customer-journey-programme-v1144-runtime');
+const publicBoundaryPath=require.resolve('../lib/customer-journey-programme-v1143-runtime');
 const hotfixPath=require.resolve('../lib/customer-journey-programme-v1142-runtime');
 const adapterPath=require.resolve('../lib/customer-journey-programme-v1141-runtime');
 const basePath=require.resolve('../lib/customer-journey-programme-v114-runtime');
 const moduleSource=fs.readFileSync(modulePath,'utf8');
+const publicBoundarySource=fs.readFileSync(publicBoundaryPath,'utf8');
 const hotfixSource=fs.readFileSync(hotfixPath,'utf8');
 const adapterSource=fs.readFileSync(adapterPath,'utf8');
 const runtimeSource=fs.readFileSync(basePath,'utf8');
+const retailerRefreshSource=fs.readFileSync(require.resolve('../data/retailer-verification-refresh-v109'),'utf8');
+const dataIndexSource=fs.readFileSync(require.resolve('../data/index'),'utf8');
 const client=fs.readFileSync(require.resolve('../public/assets/customer-journey-programme-v114.js'),'utf8');
 const client1143=fs.readFileSync(require.resolve('../public/assets/customer-journey-programme-v1143.js'),'utf8');
 const css1143=fs.readFileSync(require.resolve('../public/assets/customer-journey-programme-v1143.css'),'utf8');
+const css1144=fs.readFileSync(require.resolve('../public/assets/customer-journey-programme-v1144.css'),'utf8');
 const api=fs.readFileSync(require.resolve('../api/index'),'utf8');
 const v114=require(modulePath);
+const v112=require('../lib/premium-mobile-decision-commerce-v112-runtime');
 
-assert.equal(v114.VERSION,'114.3','Customer Journey public trust boundary must be v114.3');
+assert.equal(v114.VERSION,'114.4','Customer Journey CSP-safe public boundary must be v114.4');
+assert.equal(v112.VERSION,'112.1','Certified retailer presentation runtime must remain v112.1');
 assert.match(runtimeSource,/formalDecisionGradeRequiresAllGates:true/,'Decision Grade must fail closed internally');
 assert.match(runtimeSource,/This category is decision-ready/,'Known overclaim regression must remain explicitly repairable internally');
 assert.match(runtimeSource,/data-apg114-deduped-pick/,'Decision shortcuts must de-duplicate repeated products');
@@ -28,13 +35,19 @@ assert.match(runtimeSource,/imagery==='verified'/,'Internal verified imagery que
 assert.match(runtimeSource,/data-apg114-continuity/,'Decision continuity surface missing');
 assert.match(runtimeSource,/does not alter recommendation scoring/,'Continuity must not silently affect scoring');
 assert.match(runtimeSource,/min-height:44px/,'44px target control missing');
-assert.match(runtimeSource,/prefers-reduced-motion/,'Reduced motion control missing');
+assert.match(runtimeSource,/prefers-reduced-motion/,'Inherited accessibility rules missing from v114 base');
+assert.match(runtimeSource,/data-apg114-style/,'Legacy inline-style source fixture must remain detectable for CSP repair');
 assert.match(hotfixSource,/product-card\[\^\"\]\*/,'v114.2 must still match final rendered product-card classes');
 assert.match(hotfixSource,/form class=\"filter-bar\"/,'v114.2 feedback must still anchor to the category filter form');
-assert.match(moduleSource,/removePublicQualityPanel/,'v114.3 must remove internal quality dashboard from public category HTML');
-assert.match(moduleSource,/removePublicTechnicalConfidence/,'v114.3 must keep technical evidence/retailer/imagery confidence controls off public category pages');
-assert.match(moduleSource,/What to focus on/,'v114.3 shopper guidance cue missing');
-assert.match(moduleSource,/injectPrebindGuard/,'v114.3 must install canonical Compare\/Save ownership guard');
+assert.match(publicBoundarySource,/removePublicQualityPanel/,'v114.3 must remove internal quality dashboard from public category HTML');
+assert.match(publicBoundarySource,/removePublicTechnicalConfidence/,'v114.3 must keep technical evidence/retailer/imagery confidence controls off public category pages');
+assert.match(publicBoundarySource,/What to focus on/,'v114.3 shopper guidance cue missing');
+assert.match(publicBoundarySource,/injectPrebindGuard/,'v114.3 must install canonical Compare\/Save ownership guard');
+assert.match(moduleSource,/stripInheritedInlineStyle/,'v114.4 must remove the inherited inline style block under style-src self');
+assert.match(moduleSource,/customer-journey-programme-v1144\.css/,'v114.4 same-origin stylesheet path missing');
+assert.match(css1144,/\.apg114-continuity/,'v114.4 external stylesheet lost decision continuity rules');
+assert.match(css1144,/\.search-suggestions \[role="option"\]/,'v114.4 external stylesheet lost search suggestion accessibility rules');
+assert.match(css1144,/prefers-reduced-motion/,'v114.4 external stylesheet lost reduced-motion support');
 assert.match(client1143,/data-compare-product/,'v114.3 client must identify canonical Compare controls');
 assert.match(client1143,/data-save-product/,'v114.3 client must identify canonical Save controls');
 assert.match(client1143,/apg112Bound='canonical-app'/,'v114.3 must mark app.js as canonical control owner before v112 binds');
@@ -50,9 +63,15 @@ assert.match(client,/search_suggestion_selected/,'Search suggestion analytics mi
 assert.match(client,/search_zero_result/,'Zero-result analytics missing');
 assert.match(client,/category_filter_applied/,'Internal confidence-filter analytics regression missing');
 assert.match(client,/decision_continuity_used/,'Decision continuity analytics missing');
-assert.match(api,/customer-journey-programme-v1143-runtime/,'v114.3 composition adapter not wired into API');
-assert.match(api,/customerJourneyProgramme\.install\(wholeSiteExperience\)/,'v114.3 must install inside Whole-Site v109');
+assert.match(api,/const premiumMobileDecisionCommerce=require\('\.\.\/lib\/premium-mobile-decision-commerce-v112-runtime'\);/,'Certified v112.1 runtime topology drifted');
+assert.match(api,/customer-journey-programme-v1144-runtime/,'v114.4 composition adapter not wired into API');
+assert.match(api,/customerJourneyProgramme\.install\(wholeSiteExperience\)/,'v114.4 must install inside Whole-Site v109');
+assert.match(api,/const premiumMobileHandler=premiumMobileDecisionCommerce\.wrap\(stableJourneyHandler\);/,'v112.1 must remain directly outside v109.1');
 assert.match(api,/const handler=wholeSiteExperience\.wrap\(premiumMobileHandler\);/,'Whole-Site v109 must remain the final public HTML communication layer');
+assert.match(retailerRefreshSource,/retailer-verifications-v109/,'Canonical retailer refresh must use the dated retailer verification registry');
+assert.match(retailerRefreshSource,/does not add destinations/,'Retailer refresh must remain evidence-metadata only');
+assert.match(dataIndexSource,/retailerVerificationRefreshV109\.apply/,'Dated retailer verification refresh must run during canonical catalogue composition');
+assert(dataIndexSource.indexOf('v27RetailersPass6.apply')<dataIndexSource.indexOf('retailerVerificationRefreshV109.apply'),'Retailer verification refresh must run after all canonical retailer destination passes');
 assert.equal(v114.TARGET_HTML('/deals/'),false,'Deals must remain outside the v114 base HTML transform');
 assert.equal(v114.TARGET_HTML('/categories/electric-toothbrushes/'),true,'Category pages must receive v114 controls');
 assert.equal(v114.TARGET_HTML('/search/'),true,'Search must receive v114 controls');
@@ -85,11 +104,24 @@ assert(/starter-evidence/i.test(corrected),'Starter maturity repair should remai
 const baseTransformed=v114.transformHtml('<html><head></head><body><main><section class="category-hero"><h1>Electric toothbrushes</h1></section><p>This category is decision-ready, but APG has not yet verified an exact retailer destination for every maintained product.</p><form class="filter-bar"><button class="button compact" type="submit">Apply</button></form></main></body></html>','/categories/electric-toothbrushes/',new URL('https://australianproductguide.au/categories/electric-toothbrushes/'));
 assert.match(baseTransformed,/data-apg114-category-quality="STARTER_EVIDENCE"/,'Internal v114 quality surface fixture missing before public-boundary transform');
 assert.match(baseTransformed,/Evidence and purchase confidence/,'Internal confidence control fixture missing before public-boundary transform');
-const transformed=v114.shopperCategoryHtml(baseTransformed);
+assert.match(baseTransformed,/<style data-apg114-style=/,'Legacy v114 fixture must expose the inline stylesheet before v114.4 repair');
+const shopperTransformed=v114.shopperCategoryHtml(baseTransformed);
+const transformed=v114.cspSafeHtml(shopperTransformed);
 assert.doesNotMatch(transformed,/data-apg114-category-quality|Category quality|Decision-grade certification|formal completion gates|products at strong decision-evidence depth|verified product photography|products with verified retailer identity\/listing|Evidence and purchase confidence|Strong decision evidence|Verified identity\/listing|Verified product photo/i,'Internal maturity or technical-confidence UI leaked into public category HTML');
 assert.match(transformed,/customer-journey-programme-v114\.js/,'Progressive enhancement asset missing');
 assert.match(transformed,/customer-journey-programme-v1143\.css/,'v114.3 public category CSS missing');
-assert.match(transformed,/prefers-reduced-motion/,'Accessibility CSS missing');
+assert.match(transformed,/customer-journey-programme-v1144\.css/,'v114.4 CSP-safe journey CSS missing');
+assert.doesNotMatch(transformed,/<style[^>]*data-apg114-style=/i,'Inherited inline v114 stylesheet survived final public HTML');
+assert.match(css1144,/prefers-reduced-motion/,'External v114.4 accessibility CSS missing reduced-motion rules');
+
+const searchFixture=v114.transformHtml('<html><head></head><body><main><form data-search-shell></form></main></body></html>','/search/',new URL('https://australianproductguide.au/search/?q=sony'));
+const cspSafeSearch=v114.cspSafeHtml(searchFixture);
+assert.doesNotMatch(cspSafeSearch,/<style[^>]*data-apg114-style=/i,'Search retained CSP-blocked inline journey CSS');
+assert.match(cspSafeSearch,/customer-journey-programme-v1144\.css/,'Search did not receive same-origin v114.4 CSS replacement');
+const decisionFixture=v114.transformHtml('<html><head></head><body><main><form class="decision-form"></form></main></body></html>','/decision-lab/',new URL('https://australianproductguide.au/decision-lab/?q=headphones'));
+const cspSafeDecision=v114.cspSafeHtml(decisionFixture);
+assert.doesNotMatch(cspSafeDecision,/<style[^>]*data-apg114-style=/i,'Decision Lab retained CSP-blocked inline journey CSS');
+assert.match(cspSafeDecision,/customer-journey-programme-v1144\.css/,'Decision Lab did not receive same-origin v114.4 CSS replacement');
 
 const deprecatedConfidenceUrl=v114.publicCategoryUrl(new URL('https://australianproductguide.au/categories/robot-vacuums/?priority=pet-hair&evidence=strong&retailer=identity&imagery=verified&sort=featured'));
 assert.deepEqual(deprecatedConfidenceUrl.removed.sort(),['evidence','imagery','retailer'],'Technical confidence query parameters must be identified for public deprecation');
@@ -129,6 +161,20 @@ const unfiltered=v114.correctCategoryFilters(finalMarkup,'robot-vacuums',new URL
 assert(unfiltered.includes(strongProduct.slug)&&unfiltered.includes(weakProduct.slug),'Unfiltered route removed catalogue products');
 assert.equal((unfiltered.match(/class="apg114-filter-summary"/g)||[]).length,0,'Unfiltered route retained misplaced feedback');
 
+const sony=v112.PRODUCT_BY_SLUG.get('sony-wh-1000xm6');
+assert(sony,'Sony WH-1000XM6 missing from canonical v112 retailer QA');
+const jb=[...(sony.retailers||[]),...(sony.offers||[])].find(row=>row.retailer==='JB Hi-Fi');
+assert(jb,'Sony JB Hi-Fi row missing after canonical retailer verification refresh');
+assert.equal(jb.checkedAt,'2026-08-27','Sony canonical JB Hi-Fi retailer evidence did not inherit the 27 August refresh');
+assert.equal(jb.reviewDue,'2026-09-10','Sony canonical JB Hi-Fi review window did not inherit the current verification record');
+assert.equal(jb.retailerVerificationVersion,'retailer-verifications-v109','Sony retailer refresh provenance is missing');
+const sonyPanel=v112.retailerPanelV2(sony);
+assert.match(sonyPanel,/JB Hi-Fi/,'Sony v112 retailer panel lost JB Hi-Fi');
+assert.match(sonyPanel,/Identity checked 27 Aug 2026/,'Sony visible retailer panel still exposes the stale 18 August check date');
+assert.match(sonyPanel,/Verified variant/,'Sony Amazon pathway lost explicit variant semantics');
+assert.match(sonyPanel,/Variant: Sony WH-1000XM6, Platinum Silver/,'Sony Amazon verified variant description was lost');
+assert.match(sonyPanel,/Retailers contribute 0 recommendation points/,'Canonical retailer refresh changed commercial-neutrality disclosure');
+
 const compareUrl=new URL('https://australianproductguide.au/compare/custom/?products=breville-barista-touch-bes880,bose-quietcomfort-ultra-headphones');
 const continuity=v114.compareContinuity('<html><body><main><aside class="apg112-compare-toolbar">Toolbar</aside></main></body></html>','/compare/custom/',compareUrl);
 assert.match(continuity,/Continue in Decision Lab/,'Compare to Decision Lab continuity missing');
@@ -137,4 +183,4 @@ const lab=v114.decisionLabContext('<html><body><main><h1>Decision Lab</h1></main
 assert.match(lab,/Comparison context carried in/,'Decision Lab context restoration missing');
 assert.match(lab,/data-apg112-compare-products=/,'Scout comparison context bridge missing');
 
-console.log(JSON.stringify({status:'PASS',version:v114.VERSION,summary:register.summary,priority:register.priorityProgramme.summary,typoSuggestion:typo[0]||null,wholeSiteBoundaryPreserved:true,dealsUntouched:true,finalRenderFilterRegression:true,publicCertificationDashboard:false,publicTechnicalConfidenceControls:false,canonicalCompareSaveOwner:'app.js'}));
+console.log(JSON.stringify({status:'PASS',version:v114.VERSION,summary:register.summary,priority:register.priorityProgramme.summary,typoSuggestion:typo[0]||null,wholeSiteBoundaryPreserved:true,dealsUntouched:true,finalRenderFilterRegression:true,publicCertificationDashboard:false,publicTechnicalConfidenceControls:false,canonicalCompareSaveOwner:'app.js',cspInlineJourneyStyle:false,retailerFreshnessParity:'canonical-data-sony-jbhifi-2026-08-27',premiumMobileRuntime:v112.VERSION}));

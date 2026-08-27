@@ -1,0 +1,28 @@
+/* APG Customer Journey Programme v114.4 — CSP-safe self-hosted accessibility/search/continuity styles. */
+.apg114-quality,.apg114-continuity,.apg114-search-recovery{margin:20px auto;padding:18px;border:1px solid var(--line,#d8e0ea);border-radius:18px;background:var(--surface,#fff);max-width:1200px}
+.apg114-quality ul{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;list-style:none;padding:0;margin:14px 0}
+.apg114-quality li{padding:12px;border-radius:12px;background:var(--soft,#f4f7fb)}
+.apg114-quality li strong,.apg114-quality li span{display:block}
+.apg114-filter-set{display:flex;gap:10px;flex-wrap:wrap;border:0;padding:0;margin:0}
+.apg114-filter-set legend{width:100%;font-weight:700}
+.apg114-filter-set .apg114-filter{min-width:180px;flex:1}
+.apg114-filter-summary{margin:12px 0 18px}
+.apg114-continuity{display:flex;gap:16px;justify-content:space-between;align-items:center}
+.apg114-continuity small{display:block;margin-top:6px}
+.apg114-search-recovery{max-width:none}
+.search-suggestions[data-apg114-open="true"]{display:block;max-height:min(420px,60vh);overflow:auto}
+.search-suggestions [role="option"]{display:block;min-height:44px;padding:10px 12px;text-decoration:none}
+.search-suggestions [role="option"][aria-selected="true"]{outline:2px solid currentColor;outline-offset:-2px}
+.apg114-filter select,.apg114-filter-set select,.apg114-continuity .button,.apg114-search-recovery a{min-height:44px}
+.apg114-filter-empty{margin:12px 0 18px}
+.apg114-quality a:focus-visible,.apg114-continuity a:focus-visible,.apg114-search-recovery a:focus-visible,.search-suggestions [role="option"]:focus-visible,.apg114-filter select:focus-visible{outline:3px solid currentColor;outline-offset:3px}
+@media(max-width:760px){
+  .apg114-quality ul{grid-template-columns:1fr 1fr}
+  .apg114-filter-set{display:grid;grid-template-columns:1fr;width:100%}
+  .apg114-continuity{align-items:stretch;flex-direction:column}
+  .apg114-continuity .button{width:100%;text-align:center}
+  .search-suggestions{max-width:calc(100vw - 24px)}
+}
+@media(prefers-reduced-motion:reduce){
+  .apg114-quality *,.apg114-continuity *,.search-suggestions *{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
+}
