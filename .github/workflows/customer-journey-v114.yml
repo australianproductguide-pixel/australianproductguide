@@ -21,8 +21,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
-      - run: npm ci --ignore-scripts
+      - run: npm install --ignore-scripts --no-audit --no-fund
       - run: node --check lib/customer-journey-programme-v114-runtime.js
       - run: node --check public/assets/customer-journey-programme-v114.js
       - run: node scripts/customer-journey-v114-qa.js
