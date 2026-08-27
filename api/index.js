@@ -84,12 +84,16 @@ const premiumClientStability=require('../lib/premium-client-stability-v1091-runt
 const premiumMobileDecisionCommerce=require('../lib/premium-mobile-decision-commerce-v112-runtime');
 const wholeSiteExperience=require('../lib/whole-site-experience-v109-runtime');
 const pagespeedAgenticCertification=require('../lib/pagespeed-agentic-certification-v113-runtime');
-const customerJourneyProgramme=require('../lib/customer-journey-programme-v114-runtime');
+const customerJourneyProgramme=require('../lib/customer-journey-programme-v1141-runtime');
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
 scoutResponseDepth.install();
+// v114.1 installs only inside the established Whole-Site v109 factory. This preserves
+// Whole-Site as the final public semantic/communication layer while adding fail-closed
+// category maturity, bounded search recovery, factual filters and decision context.
+customerJourneyProgramme.install(wholeSiteExperience);
 // v113 augments the Whole-Site wrapper factory with transport-only delivery optimisation.
-// Whole-Site v109 still owns the shared semantic/presentation transform; v113 only consolidates
+// Whole-Site v109 still owns the final semantic/presentation transform; v113 only consolidates
 // its finished CSS delivery, strengthens immutable caching and repairs redundant Scout ARIA.
 pagespeedAgenticCertification.install(wholeSiteExperience);
 const transportHandler=decisionTransportParity.wrap(runtime);
@@ -102,12 +106,9 @@ const stableJourneyHandler=premiumClientStability.wrap(journeyHandler);
 // communication boundary. It can surface product, retailer and decision evidence without
 // becoming the public outer runtime, a second router or a recommendation engine.
 const premiumMobileHandler=premiumMobileDecisionCommerce.wrap(stableJourneyHandler);
-// Whole-Site v109 + v113 finish the shared site response. v114 is then a narrowly-scoped
-// customer-journey governance layer: fail-closed maturity language, factual quality/filter
-// surfaces, bounded search recovery and context continuity only. Recommendation scoring,
-// retailer weighting, canonical product identity and customer-state ownership remain unchanged.
-const wholeSiteHandler=wholeSiteExperience.wrap(premiumMobileHandler);
-const handler=customerJourneyProgramme.wrap(wholeSiteHandler);
+// Whole-Site v109 remains the final semantic HTML communication layer; its returned handler
+// includes the installed v114.1 journey controls and v113 transport certification.
+const handler=wholeSiteExperience.wrap(premiumMobileHandler);
 handler.HARD_CONSTRAINT_RESULT_PARITY_VERSION=hardConstraintParity.VERSION;
 handler.DECISION_TRANSPORT_PARITY_VERSION=decisionTransportParity.VERSION;
 handler.SCOUT_CUSTOMER_INTELLIGENCE_VERSION=scoutCustomerIntelligence.VERSION;
