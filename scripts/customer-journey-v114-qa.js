@@ -9,6 +9,7 @@ const client=fs.readFileSync(require.resolve('../public/assets/customer-journey-
 const api=fs.readFileSync(require.resolve('../api/index'),'utf8');
 const v114=require(modulePath);
 
+assert.equal(v114.VERSION,'114.2','Production filter hotfix version drifted');
 assert.match(runtimeSource,/formalDecisionGradeRequiresAllGates:true/,'Decision Grade must fail closed');
 assert.match(runtimeSource,/This category is decision-ready/,'Known overclaim regression must be explicitly repaired');
 assert.match(runtimeSource,/data-apg114-deduped-pick/,'Decision shortcuts must de-duplicate repeated products');
@@ -18,6 +19,8 @@ assert.match(runtimeSource,/allowedDistance/,'Bounded typo recovery missing');
 assert.match(runtimeSource,/filterControl\('apg114-evidence'/,'Evidence filter missing');
 assert.match(runtimeSource,/retailer==='identity'/,'Retailer identity filter missing');
 assert.match(runtimeSource,/imagery==='verified'/,'Verified imagery filter missing');
+assert.match(adapterSource,/const productCardPattern=/,'v114.2 must support current product-card variants, not only apg112 cards');
+assert.match(adapterSource,/form class="filter-bar"/,'Filter feedback must anchor to the category filter form');
 assert.match(runtimeSource,/data-apg114-continuity/,'Decision continuity surface missing');
 assert.match(runtimeSource,/does not alter recommendation scoring/,'Continuity must not silently affect scoring');
 assert.match(runtimeSource,/min-height:44px/,'44px target control missing');
@@ -30,8 +33,8 @@ assert.match(client,/search_suggestion_selected/,'Search suggestion analytics mi
 assert.match(client,/search_zero_result/,'Zero-result analytics missing');
 assert.match(client,/category_filter_applied/,'Filter analytics missing');
 assert.match(client,/decision_continuity_used/,'Decision continuity analytics missing');
-assert.match(api,/customer-journey-programme-v1141-runtime/,'v114.1 composition adapter not wired into API');
-assert.match(api,/customerJourneyProgramme\.install\(wholeSiteExperience\)/,'v114.1 must install inside Whole-Site v109');
+assert.match(api,/customer-journey-programme-v1141-runtime/,'v114 composition adapter not wired into API');
+assert.match(api,/customerJourneyProgramme\.install\(wholeSiteExperience\)/,'v114 must install inside Whole-Site v109');
 assert.match(api,/const handler=wholeSiteExperience\.wrap\(premiumMobileHandler\);/,'Whole-Site v109 must remain the final public HTML communication layer');
 assert.equal(v114.TARGET_HTML('/deals/'),false,'Deals must remain outside the v114 HTML transform');
 assert.equal(v114.TARGET_HTML('/categories/electric-toothbrushes/'),true,'Category pages must receive v114 controls');
@@ -62,11 +65,27 @@ const corrected=v114.fixMaturityLanguage('<p>This category is decision-ready, bu
 assert(!/category is decision-ready/i.test(corrected),'Known public maturity overclaim survived transform');
 assert(/starter-evidence/i.test(corrected),'Starter maturity repair should remain explicit');
 
-const transformed=v114.transformHtml('<html><head></head><body><main><section class="category-hero"><h1>Electric toothbrushes</h1></section><p>This category is decision-ready, but APG has not yet verified an exact retailer destination for every maintained product.</p><form class="filter-bar"><button class="button compact" type="submit">Apply</button></form></main></body></html>','/categories/electric-toothbrushes/',new URL('https://australianproductguide.au/categories/electric-toothbrushes/'));
+const card=slug=>`<article class="product-card v7-product-card"><h3><a href="/products/${slug}/">${slug}</a></h3></article>`;
+const fixture=`<html><head></head><body><header><form class="global-search" action="/search/"><input name="q"><button>Search</button></form></header><main><section class="category-hero"><h1>Electric toothbrushes</h1></section><p>This category is decision-ready, but APG has not yet verified an exact retailer destination for every maintained product.</p><form class="filter-bar" method="get"><button class="button compact" type="submit">Apply</button></form><div class="grid">${['oral-b-pro-2500x','philips-sonicare-3100-series','oclean-x-pro-elite','philips-sonicare-7400-series','oral-b-io-series-6'].map(card).join('')}</div></main></body></html>`;
+const categoryUrl=new URL('https://australianproductguide.au/categories/electric-toothbrushes/');
+const transformed=v114.transformHtml(fixture,'/categories/electric-toothbrushes/',categoryUrl);
 assert.match(transformed,/data-apg114-category-quality="STARTER_EVIDENCE"/,'Category quality surface missing');
 assert.match(transformed,/Evidence and purchase confidence/,'Category decision filters missing');
-assert.match(transformed,/customer-journey-programme-v114\.js/,'Progressive enhancement asset missing');
+assert.match(transformed,/customer-journey-programme-v114\.js\?v=114\.2/,'Progressive enhancement asset must carry the hotfix version');
 assert.match(transformed,/prefers-reduced-motion/,'Accessibility CSS missing');
+assert.match(transformed,/<strong>5<\/strong> of <strong>5<\/strong> products match/,'Default category filter summary must report the full maintained set');
+assert.equal((transformed.match(/class="product-card v7-product-card"/g)||[]).length,5,'Default category filtering must preserve all maintained product cards');
+const headerBlock=(transformed.match(/<header>[\s\S]*?<\/header>/)||[''])[0];
+assert(!headerBlock.includes('apg114-filter-summary'),'Category filter summary must never be inserted into the header/global search form');
+const filterEnd=transformed.indexOf('</form>',transformed.indexOf('<form class="filter-bar"'));
+const summaryAt=transformed.indexOf('apg114-filter-summary');
+assert(filterEnd>=0&&summaryAt>filterEnd,'Category filter summary must render after the category filter form');
+
+const strong=v114.transformHtml(fixture,'/categories/electric-toothbrushes/',new URL('https://australianproductguide.au/categories/electric-toothbrushes/?evidence=strong'));
+assert.match(strong,/<strong>0<\/strong> of <strong>5<\/strong> products match/,'Strong-evidence filter count must use the canonical category size');
+assert.equal((strong.match(/class="product-card v7-product-card"/g)||[]).length,0,'Strong-evidence filter must remove products that are not strong evidence');
+assert.match(strong,/No products match every selected confidence filter/,'Empty confidence filter state must be explicit');
+assert(!((strong.match(/<header>[\s\S]*?<\/header>/)||[''])[0]).includes('apg114-filter-summary'),'Active filter feedback must remain outside the header');
 
 const compareUrl=new URL('https://australianproductguide.au/compare/custom/?products=breville-barista-touch-bes880,bose-quietcomfort-ultra-headphones');
 const continuity=v114.compareContinuity('<html><body><main><aside class="apg112-compare-toolbar">Toolbar</aside></main></body></html>','/compare/custom/',compareUrl);
@@ -76,4 +95,4 @@ const lab=v114.decisionLabContext('<html><body><main><h1>Decision Lab</h1></main
 assert.match(lab,/Comparison context carried in/,'Decision Lab context restoration missing');
 assert.match(lab,/data-apg112-compare-products=/,'Scout comparison context bridge missing');
 
-console.log(JSON.stringify({status:'PASS',version:v114.VERSION,summary:register.summary,priority:register.priorityProgramme.summary,typoSuggestion:typo[0]||null,wholeSiteBoundaryPreserved:true,dealsUntouched:true}));
+console.log(JSON.stringify({status:'PASS',version:v114.VERSION,summary:register.summary,priority:register.priorityProgramme.summary,typoSuggestion:typo[0]||null,wholeSiteBoundaryPreserved:true,dealsUntouched:true,categoryFilterSummaryAnchored:true,v7ProductCardsFiltered:true}));
