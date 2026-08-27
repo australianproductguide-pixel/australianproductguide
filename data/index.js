@@ -14,6 +14,7 @@ const v42Priority=require('./catalogue-v42-priority');
 const v27Retailers=require('./catalogue-v27-retailers');
 const v27RetailersPass5=require('./catalogue-v27-retailers-pass5');
 const v27RetailersPass6=require('./catalogue-v27-retailers-pass6');
+const retailerVerificationRefreshV109=require('./retailer-verification-refresh-v109');
 const searchConsoleDepthV85=require('./search-console-depth-v85');
 const REVIEWED='2026-08-18';
 const DEEP_RESEARCHED='2026-08-15';
@@ -50,9 +51,14 @@ for(const [slug,rows] of Object.entries(consumerV13)){
 v41Depth.apply({deepCategories,nationalCategories,maintainedProduct});
 v42Priority.apply({nationalCategories,maintainedProduct});
 searchConsoleDepthV85.apply({expandedCategories,retailersFor});
-v27Retailers.apply({categoryMaps:[deepCategories,starterCategories,expandedCategories,searchCategories,nationalCategories,authorityCategories]});
-v27RetailersPass5.apply({categoryMaps:[deepCategories,starterCategories,expandedCategories,searchCategories,nationalCategories,authorityCategories]});
-v27RetailersPass6.apply({categoryMaps:[deepCategories,starterCategories,expandedCategories,searchCategories,nationalCategories,authorityCategories]});
+const retailerCategoryMaps=[deepCategories,starterCategories,expandedCategories,searchCategories,nationalCategories,authorityCategories];
+v27Retailers.apply({categoryMaps:retailerCategoryMaps});
+v27RetailersPass5.apply({categoryMaps:retailerCategoryMaps});
+v27RetailersPass6.apply({categoryMaps:retailerCategoryMaps});
+// Apply narrowly refreshed evidence metadata only after every canonical retailer pass so
+// downstream consumer surfaces inherit the same checkedAt/reviewDue truth without adding,
+// removing or re-ranking retailer destinations.
+retailerVerificationRefreshV109.apply({categoryMaps:retailerCategoryMaps});
 const categories={...deepCategories,...starterCategories,...expandedCategories,...searchCategories,...nationalCategories,...authorityCategories};
 const legacyPathways=[
 ['coffee-machines','Coffee machines'],['air-fryers','Air fryers'],['robot-vacuums','Robot vacuums'],['wireless-headphones','Wireless headphones'],
