@@ -1,18 +1,23 @@
 'use strict';
 const fs=require('node:fs');
 const assert=require('node:assert/strict');
-const modulePath=require.resolve('../lib/customer-journey-programme-v1142-runtime');
+const modulePath=require.resolve('../lib/customer-journey-programme-v1143-runtime');
+const hotfixPath=require.resolve('../lib/customer-journey-programme-v1142-runtime');
 const adapterPath=require.resolve('../lib/customer-journey-programme-v1141-runtime');
 const basePath=require.resolve('../lib/customer-journey-programme-v114-runtime');
-const hotfixSource=fs.readFileSync(modulePath,'utf8');
+const moduleSource=fs.readFileSync(modulePath,'utf8');
+const hotfixSource=fs.readFileSync(hotfixPath,'utf8');
 const adapterSource=fs.readFileSync(adapterPath,'utf8');
 const runtimeSource=fs.readFileSync(basePath,'utf8');
 const client=fs.readFileSync(require.resolve('../public/assets/customer-journey-programme-v114.js'),'utf8');
+const client1143=fs.readFileSync(require.resolve('../public/assets/customer-journey-programme-v1143.js'),'utf8');
+const css1143=fs.readFileSync(require.resolve('../public/assets/customer-journey-programme-v1143.css'),'utf8');
 const api=fs.readFileSync(require.resolve('../api/index'),'utf8');
 const v114=require(modulePath);
 
-assert.match(runtimeSource,/formalDecisionGradeRequiresAllGates:true/,'Decision Grade must fail closed');
-assert.match(runtimeSource,/This category is decision-ready/,'Known overclaim regression must be explicitly repaired');
+assert.equal(v114.VERSION,'114.3','Customer Journey public trust boundary must be v114.3');
+assert.match(runtimeSource,/formalDecisionGradeRequiresAllGates:true/,'Decision Grade must fail closed internally');
+assert.match(runtimeSource,/This category is decision-ready/,'Known overclaim regression must remain explicitly repairable internally');
 assert.match(runtimeSource,/data-apg114-deduped-pick/,'Decision shortcuts must de-duplicate repeated products');
 assert.match(adapterSource,/\/api\/intelligence\/category-quality/,'Category quality register endpoint missing');
 assert.match(adapterSource,/\/api\/search-suggest/,'Search suggestion endpoint missing');
@@ -24,8 +29,18 @@ assert.match(runtimeSource,/data-apg114-continuity/,'Decision continuity surface
 assert.match(runtimeSource,/does not alter recommendation scoring/,'Continuity must not silently affect scoring');
 assert.match(runtimeSource,/min-height:44px/,'44px target control missing');
 assert.match(runtimeSource,/prefers-reduced-motion/,'Reduced motion control missing');
-assert.match(hotfixSource,/product-card\[\^\"\]\*/,'v114.2 must match final rendered product-card classes');
-assert.match(hotfixSource,/form class=\"filter-bar\"/,'v114.2 feedback must anchor to the category filter form');
+assert.match(hotfixSource,/product-card\[\^\"\]\*/,'v114.2 must still match final rendered product-card classes');
+assert.match(hotfixSource,/form class=\"filter-bar\"/,'v114.2 feedback must still anchor to the category filter form');
+assert.match(moduleSource,/removePublicQualityPanel/,'v114.3 must remove internal quality dashboard from public category HTML');
+assert.match(moduleSource,/What to focus on/,'v114.3 shopper guidance cue missing');
+assert.match(moduleSource,/injectPrebindGuard/,'v114.3 must install canonical Compare\/Save ownership guard');
+assert.match(client1143,/data-compare-product/,'v114.3 client must identify canonical Compare controls');
+assert.match(client1143,/data-save-product/,'v114.3 client must identify canonical Save controls');
+assert.match(client1143,/apg112Bound='canonical-app'/,'v114.3 must mark app.js as canonical control owner before v112 binds');
+assert.doesNotMatch(client1143,/localStorage|sessionStorage|toggleCompare|toggleSaved/,'v114.3 pre-bind guard must not become another state owner');
+assert.match(css1143,/\.pick-card \.product-visual/,'Mobile decision-card visual containment missing');
+assert.match(css1143,/\.visual-comparison \.comparison-visuals/,'Mobile comparison visual containment missing');
+assert.match(css1143,/margin-left:0!important/,'Mobile category full-bleed negative margin must be neutralised');
 assert.match(client,/ArrowDown/,'Autocomplete keyboard down control missing');
 assert.match(client,/ArrowUp/,'Autocomplete keyboard up control missing');
 assert.match(client,/Escape/,'Autocomplete escape control missing');
@@ -34,10 +49,10 @@ assert.match(client,/search_suggestion_selected/,'Search suggestion analytics mi
 assert.match(client,/search_zero_result/,'Zero-result analytics missing');
 assert.match(client,/category_filter_applied/,'Filter analytics missing');
 assert.match(client,/decision_continuity_used/,'Decision continuity analytics missing');
-assert.match(api,/customer-journey-programme-v1142-runtime/,'v114.2 composition adapter not wired into API');
-assert.match(api,/customerJourneyProgramme\.install\(wholeSiteExperience\)/,'v114.2 must install inside Whole-Site v109');
+assert.match(api,/customer-journey-programme-v1143-runtime/,'v114.3 composition adapter not wired into API');
+assert.match(api,/customerJourneyProgramme\.install\(wholeSiteExperience\)/,'v114.3 must install inside Whole-Site v109');
 assert.match(api,/const handler=wholeSiteExperience\.wrap\(premiumMobileHandler\);/,'Whole-Site v109 must remain the final public HTML communication layer');
-assert.equal(v114.TARGET_HTML('/deals/'),false,'Deals must remain outside the v114 HTML transform');
+assert.equal(v114.TARGET_HTML('/deals/'),false,'Deals must remain outside the v114 base HTML transform');
 assert.equal(v114.TARGET_HTML('/categories/electric-toothbrushes/'),true,'Category pages must receive v114 controls');
 assert.equal(v114.TARGET_HTML('/search/'),true,'Search must receive v114 controls');
 assert.equal(v114.TARGET_HTML('/compare/custom/'),true,'Comparison must receive v114 controls');
@@ -64,13 +79,27 @@ assert(!shortNoise.some(item=>item.matchType==='typo'),'Short queries must not r
 
 const corrected=v114.fixMaturityLanguage('<p>This category is decision-ready, but APG has not yet verified an exact retailer destination for every maintained product.</p>',starter);
 assert(!/category is decision-ready/i.test(corrected),'Known public maturity overclaim survived transform');
-assert(/starter-evidence/i.test(corrected),'Starter maturity repair should remain explicit');
+assert(/starter-evidence/i.test(corrected),'Starter maturity repair should remain explicit where evidence context directly matters');
 
-const transformed=v114.transformHtml('<html><head></head><body><main><section class="category-hero"><h1>Electric toothbrushes</h1></section><p>This category is decision-ready, but APG has not yet verified an exact retailer destination for every maintained product.</p><form class="filter-bar"><button class="button compact" type="submit">Apply</button></form></main></body></html>','/categories/electric-toothbrushes/',new URL('https://australianproductguide.au/categories/electric-toothbrushes/'));
-assert.match(transformed,/data-apg114-category-quality="STARTER_EVIDENCE"/,'Category quality surface missing');
-assert.match(transformed,/Evidence and purchase confidence/,'Category decision filters missing');
+const baseTransformed=v114.transformHtml('<html><head></head><body><main><section class="category-hero"><h1>Electric toothbrushes</h1></section><p>This category is decision-ready, but APG has not yet verified an exact retailer destination for every maintained product.</p><form class="filter-bar"><button class="button compact" type="submit">Apply</button></form></main></body></html>','/categories/electric-toothbrushes/',new URL('https://australianproductguide.au/categories/electric-toothbrushes/'));
+assert.match(baseTransformed,/data-apg114-category-quality="STARTER_EVIDENCE"/,'Internal v114 quality surface fixture missing before public-boundary transform');
+const transformed=v114.shopperCategoryHtml(baseTransformed);
+assert.doesNotMatch(transformed,/data-apg114-category-quality|Category quality|Decision-grade certification|formal completion gates|products at strong decision-evidence depth|verified product photography|products with verified retailer identity\/listing/i,'Internal certification dashboard leaked into public category HTML');
+assert.match(transformed,/Evidence and purchase confidence/,'Customer-useful category decision filters missing');
 assert.match(transformed,/customer-journey-programme-v114\.js/,'Progressive enhancement asset missing');
+assert.match(transformed,/customer-journey-programme-v1143\.css/,'v114.3 public category CSS missing');
 assert.match(transformed,/prefers-reduced-motion/,'Accessibility CSS missing');
+
+const priorityFixture='<aside class="apg112-depth-banner" data-apg112-depth="priority"><div><span>Priority decision area</span><strong>Additional decision guidance maintained</strong></div><p>Choose the cleaning system and maintenance burden before chasing the largest suction number. This does not imply every category-completion gate has passed or that the category is formally Decision Grade.</p></aside>';
+const shopperBanner=v114.shopperGuidanceBanner(priorityFixture);
+assert.match(shopperBanner,/What to focus on/,'Shopper guidance eyebrow missing');
+assert.match(shopperBanner,/Start with the trade-offs that change the choice/,'Shopper guidance heading missing');
+assert.match(shopperBanner,/Choose the cleaning system and maintenance burden before chasing the largest suction number\./,'Useful category decision advice was lost');
+assert.doesNotMatch(shopperBanner,/Priority decision area|Additional decision guidance maintained|category-completion gate|Decision Grade/i,'Internal maturity language survived shopper banner rewrite');
+
+const prebindFixture='<html><body><button data-compare-product="x">Compare</button><script src="/assets/premium-mobile-decision-commerce-v112.js?v=112.1" defer></script></body></html>';
+const guarded=v114.injectPrebindGuard(prebindFixture);
+assert(guarded.indexOf('/assets/customer-journey-programme-v1143.js')<guarded.indexOf('/assets/premium-mobile-decision-commerce-v112.js'),'v114.3 pre-bind guard must execute before v112 deferred client');
 
 // Production-render regression: v114.1 saw final cards as `product-card v7-product-card`,
 // while its first filter pass expected a v112 class and accidentally attached feedback
@@ -101,4 +130,4 @@ const lab=v114.decisionLabContext('<html><body><main><h1>Decision Lab</h1></main
 assert.match(lab,/Comparison context carried in/,'Decision Lab context restoration missing');
 assert.match(lab,/data-apg112-compare-products=/,'Scout comparison context bridge missing');
 
-console.log(JSON.stringify({status:'PASS',version:v114.VERSION,summary:register.summary,priority:register.priorityProgramme.summary,typoSuggestion:typo[0]||null,wholeSiteBoundaryPreserved:true,dealsUntouched:true,finalRenderFilterRegression:true}));
+console.log(JSON.stringify({status:'PASS',version:v114.VERSION,summary:register.summary,priority:register.priorityProgramme.summary,typoSuggestion:typo[0]||null,wholeSiteBoundaryPreserved:true,dealsUntouched:true,finalRenderFilterRegression:true,publicCertificationDashboard:false,canonicalCompareSaveOwner:'app.js'}));
