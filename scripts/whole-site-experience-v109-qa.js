@@ -26,17 +26,27 @@ function brandCount(){return new Set(products.map(p=>String(p.brand||'').trim())
   assert(whole.FACTS.categoryCount>48,'current populated category count must not regress to the legacy 48-category state');
   assert(whole.FACTS.brandCount>16,'current brand count must not regress to the legacy 16-brand state');
 
-  for(const family of ['home','search','categories','category','finder','product','compare','decision-lab','my-apg','guide','brand','retailers','deals','trust','sitemap','other']){
+  const families=['home','search','categories','category','finder','product','compare','decision-lab','my-apg','guide','brand','retailers','deals','trust','sitemap','other'];
+  for(const family of families){
     assert.equal(typeof whole.routeContext('/',new URL('https://australianproductguide.au/')).family,'string');
-    assert(whole.css.includes('.apg-system-rail'),'shared experience rail CSS must exist');
+    assert(whole.css.includes('.apg-system-rail'),'shared next-step rail CSS must exist');
+    assert(whole.css.includes('.apg-skip-link'),'keyboard skip-link CSS must exist');
     assert(whole.clientJs.includes('markCurrentNavigation'),'navigation must be progressively enhanced with current-location semantics');
-    assert(whole.clientJs.includes('data-apg-system-scout'),'shared journey actions must be able to open the one canonical Scout surface');
+    assert(whole.clientJs.includes('data-apg-system-scout'),'contextual next-step actions must be able to open the one canonical Scout surface');
   }
-  assert.match(whole.css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/,'mobile system actions must be deliberately responsive');
-  assert.match(whole.css,/min-height:44px/,'mobile system actions must satisfy the practical touch-target floor');
+  assert.deepEqual([...whole.RAIL_FAMILIES],['search','category','finder','product','compare','decision-lab','my-apg','guide'],'rails must stay limited to active decision routes rather than becoming global chrome');
+  assert.match(whole.css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/,'mobile next-step actions must be deliberately responsive');
+  assert.match(whole.css,/min-height:44px/,'interactive whole-site controls must preserve a practical touch-target floor');
   assert.match(whole.css,/prefers-reduced-motion:reduce/,'whole-site polish must respect reduced motion');
   assert.match(whole.css,/--apg109-navy:#102f4a/,'whole-site layer must retain the established APG navy');
   assert.match(whole.css,/--apg109-blue:#2563eb/,'whole-site layer must retain the established APG blue');
+
+  const accessible=whole.enhanceMainAccessibility('<html><body><header>Header</header><main><h1>Title</h1></main></body></html>');
+  assert.equal(count(accessible,'class="apg-skip-link"'),1,'accessibility enhancement must add exactly one skip link');
+  assert(accessible.includes('href="#main-content"'),'skip link must target the document main content');
+  assert(accessible.includes('<main id="main-content">'),'main content must receive a stable skip-link target when it has no id');
+  const accessibleExisting=whole.enhanceMainAccessibility('<body><main id="results"><h1>Results</h1></main></body>');
+  assert(accessibleExisting.includes('href="#results"'),'an existing main id must be preserved and used as the skip target');
 
   const sample='<h2>48 category pathways</h2><p>257 products across 48 categories.</p><h2>16 brands represented in the maintained catalogue</h2>';
   const reconciled=whole.reconcilePlatformFacts(sample,'/about/');
@@ -70,19 +80,24 @@ function brandCount(){return new Set(products.map(p=>String(p.brand||'').trim())
   ];
   for(const [family,route] of routes){
     const response=await render(route);
+    const context=whole.routeContext(new URL(route,'https://australianproductguide.au').pathname,new URL(route,'https://australianproductguide.au'));
+    const expectedRail=whole.shouldShowRail(context)?1:0;
     assert(response.status===200||response.status===404,`${route} must render a valid document response`);
     assert.equal(response.headers['x-apg-whole-site-experience'],'v'+whole.VERSION,`${route} must pass through whole-site experience wrapper`);
     assert(response.body.includes('data-apg-experience-v109="true"'),`${route} must enable whole-site body contract`);
     assert(response.body.includes(`data-apg-route-family="${family}"`),`${route} must expose the correct route family`);
-    assert.equal(count(response.body,'class="apg-system-rail"'),1,`${route} must contain exactly one shared APG decision-system rail`);
+    assert.equal(count(response.body,'class="apg-system-rail"'),expectedRail,`${route} must only show a contextual next-step rail when it helps an active buying decision`);
+    assert.equal(count(response.body,'class="apg-skip-link"'),1,`${route} must expose one keyboard skip link`);
+    assert(/<main\b[^>]*\bid=["'][^"']+["']/i.test(response.body),`${route} must expose an addressable main landmark`);
     const wholeCssDelivered=response.body.includes(whole.CSS_PATH)||(route==='/'&&response.body.includes('/assets/pagespeed-home-v113.css'));
     assert(wholeCssDelivered,`${route} must load whole-site styling directly or through the certified homepage bundle`);
     assert(response.body.includes(whole.JS_PATH),`${route} must load whole-site progressive enhancement`);
-    assert(response.body.includes('APG decision system'),`${route} must communicate its place in the connected customer journey`);
+    assert(!response.body.includes('APG decision system'),`${route} must use consumer-facing language rather than platform architecture terminology`);
     assert.equal(count(response.body,'id="apgAssistantLauncher"'),1,`${route} must still retain exactly one canonical Scout launcher`);
   }
 
   const homepage=await render('/');
+  assert.equal(count(homepage.body,'class="apg-system-rail"'),0,'homepage must not duplicate its existing hero and discovery hierarchy with a second decision-system rail');
   assert(homepage.body.includes(`${whole.FACTS.productCount}`),'homepage must communicate canonical product count');
   assert(homepage.body.includes(`${whole.FACTS.categoryCount}`),'homepage must communicate canonical populated category count');
   assert(homepage.body.includes(`${whole.FACTS.brandCount}`),'homepage must communicate canonical brand count');
@@ -101,14 +116,15 @@ function brandCount(){return new Set(products.map(p=>String(p.brand||'').trim())
   assert.equal(homepage.body.slice(htmlClose+'</html>'.length).trim(),'','homepage must never append rendered content after </html>');
 
   const categoriesPage=await render('/categories/');
+  assert.equal(count(categoriesPage.body,'class="apg-system-rail"'),0,'category directory must rely on its own discovery hierarchy rather than duplicate it with global journey chrome');
   assert(!categoriesPage.body.includes('Four categories are fully maintained today'),'category directory must not communicate the superseded four-category platform state');
   assert(!categoriesPage.body.includes('48 category pathways'),'category directory must not communicate a superseded pathway count as current truth');
 
   const searchContext=whole.routeContext('/search/',new URL('https://australianproductguide.au/search/?q=quiet+headphones&budget=500&brand=Bose'));
-  const decisionAction=searchContext.actions.find(x=>x[0]==='Continue in Decision Lab');
-  assert(decisionAction&&decisionAction[1].includes('q=quiet+headphones'),'Search -> Decision Lab rail action must preserve search intent');
-  assert(decisionAction[1].includes('budget=500'),'Search -> Decision Lab rail action must preserve budget context');
-  assert(decisionAction[1].includes('brand=Bose'),'Search -> Decision Lab rail action must preserve brand context without making brand a recommendation');
+  const decisionAction=searchContext.actions.find(x=>x[0]==='Help me choose');
+  assert(decisionAction&&decisionAction[1].includes('q=quiet+headphones'),'Search -> Decision Lab action must preserve search intent');
+  assert(decisionAction[1].includes('budget=500'),'Search -> Decision Lab action must preserve budget context');
+  assert(decisionAction[1].includes('brand=Bose'),'Search -> Decision Lab action must preserve brand context without making brand a recommendation');
 
-  console.log(JSON.stringify({version:whole.VERSION,status:'PASS',facts:whole.FACTS,routesChecked:routes.length,checks:{canonicalFacts:true,legacyFactReconciliation:true,allPageFamilies:true,oneScout:true,routeAwareJourney:true,searchDecisionContinuity:true,premiumBranding:true,mobileTouchTargets:true,reducedMotion:true,commercialNeutralityPreserved:true,homepageBundledCssCompatible:true,priorityDecisionRailBeforeFooter:true,noContentAfterHtml:true}},null,2));
+  console.log(JSON.stringify({version:whole.VERSION,status:'PASS',facts:whole.FACTS,routesChecked:routes.length,checks:{canonicalFacts:true,legacyFactReconciliation:true,allPageFamilies:true,contextualRailsOnly:true,consumerLanguage:true,oneScout:true,routeAwareJourney:true,searchDecisionContinuity:true,keyboardSkipLink:true,addressableMainLandmark:true,premiumBranding:true,mobileTouchTargets:true,reducedMotion:true,commercialNeutralityPreserved:true,homepageBundledCssCompatible:true,priorityDecisionRailBeforeFooter:true,noContentAfterHtml:true}},null,2));
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
