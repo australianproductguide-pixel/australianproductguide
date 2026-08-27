@@ -84,13 +84,13 @@ const premiumClientStability=require('../lib/premium-client-stability-v1091-runt
 const premiumMobileDecisionCommerce=require('../lib/premium-mobile-decision-commerce-v112-runtime');
 const wholeSiteExperience=require('../lib/whole-site-experience-v109-runtime');
 const pagespeedAgenticCertification=require('../lib/pagespeed-agentic-certification-v113-runtime');
-const customerJourneyProgramme=require('../lib/customer-journey-programme-v1142-runtime');
+const customerJourneyProgramme=require('../lib/customer-journey-programme-v1143-runtime');
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
 scoutResponseDepth.install();
-// v114.2 installs only inside the established Whole-Site v109 factory. It preserves
-// the v114.1 maturity/search/continuity controls and corrects final-render confidence
-// filtering against the canonical v7 product-card markup.
+// v114.3 keeps v114.2 maturity/search/filter/continuity governance inside Whole-Site v109,
+// removes internal category-certification mechanics from customer HTML, contains mobile
+// decision visuals and prevents v112 from double-binding app.js-owned Compare/Save controls.
 customerJourneyProgramme.install(wholeSiteExperience);
 // v113 augments the Whole-Site wrapper factory with transport-only delivery optimisation.
 // Whole-Site v109 still owns the final semantic/presentation transform; v113 only consolidates
@@ -107,7 +107,7 @@ const stableJourneyHandler=premiumClientStability.wrap(journeyHandler);
 // becoming the public outer runtime, a second router or a recommendation engine.
 const premiumMobileHandler=premiumMobileDecisionCommerce.wrap(stableJourneyHandler);
 // Whole-Site v109 remains the final semantic HTML communication layer; its returned handler
-// includes the installed v114.2 journey controls and v113 transport certification.
+// includes the installed v114.3 journey controls and v113 transport certification.
 const handler=wholeSiteExperience.wrap(premiumMobileHandler);
 handler.HARD_CONSTRAINT_RESULT_PARITY_VERSION=hardConstraintParity.VERSION;
 handler.DECISION_TRANSPORT_PARITY_VERSION=decisionTransportParity.VERSION;
