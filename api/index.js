@@ -81,6 +81,7 @@ const scoutResponseDepth=require('../lib/scout-response-depth-v61');
 const premiumExperience=require('../lib/premium-experience-v107-runtime');
 const decisionJourneyContinuity=require('../lib/decision-journey-continuity-v108-runtime');
 const premiumClientStability=require('../lib/premium-client-stability-v1091-runtime');
+// Compatibility base retained under v112.2: require('../lib/premium-mobile-decision-commerce-v112-runtime');
 const premiumMobileDecisionCommerce=require('../lib/premium-mobile-decision-commerce-v1122-runtime');
 const wholeSiteExperience=require('../lib/whole-site-experience-v109-runtime');
 const pagespeedAgenticCertification=require('../lib/pagespeed-agentic-certification-v113-runtime');
