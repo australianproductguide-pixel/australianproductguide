@@ -11,17 +11,18 @@ const publicBoundarySource=fs.readFileSync(publicBoundaryPath,'utf8');
 const hotfixSource=fs.readFileSync(hotfixPath,'utf8');
 const adapterSource=fs.readFileSync(adapterPath,'utf8');
 const runtimeSource=fs.readFileSync(basePath,'utf8');
-const retailerFreshnessSource=fs.readFileSync(require.resolve('../lib/premium-mobile-decision-commerce-v1122-runtime'),'utf8');
+const retailerRefreshSource=fs.readFileSync(require.resolve('../data/retailer-verification-refresh-v109'),'utf8');
+const dataIndexSource=fs.readFileSync(require.resolve('../data/index'),'utf8');
 const client=fs.readFileSync(require.resolve('../public/assets/customer-journey-programme-v114.js'),'utf8');
 const client1143=fs.readFileSync(require.resolve('../public/assets/customer-journey-programme-v1143.js'),'utf8');
 const css1143=fs.readFileSync(require.resolve('../public/assets/customer-journey-programme-v1143.css'),'utf8');
 const css1144=fs.readFileSync(require.resolve('../public/assets/customer-journey-programme-v1144.css'),'utf8');
 const api=fs.readFileSync(require.resolve('../api/index'),'utf8');
 const v114=require(modulePath);
-const v1122=require('../lib/premium-mobile-decision-commerce-v1122-runtime');
+const v112=require('../lib/premium-mobile-decision-commerce-v112-runtime');
 
 assert.equal(v114.VERSION,'114.4','Customer Journey CSP-safe public boundary must be v114.4');
-assert.equal(v1122.VERSION,'112.2','Retailer freshness presentation wrapper must be v112.2');
+assert.equal(v112.VERSION,'112.1','Certified retailer presentation runtime must remain v112.1');
 assert.match(runtimeSource,/formalDecisionGradeRequiresAllGates:true/,'Decision Grade must fail closed internally');
 assert.match(runtimeSource,/This category is decision-ready/,'Known overclaim regression must remain explicitly repairable internally');
 assert.match(runtimeSource,/data-apg114-deduped-pick/,'Decision shortcuts must de-duplicate repeated products');
@@ -62,12 +63,15 @@ assert.match(client,/search_suggestion_selected/,'Search suggestion analytics mi
 assert.match(client,/search_zero_result/,'Zero-result analytics missing');
 assert.match(client,/category_filter_applied/,'Internal confidence-filter analytics regression missing');
 assert.match(client,/decision_continuity_used/,'Decision continuity analytics missing');
-assert.match(api,/premium-mobile-decision-commerce-v1122-runtime/,'v112.2 retailer freshness wrapper not wired into API');
+assert.match(api,/const premiumMobileDecisionCommerce=require\('\.\.\/lib\/premium-mobile-decision-commerce-v112-runtime'\);/,'Certified v112.1 runtime topology drifted');
 assert.match(api,/customer-journey-programme-v1144-runtime/,'v114.4 composition adapter not wired into API');
 assert.match(api,/customerJourneyProgramme\.install\(wholeSiteExperience\)/,'v114.4 must install inside Whole-Site v109');
+assert.match(api,/const premiumMobileHandler=premiumMobileDecisionCommerce\.wrap\(stableJourneyHandler\);/,'v112.1 must remain directly outside v109.1');
 assert.match(api,/const handler=wholeSiteExperience\.wrap\(premiumMobileHandler\);/,'Whole-Site v109 must remain the final public HTML communication layer');
-assert.match(retailerFreshnessSource,/retailer-verifications-v109/,'v112.2 must use the dated retailer verification registry');
-assert.match(retailerFreshnessSource,/does not change retailer rank, recommendation scoring, price claims or stock claims/,'v112.2 neutrality guardrail missing');
+assert.match(retailerRefreshSource,/retailer-verifications-v109/,'Canonical retailer refresh must use the dated retailer verification registry');
+assert.match(retailerRefreshSource,/does not add destinations/,'Retailer refresh must remain evidence-metadata only');
+assert.match(dataIndexSource,/retailerVerificationRefreshV109\.apply/,'Dated retailer verification refresh must run during canonical catalogue composition');
+assert(dataIndexSource.indexOf('v27RetailersPass6.apply')<dataIndexSource.indexOf('retailerVerificationRefreshV109.apply'),'Retailer verification refresh must run after all canonical retailer destination passes');
 assert.equal(v114.TARGET_HTML('/deals/'),false,'Deals must remain outside the v114 base HTML transform');
 assert.equal(v114.TARGET_HTML('/categories/electric-toothbrushes/'),true,'Category pages must receive v114 controls');
 assert.equal(v114.TARGET_HTML('/search/'),true,'Search must receive v114 controls');
@@ -157,19 +161,19 @@ const unfiltered=v114.correctCategoryFilters(finalMarkup,'robot-vacuums',new URL
 assert(unfiltered.includes(strongProduct.slug)&&unfiltered.includes(weakProduct.slug),'Unfiltered route removed catalogue products');
 assert.equal((unfiltered.match(/class="apg114-filter-summary"/g)||[]).length,0,'Unfiltered route retained misplaced feedback');
 
-const sony=v1122.PRODUCT_BY_SLUG.get('sony-wh-1000xm6');
-assert(sony,'Sony WH-1000XM6 missing from v112 retailer freshness QA');
-const refreshedSony=v1122.refreshedProduct(sony);
-const jb=refreshedSony.retailers.find(row=>row.retailer==='JB Hi-Fi');
-assert(jb,'Sony JB Hi-Fi row missing after retailer verification refresh');
-assert.equal(jb.checkedAt,'2026-08-27','Sony JB Hi-Fi visible retailer evidence did not inherit the 27 August refresh');
-assert.equal(jb.reviewDue,'2026-09-10','Sony JB Hi-Fi review window did not inherit the current verification record');
-const sonyPanel=v1122.refreshedRetailerPanel(sony);
-assert.match(sonyPanel,/JB Hi-Fi/,'Sony refreshed retailer panel lost JB Hi-Fi');
+const sony=v112.PRODUCT_BY_SLUG.get('sony-wh-1000xm6');
+assert(sony,'Sony WH-1000XM6 missing from canonical v112 retailer QA');
+const jb=[...(sony.retailers||[]),...(sony.offers||[])].find(row=>row.retailer==='JB Hi-Fi');
+assert(jb,'Sony JB Hi-Fi row missing after canonical retailer verification refresh');
+assert.equal(jb.checkedAt,'2026-08-27','Sony canonical JB Hi-Fi retailer evidence did not inherit the 27 August refresh');
+assert.equal(jb.reviewDue,'2026-09-10','Sony canonical JB Hi-Fi review window did not inherit the current verification record');
+assert.equal(jb.retailerVerificationVersion,'retailer-verifications-v109','Sony retailer refresh provenance is missing');
+const sonyPanel=v112.retailerPanelV2(sony);
+assert.match(sonyPanel,/JB Hi-Fi/,'Sony v112 retailer panel lost JB Hi-Fi');
 assert.match(sonyPanel,/Identity checked 27 Aug 2026/,'Sony visible retailer panel still exposes the stale 18 August check date');
 assert.match(sonyPanel,/Verified variant/,'Sony Amazon pathway lost explicit variant semantics');
 assert.match(sonyPanel,/Variant: Platinum Silver/,'Sony Amazon verified variant description was lost');
-assert.match(sonyPanel,/Retailers contribute 0 recommendation points/,'Retailer freshness overlay changed commercial-neutrality disclosure');
+assert.match(sonyPanel,/Retailers contribute 0 recommendation points/,'Canonical retailer refresh changed commercial-neutrality disclosure');
 
 const compareUrl=new URL('https://australianproductguide.au/compare/custom/?products=breville-barista-touch-bes880,bose-quietcomfort-ultra-headphones');
 const continuity=v114.compareContinuity('<html><body><main><aside class="apg112-compare-toolbar">Toolbar</aside></main></body></html>','/compare/custom/',compareUrl);
@@ -179,4 +183,4 @@ const lab=v114.decisionLabContext('<html><body><main><h1>Decision Lab</h1></main
 assert.match(lab,/Comparison context carried in/,'Decision Lab context restoration missing');
 assert.match(lab,/data-apg112-compare-products=/,'Scout comparison context bridge missing');
 
-console.log(JSON.stringify({status:'PASS',version:v114.VERSION,summary:register.summary,priority:register.priorityProgramme.summary,typoSuggestion:typo[0]||null,wholeSiteBoundaryPreserved:true,dealsUntouched:true,finalRenderFilterRegression:true,publicCertificationDashboard:false,publicTechnicalConfidenceControls:false,canonicalCompareSaveOwner:'app.js',cspInlineJourneyStyle:false,retailerFreshnessParity:'sony-jbhifi-2026-08-27'}));
+console.log(JSON.stringify({status:'PASS',version:v114.VERSION,summary:register.summary,priority:register.priorityProgramme.summary,typoSuggestion:typo[0]||null,wholeSiteBoundaryPreserved:true,dealsUntouched:true,finalRenderFilterRegression:true,publicCertificationDashboard:false,publicTechnicalConfidenceControls:false,canonicalCompareSaveOwner:'app.js',cspInlineJourneyStyle:false,retailerFreshnessParity:'canonical-data-sony-jbhifi-2026-08-27',premiumMobileRuntime:v112.VERSION}));
