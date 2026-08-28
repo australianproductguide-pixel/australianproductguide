@@ -1,6 +1,7 @@
 'use strict';
 const base=require('./retailers');
 const amazon=require('./amazon-au-mappings-v33');
+const ebay=require('./ebay-epn-interim-v1');
 const {TAG}=amazon;
 
 function amazonRetailerFor(product){
@@ -37,8 +38,11 @@ function amazonRetailerFor(product){
 function retailersFor(product){
   // Keep Amazon identity authoritative in one v33 record while preserving any
   // non-Amazon retailer rows supplied by the base layer or later catalogue passes.
+  // eBay EPN is deliberately collection-level until API/listing evidence is available;
+  // it never upgrades an APG product to an exact retailer match or affects ranking.
   const nonAmazon=base.retailersFor(product).filter(row=>row.retailer!=='Amazon Australia');
-  return [amazonRetailerFor(product),...nonAmazon];
+  const ebayRow=ebay.ebayRetailerFor(product);
+  return [amazonRetailerFor(product),...(ebayRow?[ebayRow]:[]),...nonAmazon];
 }
 
 const suppressedDirect=new Set(Object.entries(amazon.EXCEPTIONS)
@@ -54,5 +58,7 @@ module.exports={
   modelSearch:amazon.searchUrl,
   suppressedDirect,
   amazon,
-  amazonRetailerFor
+  amazonRetailerFor,
+  ebay,
+  ebayRetailerFor:ebay.ebayRetailerFor
 };
