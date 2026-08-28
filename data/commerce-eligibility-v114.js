@@ -43,6 +43,29 @@ function exceptionFor(productOrSlug){
   return EXCEPTIONS[slug]||null;
 }
 function isCommerceEligible(productOrSlug){return !exceptionFor(productOrSlug);}
+function applyProduct(product){
+  const exception=exceptionFor(product);
+  if(!exception)return {...product,commerceEligibility:'ELIGIBLE',commerceSuppressed:false,commerceException:null};
+  return {
+    ...product,
+    retailers:[],
+    commerceEligibility:'SUPPRESSED',
+    commerceSuppressed:true,
+    commerceException:exception,
+    retailerSuppressionReason:exception.code,
+    retailerSuppressionReviewedAt:exception.reviewedAt||REVIEWED_AT
+  };
+}
+function applyCategoryMaps(categoryMaps){
+  const seen=new Set();
+  for(const map of categoryMaps||[]){
+    for(const category of Object.values(map||{})){
+      if(!category||seen.has(category))continue;
+      seen.add(category);
+      category.products=(category.products||[]).map(applyProduct);
+    }
+  }
+}
 function eligibilitySummary(){
   return Object.freeze({
     version:VERSION,
@@ -54,4 +77,4 @@ function eligibilitySummary(){
   });
 }
 
-module.exports={VERSION,REVIEWED_AT,IDENTITY_EXCLUSIONS,SAFETY_EXCLUSIONS,EXCEPTIONS,exceptionFor,isCommerceEligible,eligibilitySummary};
+module.exports={VERSION,REVIEWED_AT,IDENTITY_EXCLUSIONS,SAFETY_EXCLUSIONS,EXCEPTIONS,exceptionFor,isCommerceEligible,applyProduct,applyCategoryMaps,eligibilitySummary};
