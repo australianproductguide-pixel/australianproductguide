@@ -7,6 +7,7 @@
 // collection/promotion destinations remain governed discovery surfaces. Nothing in this module
 // asserts live eBay price, stock, seller, condition, warranty or exact listing identity, and every
 // commercial pathway contributes zero recommendation weight.
+const commerce=require('./commerce-eligibility-v114');
 const CAMPAIGN_ID='5339198634';
 const MARKETPLACE='www.ebay.com.au';
 const MARKETPLACE_ROTATION_ID='705-53470-19255-0';
@@ -15,16 +16,7 @@ const TOOL_ID='20014';
 const REVIEWED='2026-08-28';
 const POLICY_STATUS='EPN search-results linking reviewed 2026-08-28';
 const SEARCH_BASE='https://www.ebay.com.au/sch/i.html';
-
-// Safety and identity exceptions are first-class. A commercial-coverage target must never
-// override an APG recall/no-safe-purchase-path decision.
-const EXCEPTIONS={
-  'anker-power-bank-20000mah-22-5w':{
-    status:'NO_SAFE_PURCHASE_PATH_RECALL',
-    reviewedAt:REVIEWED,
-    note:'Retailer search and purchase pathways are suppressed while this APG product remains under the catalogue recall/no-safe-purchase-path safety gate.'
-  }
-};
+const EXCEPTIONS=commerce.EXCEPTIONS;
 
 const COLLECTIONS={
   sonyRefurbished:{
@@ -112,7 +104,7 @@ function selectCollection(product){
   const category=categoryText(product);
   return rows.find(row=>(row.categoryTerms||[]).some(term=>category.includes(term)))||null;
 }
-function exceptionFor(product){return EXCEPTIONS[String(product?.slug||'')]||null;}
+function exceptionFor(product){return commerce.exceptionFor(product);}
 
 function productSearchTerm(product){
   const brand=normalise(product?.brand);
