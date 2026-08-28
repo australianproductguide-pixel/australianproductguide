@@ -75,12 +75,26 @@ assert(scout.client.css.includes('100dvh'),'mobile Scout must use dynamic viewpo
 assert(scout.client.css.includes('prefers-reduced-motion'),'Scout must respect reduced-motion preference');
 assert(scout.brand.css.includes('#2563EB'),'Scout must use the current APG blue identity');
 assert(scout.brand.css.includes('#0F172A'),'Scout must use the current APG navy identity');
-assert(!/#087c76|#08786f|#0b6e6a|#116c67|#176e69|#082f40|#0a5660|#dff1ec|#e5f4ef|#e8f5f1|#e9f6f2|#f2f9f7|#edf6f3/i.test(scout.brand.css),'Scout v5 must not reintroduce the retired green/teal presentation palette');
-assert(scout.brand.css.includes('body.scout-v5-open[data-scout-v5="true"] .apg-assistant-launcher'),'open Scout must visually replace the launcher instead of leaving two detached surfaces');
+assert(!/#087c76|#08786f|#0b6e6a|#116c67|#176e69|#082f40|#0a5660|#dff1ec|#e5f4ef|#e8f5f1|#e9f6f2|#f2f9f7|#edf6f3/i.test(scout.brand.css),'Scout must not reintroduce the retired green/teal presentation palette');
+
+// Scout Navigator v7 deliberately globalises the presentation selectors so the same APG-native
+// Scout treatment is available on every eligible route. Certify behaviour rather than pinning QA
+// to the older body[data-scout-v5] selector spelling.
+const navigatorV7=scout.brand.css.includes("/assets/scout-navigator-v7.svg");
+const hidesLauncherWhenOpen=
+  scout.brand.css.includes('body.scout-v5-open .apg-assistant-launcher')||
+  scout.brand.css.includes('body.scout-v5-open[data-scout-v5="true"] .apg-assistant-launcher');
+assert(hidesLauncherWhenOpen,'open Scout must visually replace the launcher instead of leaving two detached surfaces');
 assert(scout.brand.css.includes('.apg-assistant-avatar .apg-scout-character-v34'),'open Scout header must preserve the approved illustrated Scout character');
 assert(scout.brand.css.includes('.scout-v5-mini .apg-scout-character-v34'),'Scout replies must preserve the same illustrated Scout character');
 assert(!scout.brand.css.includes("content:'S'"),'Scout must not overlay the approved illustrated character with a substitute letter avatar');
-assert(/@media\(min-width:641px\).*\.apg-assistant-panel\{bottom:22px!important/s.test(scout.brand.css),'desktop open panel must occupy the launcher anchor for a cohesive open state');
+const desktopPanelAnchored=/@media\(min-width:641px\)[\s\S]*?\.apg-assistant-panel\{bottom:22px!important\}/.test(scout.brand.css);
+assert(desktopPanelAnchored,'desktop open panel must occupy the launcher anchor for a cohesive open state');
+if(navigatorV7){
+  assert(scout.brand.css.includes("background-image:url('/assets/scout-navigator-v7.svg')"),'Scout Navigator v7 must use the governed APG Navigator asset');
+  assert(scout.brand.css.includes(':where(.apg-assistant-launcher,.apg-assistant-panel)'),'Scout Navigator v7 global scope must remain constrained to Scout surfaces');
+  assert(scout.brand.css.includes('apgScoutNavigatorHelloV7'),'Scout Navigator v7 interaction treatment must remain present');
+}
 
 const source=fs.readFileSync(path.join(__dirname,'..','lib','scout-concierge-v5.js'),'utf8');
 assert(source.includes("user_id:userId"),'saved-product writes must bind server-authenticated user id');
@@ -94,4 +108,4 @@ assert(runtime.guard.js.includes('apg-workspace-synced'),'successful signed-in w
 assert(/login\|logout\|session\|delete/.test(runtime.guard.js),'auth lifecycle changes must invalidate the visible Scout session');
 assert(runtime.guard.js.includes('location.reload()'),'Scout must force a fresh authenticated bootstrap before reopening after an account identity change');
 
-console.log('APG Scout Concierge v5 QA passed');
+console.log(`APG Scout Concierge v5 QA passed${navigatorV7?' with Navigator v7 global presentation parity':''}`);
