@@ -5,6 +5,7 @@ const runtime=require('../lib/action4-decision-evidence-v96');
 const {products}=require('../data');
 const evidence=require('../data/action4-decision-evidence-v96');
 const closure=require('../data/action4-closure-v97');
+const final=require('../data/action4-final-v98');
 const commerce=require('../data/commerce-eligibility-v114');
 
 function criterion(result,key){return (result.criteria||[]).find(row=>row.criterion===key||row.key===`decision:${key}`);}
@@ -79,36 +80,44 @@ assert(laptop.results.length,'laptop benchmark should return maintained candidat
 assert(criterion(laptop.results[0],'portable'),'portability schema trace missing');
 assert(criterion(laptop.results[0],'university'),'university schema trace missing');
 
-// v96 product records deliberately retain their historical eligibility marker. Reconcile that
-// marker to v97 before asserting CURRENT commerce behaviour: a product can re-enter commerce only
-// through an explicit later resolution, while non-AU/unresolved v97 states must remain fail-closed.
+// v96 records retain their historical marker. CURRENT commerce is reconciled through v97 and
+// final v98: five regional/non-AU cases plus two final historical cases remain fail-closed, while
+// explicitly resolved current AU identities may regain model-specific retailer pathways.
 const closureBySlug=new Map((closure.entityOverrides||[]).map(row=>[row.slug,row]));
+const finalBySlug=new Map((final.finalEntityOverrides||[]).map(row=>[row.slug,row]));
 const historicallyExcluded=products.filter(product=>product.recommendationEligibility===evidence.RECOMMENDATION_ELIGIBILITY.ENTITY_UNVERIFIED_EXCLUDE);
 assert(historicallyExcluded.length>0,'v96 entity-unverified historical set is empty');
 let laterResolvedForCommerce=0;
 for(const product of historicallyExcluded){
   const currentException=commerce.exceptionFor(product);
-  if(currentException?.type==='IDENTITY_UNVERIFIED'){
-    assert.strictEqual(product.commerceSuppressed,true,`${product.slug} must remain commerce-suppressed under current entity state`);
-    assert.deepStrictEqual(product.retailers||[],[],`${product.slug} retained a retailer pathway despite current identity/Australian-market exclusion`);
+  if(currentException?.type==='ENTITY_MARKET_EXCLUDED'){
+    assert.strictEqual(product.commerceSuppressed,true,`${product.slug} must remain commerce-suppressed under final entity/market/lifecycle state`);
+    assert.deepStrictEqual(product.retailers||[],[],`${product.slug} retained a retailer pathway despite final commerce exclusion`);
+    if(currentException.eligibility==='HISTORICAL'){
+      const finalResolution=finalBySlug.get(product.slug);
+      assert(finalResolution,`${product.slug} historical current-commerce exclusion must come from v98 final closure`);
+      assert(/^RESOLVED_HISTORICAL_/.test(String(finalResolution.resolution||'')));
+    }
     continue;
   }
   const resolved=closureBySlug.get(product.slug);
   assert(resolved,`${product.slug} cannot re-enter commerce without an explicit later Action 4 entity resolution`);
   assert.notStrictEqual(resolved.eligibility,evidence.RECOMMENDATION_ELIGIBILITY.ENTITY_UNVERIFIED_EXCLUDE,`${product.slug} cannot re-enter commerce while v97 still excludes the entity`);
-  assert(resolved.authoritativeSource,`${product.slug} v97 commerce re-entry requires an authoritative resolution source`);
-  assert(/^RESOLVED_/.test(String(resolved.resolution||'')),`${product.slug} v97 commerce re-entry requires explicit resolution provenance`);
-  assert.strictEqual(product.commerceSuppressed,false,`${product.slug} was explicitly resolved by v97 and should not remain commerce-suppressed`);
+  assert(resolved.authoritativeSource,`${product.slug} commerce re-entry requires an authoritative resolution source`);
+  assert(/^RESOLVED_/.test(String(resolved.resolution||'')),`${product.slug} commerce re-entry requires explicit resolution provenance`);
+  assert.strictEqual(product.commerceSuppressed,false,`${product.slug} was explicitly resolved and should not remain commerce-suppressed`);
   laterResolvedForCommerce++;
 }
 assert(laterResolvedForCommerce>0,'No historical v96 identity exclusions were reconciled through later closure evidence');
 
-const currentIdentityExcluded=products.filter(product=>commerce.exceptionFor(product)?.type==='IDENTITY_UNVERIFIED');
-assert.strictEqual(currentIdentityExcluded.length,Object.keys(commerce.IDENTITY_EXCLUSIONS).length,'Current product state must match shared commerce identity exclusions');
-assert.strictEqual(currentIdentityExcluded.length,7,'Latest v97-over-v96 state should retain seven identity/Australian-market commerce exclusions');
-for(const product of currentIdentityExcluded){
-  assert.strictEqual(product.commerceSuppressed,true,`${product.slug} current identity exclusion must suppress commerce`);
-  assert.deepStrictEqual(product.retailers||[],[],`${product.slug} current identity exclusion retained retailer rows`);
+const currentEntityExcluded=products.filter(product=>commerce.exceptionFor(product)?.type==='ENTITY_MARKET_EXCLUDED');
+assert.strictEqual(currentEntityExcluded.length,Object.keys(commerce.ENTITY_EXCLUSIONS).length,'Current product state must match shared commerce entity exclusions');
+assert.strictEqual(currentEntityExcluded.length,7,'Final v98-over-v97-over-v96 state should retain seven non-current/non-AU commerce exclusions');
+assert.strictEqual(commerce.eligibilitySummary().entityOpenCases,0,'Final v98 state must retain zero unresolved entity cases');
+assert.strictEqual(commerce.eligibilitySummary().historicalExclusions,2,'Two final entity records are historical rather than unresolved');
+for(const product of currentEntityExcluded){
+  assert.strictEqual(product.commerceSuppressed,true,`${product.slug} current entity exclusion must suppress commerce`);
+  assert.deepStrictEqual(product.retailers||[],[],`${product.slug} current entity exclusion retained retailer rows`);
 }
 
 const philips=products.find(product=>product.slug==='philips-5000-series-handheld-steamer-sth5030-20');
@@ -116,4 +125,4 @@ assert(philips,'corrected Philips Australian STH5030/20 entity missing');
 assert.strictEqual(philips.entityStatus,evidence.ENTITY_STATUS.CURRENT);
 assert.strictEqual(philips.entityCorrectedFrom,'philips-5000-series-handheld-steamer-sth5030-80');
 
-console.log(JSON.stringify({ok:true,version:snapshot.version,products:snapshot.catalogue.products,schemas:snapshot.categorySchemas.length,entityReviewed:snapshot.entityIntegrity.reviewed,entityResolved:snapshot.entityIntegrity.resolved,entityOpen:snapshot.entityIntegrity.open,currentCommerceIdentityExclusions:currentIdentityExcluded.length,laterResolvedForCommerce,independentDecisionEvidence:snapshot.evidence.independentDecisionRecords,comfortWinner:comfort.results[0].slug,comfortCoverage:comfort.audit.topCriterionCoverage},null,2));
+console.log(JSON.stringify({ok:true,version:snapshot.version,products:snapshot.catalogue.products,schemas:snapshot.categorySchemas.length,entityReviewed:snapshot.entityIntegrity.reviewed,entityResolved:snapshot.entityIntegrity.resolved,entityOpen:snapshot.entityIntegrity.open,currentCommerceEntityExclusions:currentEntityExcluded.length,currentEntityOpen:commerce.eligibilitySummary().entityOpenCases,historicalExclusions:commerce.eligibilitySummary().historicalExclusions,laterResolvedForCommerce,independentDecisionEvidence:snapshot.evidence.independentDecisionRecords,comfortWinner:comfort.results[0].slug,comfortCoverage:comfort.audit.topCriterionCoverage},null,2));
