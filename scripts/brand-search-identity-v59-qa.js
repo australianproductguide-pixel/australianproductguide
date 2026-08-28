@@ -63,12 +63,15 @@ assert(brandCsp.includes('/assets/brand-directory-v63.css?v=63.0'),'v63 must loa
 assert(brandIndex.includes("require('./category-index-images-v61')"),'v62 must preserve v61 immediately underneath rather than bypass category imagery');
 assert(categoryIndex.includes("require('./google-product-discovery-v60')"),'v61 must preserve v60 immediately underneath rather than bypass product discovery');
 assert(discovery.includes("require('./brand-search-identity-v59')"),'v60 must preserve v59 immediately underneath rather than bypass brand identity');
-assert(runtime.includes("const FAVICON='/favicon-v105.svg'"),'final browser identity must use a versioned favicon URL so cached legacy artwork is not reused');
-assert(runtime.includes('rel=\"icon\" type=\"image/svg+xml\" sizes=\"any\" href=\"${FAVICON}\"'),'final HTML must publish the new favicon');
-assert(runtime.includes('rel=\"manifest\" href=\"${MANIFEST}\"'),'final HTML must publish the web manifest');
+// v59 still preserves the historical cache-busted identity and legacy redirect beneath v115.
+// Favicon Parity v115 canonicalises the finished SSR head and manifest without deleting this
+// stable compatibility asset, so cached clients have a safe bridge while new discovery uses /favicon.svg.
+assert(runtime.includes("const FAVICON='/favicon-v105.svg'"),'v59 must preserve the historical versioned favicon compatibility URL');
+assert(runtime.includes('rel=\"icon\" type=\"image/svg+xml\" sizes=\"any\" href=\"${FAVICON}\"'),'v59 must continue publishing its underlying favicon before v115 final-head canonicalisation');
+assert(runtime.includes('rel=\"manifest\" href=\"${MANIFEST}\"'),'v59 must continue publishing the web manifest');
 assert(runtime.includes('ImageObject'),'Organization logo must be promoted as an ImageObject');
-assert(runtime.includes("path==='/favicon.ico'"),'legacy root favicon requests must be handled');
-assert(runtime.includes("res.setHeader('Location',FAVICON)"),'legacy favicon requests must redirect to the current cache-busted asset');
+assert(runtime.includes("path==='/favicon.ico'"),'legacy root favicon requests must remain handled beneath the filesystem fallback');
+assert(runtime.includes("res.setHeader('Location',FAVICON)"),'v59 legacy favicon redirect must remain available if static filesystem handling is bypassed');
 for(const source of [favicon,versionedFavicon,brandMark]){
   assert(source.includes('width="192" height="192" viewBox="0 0 192 192"'),'brand mark must expose a square 192x192 canvas');
   assert(source.includes('#0F172A'),'brand mark must use APG Navy');
@@ -82,9 +85,13 @@ assert.equal(favicon,versionedFavicon,'legacy and versioned favicon assets must 
 assert.equal(versionedFavicon,brandMark,'favicon and canonical browser brand mark must remain visually identical');
 assert.equal(manifest.name,'Australian Product Guide');
 assert.equal(manifest.short_name,'APG');
-assert.equal(manifest.icons[0].src,'/favicon-v105.svg');
+assert.equal(manifest.icons[0].src,'/favicon.svg','v115 manifest must use the stable canonical favicon URL');
 assert.equal(manifest.icons[0].type,'image/svg+xml');
 assert.equal(manifest.icons[0].sizes,'any');
 assert.equal(manifest.icons[0].purpose,'any','browser icon must not be declared maskable unless a dedicated maskable safe-area asset exists');
+assert.deepEqual(manifest.icons.slice(1).map(({src,sizes,type,purpose})=>({src,sizes,type,purpose})),[
+  {src:'/icon-192.png',sizes:'192x192',type:'image/png',purpose:'any'},
+  {src:'/icon-512.png',sizes:'512x512',type:'image/png',purpose:'any'}
+],'v115 manifest must preserve conservative raster fallbacks without an unverified maskable claim');
 
-console.log('APG Search Brand Identity v59 source QA passed beneath v60, v61, v62, CSP-safe v63, product brand placeholder v64, brand mark quality v65, curated brand mark v66, parity/integrity v66.2 and complete official brand identity resolver v67.2; favicon v105 uses the enlarged canonical APG header mark with a cache-busted non-maskable browser identity path');
+console.log('APG Search Brand Identity v59 source QA passed beneath v60-v67.2; historical v105 cache-busted identity remains intact while Favicon Parity v115 makes /favicon.svg plus 192/512 PNGs the stable non-maskable manifest identity');
