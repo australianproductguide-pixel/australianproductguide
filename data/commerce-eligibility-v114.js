@@ -21,12 +21,13 @@ for(const row of action4v98.finalEntityOverrides||[]){
   currentEntityState.set(row.slug,{...(currentEntityState.get(row.slug)||{}),...row,sourceLayer:'v98'});
 }
 
-// v98 commerce revalidation is the final authority for whether a corrected CURRENT entity may
-// regain a retailer path. A revalidation can authorise an exact product destination or only a
-// model-specific fallback; either is sufficient to restore commerce eligibility without inventing
-// an exact listing. Historical/non-AU entities are not included in this restoration set.
 const COMMERCE_REVALIDATIONS=Object.freeze(action4v98.commerceRevalidations||{});
-function hasFinalCommerceRevalidation(row){return Boolean(COMMERCE_REVALIDATIONS[row.slug]);}
+function revalidationKeyFor(row){
+  if(COMMERCE_REVALIDATIONS[row.slug])return row.slug;
+  if(row.correctedSlug&&COMMERCE_REVALIDATIONS[row.correctedSlug])return row.correctedSlug;
+  return null;
+}
+function hasFinalCommerceRevalidation(row){return Boolean(revalidationKeyFor(row));}
 function isEntityCommerceExcluded(row){
   if(row.eligibility==='HISTORICAL')return true;
   if(hasFinalCommerceRevalidation(row))return false;
@@ -84,43 +85,16 @@ function applyProduct(product){
   const exception=exceptionFor(product);
   const revalidation=commerceRevalidationFor(product);
   if(!exception)return {...product,commerceEligibility:'ELIGIBLE',commerceSuppressed:false,commerceException:null,commerceRevalidation:revalidation};
-  return {
-    ...product,
-    retailers:[],
-    commerceEligibility:'SUPPRESSED',
-    commerceSuppressed:true,
-    commerceException:exception,
-    commerceRevalidation:null,
-    retailerSuppressionReason:exception.code,
-    retailerSuppressionReviewedAt:exception.reviewedAt||REVIEWED_AT
-  };
+  return {...product,retailers:[],commerceEligibility:'SUPPRESSED',commerceSuppressed:true,commerceException:exception,commerceRevalidation:null,retailerSuppressionReason:exception.code,retailerSuppressionReviewedAt:exception.reviewedAt||REVIEWED_AT};
 }
 function applyCategoryMaps(categoryMaps){
   const seen=new Set();
-  for(const map of categoryMaps||[]){
-    for(const category of Object.values(map||{})){
-      if(!category||seen.has(category))continue;
-      seen.add(category);
-      category.products=(category.products||[]).map(applyProduct);
-    }
-  }
+  for(const map of categoryMaps||[]){for(const category of Object.values(map||{})){if(!category||seen.has(category))continue;seen.add(category);category.products=(category.products||[]).map(applyProduct);}}
 }
 function eligibilitySummary(){
   const historical=Object.values(ENTITY_EXCLUSIONS).filter(row=>row.eligibility==='HISTORICAL').length;
   const regional=Object.values(ENTITY_EXCLUSIONS).length-historical;
-  return Object.freeze({
-    version:VERSION,
-    reviewedAt:REVIEWED_AT,
-    entitySource:'Action 4 v98 over v97 over v96',
-    entityOpenCases:0,
-    commerceRevalidations:Object.keys(COMMERCE_REVALIDATIONS).length,
-    entityCommerceExclusions:Object.keys(ENTITY_EXCLUSIONS).length,
-    regionalOrCurrentMarketExclusions:regional,
-    historicalExclusions:historical,
-    safetyExclusions:Object.keys(SAFETY_EXCLUSIONS).length,
-    totalExceptions:Object.keys(EXCEPTIONS).length,
-    commercialRecommendationWeight:0
-  });
+  return Object.freeze({version:VERSION,reviewedAt:REVIEWED_AT,entitySource:'Action 4 v98 over v97 over v96',entityOpenCases:0,commerceRevalidations:Object.keys(COMMERCE_REVALIDATIONS).length,entityCommerceExclusions:Object.keys(ENTITY_EXCLUSIONS).length,regionalOrCurrentMarketExclusions:regional,historicalExclusions:historical,safetyExclusions:Object.keys(SAFETY_EXCLUSIONS).length,totalExceptions:Object.keys(EXCEPTIONS).length,commercialRecommendationWeight:0});
 }
 
-module.exports={VERSION,REVIEWED_AT,currentEntityState,COMMERCE_REVALIDATIONS,ENTITY_EXCLUSIONS,IDENTITY_EXCLUSIONS,SAFETY_EXCLUSIONS,EXCEPTIONS,hasFinalCommerceRevalidation,isEntityCommerceExcluded,exceptionFor,isCommerceEligible,commerceRevalidationFor,applyProduct,applyCategoryMaps,eligibilitySummary};
+module.exports={VERSION,REVIEWED_AT,currentEntityState,COMMERCE_REVALIDATIONS,ENTITY_EXCLUSIONS,IDENTITY_EXCLUSIONS,SAFETY_EXCLUSIONS,EXCEPTIONS,revalidationKeyFor,hasFinalCommerceRevalidation,isEntityCommerceExcluded,exceptionFor,isCommerceEligible,commerceRevalidationFor,applyProduct,applyCategoryMaps,eligibilitySummary};
