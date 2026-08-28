@@ -87,6 +87,7 @@ const wholeSiteExperience=require('../lib/whole-site-experience-v109-runtime');
 const pagespeedAgenticCertification=require('../lib/pagespeed-agentic-certification-v113-runtime');
 const customerJourneyProgramme=require('../lib/customer-journey-programme-v1144-runtime');
 const faviconParity=require('../lib/favicon-parity-v115-runtime');
+const aboutTrustNavigation=require('../lib/about-trust-navigation-v116-runtime');
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
 scoutResponseDepth.install();
@@ -104,6 +105,10 @@ pagespeedAgenticCertification.install(wholeSiteExperience);
 // v115 follows the same installation boundary: favicon/manifest canonicalisation is an inner
 // presentation-metadata control while Whole-Site v109 remains the final outer HTML transform.
 faviconParity.install(wholeSiteExperience);
+// v116 promotes company, methodology, evidence, accountability and contact routes into one
+// coherent navigation family. It is presentation-only and preserves the existing SSR/runtime
+// authority, shopper decision state and recommendation/retailer scoring boundaries.
+aboutTrustNavigation.install(wholeSiteExperience);
 const transportHandler=decisionTransportParity.wrap(runtime);
 const premiumHandler=premiumExperience.wrap(transportHandler);
 const journeyHandler=decisionJourneyContinuity.wrap(premiumHandler);
@@ -115,8 +120,8 @@ const stableJourneyHandler=premiumClientStability.wrap(journeyHandler);
 // presentation installer extends this same boundary without creating another decision engine.
 const premiumMobileHandler=premiumMobileDecisionCommerce.wrap(stableJourneyHandler);
 // Whole-Site v109 remains the final semantic HTML communication layer; its returned handler
-// includes the installed v114.4 CSP-safe journey controls, v113 transport certification and
-// v115 favicon parity without introducing any outer HTML wrapper.
+// includes the installed v114.4 CSP-safe journey controls, v113 transport certification,
+// v115 favicon parity and v116 About & trust navigation without introducing another engine.
 const handler=wholeSiteExperience.wrap(premiumMobileHandler);
 handler.HARD_CONSTRAINT_RESULT_PARITY_VERSION=hardConstraintParity.VERSION;
 handler.DECISION_TRANSPORT_PARITY_VERSION=decisionTransportParity.VERSION;
@@ -131,5 +136,6 @@ handler.WHOLE_SITE_EXPERIENCE_VERSION=wholeSiteExperience.VERSION;
 handler.PAGESPEED_AGENTIC_CERTIFICATION_VERSION=pagespeedAgenticCertification.VERSION;
 handler.CUSTOMER_JOURNEY_PROGRAMME_VERSION=customerJourneyProgramme.VERSION;
 handler.FAVICON_PARITY_VERSION=faviconParity.VERSION;
+handler.ABOUT_TRUST_NAVIGATION_VERSION=aboutTrustNavigation.VERSION;
 handler.APG_PLATFORM_FACTS=wholeSiteExperience.FACTS;
 module.exports=handler;
