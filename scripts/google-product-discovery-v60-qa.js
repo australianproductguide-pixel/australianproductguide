@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 const discovery=require('../lib/google-product-discovery-v60');
 const {products,categories}=require('../data');
 
-assert.equal(discovery.GOOGLE_PRODUCT_DISCOVERY_VERSION,'60.0');
+assert.equal(discovery.GOOGLE_PRODUCT_DISCOVERY_VERSION,'60.1');
 assert.equal(products.length,482,'Google discovery must cover the complete maintained catalogue');
 assert.equal(Object.keys(categories).length,90,'Google discovery must preserve all maintained categories');
 
@@ -12,7 +12,8 @@ const sample=products.find(p=>p.slug==='eufy-robot-vacuum-omni-e28');
 assert(sample,'expected product fixture missing');
 const sampleReview=discovery.reviewSchema(sample);
 assert.equal(sampleReview['@type'],'Review');
-assert.equal(sampleReview.author['@type'],'Team','Google Product Snippet reviewer must be a Person or Team');
+assert.equal(sampleReview.author['@type'],'Organization','Review author must use a Schema.org type accepted by Google Review structured data');
+assert.equal(sampleReview.author['@id'],'https://australianproductguide.au/#organization');
 assert.equal(sampleReview.author.name,'Australian Product Guide');
 assert(sampleReview.positiveNotes?.itemListElement?.length>0,'editorial pros must be structured when maintained');
 assert(sampleReview.negativeNotes?.itemListElement?.length>0,'editorial trade-off must be structured when maintained');
@@ -32,7 +33,8 @@ for(const product of products){
   assert.equal(node.sku,base.sku,`${product.slug}: existing maintained identity field lost`);
   assert.equal(node.category,base.category,`${product.slug}: existing category field lost`);
   assert.equal(node.sameAs,base.sameAs,`${product.slug}: existing primary-source identity field lost`);
-  assert.equal(node.review?.author?.['@type'],'Team',`${product.slug}: Google-eligible editorial reviewer type missing`);
+  assert.equal(node.review?.author?.['@type'],'Organization',`${product.slug}: Google-compatible editorial reviewer type missing`);
+  assert.equal(node.review?.author?.['@id'],'https://australianproductguide.au/#organization',`${product.slug}: canonical APG Organization id missing`);
   assert.equal(node.review?.author?.name,'Australian Product Guide',`${product.slug}: editorial review author missing`);
   const statementCount=(node.review?.positiveNotes?.itemListElement?.length||0)+(node.review?.negativeNotes?.itemListElement?.length||0);
   assert(statementCount>=2,`${product.slug}: Google pros/cons treatment requires at least two maintained statements`);
@@ -58,11 +60,12 @@ const productSchemas=schemas.filter(x=>x['@type']==='Product');
 const breadcrumbs=schemas.filter(x=>x['@type']==='BreadcrumbList');
 assert.equal(productSchemas.length,1,'v60 must enrich the existing canonical Product entity, not create a duplicate');
 assert.equal(breadcrumbs.length,1,'v60 must preserve the established BreadcrumbList without duplication');
-assert(injected.includes('data-apg-google-product-discovery="v60.0"'),'existing Product schema must be marked as v60-enriched');
-assert(injected.includes('name="apg-google-product-discovery" content="v60.0"'),'product page must expose v60 discovery marker');
+assert(injected.includes('data-apg-google-product-discovery="v60.1"'),'existing Product schema must be marked as v60.1-enriched');
+assert(injected.includes('name="apg-google-product-discovery" content="v60.1"'),'product page must expose v60.1 discovery marker');
 assert.equal(productSchemas[0].sku,sample.id,'v60 must preserve entity-discovery identity enrichment');
 assert.equal(productSchemas[0].sameAs,sample.source,'v60 must preserve primary-source identity enrichment');
-assert.equal(productSchemas[0].review.author['@type'],'Team');
+assert.equal(productSchemas[0].review.author['@type'],'Organization');
+assert.equal(productSchemas[0].review.author['@id'],'https://australianproductguide.au/#organization');
 assert(productSchemas[0].review.positiveNotes,'product page must expose Google-supported editorial pros');
 assert(productSchemas[0].review.negativeNotes,'product page must expose Google-supported editorial cons/trade-offs');
 assert(!prohibited.test(JSON.stringify(productSchemas[0])),'enriched Product schema must not pretend APG is the merchant or invent commerce/rating data');
@@ -79,4 +82,4 @@ assert.equal(graphResult.changed,true,'graph-contained Product entities must rem
 assert.equal(graphResult.value['@graph'].filter(x=>x['@type']==='Product').length,1);
 assert(graphResult.value['@graph'].find(x=>x['@type']==='Product').review,'graph Product enrichment missing');
 
-console.log('APG GOOGLE PRODUCT DISCOVERY v60 QA PASSED: 482 canonical Product entities enriched with Google-eligible editorial Review/pros-cons, existing breadcrumbs and provenance preserved, rights-gated imagery only, zero duplicate Product entities and zero merchant/price/rating fabrication.');
+console.log('APG GOOGLE PRODUCT DISCOVERY v60.1 QA PASSED: 482 canonical Product entities enriched with editorial Review/pros-cons using the canonical APG Organization author, existing breadcrumbs and provenance preserved, rights-gated imagery only, zero duplicate Product entities and zero merchant/price/rating fabrication.');
