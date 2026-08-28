@@ -15,6 +15,7 @@ const v27Retailers=require('./catalogue-v27-retailers');
 const v27RetailersPass5=require('./catalogue-v27-retailers-pass5');
 const v27RetailersPass6=require('./catalogue-v27-retailers-pass6');
 const retailerVerificationRefreshV109=require('./retailer-verification-refresh-v109');
+const commerceEligibilityV114=require('./commerce-eligibility-v114');
 const searchConsoleDepthV85=require('./search-console-depth-v85');
 const REVIEWED='2026-08-18';
 const DEEP_RESEARCHED='2026-08-15';
@@ -59,6 +60,9 @@ v27RetailersPass6.apply({categoryMaps:retailerCategoryMaps});
 // downstream consumer surfaces inherit the same checkedAt/reviewDue truth without adding,
 // removing or re-ranking retailer destinations.
 retailerVerificationRefreshV109.apply({categoryMaps:retailerCategoryMaps});
+// Product identity and safety are upstream of all commerce. Apply this fail-closed gate after
+// every retailer-enrichment pass so no later Amazon, eBay or other-retailer row can bypass it.
+commerceEligibilityV114.applyCategoryMaps(retailerCategoryMaps);
 const categories={...deepCategories,...starterCategories,...expandedCategories,...searchCategories,...nationalCategories,...authorityCategories};
 const legacyPathways=[
 ['coffee-machines','Coffee machines'],['air-fryers','Air fryers'],['robot-vacuums','Robot vacuums'],['wireless-headphones','Wireless headphones'],
