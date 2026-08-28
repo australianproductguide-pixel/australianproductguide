@@ -1,8 +1,9 @@
 name: APG IndexNow
 
 on:
-  # One-time bootstrap: creating this workflow on main triggers the initial full submission.
-  # Normal source/content pushes do NOT resubmit the entire site.
+  # One-time/catch-up bootstrap: changing this workflow on main triggers a full
+  # submission, but every route is now sent as an individual paced notification.
+  # Normal source/content pushes do NOT resubmit the entire site automatically.
   push:
     branches: [main]
     paths:
@@ -10,13 +11,13 @@ on:
   workflow_dispatch:
     inputs:
       scope:
-        description: 'Submit all indexable routes or selected URLs/paths'
+        description: 'Stream all indexable routes or selected URLs/paths'
         required: true
-        default: 'all'
+        default: 'urls'
         type: choice
         options:
-          - all
           - urls
+          - all
       urls:
         description: 'For scope=urls: newline-separated canonical APG URLs or paths'
         required: false
@@ -31,9 +32,9 @@ concurrency:
 
 jobs:
   submit:
-    name: Submit APG URLs to IndexNow
+    name: Stream APG URLs to IndexNow
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
 
@@ -42,7 +43,7 @@ jobs:
           node-version: '24'
           package-manager-cache: false
 
-      - name: Verify APG IndexNow key and route contract
+      - name: Verify APG IndexNow key and streaming contract
         shell: bash
         run: |
           set -euo pipefail
@@ -50,6 +51,7 @@ jobs:
           actual="$(curl --fail --silent --show-error --retry 3 'https://australianproductguide.au/apg-20260819-discoverability-v1.txt')"
           test "$actual" = "$expected"
           node --check scripts/indexnow-submit-v1.js
+          node scripts/indexnow-key-v1-qa.js
           node - <<'NODE'
           const {indexableRoutes}=require('./lib/routes');
           const {CANONICAL_ORIGIN}=require('./lib/discoverability-v1');
@@ -57,15 +59,16 @@ jobs:
           if(CANONICAL_ORIGIN!=='https://australianproductguide.au') throw new Error(`Unexpected canonical origin: ${CANONICAL_ORIGIN}`);
           if(INDEXNOW_KEY!=='apg-20260819-discoverability-v1') throw new Error(`Unexpected IndexNow key: ${INDEXNOW_KEY}`);
           if(INDEXNOW_KEY_PATH!==`/${INDEXNOW_KEY}.txt`) throw new Error(`Unexpected key path: ${INDEXNOW_KEY_PATH}`);
-          if(!indexableRoutes.length || indexableRoutes.length>10000) throw new Error(`Unexpected IndexNow batch size: ${indexableRoutes.length}`);
+          if(!indexableRoutes.length || indexableRoutes.length>10000) throw new Error(`Unexpected IndexNow route count: ${indexableRoutes.length}`);
           if(new Set(indexableRoutes).size!==indexableRoutes.length) throw new Error('Duplicate indexable routes detected');
-          console.log(`INDEXNOW_PREFLIGHT=PASS routes=${indexableRoutes.length} keyLocation=${CANONICAL_ORIGIN}${INDEXNOW_KEY_PATH}`);
+          console.log(`INDEXNOW_PREFLIGHT=PASS routes=${indexableRoutes.length} mode=single-url-stream keyLocation=${CANONICAL_ORIGIN}${INDEXNOW_KEY_PATH}`);
           NODE
 
-      - name: Submit to IndexNow
+      - name: Submit to IndexNow as individual paced notifications
         shell: bash
         env:
           APG_INDEXNOW_SUBMIT: CONFIRM
+          APG_INDEXNOW_DELAY_MS: '300'
           APG_INDEXNOW_SCOPE: ${{ github.event_name == 'workflow_dispatch' && inputs.scope || 'all' }}
           APG_INDEXNOW_URLS: ${{ github.event_name == 'workflow_dispatch' && inputs.urls || '' }}
         run: |
