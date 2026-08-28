@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72" role="img" aria-labelledby="title desc">
+  <title id="title">Scout, the Australian Product Guide buying companion</title>
+  <desc id="desc">A friendly cream and navy compass-inspired guide character with a gold navigation badge.</desc>
+  <g fill="none" fill-rule="evenodd">
+    <path d="M32.1 8.2 36 3.4l3.9 4.8" stroke="#081C2C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M13.4 28.9c0-11.8 9.2-20.4 22.6-20.4s22.6 8.6 22.6 20.4v15.8c0 10.1-8.3 18.1-18.5 18.1h-8.2c-10.2 0-18.5-8-18.5-18.1V28.9Z" fill="#FFF9EA" stroke="#081C2C" stroke-width="2.6"/>
+    <path d="M9.8 33.8c-2.7 1-4.5 3.4-4.5 6.2 0 3.1 2.2 5.8 5.3 6.5l2.8.6V32.5l-3.6 1.3Zm52.4 0c2.7 1 4.5 3.4 4.5 6.2 0 3.1-2.2 5.8-5.3 6.5l-2.8.6V32.5l3.6 1.3Z" fill="#F5C400" stroke="#081C2C" stroke-width="2.2" stroke-linejoin="round"/>
+    <rect x="19" y="20" width="34" height="24.5" rx="10.5" fill="#081C2C"/>
+    <path d="M22.5 24.1c4.3-2.6 9-3.9 14-3.9 4.3 0 8.6 1.1 12.9 3.2" stroke="#20445A" stroke-width="2" stroke-linecap="round" opacity=".72"/>
+    <ellipse cx="28.2" cy="31.5" rx="3" ry="3.5" fill="#F5C400"/>
+    <ellipse cx="43.8" cy="31.5" rx="3" ry="3.5" fill="#F5C400"/>
+    <circle cx="29" cy="30.5" r=".8" fill="#FFF9EA"/>
+    <circle cx="44.6" cy="30.5" r=".8" fill="#FFF9EA"/>
+    <path d="M29.7 37.3c1.7 1.7 3.8 2.5 6.3 2.5s4.6-.8 6.3-2.5" stroke="#FFF9EA" stroke-width="2.1" stroke-linecap="round"/>
+    <circle cx="36" cy="51.4" r="7" fill="#F5C400" stroke="#081C2C" stroke-width="2.2"/>
+    <path d="m38.9 47.7-1.7 4.8-4.1 2.6 1.7-4.8 4.1-2.6Z" fill="#081C2C" stroke="#081C2C" stroke-width="1" stroke-linejoin="round"/>
+    <path d="M26 62.1v4.1M46 62.1v4.1" stroke="#081C2C" stroke-width="3" stroke-linecap="round"/>
+    <path d="M21.3 67h9.4M41.3 67h9.4" stroke="#081C2C" stroke-width="2.6" stroke-linecap="round"/>
+  </g>
+</svg>
