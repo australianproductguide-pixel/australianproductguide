@@ -5,6 +5,7 @@ const path=require('node:path');
 const app=require('../api/index');
 const {products}=require('../data');
 const ebay=require('../data/ebay-epn-interim-v1');
+const commerce=require('../data/commerce-eligibility-v114');
 const surface=require('../lib/ebay-epn-surface-v1-runtime');
 
 function render(url){return new Promise((resolve,reject)=>{
@@ -23,6 +24,15 @@ function distinctCategoryFixtures(limit=12){
     if(rows.length>=limit)break;
   }
   return rows;
+}
+async function assertSuppressedRoute(slug,label){
+  const product=products.find(p=>p.slug===slug);assert.ok(product,`${label} fixture must remain maintained`);
+  assert.equal(product.commerceSuppressed,true,`${label} fixture must be commerce-suppressed`);
+  assert.deepEqual(product.retailers,[],`${label} fixture must have no retailer rows`);
+  const response=await render(`/products/${slug}/`);
+  assert.equal(response.status,200);
+  assert.doesNotMatch(response.body,/href=["']https:\/\/www\.ebay\.com\.au/i,`${label} page must not expose an eBay purchase/search link`);
+  assert.doesNotMatch(response.body,/data-ebay-epn-pathway=/,`${label} page must not expose an eBay pathway`);
 }
 
 (async()=>{
@@ -49,12 +59,10 @@ function distinctCategoryFixtures(limit=12){
     console.log(`EBAY_RENDER product=PASS slug=${product.slug} category=${product.category||product.categoryLabel}`);
   }
 
-  const recallSlug=Object.keys(ebay.EXCEPTIONS)[0];
-  const recalled=products.find(p=>p.slug===recallSlug);assert.ok(recalled,'Recall safety fixture must remain maintained');
-  const recallResponse=await render(`/products/${recallSlug}/`);
-  assert.equal(recallResponse.status,200);
-  assert.doesNotMatch(recallResponse.body,/href=["']https:\/\/www\.ebay\.com\.au/i,'Recall/no-safe-purchase-path page must not expose an eBay purchase/search link');
-  assert.doesNotMatch(recallResponse.body,/data-ebay-epn-pathway=/,'Recall/no-safe-purchase-path page must not expose an eBay pathway');
+  const safetySlug=Object.keys(commerce.SAFETY_EXCLUSIONS)[0];
+  const identitySlug=Object.keys(commerce.IDENTITY_EXCLUSIONS)[0];
+  await assertSuppressedRoute(safetySlug,'recall/no-safe-purchase-path');
+  await assertSuppressedRoute(identitySlug,'identity-unverified');
 
   for(const route of ['/','/deals/']){
     const response=await render(route);
@@ -89,5 +97,5 @@ function distinctCategoryFixtures(limit=12){
   assert(!/user-agent|mobile\s*===|desktop\s*===/i.test(source),'eBay retailer truth must not fork by device/user agent');
   assert.doesNotMatch(source,/media-amazon|ebaystatic|i\.ebayimg/i,'eBay discovery must not use scraped or unauthorised retailer imagery');
 
-  console.log(`EBAY_EPN_RENDER_V11_GREEN productRoutes=${fixtures.length} categories=${new Set(fixtures.map(p=>p.category||p.categoryLabel)).size} discoveryRoutes=2 promoCardsPerRoute=6 recallSafety=PASS deviceNeutralSSR=true responsiveLayer=v112 disclosure=multi-retailer`);
+  console.log(`EBAY_EPN_RENDER_V11_GREEN productRoutes=${fixtures.length} categories=${new Set(fixtures.map(p=>p.category||p.categoryLabel)).size} discoveryRoutes=2 promoCardsPerRoute=6 identitySafetySuppression=PASS deviceNeutralSSR=true responsiveLayer=v112 disclosure=multi-retailer`);
 })().catch(error=>{console.error(error.stack||error);process.exit(1);});
