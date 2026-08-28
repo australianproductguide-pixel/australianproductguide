@@ -7,9 +7,9 @@ const {products}=require('../data');
 
 assert.equal(ebay.CAMPAIGN_ID,'5339198634','Owner-supplied EPN campaign ID must remain intact');
 assert.equal(Object.keys(ebay.COLLECTIONS).length,6,'All six approved EPN collection/promotion destinations must remain governed');
-assert.equal(Object.keys(commerce.IDENTITY_EXCLUSIONS).length,17,'All open Action 4 identity exclusions must fail closed across retailer programmes');
+assert.equal(Object.keys(commerce.IDENTITY_EXCLUSIONS).length,7,'Latest Action 4 identity/Australian-market exclusions must fail closed across retailer programmes');
 assert.equal(Object.keys(commerce.SAFETY_EXCLUSIONS).length,1,'Known no-safe-purchase-path recall must remain explicitly suppressed');
-assert.equal(Object.keys(ebay.EXCEPTIONS).length,18,'eBay exceptions must share the catalogue-wide identity and safety gate');
+assert.equal(Object.keys(ebay.EXCEPTIONS).length,8,'eBay exceptions must share the catalogue-wide identity and safety gate');
 assert.equal(products.length,482,'eBay catalogue coverage QA must run against the complete maintained 482-product catalogue');
 
 function assertTracking(url,label){
@@ -98,7 +98,7 @@ assert.deepEqual(missing,[],'Every commerce-eligible maintained product requires
 assert.equal(identityExceptionCount,Object.keys(commerce.IDENTITY_EXCLUSIONS).length);
 assert.equal(safetyExceptionCount,Object.keys(commerce.SAFETY_EXCLUSIONS).length);
 assert.equal(searchCount,products.length-identityExceptionCount-safetyExceptionCount,'Every eligible maintained product must receive a model-specific eBay Australia search pathway');
-assert.equal(searchCount,464,'Current catalogue should expose 464 governed eBay product-search pathways, 17 identity exceptions and one safety exception');
+assert.equal(searchCount,474,'Current catalogue should expose 474 governed eBay product-search pathways, seven identity/Australian-market exceptions and one safety exception');
 
 const exactAmazonProduct=products.find(product=>!ebay.exceptionFor(product)&&retailers.amazonRetailerFor(product)?.amazonMatchStatus==='EXACT_VERIFIED');
 if(exactAmazonProduct){
