@@ -5,6 +5,7 @@ const path=require('node:path');
 const app=require('../api/index');
 const {products}=require('../data');
 const ebay=require('../data/ebay-epn-interim-v1');
+const commerce=require('../data/commerce-eligibility-v114');
 const surface=require('../lib/ebay-epn-surface-v1-runtime');
 
 function render(url){return new Promise((resolve,reject)=>{
@@ -12,26 +13,89 @@ function render(url){return new Promise((resolve,reject)=>{
   const res={statusCode:200,setHeader(k,v){headers[String(k).toLowerCase()]=v;},getHeader(k){return headers[String(k).toLowerCase()];},removeHeader(k){delete headers[String(k).toLowerCase()];},getHeaderNames(){return Object.keys(headers);},write(){return true;},end(body=''){resolve({status:this.statusCode,headers,body:String(body||'')});}};
   try{const r=app(req,res);if(r&&typeof r.then==='function')r.catch(reject);}catch(e){reject(e);}
 });}
-function fixture(key){return products.find(p=>ebay.selectCollection(p)?.key===key)||null;}
-function syntheticProductFor(key){const map={hpRefurbished:{brand:'HP',name:'Synthetic renderer contract',slug:'synthetic-hp-contract',category:'laptops',categoryLabel:'Laptops'}};return map[key]||null;}
-function certifySynthetic(name,key,label){
-  const product=syntheticProductFor(key);assert.ok(product,`${name} has no maintained catalogue fixture and requires an explicit synthetic renderer contract`);
-  const row=ebay.ebayRetailerFor(product);assert.equal(row?.destinationKey,key);
-  const raw=`<section class="retailer-panel"><a class="retailer-row apg112-retailer-row" href="${row.url.replace(/&/g,'&amp;')}" rel="sponsored nofollow noopener" target="_blank"><span class="apg112-retailer-status">Retailer pathway · paid link</span><small>Current stock not maintained by APG</small><span class="retailer-action">Open retailer ↗</span></a><div class="notice affiliate-disclosure-inline"><strong>Paid Amazon Associate links.</strong> As an Amazon Associate I earn from qualifying purchases.</div></section>`;
-  const enhanced=surface.genericiseProductDisclosure(surface.enhanceEbayAnchor(raw,row));
-  assert.ok(enhanced.includes(label));assert.match(enhanced,/data-ebay-exact-model="false"/);assert.match(enhanced,/Paid retailer links\.<\/strong>/);assert.match(enhanced,/Refurbished collection · paid link/);
-  console.log(`EBAY_RENDER ${name}=PASS synthetic-contract reason=no-maintained-${name.toLowerCase()}-product`);
-}
-(async()=>{
-  const definitions=[['Sony','sonyRefurbished','Browse refurbished Sony options on eBay Australia'],['Samsung','samsungRefurbishedSeasonal','Browse refurbished Samsung options on eBay Australia'],['HP','hpRefurbished','Browse refurbished HP options on eBay Australia'],['Dyson','dysonRefurbishedSeasonal','Browse refurbished Dyson options on eBay Australia'],['laptop','refurbishedLaptops','Browse refurbished laptops on eBay Australia'],['tablet','refurbishedTablets','Browse refurbished tablets on eBay Australia']];
-  let routeCases=0,syntheticCases=0;
-  for(const [name,key,label] of definitions){
-    const product=fixture(key);if(!product){certifySynthetic(name,key,label);syntheticCases++;continue;}
-    const response=await render(`/products/${product.slug}/`);routeCases++;
-    assert.equal(response.status,200,`${name} product route must render`);assert.match(response.body,/eBay Australia/i,`${name} must render an eBay retailer pathway`);assert.ok(response.body.includes(label),`${name} must honour its retailer-specific CTA`);assert.match(response.body,/data-ebay-exact-model="false"/,`${name} eBay CTA must explicitly remain non-exact`);assert.match(response.body,/Paid retailer links\.<\/strong> APG may earn a commission from qualifying purchases\./,`${name} must render the generic proximal affiliate disclosure`);assert.doesNotMatch(response.body,/Paid Amazon Associate links\.<\/strong> As an Amazon Associate I earn from qualifying purchases\.<\/div>/,`${name} product surface must not remain Amazon-only`);assert.match(response.body,/rel="sponsored nofollow noopener"/,`${name} affiliate destination must retain sponsored/nofollow/noopener semantics`);console.log(`EBAY_RENDER ${name}=PASS slug=${product.slug}`);
+function escRegex(value){return String(value).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+function distinctCategoryFixtures(limit=12){
+  const seen=new Set(),rows=[];
+  for(const product of products){
+    if(ebay.exceptionFor(product))continue;
+    const key=String(product.category||product.categoryLabel||'uncategorised');
+    if(seen.has(key))continue;
+    seen.add(key);rows.push(product);
+    if(rows.length>=limit)break;
   }
-  const unrelated=products.find(p=>!ebay.selectCollection(p)&&p.slug!=='anker-power-bank-20000mah-22-5w');assert.ok(unrelated,'Unrelated negative-control product required');const negative=await render(`/products/${unrelated.slug}/`);assert.equal(negative.status,200);assert.doesNotMatch(negative.body,/data-ebay-epn-collection=/,'Unrelated product must not receive an eBay collection CTA');console.log(`EBAY_RENDER unrelated=PASS slug=${unrelated.slug}`);
-  const affiliate=await render('/affiliate-disclosure/');assert.match(affiliate.body,/As an Amazon Associate I earn from qualifying purchases\./,'Required Amazon Associate statement must remain on detailed disclosure page');assert.match(affiliate.body,/eBay Partner Network/i,'Detailed affiliate disclosure must cover eBay Partner Network');const privacy=await render('/privacy/');assert.match(privacy.body,/eBay Partner Network/i,'Privacy disclosure must cover eBay attribution parameters');assert.match(privacy.body,/does not place personal information in eBay custom tracking IDs/i,'EPN custom tracking IDs must explicitly exclude personal information');
-  const v112=fs.readFileSync(path.join(__dirname,'..','lib','premium-mobile-decision-commerce-v112-runtime.js'),'utf8');assert.match(v112,/apg112-retailer-row/,'Established v112 responsive retailer-row presentation must remain present');const source=fs.readFileSync(path.join(__dirname,'..','lib','ebay-epn-surface-v1-runtime.js'),'utf8');assert(!/user-agent|mobile\s*===|desktop\s*===/i.test(source),'eBay retailer truth must not fork by device/user agent');
-  console.log(`EBAY_EPN_RENDER_V1_GREEN routeCases=${routeCases} syntheticContracts=${syntheticCases} negativeControl=1 deviceNeutralSSR=true responsiveLayer=v112 disclosure=multi-retailer`);
+  return rows;
+}
+async function assertSuppressedRoute(slug,label){
+  const product=products.find(p=>p.slug===slug);assert.ok(product,`${label} fixture must remain maintained`);
+  assert.equal(product.commerceSuppressed,true,`${label} fixture must be commerce-suppressed`);
+  assert.deepEqual(product.retailers,[],`${label} fixture must have no retailer rows`);
+  const response=await render(`/products/${slug}/`);
+  assert.equal(response.status,200);
+  assert.doesNotMatch(response.body,/href=["']https:\/\/www\.ebay\.com\.au/i,`${label} page must not expose an eBay purchase/search link`);
+  assert.doesNotMatch(response.body,/data-ebay-epn-pathway=/,`${label} page must not expose an eBay pathway`);
+}
+
+(async()=>{
+  assert.equal(surface.VERSION,'1.1');
+  assert.equal(products.length,482);
+
+  const fixtures=distinctCategoryFixtures(12);
+  assert.equal(fixtures.length,12,'Renderer QA requires broad multi-category coverage');
+  for(const product of fixtures){
+    const row=ebay.ebayRetailerFor(product);assert.ok(row);
+    const response=await render(`/products/${product.slug}/`);
+    assert.equal(response.status,200,`${product.slug} route must render`);
+    assert.equal(response.headers['x-apg-ebay-epn-surface'],'v1.1');
+    assert.match(response.body,/eBay Australia/i,`${product.slug} must render eBay Australia`);
+    assert.match(response.body,/data-ebay-epn-pathway="product-search"/,`${product.slug} must label the model-search pathway`);
+    assert.match(response.body,/data-ebay-exact-model="false"/,`${product.slug} must explicitly remain non-exact listing evidence`);
+    assert.match(response.body,/Product search · paid link/,`${product.slug} must expose the pathway type`);
+    assert.match(response.body,/Model-specific eBay search · exact listing, price and stock not maintained by APG/,`${product.slug} must disclose search limitations`);
+    assert.ok(response.body.includes(`Search eBay Australia for ${row.identityQuery}`),`${product.slug} must render its identity-bound CTA`);
+    assert.match(response.body,/Paid retailer links\.<\/strong> APG may earn a commission from qualifying purchases\./,`${product.slug} must render proximal multi-retailer disclosure`);
+    const href=row.url.replace(/&/g,'&amp;');assert.ok(response.body.includes(href),`${product.slug} must preserve the governed EPN destination`);
+    const anchorPattern=new RegExp(`<a[^>]+href=["']${escRegex(href)}["'][^>]+rel=["']sponsored nofollow noopener["']`,'i');
+    assert.match(response.body,anchorPattern,`${product.slug} eBay link must retain sponsored/nofollow/noopener`);
+    console.log(`EBAY_RENDER product=PASS slug=${product.slug} category=${product.category||product.categoryLabel}`);
+  }
+
+  const safetySlug=Object.keys(commerce.SAFETY_EXCLUSIONS)[0];
+  const identitySlug=Object.keys(commerce.IDENTITY_EXCLUSIONS)[0];
+  await assertSuppressedRoute(safetySlug,'recall/no-safe-purchase-path');
+  await assertSuppressedRoute(identitySlug,'identity-unverified');
+
+  for(const route of ['/','/deals/']){
+    const response=await render(route);
+    assert.equal(response.status,200,`${route} must render`);
+    assert.equal(response.headers['x-apg-ebay-epn-surface'],'v1.1');
+    assert.match(response.body,/data-ebay-epn-discovery="v1\.1"/,`${route} must expose visible eBay discovery`);
+    assert.match(response.body,/eBay Australia shopping discovery/i);
+    assert.match(response.body,/Refurbished options and current eBay promotions/i);
+    assert.match(response.body,/Paid retailer links\.<\/strong> APG may earn a commission from qualifying purchases\./);
+    const cards=response.body.match(/data-affiliate-retailer="eBay Australia"/g)||[];
+    assert.equal(cards.length,6,`${route} must render all six governed eBay promotion/collection cards`);
+    for(const record of ebay.promotionRows()){
+      const href=record.url.replace(/&/g,'&amp;');
+      assert.ok(response.body.includes(href),`${route} must include ${record.key}`);
+      assert.ok(response.body.includes(`data-ebay-epn-collection="${record.key}"`));
+    }
+    assert.doesNotMatch(response.body,/data-ebay-exact-model="true"/,`${route} discovery cards must never claim exact-model identity`);
+    console.log(`EBAY_DISCOVERY route=${route} cards=6 PASS`);
+  }
+
+  const affiliate=await render('/affiliate-disclosure/');
+  assert.match(affiliate.body,/As an Amazon Associate I earn from qualifying purchases\./,'Required Amazon Associate statement must remain on detailed disclosure page');
+  assert.match(affiliate.body,/eBay Partner Network/i,'Detailed affiliate disclosure must cover eBay Partner Network');
+  assert.match(affiliate.body,/Product-search and collection links are retailer pathways/i);
+  const privacy=await render('/privacy/');
+  assert.match(privacy.body,/eBay Partner Network/i,'Privacy disclosure must cover eBay attribution parameters');
+  assert.match(privacy.body,/does not place personal information in eBay custom tracking IDs/i,'EPN custom tracking IDs must explicitly exclude personal information');
+
+  const v112=fs.readFileSync(path.join(__dirname,'..','lib','premium-mobile-decision-commerce-v112-runtime.js'),'utf8');
+  assert.match(v112,/apg112-retailer-row/,'Established v112 responsive retailer-row presentation must remain present');
+  const source=fs.readFileSync(path.join(__dirname,'..','lib','ebay-epn-surface-v1-runtime.js'),'utf8');
+  assert(!/user-agent|mobile\s*===|desktop\s*===/i.test(source),'eBay retailer truth must not fork by device/user agent');
+  assert.doesNotMatch(source,/media-amazon|ebaystatic|i\.ebayimg/i,'eBay discovery must not use scraped or unauthorised retailer imagery');
+
+  console.log(`EBAY_EPN_RENDER_V11_GREEN productRoutes=${fixtures.length} categories=${new Set(fixtures.map(p=>p.category||p.categoryLabel)).size} discoveryRoutes=2 promoCardsPerRoute=6 identitySafetySuppression=PASS deviceNeutralSSR=true responsiveLayer=v112 disclosure=multi-retailer`);
 })().catch(error=>{console.error(error.stack||error);process.exit(1);});
