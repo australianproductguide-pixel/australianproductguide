@@ -4,6 +4,7 @@ const ebay=require('../data/ebay-epn-interim-v1');
 const retailers=require('../data/retailers-v6');
 const commerce=require('../data/commerce-eligibility-v114');
 const {products}=require('../data');
+const surface=require('../lib/ebay-epn-surface-v1-runtime');
 
 assert.equal(ebay.CAMPAIGN_ID,'5339198634','Owner-supplied EPN campaign ID must remain intact');
 assert.equal(Object.keys(ebay.COLLECTIONS).length,6,'All six approved EPN collection/promotion destinations must remain governed');
@@ -97,11 +98,9 @@ for(const product of products){
   for(let i=1;i<scores.length;i++)assert.ok(scores[i-1]>=scores[i],`${product.slug} canonical retailer composer must follow pathway specificity`);
   assert.ok(composed.every(r=>Number(r.recommendationWeight||0)===0),`${product.slug} retailer participation must add zero recommendation points`);
 
-  // The SSR renderer consumes product.retailers after category-specific retailer enrichment.
-  // Certify that stored rows are re-reconciled after those passes, not just the pure composer.
   const stored=Array.isArray(product.retailers)?product.retailers:[];
   const storedScores=stored.map(retailers.pathwayScore);
-  for(let i=1;i<storedScores.length;i++)assert.ok(storedScores[i-1]>=storedScores[i],`${product.slug} stored SSR retailer rows must follow pathway specificity after all enrichment passes`);
+  for(let i=1;i<storedScores.length;i++)assert.ok(storedScores[i-1]>=storedScores[i],`${product.slug} stored retailer rows must preserve deterministic ordering within that store`);
   assert.ok(stored.every(r=>Number(r.recommendationWeight||0)===0),`${product.slug} stored retailer rows must remain commercially neutral`);
 }
 assert.deepEqual(missing,[],'Every commerce-eligible maintained product requires a governed eBay model-search pathway');
@@ -119,17 +118,20 @@ if(exactAmazonProduct){
   assert.ok(amazonIndex<ebayIndex,'A verified exact retailer destination must outrank a product-search pathway regardless of affiliate programme');
 }
 
+// Sony is the concrete Production benchmark that exposed a renderer-only ordering defect:
+// JB Hi-Fi is appended through the verified-offer path rather than product.retailers. The final
+// surface must therefore order the merged retailer + offer set, not only the base retailer array.
 const sony=products.find(product=>product.slug==='sony-wh-1000xm6');
 assert(sony,'Sony WH-1000XM6 must remain in maintained catalogue');
-const sonyRetailers=sony.retailers||[];
-const sonyJb=sonyRetailers.findIndex(r=>r.retailer==='JB Hi-Fi');
-const sonyAmazon=sonyRetailers.findIndex(r=>r.retailer==='Amazon Australia');
-const sonyEbay=sonyRetailers.findIndex(r=>r.retailer==='eBay Australia');
-assert.ok(sonyJb>=0&&sonyAmazon>=0&&sonyEbay>=0,'Sony renderer-order benchmark requires JB Hi-Fi, Amazon and eBay rows');
-assert.ok(sonyJb<sonyAmazon&&sonyAmazon<sonyEbay,'Sony live retailer order must be exact JB Hi-Fi > verified Amazon variant > eBay product search');
-assert.equal(retailers.classifyPathway(sonyRetailers[sonyJb]),'exact-product');
-assert.equal(retailers.classifyPathway(sonyRetailers[sonyAmazon]),'verified-variant');
-assert.equal(retailers.classifyPathway(sonyRetailers[sonyEbay]),'product-search');
+const sonyMerged=surface.canonicalRetailerRows(sony);
+const sonyJb=sonyMerged.findIndex(r=>r.retailer==='JB Hi-Fi');
+const sonyAmazon=sonyMerged.findIndex(r=>r.retailer==='Amazon Australia');
+const sonyEbay=sonyMerged.findIndex(r=>r.retailer==='eBay Australia');
+assert.ok(sonyJb>=0&&sonyAmazon>=0&&sonyEbay>=0,'Sony merged renderer benchmark requires JB Hi-Fi, Amazon and eBay rows');
+assert.ok(sonyJb<sonyAmazon&&sonyAmazon<sonyEbay,'Sony merged retailer order must be exact JB Hi-Fi > verified Amazon variant > eBay product search');
+assert.equal(retailers.classifyPathway(sonyMerged[sonyJb]),'exact-product');
+assert.equal(retailers.classifyPathway(sonyMerged[sonyAmazon]),'verified-variant');
+assert.equal(retailers.classifyPathway(sonyMerged[sonyEbay]),'product-search');
 
 const syntheticExact={retailer:'Australian Retailer',kind:'retailer-direct',exactUrl:'https://retailer.example/product',url:'https://retailer.example/product',verifiedAt:'2026-08-28',recommendationWeight:0};
 const syntheticSearch=ebay.ebayRetailerFor({brand:'Sony',name:'WH-1000XM6',slug:'synthetic-sony'});
@@ -137,5 +139,5 @@ const ordered=retailers.orderRetailers([syntheticSearch,syntheticExact]);
 assert.equal(ordered[0].retailer,'Australian Retailer','Retailer-neutral ordering must allow a stronger non-Amazon exact pathway to outrank an affiliate search');
 
 const summary=commerce.eligibilitySummary();
-console.log(`EBAY_EPN_CATALOGUE_V11_GREEN campaign=${ebay.CAMPAIGN_ID} products=${products.length} productSearch=${searchCount} entityExclusions=${entityExceptionCount} entityOpen=${summary.entityOpenCases} historicalExclusions=${summary.historicalExclusions} regionalExclusions=${summary.regionalOrCurrentMarketExclusions} safetyExceptions=${safetyExceptionCount} governedPromotions=${Object.keys(ebay.COLLECTIONS).length} exactListingClaims=0 recommendationWeight=0 ordering=evidence-bound storedOrder=${summary.retailerOrderVersion}`);
+console.log(`EBAY_EPN_CATALOGUE_V12_GREEN campaign=${ebay.CAMPAIGN_ID} products=${products.length} productSearch=${searchCount} entityExclusions=${entityExceptionCount} entityOpen=${summary.entityOpenCases} historicalExclusions=${summary.historicalExclusions} regionalExclusions=${summary.regionalOrCurrentMarketExclusions} safetyExceptions=${safetyExceptionCount} governedPromotions=${Object.keys(ebay.COLLECTIONS).length} exactListingClaims=0 recommendationWeight=0 ordering=merged-evidence-bound surface=v${surface.VERSION}`);
 require('./ebay-epn-render-v1-qa');
