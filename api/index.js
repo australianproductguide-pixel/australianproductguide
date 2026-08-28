@@ -97,6 +97,9 @@ customerJourneyProgramme.install(wholeSiteExperience);
 // Whole-Site v109 still owns the final semantic/presentation transform; v113 only consolidates
 // its finished CSS delivery, strengthens immutable caching and repairs redundant Scout ARIA.
 pagespeedAgenticCertification.install(wholeSiteExperience);
+// v115 follows the same installation boundary: favicon/manifest canonicalisation is an inner
+// presentation-metadata control while Whole-Site v109 remains the final outer HTML transform.
+faviconParity.install(wholeSiteExperience);
 const transportHandler=decisionTransportParity.wrap(runtime);
 const premiumHandler=premiumExperience.wrap(transportHandler);
 const journeyHandler=decisionJourneyContinuity.wrap(premiumHandler);
@@ -108,11 +111,9 @@ const stableJourneyHandler=premiumClientStability.wrap(journeyHandler);
 // protected runtime topology does not need a second presentation wrapper.
 const premiumMobileHandler=premiumMobileDecisionCommerce.wrap(stableJourneyHandler);
 // Whole-Site v109 remains the final semantic HTML communication layer; its returned handler
-// includes the installed v114.4 CSP-safe journey controls and v113 transport certification.
-const wholeSiteHandler=wholeSiteExperience.wrap(premiumMobileHandler);
-// v115 is deliberately outermost and presentation-only: it canonicalises favicon/manifest
-// declarations in the finished SSR HTML without changing shopper, evidence or commerce state.
-const handler=faviconParity.wrap(wholeSiteHandler);
+// includes the installed v114.4 CSP-safe journey controls, v113 transport certification and
+// v115 favicon parity without introducing any outer HTML wrapper.
+const handler=wholeSiteExperience.wrap(premiumMobileHandler);
 handler.HARD_CONSTRAINT_RESULT_PARITY_VERSION=hardConstraintParity.VERSION;
 handler.DECISION_TRANSPORT_PARITY_VERSION=decisionTransportParity.VERSION;
 handler.SCOUT_CUSTOMER_INTELLIGENCE_VERSION=scoutCustomerIntelligence.VERSION;
