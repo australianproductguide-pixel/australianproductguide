@@ -88,6 +88,7 @@ const pagespeedAgenticCertification=require('../lib/pagespeed-agentic-certificat
 const customerJourneyProgramme=require('../lib/customer-journey-programme-v1144-runtime');
 const faviconParity=require('../lib/favicon-parity-v115-runtime');
 const aboutTrustNavigation=require('../lib/about-trust-navigation-v116-runtime');
+const scoutNavigatorPresentation=require('../lib/scout-navigator-v7-global-runtime');
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
 scoutResponseDepth.install();
@@ -138,4 +139,9 @@ handler.CUSTOMER_JOURNEY_PROGRAMME_VERSION=customerJourneyProgramme.VERSION;
 handler.FAVICON_PARITY_VERSION=faviconParity.VERSION;
 handler.ABOUT_TRUST_NAVIGATION_VERSION=aboutTrustNavigation.VERSION;
 handler.APG_PLATFORM_FACTS=wholeSiteExperience.FACTS;
-module.exports=handler;
+// v7.1 is deliberately outside the semantic wrapper only to make the approved Navigator skin
+// the final CSS cascade on every route. It is presentation-only and must not alter decisions,
+// evidence, retailer weighting, routes or shopper state.
+const finalHandler=scoutNavigatorPresentation.wrap(handler);
+finalHandler.SCOUT_NAVIGATOR_PRESENTATION_VERSION=scoutNavigatorPresentation.VERSION;
+module.exports=finalHandler;
