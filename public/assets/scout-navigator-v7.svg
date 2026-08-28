@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72" role="img" aria-labelledby="title desc">
+  <title id="title">Scout Navigator</title>
+  <desc id="desc">Australian Product Guide's friendly blue navigation companion.</desc>
+  <defs>
+    <linearGradient id="shell" x1="12" y1="8" x2="58" y2="66" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#0F172A"/>
+    </linearGradient>
+    <linearGradient id="face" x1="20" y1="16" x2="51" y2="40" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EAF4FF"/>
+    </linearGradient>
+  </defs>
+  <path d="M36 5.5c15 0 26 10.2 26 24.2 0 16.7-17.4 30.3-26 36.8-8.6-6.5-26-20.1-26-36.8C10 15.7 21 5.5 36 5.5Z" fill="url(#shell)" stroke="#0F172A" stroke-width="2"/>
+  <path d="M36 5.5 40.4 12h-8.8L36 5.5Z" fill="#38A4F3"/>
+  <rect x="18.5" y="15" width="35" height="27" rx="13.5" fill="url(#face)" stroke="#93C5FD" stroke-width="1.5"/>
+  <circle cx="29" cy="27" r="2.7" fill="#0F172A"/>
+  <circle cx="43" cy="27" r="2.7" fill="#0F172A"/>
+  <circle cx="29.9" cy="26.1" r=".8" fill="#FFFFFF"/>
+  <circle cx="43.9" cy="26.1" r=".8" fill="#FFFFFF"/>
+  <path d="M30 33.1c1.7 1.7 3.7 2.5 6 2.5s4.3-.8 6-2.5" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="36" cy="51.5" r="7.4" fill="#FFFFFF" fill-opacity=".96" stroke="#93C5FD" stroke-width="1.25"/>
+  <path d="m36 45.6 1.9 4 4.5 1.9-4.5 1.9-1.9 4-1.9-4-4.5-1.9 4.5-1.9 1.9-4Z" fill="#2563EB"/>
+  <circle cx="36" cy="51.5" r="1.45" fill="#0F172A"/>
+  <path d="M21.5 47.7c2.7 3.7 5.6 6.8 8.5 9.4M50.5 47.7c-2.7 3.7-5.6 6.8-8.5 9.4" fill="none" stroke="#38A4F3" stroke-width="1.5" stroke-linecap="round" opacity=".85"/>
+</svg>
