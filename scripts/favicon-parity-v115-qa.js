@@ -85,9 +85,11 @@ for(const expected of ['16x16','32x32','48x48']) assert(icoSizes.includes(expect
 
 const fakeWholeSite={wrap(downstream){return {wholeSiteOuter:true,downstream}}};
 assert.equal(favicon.install(fakeWholeSite),fakeWholeSite,'install must augment the existing Whole-Site wrapper factory in place');
-const installed=fakeWholeSite.wrap('base-handler');
+const baseHandler=()=>{};
+const installed=fakeWholeSite.wrap(baseHandler);
 assert.equal(installed.wholeSiteOuter,true,'Whole-Site must remain the outer handler returned by its wrapper factory');
 assert.equal(typeof installed.downstream,'function','favicon parity must be installed as an inner downstream wrapper');
+assert.equal(installed.downstream.FAVICON_PARITY_VERSION,'115.0','installed inner handler must retain the favicon parity version contract');
 assert.equal(fakeWholeSite.FAVICON_PARITY_V115_INSTALLED,true,'favicon install marker must be retained');
 const wrapAfterFirstInstall=fakeWholeSite.wrap;
 favicon.install(fakeWholeSite);
