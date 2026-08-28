@@ -4,6 +4,8 @@ const assert=require('assert');
 const runtime=require('../lib/action4-decision-evidence-v96');
 const {products}=require('../data');
 const evidence=require('../data/action4-decision-evidence-v96');
+const closure=require('../data/action4-closure-v97');
+const commerce=require('../data/commerce-eligibility-v114');
 
 function criterion(result,key){return (result.criteria||[]).find(row=>row.criterion===key||row.key===`decision:${key}`);}
 function noContradiction(result,key){
@@ -16,9 +18,11 @@ const snapshot=runtime.action4Snapshot();
 assert.strictEqual(snapshot.version,'96.0');
 assert.strictEqual(snapshot.catalogue.products,482,'Action 4 must run against the maintained 482-product catalogue baseline');
 assert.strictEqual(snapshot.categorySchemas.length,5,'first-wave category schema count');
+// These are intentionally historical v96 snapshot assertions. Later Action 4 closure layers
+// must not rewrite the chronology of what v96 knew at its certification point.
 assert.strictEqual(snapshot.entityIntegrity.reviewed,24,'all known entity correction cases must be reviewed');
-assert.strictEqual(snapshot.entityIntegrity.resolved,7,'known lifecycle/correction cases resolved by explicit status');
-assert.strictEqual(snapshot.entityIntegrity.open,17,'remaining identity exceptions must be explicit rather than hidden');
+assert.strictEqual(snapshot.entityIntegrity.resolved,7,'v96 historical resolved count must remain stable');
+assert.strictEqual(snapshot.entityIntegrity.open,17,'v96 historical open count must remain stable');
 assert.strictEqual(snapshot.evidence.independentDecisionRecords,4,'independent first-wave evidence records');
 assert.strictEqual(snapshot.governance.commercialRecommendationWeight,0);
 
@@ -66,20 +70,45 @@ assert(criterion(coffee.results[0],'beginner'),'beginner workflow trace missing'
 
 const tv=runtime.action4PublicDecision('TV for a bright living room, sport and streaming.',{category:'televisions'});
 assert(tv.results.length,'TV benchmark should return maintained candidates');
-assert(criterion(tv.results[0],'bright-room'),'bright-room trace missing');
-assert(criterion(tv.results[0],'sport'),'sport trace missing');
-assert(criterion(tv.results[0],'streaming'),'streaming trace missing');
+assert(criterion(tv.results[0],'bright-room'),'bright-room schema trace missing');
+assert(criterion(tv.results[0],'sport'),'sport schema trace missing');
+assert(criterion(tv.results[0],'streaming'),'streaming schema trace missing');
 
 const laptop=runtime.action4PublicDecision('Lightweight laptop for university use with good battery.',{category:'laptops'});
 assert(laptop.results.length,'laptop benchmark should return maintained candidates');
-assert(criterion(laptop.results[0],'portable'),'portability trace missing');
-assert(criterion(laptop.results[0],'university'),'university trace missing');
+assert(criterion(laptop.results[0],'portable'),'portability schema trace missing');
+assert(criterion(laptop.results[0],'university'),'university schema trace missing');
 
-const excluded=products.filter(product=>product.recommendationEligibility===evidence.RECOMMENDATION_ELIGIBILITY.ENTITY_UNVERIFIED_EXCLUDE);
-assert(excluded.length>0,'entity-unverified fail-closed set is empty');
-for(const product of excluded){
-  assert.strictEqual(product.amazonMappingSuppressedByAction4,true,`${product.slug} must suppress Amazon mapping pending exact identity revalidation`);
-  assert(!(product.retailers||[]).some(row=>/amazon/i.test(String(row.retailer||''))+String(row.url||'')),`${product.slug} retained Amazon mapping despite unresolved identity`);
+// v96 product records deliberately retain their historical eligibility marker. Reconcile that
+// marker to v97 before asserting CURRENT commerce behaviour: a product can re-enter commerce only
+// through an explicit later resolution, while non-AU/unresolved v97 states must remain fail-closed.
+const closureBySlug=new Map((closure.entityOverrides||[]).map(row=>[row.slug,row]));
+const historicallyExcluded=products.filter(product=>product.recommendationEligibility===evidence.RECOMMENDATION_ELIGIBILITY.ENTITY_UNVERIFIED_EXCLUDE);
+assert(historicallyExcluded.length>0,'v96 entity-unverified historical set is empty');
+let laterResolvedForCommerce=0;
+for(const product of historicallyExcluded){
+  const currentException=commerce.exceptionFor(product);
+  if(currentException?.type==='IDENTITY_UNVERIFIED'){
+    assert.strictEqual(product.commerceSuppressed,true,`${product.slug} must remain commerce-suppressed under current entity state`);
+    assert.deepStrictEqual(product.retailers||[],[],`${product.slug} retained a retailer pathway despite current identity/Australian-market exclusion`);
+    continue;
+  }
+  const resolved=closureBySlug.get(product.slug);
+  assert(resolved,`${product.slug} cannot re-enter commerce without an explicit later Action 4 entity resolution`);
+  assert.notStrictEqual(resolved.eligibility,evidence.RECOMMENDATION_ELIGIBILITY.ENTITY_UNVERIFIED_EXCLUDE,`${product.slug} cannot re-enter commerce while v97 still excludes the entity`);
+  assert(resolved.authoritativeSource,`${product.slug} v97 commerce re-entry requires an authoritative resolution source`);
+  assert(/^RESOLVED_/.test(String(resolved.resolution||'')),`${product.slug} v97 commerce re-entry requires explicit resolution provenance`);
+  assert.strictEqual(product.commerceSuppressed,false,`${product.slug} was explicitly resolved by v97 and should not remain commerce-suppressed`);
+  laterResolvedForCommerce++;
+}
+assert(laterResolvedForCommerce>0,'No historical v96 identity exclusions were reconciled through later closure evidence');
+
+const currentIdentityExcluded=products.filter(product=>commerce.exceptionFor(product)?.type==='IDENTITY_UNVERIFIED');
+assert.strictEqual(currentIdentityExcluded.length,Object.keys(commerce.IDENTITY_EXCLUSIONS).length,'Current product state must match shared commerce identity exclusions');
+assert.strictEqual(currentIdentityExcluded.length,7,'Latest v97-over-v96 state should retain seven identity/Australian-market commerce exclusions');
+for(const product of currentIdentityExcluded){
+  assert.strictEqual(product.commerceSuppressed,true,`${product.slug} current identity exclusion must suppress commerce`);
+  assert.deepStrictEqual(product.retailers||[],[],`${product.slug} current identity exclusion retained retailer rows`);
 }
 
 const philips=products.find(product=>product.slug==='philips-5000-series-handheld-steamer-sth5030-20');
@@ -87,4 +116,4 @@ assert(philips,'corrected Philips Australian STH5030/20 entity missing');
 assert.strictEqual(philips.entityStatus,evidence.ENTITY_STATUS.CURRENT);
 assert.strictEqual(philips.entityCorrectedFrom,'philips-5000-series-handheld-steamer-sth5030-80');
 
-console.log(JSON.stringify({ok:true,version:snapshot.version,products:snapshot.catalogue.products,schemas:snapshot.categorySchemas.length,entityReviewed:snapshot.entityIntegrity.reviewed,entityResolved:snapshot.entityIntegrity.resolved,entityOpen:snapshot.entityIntegrity.open,independentDecisionEvidence:snapshot.evidence.independentDecisionRecords,comfortWinner:comfort.results[0].slug,comfortCoverage:comfort.audit.topCriterionCoverage},null,2));
+console.log(JSON.stringify({ok:true,version:snapshot.version,products:snapshot.catalogue.products,schemas:snapshot.categorySchemas.length,entityReviewed:snapshot.entityIntegrity.reviewed,entityResolved:snapshot.entityIntegrity.resolved,entityOpen:snapshot.entityIntegrity.open,currentCommerceIdentityExclusions:currentIdentityExcluded.length,laterResolvedForCommerce,independentDecisionEvidence:snapshot.evidence.independentDecisionRecords,comfortWinner:comfort.results[0].slug,comfortCoverage:comfort.audit.topCriterionCoverage},null,2));
