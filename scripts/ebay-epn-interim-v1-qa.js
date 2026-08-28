@@ -52,3 +52,4 @@ assert.equal(composed[1].retailer,'eBay Australia','Relevant eBay collection sho
 assert.equal(composed[1].destinationKey,'sonyRefurbished');
 
 console.log(`EBAY_EPN_INTERIM_V1_GREEN campaign=${ebay.CAMPAIGN_ID} destinations=${Object.keys(ebay.COLLECTIONS).length} exactClaims=0 recommendationWeight=0`);
+require('./ebay-epn-render-v1-qa');
