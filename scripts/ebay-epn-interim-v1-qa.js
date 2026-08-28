@@ -94,8 +94,15 @@ for(const product of products){
   assert.equal(ebayRows[0].pathwayLabel,'Product search');
   assert.equal(ebayRows[0].recommendationWeight,0);
   const scores=composed.map(retailers.pathwayScore);
-  for(let i=1;i<scores.length;i++)assert.ok(scores[i-1]>=scores[i],`${product.slug} retailer ordering must follow pathway specificity`);
+  for(let i=1;i<scores.length;i++)assert.ok(scores[i-1]>=scores[i],`${product.slug} canonical retailer composer must follow pathway specificity`);
   assert.ok(composed.every(r=>Number(r.recommendationWeight||0)===0),`${product.slug} retailer participation must add zero recommendation points`);
+
+  // The SSR renderer consumes product.retailers after category-specific retailer enrichment.
+  // Certify that stored rows are re-reconciled after those passes, not just the pure composer.
+  const stored=Array.isArray(product.retailers)?product.retailers:[];
+  const storedScores=stored.map(retailers.pathwayScore);
+  for(let i=1;i<storedScores.length;i++)assert.ok(storedScores[i-1]>=storedScores[i],`${product.slug} stored SSR retailer rows must follow pathway specificity after all enrichment passes`);
+  assert.ok(stored.every(r=>Number(r.recommendationWeight||0)===0),`${product.slug} stored retailer rows must remain commercially neutral`);
 }
 assert.deepEqual(missing,[],'Every commerce-eligible maintained product requires a governed eBay model-search pathway');
 assert.equal(entityExceptionCount,Object.keys(commerce.ENTITY_EXCLUSIONS).length);
@@ -112,11 +119,23 @@ if(exactAmazonProduct){
   assert.ok(amazonIndex<ebayIndex,'A verified exact retailer destination must outrank a product-search pathway regardless of affiliate programme');
 }
 
+const sony=products.find(product=>product.slug==='sony-wh-1000xm6');
+assert(sony,'Sony WH-1000XM6 must remain in maintained catalogue');
+const sonyRetailers=sony.retailers||[];
+const sonyJb=sonyRetailers.findIndex(r=>r.retailer==='JB Hi-Fi');
+const sonyAmazon=sonyRetailers.findIndex(r=>r.retailer==='Amazon Australia');
+const sonyEbay=sonyRetailers.findIndex(r=>r.retailer==='eBay Australia');
+assert.ok(sonyJb>=0&&sonyAmazon>=0&&sonyEbay>=0,'Sony renderer-order benchmark requires JB Hi-Fi, Amazon and eBay rows');
+assert.ok(sonyJb<sonyAmazon&&sonyAmazon<sonyEbay,'Sony live retailer order must be exact JB Hi-Fi > verified Amazon variant > eBay product search');
+assert.equal(retailers.classifyPathway(sonyRetailers[sonyJb]),'exact-product');
+assert.equal(retailers.classifyPathway(sonyRetailers[sonyAmazon]),'verified-variant');
+assert.equal(retailers.classifyPathway(sonyRetailers[sonyEbay]),'product-search');
+
 const syntheticExact={retailer:'Australian Retailer',kind:'retailer-direct',exactUrl:'https://retailer.example/product',url:'https://retailer.example/product',verifiedAt:'2026-08-28',recommendationWeight:0};
 const syntheticSearch=ebay.ebayRetailerFor({brand:'Sony',name:'WH-1000XM6',slug:'synthetic-sony'});
 const ordered=retailers.orderRetailers([syntheticSearch,syntheticExact]);
 assert.equal(ordered[0].retailer,'Australian Retailer','Retailer-neutral ordering must allow a stronger non-Amazon exact pathway to outrank an affiliate search');
 
 const summary=commerce.eligibilitySummary();
-console.log(`EBAY_EPN_CATALOGUE_V11_GREEN campaign=${ebay.CAMPAIGN_ID} products=${products.length} productSearch=${searchCount} entityExclusions=${entityExceptionCount} entityOpen=${summary.entityOpenCases} historicalExclusions=${summary.historicalExclusions} regionalExclusions=${summary.regionalOrCurrentMarketExclusions} safetyExceptions=${safetyExceptionCount} governedPromotions=${Object.keys(ebay.COLLECTIONS).length} exactListingClaims=0 recommendationWeight=0 ordering=evidence-bound`);
+console.log(`EBAY_EPN_CATALOGUE_V11_GREEN campaign=${ebay.CAMPAIGN_ID} products=${products.length} productSearch=${searchCount} entityExclusions=${entityExceptionCount} entityOpen=${summary.entityOpenCases} historicalExclusions=${summary.historicalExclusions} regionalExclusions=${summary.regionalOrCurrentMarketExclusions} safetyExceptions=${safetyExceptionCount} governedPromotions=${Object.keys(ebay.COLLECTIONS).length} exactListingClaims=0 recommendationWeight=0 ordering=evidence-bound storedOrder=${summary.retailerOrderVersion}`);
 require('./ebay-epn-render-v1-qa');
