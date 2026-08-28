@@ -8,9 +8,11 @@ const {products}=require('../data');
 assert.equal(ebay.CAMPAIGN_ID,'5339198634','Owner-supplied EPN campaign ID must remain intact');
 assert.equal(Object.keys(ebay.COLLECTIONS).length,6,'All six approved EPN collection/promotion destinations must remain governed');
 assert.equal(commerce.eligibilitySummary().entityOpenCases,0,'Final Action 4 v98 must retain zero unresolved entity cases');
-assert.equal(Object.keys(commerce.ENTITY_EXCLUSIONS).length,7,'Seven resolved non-current/non-AU catalogue entities must remain excluded from current Australian commerce');
+assert.equal(Object.keys(commerce.ENTITY_EXCLUSIONS).length,11,'All non-current/non-AU catalogue entities must remain excluded from current Australian commerce');
+assert.equal(commerce.eligibilitySummary().historicalExclusions,6,'Six maintained historical records must remain commerce-suppressed');
+assert.equal(commerce.eligibilitySummary().regionalOrCurrentMarketExclusions,5,'Five non-AU/regional records must remain commerce-suppressed');
 assert.equal(Object.keys(commerce.SAFETY_EXCLUSIONS).length,1,'Known no-safe-purchase-path recall must remain explicitly suppressed');
-assert.equal(Object.keys(ebay.EXCEPTIONS).length,8,'eBay exceptions must share the catalogue-wide entity/market and safety gate');
+assert.equal(Object.keys(ebay.EXCEPTIONS).length,12,'eBay exceptions must share the catalogue-wide entity/market/lifecycle and safety gate');
 assert.equal(products.length,482,'eBay catalogue coverage QA must run against the complete maintained 482-product catalogue');
 
 function assertTracking(url,label){
@@ -99,7 +101,7 @@ assert.deepEqual(missing,[],'Every commerce-eligible maintained product requires
 assert.equal(entityExceptionCount,Object.keys(commerce.ENTITY_EXCLUSIONS).length);
 assert.equal(safetyExceptionCount,Object.keys(commerce.SAFETY_EXCLUSIONS).length);
 assert.equal(searchCount,products.length-entityExceptionCount-safetyExceptionCount,'Every eligible maintained product must receive a model-specific eBay Australia search pathway');
-assert.equal(searchCount,474,'Current catalogue should expose 474 governed eBay product-search pathways, seven entity/market/lifecycle exclusions and one safety exception');
+assert.equal(searchCount,470,'Current catalogue should expose 470 governed eBay product-search pathways, eleven entity/market/lifecycle exclusions and one safety exception');
 
 const exactAmazonProduct=products.find(product=>!ebay.exceptionFor(product)&&retailers.amazonRetailerFor(product)?.amazonMatchStatus==='EXACT_VERIFIED');
 if(exactAmazonProduct){
