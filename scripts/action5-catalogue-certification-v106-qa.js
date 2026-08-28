@@ -52,3 +52,4 @@ for(const x of snap.remainingExceptions.filter(x=>x.verificationStatus==='DOCUME
   assert.ok(x.nextReviewDate);
 }
 console.log(`APG Amazon catalogue certification v106.2 QA PASS: ${snap.amazon.totalVerifiedDirect} direct, ${snap.investigation.documentedFallbackExceptions} documented fallback exceptions, ${snap.investigation.investigationRequired} investigations required, ${snap.amazon.noSuitableAmazonDestination} safety-suppressed.`);
+require('./catalogue-coverage-v117-qa');

@@ -9,6 +9,7 @@ const action4v96=require('./action4-decision-evidence-v96');
 const action4v97=require('./action4-closure-v97');
 const action4v98=require('./action4-final-v98');
 const amazonExceptions=require('./amazon-mapping-exceptions-v106');
+const retailerOrderReconciliation=require('./retailer-order-reconciliation-v117');
 
 const REVIEWED_AT='2026-08-28';
 const VERSION='commerce-eligibility-v114';
@@ -88,13 +89,27 @@ function applyProduct(product){
   return {...product,retailers:[],commerceEligibility:'SUPPRESSED',commerceSuppressed:true,commerceException:exception,commerceRevalidation:null,retailerSuppressionReason:exception.code,retailerSuppressionReviewedAt:exception.reviewedAt||REVIEWED_AT};
 }
 function applyCategoryMaps(categoryMaps){
+  // Canonical retailer composition happens before the category-specific Australian retailer passes.
+  // Those passes can append a stronger exact destination after Amazon/eBay have already been ordered.
+  // Re-run the one canonical evidence-bound sorter here, after every enrichment pass and immediately
+  // before the final fail-closed commerce gate, so SSR consumes the same ordering rule as retailersFor().
+  // The require is deliberately lazy because retailers-v6 depends on this commerce module during
+  // initial composition; by the time applyCategoryMaps runs that module has finished initialising.
+  const {orderRetailers}=require('./retailers-v6');
+  retailerOrderReconciliation.apply({categoryMaps,orderRetailers});
   const seen=new Set();
-  for(const map of categoryMaps||[]){for(const category of Object.values(map||{})){if(!category||seen.has(category))continue;seen.add(category);category.products=(category.products||[]).map(applyProduct);}}
+  for(const map of categoryMaps||[]){
+    for(const category of Object.values(map||{})){
+      if(!category||seen.has(category))continue;
+      seen.add(category);
+      category.products=(category.products||[]).map(applyProduct);
+    }
+  }
 }
 function eligibilitySummary(){
   const historical=Object.values(ENTITY_EXCLUSIONS).filter(row=>row.eligibility==='HISTORICAL').length;
   const regional=Object.values(ENTITY_EXCLUSIONS).length-historical;
-  return Object.freeze({version:VERSION,reviewedAt:REVIEWED_AT,entitySource:'Action 4 v98 over v97 over v96',entityOpenCases:0,commerceRevalidations:Object.keys(COMMERCE_REVALIDATIONS).length,entityCommerceExclusions:Object.keys(ENTITY_EXCLUSIONS).length,regionalOrCurrentMarketExclusions:regional,historicalExclusions:historical,safetyExclusions:Object.keys(SAFETY_EXCLUSIONS).length,totalExceptions:Object.keys(EXCEPTIONS).length,commercialRecommendationWeight:0});
+  return Object.freeze({version:VERSION,reviewedAt:REVIEWED_AT,entitySource:'Action 4 v98 over v97 over v96',entityOpenCases:0,commerceRevalidations:Object.keys(COMMERCE_REVALIDATIONS).length,entityCommerceExclusions:Object.keys(ENTITY_EXCLUSIONS).length,regionalOrCurrentMarketExclusions:regional,historicalExclusions:historical,safetyExclusions:Object.keys(SAFETY_EXCLUSIONS).length,totalExceptions:Object.keys(EXCEPTIONS).length,retailerOrderVersion:retailerOrderReconciliation.VERSION,commercialRecommendationWeight:0});
 }
 
 module.exports={VERSION,REVIEWED_AT,currentEntityState,COMMERCE_REVALIDATIONS,ENTITY_EXCLUSIONS,IDENTITY_EXCLUSIONS,SAFETY_EXCLUSIONS,EXCEPTIONS,revalidationKeyFor,hasFinalCommerceRevalidation,isEntityCommerceExcluded,exceptionFor,isCommerceEligible,commerceRevalidationFor,applyProduct,applyCategoryMaps,eligibilitySummary};
