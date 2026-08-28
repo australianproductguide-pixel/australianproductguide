@@ -15,6 +15,7 @@ function render(url){return new Promise((resolve,reject)=>{
 });}
 function escRegex(value){return String(value).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
 function htmlHref(value){return String(value||'').replace(/&/g,'&amp;');}
+function offerPanel(html){const m=String(html||'').match(/<section class="retailer-panel apg112-offer-panel"[\s\S]*?<\/section>/i);return m?m[0]:'';}
 function distinctCategoryFixtures(limit=12){
   const seen=new Set(),rows=[];
   for(const product of products){
@@ -66,9 +67,6 @@ async function assertSuppressedRoute(slug,label){
   const safetyResponse=await assertSuppressedRoute(safetySlug,'recall/no-safe-purchase-path');
   await assertSuppressedRoute(identitySlug,'entity/market/lifecycle-excluded');
 
-  // The recalled Anker benchmark previously rendered an Amazon search URL under an "official
-  // product information" label. Official-source presentation must now resolve only to first-party
-  // manufacturer/support/safety evidence and never dress up a retailer/search URL as official.
   if(safetySlug==='anker-power-bank-20000mah-22-5w'){
     assert.match(safetyResponse.body,/data-apg-official-source="verified-first-party"/,'Recall page must mark the first-party safety source');
     assert.match(safetyResponse.body,/href="https:\/\/www\.anker\.com\/au\/a1647-recall"/,'Recall page must use the verified Anker Australia recall source');
@@ -76,17 +74,17 @@ async function assertSuppressedRoute(slug,label){
     assert.doesNotMatch(safetyResponse.body,/class="retailer-row apg112-retailer-row official-source" href="https:\/\/www\.amazon\.com\.au\/s\?/,'Amazon search must never be labelled as official Anker information');
   }
 
-  // Concrete renderer ordering benchmark: exact JB Hi-Fi > verified Amazon variant > eBay product search.
   const sony=products.find(p=>p.slug==='sony-wh-1000xm6');assert.ok(sony,'Sony WH-1000XM6 fixture missing');
   const sonyRows=surface.canonicalRetailerRows(sony);
   const jb=sonyRows.find(r=>r.retailer==='JB Hi-Fi'),amazon=sonyRows.find(r=>r.retailer==='Amazon Australia'),ebayRow=sonyRows.find(r=>r.retailer==='eBay Australia');
   assert.ok(jb&&amazon&&ebayRow,'Sony merged retailer benchmark requires JB Hi-Fi, Amazon and eBay');
-  const sonyResponse=await render('/products/sony-wh-1000xm6/');
-  const jbIndex=sonyResponse.body.indexOf(htmlHref(jb.affiliateUrl||jb.url||jb.exactUrl));
-  const amazonIndex=sonyResponse.body.indexOf(htmlHref(amazon.affiliateUrl||amazon.url||amazon.exactUrl));
-  const ebayIndex=sonyResponse.body.indexOf(htmlHref(ebayRow.affiliateUrl||ebayRow.url||ebayRow.exactUrl));
-  assert.ok(jbIndex>=0&&amazonIndex>=0&&ebayIndex>=0,'Sony rendered retailer destinations must all be present');
-  assert.ok(jbIndex<amazonIndex&&amazonIndex<ebayIndex,'Sony rendered order must be exact JB Hi-Fi > verified Amazon variant > eBay product search');
+  const sonyResponse=await render('/products/sony-wh-1000xm6/'),panel=offerPanel(sonyResponse.body);
+  assert.ok(panel,'Sony visible retailer panel must render');
+  const jbIndex=panel.indexOf(htmlHref(jb.affiliateUrl||jb.url||jb.exactUrl));
+  const amazonIndex=panel.indexOf(htmlHref(amazon.affiliateUrl||amazon.url||amazon.exactUrl));
+  const ebayIndex=panel.indexOf(htmlHref(ebayRow.affiliateUrl||ebayRow.url||ebayRow.exactUrl));
+  assert.ok(jbIndex>=0&&amazonIndex>=0&&ebayIndex>=0,'Sony visible retailer panel must contain JB Hi-Fi, Amazon and eBay destinations');
+  assert.ok(jbIndex<amazonIndex&&amazonIndex<ebayIndex,'Sony visible retailer panel order must be exact JB Hi-Fi > verified Amazon variant > eBay product search');
 
   for(const route of ['/','/deals/']){
     const response=await render(route);
