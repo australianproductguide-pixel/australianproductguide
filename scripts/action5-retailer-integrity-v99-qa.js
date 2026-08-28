@@ -75,3 +75,4 @@ assert.equal(variant.meta.amazonAu.matchStatus,'VARIANT_VERIFIED');
 
 console.log(`ACTION5_STRATEGIC_CLOSURE_V1002_GREEN exact=${x.amazon.exact} variant=${x.amazon.variant} fallback=${x.amazon.fallback} noSafe=${x.amazon.noSafePath} p1Open=${x.p1.open} p2=${x.priority.counts.P2} broaderExactDestinations=${x.retailers.exactDestinationCount} demandOrdering=measured-first recallSurface=sanitised`);
 require('./action5-catalogue-certification-v106-qa');
+require('./ebay-epn-interim-v1-qa');
