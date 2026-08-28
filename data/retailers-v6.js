@@ -2,9 +2,11 @@
 const base=require('./retailers');
 const amazon=require('./amazon-au-mappings-v33');
 const ebay=require('./ebay-epn-interim-v1');
+const commerce=require('./commerce-eligibility-v114');
 const {TAG}=amazon;
 
 function amazonRetailerFor(product){
+  if(!commerce.isCommerceEligible(product))return null;
   const record=amazon.getAmazonAuRecord(product);
   const direct=Boolean(record.asin);
   return {
@@ -63,7 +65,7 @@ function freshnessValue(row){
   return Number.isFinite(parsed)?parsed:0;
 }
 function orderRetailers(rows){
-  return rows.map((row,index)=>({row,index,pathway:classifyPathway(row),score:pathwayScore(row),fresh:freshnessValue(row)}))
+  return (rows||[]).filter(Boolean).map((row,index)=>({row,index,pathway:classifyPathway(row),score:pathwayScore(row),fresh:freshnessValue(row)}))
     .sort((a,b)=>b.score-a.score||b.fresh-a.fresh||String(a.row.retailer||'').localeCompare(String(b.row.retailer||''),'en-AU')||a.index-b.index)
     .map(({row,pathway})=>({
       ...row,
@@ -81,13 +83,15 @@ function orderRetailers(rows){
 }
 
 function retailersFor(product){
-  // Preserve one canonical Amazon record, add the governed eBay model-search pathway,
-  // retain any other Australian retailer rows, then order all retailers by evidence-bound
-  // pathway quality rather than commercial participation. Exact/verified paths outrank searches;
-  // searches outrank collections. Commission contributes zero ordering or recommendation points.
+  // Product identity and safety are upstream of commerce. If the shared catalogue gate is red,
+  // no retailer programme can create a purchase/search pathway. For eligible products, exact and
+  // verified pathways outrank searches; searches outrank collections. Commercial participation
+  // and commission contribute zero ordering or recommendation points.
+  if(!commerce.isCommerceEligible(product))return [];
   const nonAmazon=base.retailersFor(product).filter(row=>row.retailer!=='Amazon Australia');
+  const amazonRow=amazonRetailerFor(product);
   const ebayRow=ebay.ebayRetailerFor(product);
-  return orderRetailers([amazonRetailerFor(product),...(ebayRow?[ebayRow]:[]),...nonAmazon]);
+  return orderRetailers([amazonRow,ebayRow,...nonAmazon]);
 }
 
 const suppressedDirect=new Set(Object.entries(amazon.EXCEPTIONS)
@@ -106,6 +110,7 @@ module.exports={
   amazonRetailerFor,
   ebay,
   ebayRetailerFor:ebay.ebayRetailerFor,
+  commerce,
   classifyPathway,
   pathwayScore,
   orderRetailers
