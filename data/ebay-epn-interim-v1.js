@@ -16,6 +16,16 @@ const REVIEWED='2026-08-28';
 const POLICY_STATUS='EPN search-results linking reviewed 2026-08-28';
 const SEARCH_BASE='https://www.ebay.com.au/sch/i.html';
 
+// Safety and identity exceptions are first-class. A commercial-coverage target must never
+// override an APG recall/no-safe-purchase-path decision.
+const EXCEPTIONS={
+  'anker-power-bank-20000mah-22-5w':{
+    status:'NO_SAFE_PURCHASE_PATH_RECALL',
+    reviewedAt:REVIEWED,
+    note:'Retailer search and purchase pathways are suppressed while this APG product remains under the catalogue recall/no-safe-purchase-path safety gate.'
+  }
+};
+
 const COLLECTIONS={
   sonyRefurbished:{
     key:'sonyRefurbished',
@@ -102,6 +112,7 @@ function selectCollection(product){
   const category=categoryText(product);
   return rows.find(row=>(row.categoryTerms||[]).some(term=>category.includes(term)))||null;
 }
+function exceptionFor(product){return EXCEPTIONS[String(product?.slug||'')]||null;}
 
 function productSearchTerm(product){
   const brand=normalise(product?.brand);
@@ -112,11 +123,12 @@ function productSearchTerm(product){
 }
 function affiliateSearchUrl(product){
   const term=productSearchTerm(product);
-  if(!term)return null;
+  if(!term||exceptionFor(product))return null;
   return `${SEARCH_BASE}?_nkw=${encodeURIComponent(term)}&mkcid=1&mkrid=${MARKETPLACE_ROTATION_ID}&siteid=${SITE_ID}&campid=${CAMPAIGN_ID}&toolid=${TOOL_ID}&customid=&mkevt=1`;
 }
 
 function collectionRetailerFor(product){
+  if(exceptionFor(product))return null;
   const record=selectCollection(product);
   if(!record)return null;
   return {
@@ -133,6 +145,7 @@ function collectionRetailerFor(product){
 }
 
 function ebayRetailerFor(product){
+  if(exceptionFor(product))return null;
   const term=productSearchTerm(product);
   const url=affiliateSearchUrl(product);
   if(!term||!url)return collectionRetailerFor(product);
@@ -191,6 +204,6 @@ function promotionRows(){return Object.values(COLLECTIONS).map(record=>({
 }));}
 
 module.exports={
-  CAMPAIGN_ID,MARKETPLACE,MARKETPLACE_ROTATION_ID,SITE_ID,TOOL_ID,REVIEWED,POLICY_STATUS,SEARCH_BASE,COLLECTIONS,
-  selectCollection,productSearchTerm,affiliateSearchUrl,collectionRetailerFor,ebayRetailerFor,promotionRows
+  CAMPAIGN_ID,MARKETPLACE,MARKETPLACE_ROTATION_ID,SITE_ID,TOOL_ID,REVIEWED,POLICY_STATUS,SEARCH_BASE,EXCEPTIONS,COLLECTIONS,
+  selectCollection,exceptionFor,productSearchTerm,affiliateSearchUrl,collectionRetailerFor,ebayRetailerFor,promotionRows
 };
