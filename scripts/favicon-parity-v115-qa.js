@@ -83,11 +83,22 @@ assert.deepEqual(pngDimensions('public/icon-512.png'),[512,512],'PWA icon must b
 const icoSizes=icoDimensions('public/favicon.ico');
 for(const expected of ['16x16','32x32','48x48']) assert(icoSizes.includes(expected),`ICO must contain ${expected}`);
 
+const fakeWholeSite={wrap(downstream){return {wholeSiteOuter:true,downstream}}};
+assert.equal(favicon.install(fakeWholeSite),fakeWholeSite,'install must augment the existing Whole-Site wrapper factory in place');
+const installed=fakeWholeSite.wrap('base-handler');
+assert.equal(installed.wholeSiteOuter,true,'Whole-Site must remain the outer handler returned by its wrapper factory');
+assert.equal(typeof installed.downstream,'function','favicon parity must be installed as an inner downstream wrapper');
+assert.equal(fakeWholeSite.FAVICON_PARITY_V115_INSTALLED,true,'favicon install marker must be retained');
+const wrapAfterFirstInstall=fakeWholeSite.wrap;
+favicon.install(fakeWholeSite);
+assert.equal(fakeWholeSite.wrap,wrapAfterFirstInstall,'favicon install must be idempotent');
+
 const apiIndex=fs.readFileSync('api/index.js','utf8');
 assert(apiIndex.includes("const faviconParity=require('../lib/favicon-parity-v115-runtime')"),'API entrypoint must load favicon parity');
-assert(apiIndex.includes('const wholeSiteHandler=wholeSiteExperience.wrap(premiumMobileHandler);'),'Whole-Site v109 must remain the semantic layer immediately inside favicon parity');
-assert(apiIndex.includes('const handler=faviconParity.wrap(wholeSiteHandler);'),'favicon parity must wrap the finished Whole-Site HTML');
-assert(apiIndex.indexOf('const handler=faviconParity.wrap(wholeSiteHandler);')<apiIndex.indexOf('module.exports=handler;'),'favicon parity wrapper must be installed before final export');
-assert.equal((apiIndex.match(/faviconParity\.wrap\(/g)||[]).length,1,'favicon parity must have one outer wrapper only');
+assert(apiIndex.includes('faviconParity.install(wholeSiteExperience);'),'favicon parity must install through the established Whole-Site wrapper factory');
+assert(apiIndex.includes('const handler=wholeSiteExperience.wrap(premiumMobileHandler);'),'Whole-Site v109 must remain the final outer HTML communication layer');
+assert(apiIndex.indexOf('faviconParity.install(wholeSiteExperience);')<apiIndex.indexOf('const handler=wholeSiteExperience.wrap(premiumMobileHandler);'),'favicon parity must be installed before Whole-Site builds the public handler');
+assert(!apiIndex.includes('const handler=faviconParity.wrap('),'favicon parity must not become an outer HTML wrapper');
+assert.equal((apiIndex.match(/faviconParity\.install\(wholeSiteExperience\);/g)||[]).length,1,'favicon parity must install exactly once');
 
 console.log('FAVICON_PARITY_V115=PASS');
