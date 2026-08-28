@@ -82,6 +82,7 @@ const premiumExperience=require('../lib/premium-experience-v107-runtime');
 const decisionJourneyContinuity=require('../lib/decision-journey-continuity-v108-runtime');
 const premiumClientStability=require('../lib/premium-client-stability-v1091-runtime');
 const premiumMobileDecisionCommerce=require('../lib/premium-mobile-decision-commerce-v112-runtime');
+const ebayEpnSurface=require('../lib/ebay-epn-surface-v1-runtime');
 const wholeSiteExperience=require('../lib/whole-site-experience-v109-runtime');
 const pagespeedAgenticCertification=require('../lib/pagespeed-agentic-certification-v113-runtime');
 const customerJourneyProgramme=require('../lib/customer-journey-programme-v1144-runtime');
@@ -89,6 +90,9 @@ const faviconParity=require('../lib/favicon-parity-v115-runtime');
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
 scoutResponseDepth.install();
+// v1 installs inside the existing v112 evidence/merchandising boundary. It only adapts
+// retailer presentation/disclosure for governed eBay collection pathways; v109 remains outermost.
+ebayEpnSurface.install(premiumMobileDecisionCommerce);
 // v114.4 preserves the v114.3 shopper-trust/category boundary and moves the inherited
 // v114 accessibility/search/continuity style block to a same-origin asset so APG can keep
 // style-src 'self' without Production browser CSP violations.
@@ -107,8 +111,8 @@ const journeyHandler=decisionJourneyContinuity.wrap(premiumHandler);
 // no route, state or scoring logic.
 const stableJourneyHandler=premiumClientStability.wrap(journeyHandler);
 // v112 remains the approved narrow evidence/merchandising layer inside Whole-Site v109.
-// Dated retailer evidence is reconciled earlier during canonical data composition so this
-// protected runtime topology does not need a second presentation wrapper.
+// Dated retailer evidence is reconciled earlier during canonical data composition; the eBay
+// presentation installer extends this same boundary without creating another decision engine.
 const premiumMobileHandler=premiumMobileDecisionCommerce.wrap(stableJourneyHandler);
 // Whole-Site v109 remains the final semantic HTML communication layer; its returned handler
 // includes the installed v114.4 CSP-safe journey controls, v113 transport certification and
@@ -122,6 +126,7 @@ handler.PREMIUM_EXPERIENCE_VERSION=premiumExperience.VERSION;
 handler.DECISION_JOURNEY_CONTINUITY_VERSION=decisionJourneyContinuity.VERSION;
 handler.PREMIUM_CLIENT_STABILITY_VERSION=premiumClientStability.VERSION;
 handler.PREMIUM_MOBILE_DECISION_COMMERCE_VERSION=premiumMobileDecisionCommerce.VERSION;
+handler.EBAY_EPN_SURFACE_VERSION=ebayEpnSurface.VERSION;
 handler.WHOLE_SITE_EXPERIENCE_VERSION=wholeSiteExperience.VERSION;
 handler.PAGESPEED_AGENTIC_CERTIFICATION_VERSION=pagespeedAgenticCertification.VERSION;
 handler.CUSTOMER_JOURNEY_PROGRAMME_VERSION=customerJourneyProgramme.VERSION;
