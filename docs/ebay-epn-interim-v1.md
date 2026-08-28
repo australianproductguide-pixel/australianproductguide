@@ -10,15 +10,15 @@ Provide useful eBay Australia retailer choice across the maintained catalogue wi
 APG maintains 482 products. The v1.1 eBay layer provides a governed model-specific eBay Australia search-result affiliate pathway for every product that is eligible for a purchase pathway. Commerce now shares one fail-closed catalogue gate across Amazon, eBay and other retailer programmes.
 
 Current target state:
-- 464 model-specific eBay Australia product-search pathways;
-- 17 explicit open identity/Australian-market exceptions inherited from Action 4 `ENTITY_UNVERIFIED_EXCLUDE` state;
+- 474 model-specific eBay Australia product-search pathways;
+- 7 identity/Australian-market commerce exclusions under the latest Action 4 v97-over-v96 entity state;
 - 1 explicit safety/no-safe-purchase-path exception for recalled `anker-power-bank-20000mah-22-5w`;
 - 6 separately governed refurbished collection/promotion discovery destinations;
 - 0 exact eBay listing claims;
 - 0 maintained eBay prices, stock claims, seller claims, condition-grade claims or warranty claims;
 - 0 recommendation points from retailer participation or affiliate commission.
 
-The 17 identity exceptions are deliberately not given Amazon, eBay or other retailer purchase/search pathways until exact/current Australian product identity is resolved. This prevents commercial coverage from outrunning APG's evidence state.
+The seven identity/Australian-market exclusions are not all the same kind of gap: five have been resolved as non-Australian/regional-mismatch entities that should not receive Australian purchase pathways, while two remain unresolved identity cases in the Action 4 closure state. The commerce gate overlays v97 onto the older v96 ledger so products whose Australian identity has been resolved are not unnecessarily suppressed, while non-AU and unresolved entities still fail closed.
 
 The model-search query for eligible products is generated from canonical APG brand + product name/model identity. Search-result linking was rechecked against eBay Partner Network guidance on 28 August 2026. Search-result pathways remain `exactModel=false` because APG has not verified an individual listing.
 
@@ -37,7 +37,7 @@ These six destinations are exposed as visible shopping-discovery cards on the AP
 - `Product search` and `Collection` are visibly distinct from `Exact product` and `Verified variant`.
 - eBay search-result and collection pathways never imply an exact listing, live price, stock, seller, condition grade or warranty.
 - Consumers are told to verify the exact model/variant, seller, condition, warranty, delivery, current price and availability at eBay before purchase.
-- Any `ENTITY_UNVERIFIED_EXCLUDE` or safety-suppressed product receives no retailer rows after all retailer enrichment passes.
+- Any current `ENTITY_UNVERIFIED_EXCLUDE`/non-AU identity exclusion or safety-suppressed product receives no retailer rows after all retailer enrichment passes.
 - eBay search or collection destinations must not be emitted as exact Product structured-data Offers.
 
 ## Renderer and disclosure
@@ -57,8 +57,8 @@ No eBay logo or retailer imagery is presented as an authorised Creative Gallery 
 ## QA contract
 Deployment QA must certify:
 - 482 maintained products counted from canonical source;
-- 464 model-specific eBay search pathways;
-- 17 identity exceptions plus one recall/no-safe-purchase-path safety exception;
+- 474 model-specific eBay search pathways;
+- 7 current identity/Australian-market exclusions plus one recall/no-safe-purchase-path safety exception;
 - all exceptions fail closed across all retailer programmes after every retailer-enrichment pass;
 - all required EPN tracking parameters;
 - zero exact-listing/price/stock/seller/condition/warranty inference;
@@ -75,7 +75,7 @@ Deployment QA must certify:
 ## Wider catalogue certification
 This eBay v1.1 release does **not** itself certify that every maintained APG product has completed external manufacturer-source research, lifecycle/Australian-market validation, exact Amazon investigation or other-Australian-retailer research. Those remain part of the broader catalogue-wide product-evidence and multi-retailer certification programme and must continue to be measured product-by-product with explicit exceptions.
 
-Current source QA still records material evidence debt outside the eBay release, including 17 Action 4 open identity exceptions and hundreds of Amazon exact-listing investigations still required. Those gaps must remain explicit rather than being hidden by generic retailer coverage.
+Current source QA still records material evidence debt outside the eBay release, including seven current identity/Australian-market commerce exclusions and hundreds of Amazon exact-listing investigations still required. Those gaps must remain explicit rather than being hidden by generic retailer coverage.
 
 ## API Phase 2 — PLANNED
 When approved eBay developer access is genuinely available, APG may progress from search/collection pathways to evidence-bound listing intelligence. Required fields include exact item/model identity, condition/refurbishment grade, seller/store, Australian delivery, current availability, price/currency, freshness timestamp and governed affiliate destination. Search and collection pathways remain honest fallbacks where exact listing evidence is unavailable.
