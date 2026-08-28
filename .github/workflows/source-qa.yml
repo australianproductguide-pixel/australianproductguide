@@ -28,6 +28,7 @@ jobs:
         run: |
           set -euo pipefail
           for f in api/*.js data/*.js lib/*.js scripts/*.js; do node --check "$f"; done
+          node scripts/favicon-parity-v115-qa.js
           npm run qa:full
           node scripts/pagespeed-agentic-certification-v113-qa.js
           node scripts/premium-mobile-decision-commerce-v112-qa.js
