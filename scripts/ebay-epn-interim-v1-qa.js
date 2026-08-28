@@ -7,9 +7,10 @@ const {products}=require('../data');
 
 assert.equal(ebay.CAMPAIGN_ID,'5339198634','Owner-supplied EPN campaign ID must remain intact');
 assert.equal(Object.keys(ebay.COLLECTIONS).length,6,'All six approved EPN collection/promotion destinations must remain governed');
-assert.equal(Object.keys(commerce.IDENTITY_EXCLUSIONS).length,7,'Latest Action 4 identity/Australian-market exclusions must fail closed across retailer programmes');
+assert.equal(commerce.eligibilitySummary().entityOpenCases,0,'Final Action 4 v98 must retain zero unresolved entity cases');
+assert.equal(Object.keys(commerce.ENTITY_EXCLUSIONS).length,7,'Seven resolved non-current/non-AU catalogue entities must remain excluded from current Australian commerce');
 assert.equal(Object.keys(commerce.SAFETY_EXCLUSIONS).length,1,'Known no-safe-purchase-path recall must remain explicitly suppressed');
-assert.equal(Object.keys(ebay.EXCEPTIONS).length,8,'eBay exceptions must share the catalogue-wide identity and safety gate');
+assert.equal(Object.keys(ebay.EXCEPTIONS).length,8,'eBay exceptions must share the catalogue-wide entity/market and safety gate');
 assert.equal(products.length,482,'eBay catalogue coverage QA must run against the complete maintained 482-product catalogue');
 
 function assertTracking(url,label){
@@ -51,13 +52,13 @@ for(const [product,key] of collectionCases){
   assert.ok(row.note.includes('has not verified an exact listing'));
 }
 
-let searchCount=0,identityExceptionCount=0,safetyExceptionCount=0;
+let searchCount=0,entityExceptionCount=0,safetyExceptionCount=0;
 const missing=[];
 for(const product of products){
   const exception=ebay.exceptionFor(product);
   const row=ebay.ebayRetailerFor(product);
   if(exception){
-    if(exception.type==='IDENTITY_UNVERIFIED')identityExceptionCount++;
+    if(exception.type==='ENTITY_MARKET_EXCLUDED')entityExceptionCount++;
     if(exception.type==='SAFETY_SUPPRESSED')safetyExceptionCount++;
     assert.equal(row,null,`${product.slug} commerce exception must suppress eBay retailer row`);
     assert.equal(ebay.affiliateSearchUrl(product),null,`${product.slug} commerce exception must suppress generated affiliate URL`);
@@ -95,10 +96,10 @@ for(const product of products){
   assert.ok(composed.every(r=>Number(r.recommendationWeight||0)===0),`${product.slug} retailer participation must add zero recommendation points`);
 }
 assert.deepEqual(missing,[],'Every commerce-eligible maintained product requires a governed eBay model-search pathway');
-assert.equal(identityExceptionCount,Object.keys(commerce.IDENTITY_EXCLUSIONS).length);
+assert.equal(entityExceptionCount,Object.keys(commerce.ENTITY_EXCLUSIONS).length);
 assert.equal(safetyExceptionCount,Object.keys(commerce.SAFETY_EXCLUSIONS).length);
-assert.equal(searchCount,products.length-identityExceptionCount-safetyExceptionCount,'Every eligible maintained product must receive a model-specific eBay Australia search pathway');
-assert.equal(searchCount,474,'Current catalogue should expose 474 governed eBay product-search pathways, seven identity/Australian-market exceptions and one safety exception');
+assert.equal(searchCount,products.length-entityExceptionCount-safetyExceptionCount,'Every eligible maintained product must receive a model-specific eBay Australia search pathway');
+assert.equal(searchCount,474,'Current catalogue should expose 474 governed eBay product-search pathways, seven entity/market/lifecycle exclusions and one safety exception');
 
 const exactAmazonProduct=products.find(product=>!ebay.exceptionFor(product)&&retailers.amazonRetailerFor(product)?.amazonMatchStatus==='EXACT_VERIFIED');
 if(exactAmazonProduct){
@@ -114,5 +115,6 @@ const syntheticSearch=ebay.ebayRetailerFor({brand:'Sony',name:'WH-1000XM6',slug:
 const ordered=retailers.orderRetailers([syntheticSearch,syntheticExact]);
 assert.equal(ordered[0].retailer,'Australian Retailer','Retailer-neutral ordering must allow a stronger non-Amazon exact pathway to outrank an affiliate search');
 
-console.log(`EBAY_EPN_CATALOGUE_V11_GREEN campaign=${ebay.CAMPAIGN_ID} products=${products.length} productSearch=${searchCount} identityExceptions=${identityExceptionCount} safetyExceptions=${safetyExceptionCount} governedPromotions=${Object.keys(ebay.COLLECTIONS).length} exactListingClaims=0 recommendationWeight=0 ordering=evidence-bound`);
+const summary=commerce.eligibilitySummary();
+console.log(`EBAY_EPN_CATALOGUE_V11_GREEN campaign=${ebay.CAMPAIGN_ID} products=${products.length} productSearch=${searchCount} entityExclusions=${entityExceptionCount} entityOpen=${summary.entityOpenCases} historicalExclusions=${summary.historicalExclusions} regionalExclusions=${summary.regionalOrCurrentMarketExclusions} safetyExceptions=${safetyExceptionCount} governedPromotions=${Object.keys(ebay.COLLECTIONS).length} exactListingClaims=0 recommendationWeight=0 ordering=evidence-bound`);
 require('./ebay-epn-render-v1-qa');
