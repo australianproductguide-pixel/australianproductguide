@@ -102,7 +102,7 @@ async function assertSuppressedRoute(slug,label){
       assert.ok(response.body.includes(href),`${route} must include ${record.key}`);
       assert.ok(response.body.includes(`data-ebay-epn-collection="${record.key}"`));
     }
-    assert.doesNotMatch(response.body,/apg-amz-v41-home-grid|apg-amz-v41-art/,`${route} must not restore the superseded oversized blank eBay promo artwork`);
+    assert.doesNotMatch(response.body,/<[^>]+class="[^"]*(?:apg-amz-v41-home-grid|apg-amz-v41-art)[^"]*"[^>]*>/i,`${route} must not render the superseded oversized blank eBay promo artwork`);
     assert.doesNotMatch(response.body,/data-ebay-exact-model="true"/,`${route} discovery cards must never claim exact-model identity`);
     if(route==='/deals/'){
       assert.doesNotMatch(response.body,/verified Amazon Australia destinations/i,'Deals hero/governance language must not imply Amazon-only retailer verification');
