@@ -78,6 +78,7 @@ const hardConstraintParity=require('../lib/hard-constraint-result-parity-v1');
 const decisionTransportParity=require('../lib/decision-transport-parity-v1-runtime');
 const scoutCustomerIntelligence=require('../lib/scout-customer-intelligence-v6');
 const scoutResponseDepth=require('../lib/scout-response-depth-v61');
+const scoutActiveContext=require('../lib/scout-active-context-v120');
 const premiumExperience=require('../lib/premium-experience-v107-runtime');
 const decisionJourneyContinuity=require('../lib/decision-journey-continuity-v108-runtime');
 const premiumClientStability=require('../lib/premium-client-stability-v1091-runtime');
@@ -93,6 +94,10 @@ const scoutNavigatorPresentation=require('../lib/scout-navigator-v7-global-runti
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
 scoutResponseDepth.install();
+// v120 is a validation-boundary correction after the established Scout response layers.
+// It makes current URL/page identity authoritative and prevents stale product context from
+// surviving into Search, Decision Lab, category or other incompatible pages.
+scoutActiveContext.install();
 // v1 installs inside the existing v112 evidence/merchandising boundary. It only adapts
 // retailer presentation/disclosure for governed eBay collection pathways; v109 remains outermost.
 ebayEpnSurface.install(premiumMobileDecisionCommerce);
@@ -133,6 +138,7 @@ handler.HARD_CONSTRAINT_RESULT_PARITY_VERSION=hardConstraintParity.VERSION;
 handler.DECISION_TRANSPORT_PARITY_VERSION=decisionTransportParity.VERSION;
 handler.SCOUT_CUSTOMER_INTELLIGENCE_VERSION=scoutCustomerIntelligence.VERSION;
 handler.SCOUT_RESPONSE_DEPTH_VERSION=scoutResponseDepth.VERSION;
+handler.SCOUT_ACTIVE_CONTEXT_VERSION=scoutActiveContext.VERSION;
 handler.PREMIUM_EXPERIENCE_VERSION=premiumExperience.VERSION;
 handler.DECISION_JOURNEY_CONTINUITY_VERSION=decisionJourneyContinuity.VERSION;
 handler.PREMIUM_CLIENT_STABILITY_VERSION=premiumClientStability.VERSION;
@@ -150,4 +156,5 @@ handler.APG_PLATFORM_FACTS=wholeSiteExperience.FACTS;
 // evidence, retailer weighting, routes or shopper state.
 const finalHandler=scoutNavigatorPresentation.wrap(handler);
 finalHandler.SCOUT_NAVIGATOR_PRESENTATION_VERSION=scoutNavigatorPresentation.VERSION;
+finalHandler.SCOUT_ACTIVE_CONTEXT_VERSION=scoutActiveContext.VERSION;
 module.exports=finalHandler;
