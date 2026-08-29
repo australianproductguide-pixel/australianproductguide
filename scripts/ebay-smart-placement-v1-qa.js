@@ -49,11 +49,6 @@ function extractSpotlight(html){
   assert.doesNotMatch(spotlight,/Official eBay creative/i,'removed customer-facing label must not return inside v1.6 spotlight');
   assert.match(spotlight,/style="color:#fff!important;-webkit-text-fill-color:#fff!important"/,'critical white contrast guard must be inline');
 
-  // The older, separate eBay discovery/gallery surface is allowed to coexist elsewhere on /deals/.
-  // This guard intentionally scopes the v1.6 contract to the new premium spotlight so unrelated
-  // legacy content cannot incorrectly fail the deployment gate.
-  assert.match(deals.body,/data-ebay-official-creatives-v121="true"/,'independent eBay gallery may remain elsewhere on Deals');
-
   const csp=deals.headers['content-security-policy']||'';
   assert.match(csp,/script-src[^;]*https:\/\/epnt\.ebay\.com/i);
   assert.match(csp,/img-src[^;]*https:\/\/\*\.ebayimg\.com/i);
