@@ -1,0 +1,47 @@
+'use strict';
+const VERSION='119.0',VERIFIED_AT='2026-08-29',REVIEW_DUE='2026-09-29';
+const TESTING='Desk-researched from product, manual and Australian retailer evidence; no hands-on testing claimed.';
+const rows={
+ 'breville-the-custom-loaf-bbm800':{
+  model:'BBM800',source:'https://www.breville.com/content/dam/breville/au/assets/miscellaneous/instruction-manual/ovens/BBM800-instruction-manual.pdf',
+  sourceType:'Exact model identity supported by Breville documentation and current Australian exact-model retailer evidence verified 29 Aug 2026.',
+  evidenceSources:[
+   {url:'https://www.breville.com/content/dam/breville/au/assets/miscellaneous/instruction-manual/ovens/BBM800-instruction-manual.pdf',sourceType:'manufacturer-manual',scope:'Exact BBM800 operating guidance and bread-maker workflow.'},
+   {url:'https://www.thegoodguys.com.au/breville-bread-maker-bbm800',sourceType:'retailer-au-exact-model',scope:'Current Australian exact-model identity, capacity, programs, dispenser, power and warranty.'}
+  ],
+  summary:'A large-capacity programmable bread maker for households wanting more control than a basic preset machine, with four loaf sizes, automatic fruit/nut dispensing and both automatic and user-customisable programs.',
+  highlights:['Four loaf sizes from 500 g to 1.25 kg','13 automatic settings plus 9 custom settings','Automatic fruit and nut dispenser','Collapsible kneading blade and 13-hour delay start'],
+  watch:'Its 1.25 kg maximum loaf and extensive programming make it flexible, but it is a comparatively feature-heavy choice. Buyers who only make standard loaves may not need the extra custom-program controls.',
+  specs:[['Exact model','BBM800'],['Loaf sizes','500 g, 750 g, 1 kg and 1.25 kg'],['Programs','13 automatic settings plus 9 custom settings'],['Ingredient dispensing','Automatic fruit and nut dispenser'],['Crust control','Three crust colour options'],['Timer','13-hour delay start'],['Kneading','Collapsible kneading blade'],['Display','Smart LCD'],['Power','830 W'],['Dimensions (W x D x H)','248 x 399 x 352 mm'],['Power interruption protection','Program can resume following a short power interruption under documented conditions'],['Australian retailer warranty listing','2 years']],
+  facts:{loafSize:'500 g to 1.25 kg across four selectable sizes',programs:'13 automatic plus 9 custom settings',ingredientDispensing:'Automatic fruit and nut dispenser',timer:'13-hour delay start',footprint:'248 x 399 x 352 mm',cleaning:'Non-stick bread-making components; follow manufacturer care instructions'},
+  verifiedRetailers:[{retailer:'The Good Guys',url:'https://www.thegoodguys.com.au/breville-bread-maker-bbm800',kind:'retailer-direct',note:'Exact BBM800 Australian retailer page checked 29 Aug 2026; stock and price are volatile and contribute zero recommendation points.'}]
+ },
+ 'sunbeam-bakehouse-bread-maker':{
+  model:'BM4500',source:'https://sunbeam-app-staging.s3.ap-southeast-2.amazonaws.com/BM4500_20EM1_%28ANZ%29_ba9fcb7d27.pdf',
+  sourceType:'Exact ANZ model manual plus current Australian exact-model retailer evidence verified 29 Aug 2026.',
+  evidenceSources:[
+   {url:'https://sunbeam-app-staging.s3.ap-southeast-2.amazonaws.com/BM4500_20EM1_%28ANZ%29_ba9fcb7d27.pdf',sourceType:'manufacturer-anz-manual',scope:'Exact BM4500 menu system, dispenser, delay, care and operating guidance.'},
+   {url:'https://www.target.com.au/p/sunbeam-bakehouse-reg-bread-maker-bm45/P65356739',sourceType:'retailer-au-exact-model',scope:'Current Australian exact BM4500 product identity, loaf sizes, programs, dimensions and warranty.'}
+  ],
+  summary:'A current Australian-retail bread maker with three horizontal loaf sizes, automatic fruit/nut dispensing and unusually broad dough and specialty-bread modes, including sourdough, rye and gluten-free workflows.',
+  highlights:['500 g, 750 g and 1 kg horizontal loaf sizes','Automatic fruit and nut dispenser','Dedicated French/sourdough, rye, gluten-free, dough and artisan-dough settings','Three crust settings plus turbo and bake-only workflows'],
+  watch:'The BM4500 is physically substantial at roughly 42.6 cm wide and 40.5 cm high. Its manual lineage is older than its current retail listing, so APG treats current retailer availability separately from the age of the underlying operating documentation.',
+  specs:[['Exact model','BM4500'],['Loaf sizes','500 g, 750 g and 1 kg'],['Bread/specialty modes','Basic, wheat/wholemeal/multigrain, French/sourdough, sweet, yeast-free/gluten-free mix, rye and gluten-free recipe among documented menus'],['Dough modes','Bread/pizza/pasta dough and artisan-style dough'],['Other modes','Jam/marmalade/chutney and bake only'],['Ingredient dispensing','Automatic fruit and nut dispenser'],['Crust settings','Three'],['Time delay','Supported; exact allowable delay varies by menu in the operating guide'],['Dimensions (W x D x H)','42.6 x 31.3 x 40.5 cm'],['Blade','Collapsible blade'],['Turbo','70-minute turbo setting referenced by current Australian retailer'],['Australian retailer warranty listing','12 months']],
+  facts:{loafSize:'500 g, 750 g and 1 kg',programs:'Bread, specialty, dough, artisan dough, preserve and bake-only menu system',ingredientDispensing:'Automatic fruit and nut dispenser',timer:'Time-delay function supported with menu-specific limits',footprint:'42.6 x 31.3 x 40.5 cm',cleaning:'Manufacturer ANZ guide contains dedicated care and cleaning instructions'},
+  verifiedRetailers:[{retailer:'Target Australia',url:'https://www.target.com.au/p/sunbeam-bakehouse-reg-bread-maker-bm45/P65356739',kind:'retailer-direct',note:'Exact BM4500 Australian retailer page checked 29 Aug 2026; availability and price remain volatile.'}]
+ },
+ 'russell-hobbs-classics-breadmaker':{
+  model:'27260-56',source:'https://cdn-img.russellhobbs.com/manager/russellhobbs_com/Catalogue/RH-Catalogue-Q223_old2.pdf',
+  sourceType:'Exact model specification evidence from Russell Hobbs catalogue material; current Australian retail availability not established as at 29 Aug 2026.',
+  evidenceSources:[{url:'https://cdn-img.russellhobbs.com/manager/russellhobbs_com/Catalogue/RH-Catalogue-Q223_old2.pdf',sourceType:'manufacturer-catalogue',scope:'Exact 27260-56 identity, loaf sizes, programs, crust control, timer, memory and cleanability.'}],
+  summary:'A straightforward 750 g/1 kg bread maker with 12 programs, three crust settings and a 13-hour delay timer. Its specification identity is strong, but APG has not established a current Australian exact-model retail destination.',
+  highlights:['Two loaf sizes: 750 g and 1 kg','12 programs including basic, wholewheat, French, cake and Fastbake','Three crust settings','13-hour delay timer and 10-minute power-loss memory'],
+  watch:'Current Australian retail availability is unverified. Treat this as a specification-backed comparison record rather than evidence that the model is presently a good Australian purchase pathway; do not restore a retailer CTA until an exact Australian destination is verified.',
+  specs:[['Exact model','27260-56'],['Loaf sizes','750 g and 1 kg'],['Programs','12'],['Documented program examples','Basic, wholewheat, French, cake and Fastbake'],['Crust settings','Light, medium and dark'],['Timer','13-hour delay timer'],['Power-loss memory','10 minutes'],['Pan and paddle','Non-stick coated; catalogue states dishwasher-safe parts'],['Viewing','Viewing window'],['Cord','1 m'],['EAN','5038061146189'],['Current Australian exact-model retailer','Not verified as at 29 Aug 2026']],
+  facts:{loafSize:'750 g and 1 kg',programs:'12 programs',ingredientDispensing:'No automatic ingredient dispenser established in the cited specification evidence',timer:'13-hour delay timer',footprint:'Current exact product dimensions not relied on for APG Australian decision evidence',cleaning:'Catalogue states dishwasher-safe non-stick baking pan and paddle'},
+  verifiedRetailers:[]
+ }
+};
+function merge(existing,additions,key){const out=[...(existing||[])],seen=new Set(out.map(key));for(const x of additions||[]){const k=key(x);if(!seen.has(k)){out.push(x);seen.add(k);}}return out;}
+function apply({categoryMaps=[]}={}){const products=[],seen=new Set();for(const map of categoryMaps)for(const c of Object.values(map||{}))for(const p of c&&c.products||[])if(p&&!seen.has(p)){seen.add(p);products.push(p);}const bySlug=new Map(products.map(p=>[p.slug,p])),applied=[],missing=[];for(const [slug,row] of Object.entries(rows)){const p=bySlug.get(slug);if(!p){missing.push(slug);continue;}Object.assign(p,{model:row.model,source:row.source,officialSource:row.source,manufacturerSource:row.source,sourceType:row.sourceType,summary:row.summary,highlights:[...row.highlights],watch:row.watch,specs:[...row.specs],testingStatus:TESTING,evidenceTier:'deep',lastSubstantiveReview:VERIFIED_AT,lastSourceVerification:VERIFIED_AT,nextReviewDue:REVIEW_DUE,catalogueEvidenceEnrichmentVersion:VERSION});p.evidenceSources=merge(p.evidenceSources,row.evidenceSources,x=>String(typeof x==='string'?x:x&&x.url||''));p.verifiedRetailers=merge(p.verifiedRetailers,row.verifiedRetailers,x=>`${x&&x.retailer||''}|${x&&x.url||''}`);p.factEvidence={...(p.factEvidence||{}),...Object.fromEntries(Object.entries(row.facts).map(([k,v])=>[k,{value:v,source:row.source,sourceType:row.sourceType}]))};applied.push(slug);}return{version:VERSION,verifiedAt:VERIFIED_AT,reviewDue:REVIEW_DUE,applied,missing};}
+module.exports={VERSION,VERIFIED_AT,REVIEW_DUE,rows,apply};
