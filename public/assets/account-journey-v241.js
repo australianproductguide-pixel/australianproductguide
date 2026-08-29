@@ -2,6 +2,18 @@
 'use strict';
 const q=(s,r=document)=>r.querySelector(s);
 
+function loadConsolidatedV124(){
+  if(location.pathname!=='/my-apg/'||document.querySelector('[data-apg-my-apg-v124-loader]'))return;
+  const marker=document.createElement('meta');marker.dataset.apgMyApgV124Loader='true';marker.content='124.0';document.head.appendChild(marker);
+  if(!document.querySelector('link[href^="/assets/my-apg-account-v124.css"]')){
+    const link=document.createElement('link');link.rel='stylesheet';link.href='/assets/my-apg-account-v124.css?v=124.0';document.head.appendChild(link);
+  }
+  if(!document.querySelector('script[src^="/assets/my-apg-account-v124.js"]')){
+    const script=document.createElement('script');script.src='/assets/my-apg-account-v124.js?v=124.0';script.async=false;document.head.appendChild(script);
+  }
+}
+loadConsolidatedV124();
+
 function setMessage(root,text){
   const el=q('[data-account-message]',root);if(!el)return;
   el.textContent=text||'';el.classList.toggle('is-error',!!text);
