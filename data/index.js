@@ -17,6 +17,7 @@ const v27RetailersPass6=require('./catalogue-v27-retailers-pass6');
 const retailerVerificationRefreshV109=require('./retailer-verification-refresh-v109');
 const commerceEligibilityV114=require('./commerce-eligibility-v114');
 const searchConsoleDepthV85=require('./search-console-depth-v85');
+const evidenceEnrichmentV118=require('./catalogue-evidence-enrichment-v118');
 const REVIEWED='2026-08-18';
 const DEEP_RESEARCHED='2026-08-15';
 const NEXT_REVIEW='2026-09-16';
@@ -63,6 +64,11 @@ retailerVerificationRefreshV109.apply({categoryMaps:retailerCategoryMaps});
 // Product identity and safety are upstream of all commerce. Apply this fail-closed gate after
 // every retailer-enrichment pass so no later Amazon, eBay or other-retailer row can bypass it.
 commerceEligibilityV114.applyCategoryMaps(retailerCategoryMaps);
+// v118 begins the maintained evidence-depth backlog after commerce eligibility has been fixed.
+// It enriches product evidence and verified first-party/model-family discovery only; it never
+// changes recommendation scores, restores suppressed commerce or treats retailer participation
+// as evidence of suitability.
+const evidenceEnrichmentV118Result=evidenceEnrichmentV118.apply({categoryMaps:retailerCategoryMaps});
 const categories={...deepCategories,...starterCategories,...expandedCategories,...searchCategories,...nationalCategories,...authorityCategories};
 const legacyPathways=[
 ['coffee-machines','Coffee machines'],['air-fryers','Air fryers'],['robot-vacuums','Robot vacuums'],['wireless-headphones','Wireless headphones'],
@@ -75,4 +81,4 @@ const authorityPathways=Object.values(authorityCategories).map(c=>[c.slug,c.labe
 const pathwayMap=new Map([...legacyPathways,...expandedPathways,...searchPathways,...nationalPathways,...authorityPathways].map(([slug,label])=>[slug,label]));
 const pathways=[...pathwayMap].map(([slug,label])=>({slug,label,maintained:!!categories[slug],evidenceTier:categories[slug]?.evidenceTier||'unverified'}));
 const products=Object.values(categories).flatMap(c=>c.products);
-module.exports={categories,pathways,products,REVIEWED,DEEP_RESEARCHED,NEXT_REVIEW};
+module.exports={categories,pathways,products,REVIEWED,DEEP_RESEARCHED,NEXT_REVIEW,evidenceEnrichmentV118Result};
