@@ -1,0 +1,106 @@
+/* APG My APG consolidated account presentation v124.0
+   Client-only, route-scoped presentation. No HTTP/server wrapper behaviour. */
+body[data-platform-page="/my-apg/"][data-apg-my-apg-consolidated="v124.0"]{background:#fff}
+body[data-platform-page="/my-apg/"][data-apg-my-apg-consolidated="v124.0"] main{background:#fff}
+body[data-platform-page="/my-apg/"][data-apg-my-apg-consolidated="v124.0"] main>.section:has(.v5-account-status),
+body[data-platform-page="/my-apg/"][data-apg-my-apg-consolidated="v124.0"] .decision-hero.workspace-hero,
+body[data-platform-page="/my-apg/"][data-apg-my-apg-consolidated="v124.0"] [data-account-panel]{display:none!important}
+
+.apg-my-apg-entry-v124{padding:22px 0 18px}
+.apg-my-apg-entry-inner-v124{max-width:1040px}
+.apg-my-apg-crumbs-v124{margin:0 0 18px;color:#64748b;font-size:.9rem}
+.apg-my-apg-crumbs-v124 a{color:#475569;text-decoration:none}.apg-my-apg-crumbs-v124 a:hover{text-decoration:underline}
+.apg-my-apg-crumbs-v124 span{margin:0 8px;color:#94a3b8}
+.apg-my-apg-intro-v124{max-width:790px;margin-bottom:20px}
+.apg-my-apg-intro-v124 .kicker{margin:0 0 7px;color:#2563eb;font-size:.78rem;font-weight:850;letter-spacing:.12em;text-transform:uppercase}
+.apg-my-apg-intro-v124 h1{margin:0 0 10px;color:#0f172a;font-size:clamp(2rem,4.2vw,3.2rem);line-height:1.02;letter-spacing:-.04em}
+.apg-my-apg-intro-v124>p:last-of-type{max-width:740px;margin:0;color:#5b6b7d;font-size:1.05rem;line-height:1.6}
+.apg-my-apg-trust-v124{display:flex;flex-wrap:wrap;gap:8px;margin-top:15px}
+.apg-my-apg-trust-v124 span{display:inline-flex;align-items:center;min-height:32px;padding:6px 10px;border:1px solid #d4e2f4;border-radius:999px;background:#fff;color:#31537e;font-size:.78rem;font-weight:750}
+.apg-my-apg-privacy-v124{max-width:820px;margin:11px 0 0;color:#64748b;font-size:.84rem;line-height:1.55}
+.apg-my-apg-privacy-v124 a{color:#1d4ed8;font-weight:700}
+
+body[data-apg-my-apg-consolidated="v124.0"] .apg-account-shell{max-width:820px!important;margin:0!important;border:1px solid #d8e3ef!important;border-radius:20px!important;background:#fff!important;box-shadow:0 18px 45px rgba(15,23,42,.08)!important;overflow:hidden}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-account-head{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:18px!important;align-items:start!important;padding:22px 24px!important;background:linear-gradient(135deg,#0b1730 0%,#172b5b 62%,#1f3d78 100%)!important;color:#fff!important}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-account-head .kicker{margin:0 0 6px!important;color:#89b7ff!important;font-size:.72rem!important;letter-spacing:.1em!important;text-transform:uppercase!important}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-account-head h2{margin:0 0 7px!important;color:#fff!important;font-size:clamp(1.55rem,3vw,2rem)!important;line-height:1.08!important;letter-spacing:-.025em!important}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-account-head p{max-width:630px!important;margin:0!important;color:#cfdaec!important;font-size:.95rem!important;line-height:1.5!important}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-account-status-badge{align-self:start!important;margin:1px 0 0!important;padding:7px 10px!important;border:1px solid rgba(255,255,255,.18)!important;border-radius:999px!important;background:rgba(255,255,255,.1)!important;color:#fff!important;font-size:.72rem!important;font-weight:800!important}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-account-body{padding:22px 24px 24px!important}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-account-tabs{display:grid!important;grid-template-columns:1fr 1fr!important;gap:4px!important;max-width:390px!important;margin:0 0 18px!important;padding:4px!important;border:1px solid #d8e2ec!important;border-radius:13px!important;background:#f3f6fa!important}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-account-tabs button{min-height:43px!important;border:0!important;border-radius:9px!important;background:transparent!important;color:#64748b!important;font-size:.95rem!important;font-weight:800!important;box-shadow:none!important}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-account-tabs button[aria-selected="true"]{background:#fff!important;color:#0f172a!important;box-shadow:0 2px 8px rgba(15,23,42,.09)!important}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-account-form{display:grid!important;grid-template-columns:1fr 1fr!important;gap:15px 16px!important;max-width:700px!important}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-account-form>label{display:grid!important;gap:7px!important;margin:0!important;color:#244255!important;font-size:.88rem!important;font-weight:780!important}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-account-form input[type="email"],
+body[data-apg-my-apg-consolidated="v124.0"] .apg-account-form input[type="password"]{width:100%!important;min-height:50px!important;padding:10px 12px!important;border:1px solid #cbd8e5!important;border-radius:11px!important;background:#fff!important;color:#0f172a!important;font-size:1rem!important}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-account-form input:focus{border-color:#5b8def!important;box-shadow:0 0 0 3px rgba(37,99,235,.12)!important;outline:none!important}
+body[data-apg-my-apg-consolidated="v124.0"] [data-v241-confirm],
+body[data-apg-my-apg-consolidated="v124.0"] [data-v242-confirm],
+body[data-apg-my-apg-consolidated="v124.0"] [data-signup-consent],
+body[data-apg-my-apg-consolidated="v124.0"] [data-v241-account-terms],
+body[data-apg-my-apg-consolidated="v124.0"] [data-v242-account-terms],
+body[data-apg-my-apg-consolidated="v124.0"] .apg-account-form-actions.full{grid-column:1/-1}
+body[data-apg-my-apg-consolidated="v124.0"] [data-v241-confirm][hidden],
+body[data-apg-my-apg-consolidated="v124.0"] [data-v242-confirm][hidden],
+body[data-apg-my-apg-consolidated="v124.0"] [data-signup-consent][hidden],
+body[data-apg-my-apg-consolidated="v124.0"] [data-v241-account-terms][hidden],
+body[data-apg-my-apg-consolidated="v124.0"] [data-v242-account-terms][hidden]{display:none!important}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-account-consent{display:flex!important;align-items:flex-start!important;gap:10px!important;padding:13px 14px!important;border:1px solid #dce5ed!important;border-radius:12px!important;background:#f8fafc!important}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-account-consent input{flex:0 0 auto!important;width:20px!important;height:20px!important;min-height:0!important;margin-top:1px!important}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-account-consent strong{display:block!important;color:#244255!important;font-size:.86rem!important}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-account-consent small{display:block!important;margin-top:3px!important;color:#66788a!important;font-size:.78rem!important;line-height:1.45!important}
+body[data-apg-my-apg-consolidated="v124.0"] [data-v241-account-terms],
+body[data-apg-my-apg-consolidated="v124.0"] [data-v242-account-terms]{max-width:680px!important;margin:0!important;color:#66788a!important;font-size:.78rem!important;line-height:1.5!important}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-account-form-actions.full{display:flex!important;align-items:center!important;gap:12px!important;margin-top:1px!important}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-account-form-actions.full .button{min-width:145px!important;min-height:46px!important;border-radius:11px!important;background:#2563eb!important;color:#fff!important;font-weight:850!important}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-account-link{color:#1d4ed8!important;font-weight:750!important;text-underline-offset:3px!important}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-account-note{max-width:680px!important;margin:12px 0 0!important;color:#6b7b8c!important;font-size:.78rem!important;line-height:1.5!important}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-account-message{margin-top:12px!important}
+
+body[data-apg-my-apg-consolidated="v124.0"] .apg-system-rail{margin:12px 0 0!important;border:1px solid #e3ebf4!important;border-radius:16px!important;background:#f8fbff!important}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-system-rail-inner{max-width:none!important;padding:12px 14px!important}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-system-rail-copy>span:last-child{display:none!important}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-system-rail-copy strong{font-size:.94rem!important}
+body[data-apg-my-apg-consolidated="v124.0"] .apg-system-action{min-height:40px!important;padding:8px 13px!important}
+
+.apg-my-apg-workspace-head-v124{margin:24px 0 20px;padding-top:2px}
+.apg-my-apg-workspace-head-v124 .kicker{margin:0 0 6px;color:#2563eb;font-size:.75rem;font-weight:850;letter-spacing:.1em;text-transform:uppercase}
+.apg-my-apg-workspace-head-v124 h2{margin:0 0 6px;color:#0f172a;font-size:clamp(1.7rem,3vw,2.25rem);letter-spacing:-.03em}
+.apg-my-apg-workspace-head-v124 p{max-width:720px;margin:0;color:#66788a;line-height:1.55}
+body[data-apg-my-apg-consolidated="v124.0"] main>.section:has([data-apg-workspace]){padding-top:0!important}
+
+@media(max-width:760px){
+  .apg-my-apg-entry-v124{padding:16px 0 14px}
+  .apg-my-apg-crumbs-v124{margin-bottom:13px;font-size:.82rem}
+  .apg-my-apg-intro-v124{margin-bottom:15px}
+  .apg-my-apg-intro-v124 h1{font-size:2.08rem;line-height:1.03}
+  .apg-my-apg-intro-v124>p:last-of-type{font-size:.95rem;line-height:1.52}
+  .apg-my-apg-trust-v124{gap:6px;margin-top:12px}
+  .apg-my-apg-trust-v124 span{min-height:29px;padding:5px 8px;font-size:.71rem}
+  body[data-apg-my-apg-consolidated="v124.0"] .apg-account-shell{max-width:none!important}
+  body[data-apg-my-apg-consolidated="v124.0"] .apg-account-head{grid-template-columns:1fr!important;padding:18px!important;gap:10px!important}
+  body[data-apg-my-apg-consolidated="v124.0"] .apg-account-status-badge{justify-self:start!important;margin:0!important}
+  body[data-apg-my-apg-consolidated="v124.0"] .apg-account-body{padding:18px!important}
+  body[data-apg-my-apg-consolidated="v124.0"] .apg-account-tabs{max-width:none!important;width:100%!important}
+  body[data-apg-my-apg-consolidated="v124.0"] .apg-account-form{grid-template-columns:1fr!important;gap:13px!important;max-width:none!important}
+  body[data-apg-my-apg-consolidated="v124.0"] [data-v241-confirm],
+  body[data-apg-my-apg-consolidated="v124.0"] [data-v242-confirm],
+  body[data-apg-my-apg-consolidated="v124.0"] [data-signup-consent],
+  body[data-apg-my-apg-consolidated="v124.0"] [data-v241-account-terms],
+  body[data-apg-my-apg-consolidated="v124.0"] [data-v242-account-terms],
+  body[data-apg-my-apg-consolidated="v124.0"] .apg-account-form-actions.full{grid-column:1!important}
+  body[data-apg-my-apg-consolidated="v124.0"] .apg-account-form-actions.full{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:10px!important}
+  body[data-apg-my-apg-consolidated="v124.0"] .apg-account-form-actions.full .button{min-width:0!important;width:100%!important}
+  body[data-apg-my-apg-consolidated="v124.0"] .apg-system-rail-inner{display:block!important;padding:10px!important}
+  body[data-apg-my-apg-consolidated="v124.0"] .apg-system-rail-copy{display:none!important}
+  body[data-apg-my-apg-consolidated="v124.0"] .apg-system-actions{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important;width:100%!important}
+  body[data-apg-my-apg-consolidated="v124.0"] .apg-system-action{min-width:0!important;padding:8px 6px!important;font-size:.76rem!important;text-align:center!important}
+  .apg-my-apg-workspace-head-v124{margin-top:20px}
+}
+@media(max-width:430px){
+  .apg-my-apg-intro-v124 h1{font-size:1.92rem}
+  body[data-apg-my-apg-consolidated="v124.0"] .apg-account-form-actions.full{grid-template-columns:1fr!important}
+  body[data-apg-my-apg-consolidated="v124.0"] .apg-account-link{text-align:center!important;min-height:38px!important;display:grid!important;place-items:center!important}
+}
+@media(prefers-reduced-motion:reduce){body[data-apg-my-apg-consolidated="v124.0"] *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
