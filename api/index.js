@@ -90,6 +90,7 @@ const faviconParity=require('../lib/favicon-parity-v115-runtime');
 const aboutTrustNavigation=require('../lib/about-trust-navigation-v116-runtime');
 const trustpilotFooter=require('../lib/trustpilot-footer-v117-runtime');
 const scoutNavigatorPresentation=require('../lib/scout-navigator-v7-global-runtime');
+const auditSearchMobile=require('../lib/audit-search-mobile-v119-runtime');
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
 scoutResponseDepth.install();
@@ -148,6 +149,10 @@ handler.APG_PLATFORM_FACTS=wholeSiteExperience.FACTS;
 // v7.1 is deliberately outside the semantic wrapper only to make the approved Navigator skin
 // the final CSS cascade on every route. It is presentation-only and must not alter decisions,
 // evidence, retailer weighting, routes or shopper state.
-const finalHandler=scoutNavigatorPresentation.wrap(handler);
-finalHandler.SCOUT_NAVIGATOR_PRESENTATION_VERSION=scoutNavigatorPresentation.VERSION;
+const navigatorHandler=scoutNavigatorPresentation.wrap(handler);
+navigatorHandler.SCOUT_NAVIGATOR_PRESENTATION_VERSION=scoutNavigatorPresentation.VERSION;
+// v119 is a narrow audit-remediation shell: it protects native canonical product anchors
+// in autocomplete and restores an SSR mobile search form. It does not rank or store decisions.
+const finalHandler=auditSearchMobile.wrap(navigatorHandler);
+finalHandler.AUDIT_SEARCH_MOBILE_VERSION=auditSearchMobile.VERSION;
 module.exports=finalHandler;
