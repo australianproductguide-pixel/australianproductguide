@@ -3,10 +3,10 @@ const VERSION='119.0',VERIFIED_AT='2026-08-29',REVIEW_DUE='2026-09-29';
 const TESTING='Desk-researched from product, manual and Australian retailer evidence; no hands-on testing claimed.';
 const rows={
  'breville-the-custom-loaf-bbm800':{
-  model:'BBM800',source:'https://www.breville.com/content/dam/breville/au/assets/miscellaneous/instruction-manual/ovens/BBM800-instruction-manual.pdf',
+  model:'BBM800',source:'https://www.breville.com/content/dam/breville/au/en/assets/miscellaneous/instruction-manual/bread-makers/BBM800-instruction-manual.pdf',
   sourceType:'Exact model identity supported by Breville documentation and current Australian exact-model retailer evidence verified 29 Aug 2026.',
   evidenceSources:[
-   {url:'https://www.breville.com/content/dam/breville/au/assets/miscellaneous/instruction-manual/ovens/BBM800-instruction-manual.pdf',sourceType:'manufacturer-manual',scope:'Exact BBM800 operating guidance and bread-maker workflow.'},
+   {url:'https://www.breville.com/content/dam/breville/au/en/assets/miscellaneous/instruction-manual/bread-makers/BBM800-instruction-manual.pdf',sourceType:'manufacturer-manual',scope:'Exact BBM800 operating guidance and bread-maker workflow.'},
    {url:'https://www.thegoodguys.com.au/breville-bread-maker-bbm800',sourceType:'retailer-au-exact-model',scope:'Current Australian exact-model identity, capacity, programs, dispenser, power and warranty.'}
   ],
   summary:'A large-capacity programmable bread maker for households wanting more control than a basic preset machine, with four loaf sizes, automatic fruit/nut dispensing and both automatic and user-customisable programs.',
