@@ -5,14 +5,33 @@ const app=require('../api/index');
 const core=require('../lib/scout-concierge-v5-core');
 const patch=require('../lib/scout-customer-intelligence-v6');
 const responseDepth=require('../lib/scout-response-depth-v61');
+const activeContext=require('../lib/scout-active-context-v120');
 const decisionState=require('../lib/decision-state-v2');
 
 assert.equal(app.SCOUT_CUSTOMER_INTELLIGENCE_VERSION,patch.VERSION,'outer runtime must expose Scout customer intelligence version');
 assert.equal(app.SCOUT_RESPONSE_DEPTH_VERSION,responseDepth.VERSION,'outer runtime must expose Scout response-depth version');
+assert.equal(app.SCOUT_ACTIVE_CONTEXT_VERSION,activeContext.VERSION,'outer runtime must expose Scout active-context version');
 assert.equal(core.SCOUT_CUSTOMER_INTELLIGENCE_VERSION,patch.VERSION,'Scout core must be patched after the current runtime lineage');
 assert.equal(core.SCOUT_RESPONSE_DEPTH_VERSION,responseDepth.VERSION,'Scout core must expose the post-v6 customer-response layer');
+assert.equal(core.SCOUT_ACTIVE_CONTEXT_VERSION,activeContext.VERSION,'Scout core must expose the authoritative current-page context layer');
 assert.equal(patch.installed,true,'Scout v6 patch must be installed');
 assert.equal(responseDepth.installed,true,'Scout response depth must be installed after Scout v6');
+assert.equal(activeContext.installed,true,'Scout active-context guard must be installed after Scout response layers');
+
+// Live-audit regression: a product slug captured on an earlier page must not survive into
+// Decision Lab/Search/category context and hijack pronouns such as "this".
+const stale='sony-wh-1000xm6';
+const staleDecision=core.validatePageContext({path:'/decision-lab/',productSlug:stale,categorySlug:'wireless-headphones'});
+assert.equal(staleDecision.pageType,'decision-lab');
+assert.equal(staleDecision.productSlug,null,'Decision Lab must discard stale product page context');
+assert.deepEqual(staleDecision.comparisonProductSlugs,[],'Decision Lab must discard stale comparison context');
+const staleSearch=core.validatePageContext({path:'/search/?q=robot+vacuum',productSlug:stale,categorySlug:'wireless-headphones',currentSearchQuery:'robot vacuum'});
+assert.equal(staleSearch.pageType,'search');
+assert.equal(staleSearch.productSlug,null,'Search must discard stale product page context');
+assert.equal(staleSearch.categorySlug,null,'Search must not inherit stale product category');
+assert.equal(staleSearch.currentSearchQuery,'robot vacuum');
+const currentProduct=core.validatePageContext({path:'/products/bose-quietcomfort-ultra-headphones/',productSlug:stale});
+assert.equal(currentProduct.productSlug,'bose-quietcomfort-ultra-headphones','current product URL must override stale supplied product');
 
 const connected=core.buildResponse({text:'How do Search, Scout, Decision Lab and Compare work together?',pageContext:{path:'/'}});
 assert.equal(connected.intent,'apg_information');
@@ -132,4 +151,4 @@ const uncertainty=core.buildResponse({text:'What is uncertain or unverified?',pa
 assert.match(uncertainty.message,/same APG evidence|maintained APG evidence/i);
 assert((uncertainty.bullets||[]).some(item=>/evidence boundary/i.test(item)),'uncertainty answer must make the evidence boundary visible');
 
-console.log(JSON.stringify({version:patch.VERSION,responseDepthVersion:responseDepth.VERSION,status:'PASS',checks:{connectedJourneys:true,pageAwareHelp:true,categoryFactors:true,structuredDecisionState:true,hardConstraintFailClosed:true,contextPreservingDecisionLabHandoff:true,requiredBrandHandoff:true,searchIntentHandoff:true,evidenceConfidence:true,expandedCustomerResponses:true,purchaseReadiness:true,freshnessAwareness:true,badFitReasoning:true,buyWaitBoundary:true,valueReasoning:true,pageSummaries:true,institutionalRouteKnowledge:true,siteTrustKnowledge:true,commercialWeightZero:true}},null,2));
+console.log(JSON.stringify({version:patch.VERSION,responseDepthVersion:responseDepth.VERSION,activeContextVersion:activeContext.VERSION,status:'PASS',checks:{connectedJourneys:true,pageAwareHelp:true,authoritativeActiveContext:true,staleProductCleared:true,categoryFactors:true,structuredDecisionState:true,hardConstraintFailClosed:true,contextPreservingDecisionLabHandoff:true,requiredBrandHandoff:true,searchIntentHandoff:true,evidenceConfidence:true,expandedCustomerResponses:true,purchaseReadiness:true,freshnessAwareness:true,badFitReasoning:true,buyWaitBoundary:true,valueReasoning:true,pageSummaries:true,institutionalRouteKnowledge:true,siteTrustKnowledge:true,commercialWeightZero:true}},null,2));
