@@ -62,8 +62,12 @@ handler.ABOUT_TRUST_NAVIGATION_VERSION=aboutTrustNavigation.VERSION;
 handler.TRUSTPILOT_FOOTER_VERSION=trustpilotFooter.VERSION;
 handler.APG_PLATFORM_FACTS=wholeSiteExperience.FACTS;
 
-const navigatorHandler=scoutNavigatorPresentation.wrap(handler);
-navigatorHandler.SCOUT_NAVIGATOR_PRESENTATION_VERSION=scoutNavigatorPresentation.VERSION;
-const finalHandler=auditIntegration.wrap(navigatorHandler);
+// Apply the audit transport/presentation guards first, then keep Scout Navigator v7.1
+// as the final visual cascade owner. This preserves every audit fix while respecting
+// the established global Scout presentation contract.
+const auditedHandler=auditIntegration.wrap(handler);
+auditedHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
+const finalHandler=scoutNavigatorPresentation.wrap(auditedHandler);
+finalHandler.SCOUT_NAVIGATOR_PRESENTATION_VERSION=scoutNavigatorPresentation.VERSION;
 finalHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
 module.exports=finalHandler;
