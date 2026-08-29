@@ -45,6 +45,13 @@ function consolidate(){
   const main=q('main#main')||q('main');
   const root=q('[data-apg-workspace]');
   if(!main||!root)return false;
+
+  // Fail safe: do not alter the current working page until the existing server-mediated
+  // account shell has initialised. If account-platform never loads, v124 leaves today's
+  // My APG presentation untouched rather than creating a partial account experience.
+  const shell=q('[data-account-shell]',root);
+  if(!shell)return false;
+
   document.body.dataset.apgMyApgConsolidated=VERSION;
   removeOldIntro(main);
   removeLegacy(root);
@@ -52,32 +59,31 @@ function consolidate(){
   const section=root.closest('section.section')||root.parentElement;
   if(section&&section.parentElement===main&&main.firstElementChild!==section)main.insertBefore(section,main.firstElementChild);
 
-  let shell=q('[data-account-shell]',root);
   let introNode=q('[data-apg-my-apg-intro]',root);
   if(!introNode){introNode=intro();root.insertBefore(introNode,root.firstChild)}
-  if(shell&&introNode.nextElementSibling!==shell)root.insertBefore(shell,introNode.nextElementSibling);
+  if(introNode.nextElementSibling!==shell)root.insertBefore(shell,introNode.nextElementSibling);
 
   const rail=q('.apg-system-rail');
-  if(shell&&rail&&rail.parentElement!==root)root.insertBefore(rail,shell.nextElementSibling);
+  if(rail&&rail.parentElement!==root)root.insertBefore(rail,shell.nextElementSibling);
 
   let privacyNode=q('[data-apg-my-apg-privacy]',root);
-  if(shell&&!privacyNode){privacyNode=privacy();root.insertBefore(privacyNode,shell.nextElementSibling)}
-  if(shell&&privacyNode&&privacyNode.previousElementSibling!==shell)root.insertBefore(privacyNode,shell.nextElementSibling);
-  if(rail&&privacyNode&&rail.previousElementSibling!==privacyNode)root.insertBefore(rail,privacyNode.nextElementSibling);
+  if(!privacyNode){privacyNode=privacy();root.insertBefore(privacyNode,shell.nextElementSibling)}
+  if(privacyNode.previousElementSibling!==shell)root.insertBefore(privacyNode,shell.nextElementSibling);
+  if(rail&&rail.previousElementSibling!==privacyNode)root.insertBefore(rail,privacyNode.nextElementSibling);
 
   let heading=q('[data-apg-my-apg-workspace-head]',root);
   if(!heading){heading=workspaceHeading();const grid=q('.workspace-grid',root);if(grid)root.insertBefore(heading,grid);else root.appendChild(heading)}
 
   root.dataset.apgAccountSurface='single';
-  return !!shell;
+  return true;
 }
 function start(){
-  consolidate();
+  if(consolidate())return;
   const root=q('[data-apg-workspace]')||document.documentElement;
   let scheduled=false;
   const observer=new MutationObserver(()=>{
     if(scheduled)return;scheduled=true;
-    queueMicrotask(()=>{scheduled=false;consolidate()});
+    queueMicrotask(()=>{scheduled=false;if(consolidate())observer.disconnect()});
   });
   observer.observe(root,{childList:true,subtree:true});
   setTimeout(()=>{consolidate();observer.disconnect()},8000);
