@@ -49,8 +49,10 @@ function directStylesheetHrefs(html){
     const response=await render(route);
     assert.equal(response.status,200,`${route} must render successfully`);
     assert.equal(response.headers['x-apg-scout-navigator-presentation'],'v7.1',`${route} must expose Scout Navigator parity header`);
+    assert.equal(response.headers['x-apg-header-marketplace-mobile-left-lockup'],'v122.6',`${route} must expose final v122.6 mobile lock-up geometry`);
     assert.equal(count(response.body,'name="apg-scout-navigator-presentation"'),1,`${route} must contain exactly one Navigator parity marker`);
     assert.equal(count(response.body,'/assets/scout-navigator-v7-global.css?v=7.1'),1,`${route} must contain exactly one final Navigator stylesheet`);
+    assert.equal(count(response.body,'/assets/header-marketplace-v1226.css?v=122.6'),1,`${route} must contain exactly one v122.6 left-lockup stylesheet`);
     assert(response.body.includes('data-apg-scout-navigator="v7.1"'),`${route} must expose the Navigator body contract`);
     assert.equal(count(response.body,'id="apgAssistantLauncher"'),1,`${route} must retain exactly one Scout launcher`);
     assert.equal(count(response.body,'id="apgAssistantPanel"'),1,`${route} must retain exactly one Scout panel`);
@@ -60,7 +62,7 @@ function directStylesheetHrefs(html){
     assert(hrefs.length>0,`${route} must expose direct stylesheets`);
     assert.equal(hrefs[hrefs.length-1],'/assets/scout-navigator-v7-global.css?v=7.1',`${route} must make Navigator v7.1 the final direct stylesheet in the CSS cascade`);
     const finalPos=response.body.lastIndexOf('/assets/scout-navigator-v7-global.css?v=7.1');
-    for(const older of ['/assets/scout-concierge-v5.css','/assets/scout-global-surface-v111.css','/assets/premium-mobile-decision-commerce-v112.css','/assets/about-trust-navigation-v116.css','/assets/whole-site-experience-v109.css','/assets/pagespeed-home-v113.css','/assets/header-marketplace-v1222.css','/assets/header-marketplace-v1223.css','/assets/header-marketplace-v1224.css','/assets/header-marketplace-v1225.css']){
+    for(const older of ['/assets/scout-concierge-v5.css','/assets/scout-global-surface-v111.css','/assets/premium-mobile-decision-commerce-v112.css','/assets/about-trust-navigation-v116.css','/assets/whole-site-experience-v109.css','/assets/pagespeed-home-v113.css','/assets/header-marketplace-v1222.css','/assets/header-marketplace-v1223.css','/assets/header-marketplace-v1224.css','/assets/header-marketplace-v1225.css','/assets/header-marketplace-v1226.css']){
       const olderPos=response.body.lastIndexOf(older);
       if(olderPos>=0)assert(finalPos>olderPos,`${route} must load Navigator parity after ${older}`);
     }
@@ -86,5 +88,6 @@ function directStylesheetHrefs(html){
   require('./header-marketplace-v1223-qa');
   require('./header-marketplace-v1224-qa');
   require('./header-marketplace-v1225-qa');
+  require('./header-marketplace-v1226-qa');
   require('./ebay-smart-placement-v1-qa');
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
