@@ -73,9 +73,7 @@ const rows={
       footprint:{value:'252 x 408 x 362 mm; lid-open height approximately 553.9 mm',source:'https://www.panasonic.com/au/consumer/household/kitchen-appliances/bread-makers/sd-r2530kst.html',sourceType:'manufacturer-au'},
       cleaning:{value:'Non-stick coated aluminium inner pan; manufacturer operating guidance includes cleaning and maintenance',source:'https://www.panasonic.com/au/consumer/household/kitchen-appliances/bread-makers/sd-r2530kst.html',sourceType:'manufacturer-au'}
     },
-    verifiedRetailers:[
-      {retailer:'Panasonic Australia',url:'https://store.apac.panasonic.com/au/sd-r2530wst.html',kind:'brand-direct',note:'Official Australian same-model-family white SD-R2530WST store destination checked 29 Aug 2026. APG must not represent it as the black KST colour variant; use only as model-family discovery unless exact colour is selected.'}
-    ]
+    verifiedRetailers:[]
   }
 };
 
