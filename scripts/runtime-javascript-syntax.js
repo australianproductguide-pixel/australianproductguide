@@ -45,8 +45,8 @@ function assertMyApgV124Contract(){
 async function assertMyApgV124ServerSmoke(port){
   // P0 regression: the rolled-back v123 account release destabilised the homepage.
   // Repeatedly exercise the outer server runtime plus the account and adjacent routes
-  // before a deployment can pass qa:deploy. This is intentionally independent of the
-  // browser-only v124 presentation so an account UI change cannot hide a server failure.
+  // before a deployment can pass qa:deploy. Public/ static assets are syntax/read from
+  // disk above because Vercel, not the APG Node handler, serves that asset class.
   const homeRepeats=8;
   const checks=[];
   for(let i=0;i<homeRepeats;i++)checks.push({path:'/',label:`home-${i+1}`});
@@ -55,12 +55,7 @@ async function assertMyApgV124ServerSmoke(port){
     {path:'/my-apg/?account=login',label:'my-apg-login'},
     {path:'/my-apg/?account=signup',label:'my-apg-signup'},
     {path:'/decision-lab/',label:'decision-lab'},
-    {path:'/deals/',label:'deals'},
-    // The local APG smoke server resolves static assets by pathname only. Versioned
-    // query strings are separately preserved and asserted in the loader contract above.
-    {path:'/assets/account-journey-v241.js',label:'account-journey-v241'},
-    {path:'/assets/my-apg-account-v124.js',label:'my-apg-v124-js'},
-    {path:'/assets/my-apg-account-v124.css',label:'my-apg-v124-css'}
+    {path:'/deals/',label:'deals'}
   );
   for(const check of checks){
     const response=await fetch(`http://127.0.0.1:${port}${check.path}`,{redirect:'follow'});
@@ -68,7 +63,7 @@ async function assertMyApgV124ServerSmoke(port){
     const body=await response.text();
     if(!body)throw new Error(`MY_APG_V124_SERVER_SMOKE=FAIL ${check.label} empty-body`);
   }
-  console.log(`MY_APG_V124_SERVER_SMOKE=PASS homeRepeats=${homeRepeats} keyRoutes=5 assets=3 serverWrapper=none`);
+  console.log(`MY_APG_V124_SERVER_SMOKE=PASS homeRepeats=${homeRepeats} keyRoutes=5 staticAssets=file-verified serverWrapper=none`);
 }
 
 const server=http.createServer((req,res)=>app(req,res));
