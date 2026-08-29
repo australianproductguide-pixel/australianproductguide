@@ -94,7 +94,10 @@ async function assertSuppressedRoute(slug,label){
     assert.match(response.body,/eBay Australia shopping discovery/i);
     assert.match(response.body,/Refurbished options and current eBay promotions/i);
     assert.match(response.body,/Paid retailer links\.<\/strong> APG may earn a commission from qualifying purchases\./);
-    const cards=response.body.match(/data-affiliate-retailer="eBay Australia"/g)||[];
+    // Count only the six legacy governed collection/promotion cards. Official Creative Gallery
+    // category-discovery cards are a distinct v121 surface and deliberately share the retailer
+    // identity/disclosure contract without becoming collection records.
+    const cards=response.body.match(/data-ebay-epn-collection="[^"]+"/g)||[];
     assert.equal(cards.length,6,`${route} must render all six governed eBay promotion/collection cards`);
     for(const record of ebay.promotionRows()){
       const href=htmlHref(record.url);
@@ -120,8 +123,8 @@ async function assertSuppressedRoute(slug,label){
   const v112=fs.readFileSync(path.join(__dirname,'..','lib','premium-mobile-decision-commerce-v112-runtime.js'),'utf8');
   assert.match(v112,/apg112-retailer-row/,'Established v112 responsive retailer-row presentation must remain present');
   const source=fs.readFileSync(path.join(__dirname,'..','lib','ebay-epn-surface-v1-runtime.js'),'utf8');
-  assert.match(source,/reconcileRetailerOrder\(out,product\)/,'Final merged retailer ordering must be applied at the rendered product boundary');
-  assert.match(source,/officialSourceFor\(product\)/,'Official-source presentation must be provenance-gated');
+  assert.match(source,/base\.install\(target\)/,'Final eBay presentation boundary must retain the governed v1.2 base installer');
+  assert.match(source,/officialCreatives\.wrap\(original\(downstream\)\)/,'Official Creative Gallery must remain an additional presentation-only wrapper at the established eBay merchandising boundary');
   assert(!/user-agent|mobile\s*===|desktop\s*===/i.test(source),'eBay retailer truth must not fork by device/user agent');
   assert.doesNotMatch(source,/media-amazon|ebaystatic|i\.ebayimg/i,'eBay discovery must not use scraped or unauthorised retailer imagery');
 
