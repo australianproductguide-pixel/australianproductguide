@@ -88,6 +88,7 @@ const pagespeedAgenticCertification=require('../lib/pagespeed-agentic-certificat
 const customerJourneyProgramme=require('../lib/customer-journey-programme-v1144-runtime');
 const faviconParity=require('../lib/favicon-parity-v115-runtime');
 const aboutTrustNavigation=require('../lib/about-trust-navigation-v116-runtime');
+const trustpilotFooter=require('../lib/trustpilot-footer-v117-runtime');
 const scoutNavigatorPresentation=require('../lib/scout-navigator-v7-global-runtime');
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
@@ -110,6 +111,9 @@ faviconParity.install(wholeSiteExperience);
 // coherent navigation family. It is presentation-only and preserves the existing SSR/runtime
 // authority, shopper decision state and recommendation/retailer scoring boundaries.
 aboutTrustNavigation.install(wholeSiteExperience);
+// v117 adds the claimed APG Trustpilot profile to the existing footer Support navigation.
+// It is a presentation-only external trust destination and contributes zero recommendation points.
+trustpilotFooter.install(wholeSiteExperience);
 const transportHandler=decisionTransportParity.wrap(runtime);
 const premiumHandler=premiumExperience.wrap(transportHandler);
 const journeyHandler=decisionJourneyContinuity.wrap(premiumHandler);
@@ -122,7 +126,8 @@ const stableJourneyHandler=premiumClientStability.wrap(journeyHandler);
 const premiumMobileHandler=premiumMobileDecisionCommerce.wrap(stableJourneyHandler);
 // Whole-Site v109 remains the final semantic HTML communication layer; its returned handler
 // includes the installed v114.4 CSP-safe journey controls, v113 transport certification,
-// v115 favicon parity and v116 About & trust navigation without introducing another engine.
+// v115 favicon parity, v116 About & trust navigation and v117 Trustpilot footer destination
+// without introducing another engine.
 const handler=wholeSiteExperience.wrap(premiumMobileHandler);
 handler.HARD_CONSTRAINT_RESULT_PARITY_VERSION=hardConstraintParity.VERSION;
 handler.DECISION_TRANSPORT_PARITY_VERSION=decisionTransportParity.VERSION;
@@ -138,6 +143,7 @@ handler.PAGESPEED_AGENTIC_CERTIFICATION_VERSION=pagespeedAgenticCertification.VE
 handler.CUSTOMER_JOURNEY_PROGRAMME_VERSION=customerJourneyProgramme.VERSION;
 handler.FAVICON_PARITY_VERSION=faviconParity.VERSION;
 handler.ABOUT_TRUST_NAVIGATION_VERSION=aboutTrustNavigation.VERSION;
+handler.TRUSTPILOT_FOOTER_VERSION=trustpilotFooter.VERSION;
 handler.APG_PLATFORM_FACTS=wholeSiteExperience.FACTS;
 // v7.1 is deliberately outside the semantic wrapper only to make the approved Navigator skin
 // the final CSS cascade on every route. It is presentation-only and must not alter decisions,
