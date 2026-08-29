@@ -63,16 +63,16 @@
 // Compatibility lineage: module.exports=require('../lib/homepage-situation-images-v70')
 // Compatibility lineage: module.exports=require('../lib/related-decisions-ui-v69')
 // Compatibility lineage: module.exports=require('../lib/brand-mark-complete-v67')
+// Audit constraint lineage: decision-audit-constraint-guard-v118
 require('../lib/scout-concierge-v5-runtime');
 require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
 require('../lib/brand-system-v46');
 require('../lib/consumer-intelligence-v47');
 
-// Post-lineage parity, intelligence and experience controls install only after the
-// authoritative v106 runtime has loaded every current re-ranking layer. They preserve
-// v106 as the underlying HTTP/business runtime and add no second recommendation engine,
-// browser router or customer-state store.
+// Audit v124 is loaded before the canonical runtime so its narrow Decision Engine guard can
+// install before downstream consumers. It does not replace v106 or create a second engine.
+const auditIntegration=require('../lib/audit-integration-v124-runtime');
 const runtime=require('../lib/action5-catalogue-certification-v106-runtime');
 const hardConstraintParity=require('../lib/hard-constraint-result-parity-v1');
 const decisionTransportParity=require('../lib/decision-transport-parity-v1-runtime');
@@ -93,6 +93,9 @@ const scoutNavigatorPresentation=require('../lib/scout-navigator-v7-global-runti
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
 scoutResponseDepth.install();
+// Audit Scout context installs after the current v6/v61 intelligence layers so URL/page identity
+// remains authoritative without replacing Scout's recommendation or response-depth logic.
+auditIntegration.install();
 // v1 installs inside the existing v112 evidence/merchandising boundary. It only adapts
 // retailer presentation/disclosure for governed eBay collection pathways; v109 remains outermost.
 ebayEpnSurface.install(premiumMobileDecisionCommerce);
@@ -101,33 +104,21 @@ ebayEpnSurface.install(premiumMobileDecisionCommerce);
 // style-src 'self' without Production browser CSP violations.
 customerJourneyProgramme.install(wholeSiteExperience);
 // v113 augments the Whole-Site wrapper factory with transport-only delivery optimisation.
-// Whole-Site v109 still owns the final semantic/presentation transform; v113 only consolidates
-// its finished CSS delivery, strengthens immutable caching and repairs redundant Scout ARIA.
 pagespeedAgenticCertification.install(wholeSiteExperience);
 // v115 follows the same installation boundary: favicon/manifest canonicalisation is an inner
 // presentation-metadata control while Whole-Site v109 remains the final outer HTML transform.
 faviconParity.install(wholeSiteExperience);
 // v116 promotes company, methodology, evidence, accountability and contact routes into one
-// coherent navigation family. It is presentation-only and preserves the existing SSR/runtime
-// authority, shopper decision state and recommendation/retailer scoring boundaries.
+// coherent navigation family without changing shopper decision state or retailer scoring.
 aboutTrustNavigation.install(wholeSiteExperience);
 // v117 adds the claimed APG Trustpilot profile to the existing footer Support navigation.
-// It is a presentation-only external trust destination and contributes zero recommendation points.
 trustpilotFooter.install(wholeSiteExperience);
 const transportHandler=decisionTransportParity.wrap(runtime);
 const premiumHandler=premiumExperience.wrap(transportHandler);
 const journeyHandler=decisionJourneyContinuity.wrap(premiumHandler);
-// v109.1 fail-closed verifies and serves the intrinsically safe v107 client asset; it adds
-// no route, state or scoring logic.
 const stableJourneyHandler=premiumClientStability.wrap(journeyHandler);
-// v112 remains the approved narrow evidence/merchandising layer inside Whole-Site v109.
-// Dated retailer evidence is reconciled earlier during canonical data composition; the eBay
-// presentation installer extends this same boundary without creating another decision engine.
 const premiumMobileHandler=premiumMobileDecisionCommerce.wrap(stableJourneyHandler);
-// Whole-Site v109 remains the final semantic HTML communication layer; its returned handler
-// includes the installed v114.4 CSP-safe journey controls, v113 transport certification,
-// v115 favicon parity, v116 About & trust navigation and v117 Trustpilot footer destination
-// without introducing another engine.
+// Whole-Site v109 remains the final established semantic HTML communication layer.
 const handler=wholeSiteExperience.wrap(premiumMobileHandler);
 handler.HARD_CONSTRAINT_RESULT_PARITY_VERSION=hardConstraintParity.VERSION;
 handler.DECISION_TRANSPORT_PARITY_VERSION=decisionTransportParity.VERSION;
@@ -145,9 +136,13 @@ handler.FAVICON_PARITY_VERSION=faviconParity.VERSION;
 handler.ABOUT_TRUST_NAVIGATION_VERSION=aboutTrustNavigation.VERSION;
 handler.TRUSTPILOT_FOOTER_VERSION=trustpilotFooter.VERSION;
 handler.APG_PLATFORM_FACTS=wholeSiteExperience.FACTS;
-// v7.1 is deliberately outside the semantic wrapper only to make the approved Navigator skin
-// the final CSS cascade on every route. It is presentation-only and must not alter decisions,
-// evidence, retailer weighting, routes or shopper state.
-const finalHandler=scoutNavigatorPresentation.wrap(handler);
+
+// Audit v124 composes around the completed semantic response. Scout Navigator v7.1 then remains
+// the final direct visual-cascade owner. Neither layer may replace decision, evidence, routing or
+// commercial-scoring authority.
+const auditedHandler=auditIntegration.wrap(handler);
+auditedHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
+const finalHandler=scoutNavigatorPresentation.wrap(auditedHandler);
 finalHandler.SCOUT_NAVIGATOR_PRESENTATION_VERSION=scoutNavigatorPresentation.VERSION;
+finalHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
 module.exports=finalHandler;
