@@ -71,8 +71,13 @@ async function invoke(url,userAgent){
   assert(patched.includes('/assets/brand-marks/samsung?v=73.1'),'unrelated brand URLs must remain untouched');
 
   const api=read('api/index.js');
-  assert(api.includes("module.exports=require('../lib/brand-mark-canonical-parity-v91')"),'v91 must be the public outermost runtime layer');
+  // v91 remains the authoritative brand-canonicalisation layer beneath the explicitly governed
+  // v124 audit integration boundary. Do not require v91 to be the literal final module export:
+  // that would prevent any later presentation/constraint safety wrapper from being composed.
+  assert(api.includes("module.exports=require('../lib/brand-mark-canonical-parity-v91')"),'API compatibility lineage must explicitly preserve v91');
   assert(api.includes("module.exports=require('../lib/action3-search-commerce-v90')"),'v91 entrypoint history must preserve Action 3 v90 immediately underneath');
+  assert(api.includes("require('../lib/audit-integration-v124-runtime')"),'v124 integration boundary must be explicit when v91 is no longer literal outermost');
+  assert(api.includes('auditIntegration.wrap(navigatorHandler)'),'v124 must wrap only after the established Navigator presentation layer');
   assert.equal(layer.VERSION,'52.0','Search v52 protected export must survive v91');
   assert.equal(layer.DECISION_VERSION,'50.6','Decision Lab v50.6 protected export must survive v91');
 
@@ -81,5 +86,5 @@ async function invoke(url,userAgent){
   assert(pkg.scripts['qa:deploy'].startsWith('node scripts/brand-mark-canonical-parity-v91-qa.js &&'),'v91 must be the first deploy gate');
   assert(pkg.scripts['qa:full'].startsWith('node scripts/brand-mark-canonical-parity-v91-qa.js &&'),'v91 must be the first full-source gate');
 
-  console.log(`BRAND_MARK_CANONICAL_PARITY_V91=PASS targets=2 amazonDesktopMobileHash=${sha(desktop.body).slice(0,16)} breville=reviewed-vector cacheVersion=91.0 search=${layer.VERSION} decision=${layer.DECISION_VERSION}`);
+  console.log(`BRAND_MARK_CANONICAL_PARITY_V91=PASS targets=2 amazonDesktopMobileHash=${sha(desktop.body).slice(0,16)} breville=reviewed-vector cacheVersion=91.0 search=${layer.VERSION} decision=${layer.DECISION_VERSION} composition=v124`);
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1);});
