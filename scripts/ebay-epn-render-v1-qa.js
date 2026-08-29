@@ -92,6 +92,7 @@ async function assertSuppressedRoute(slug,label){
     assert.equal(response.headers['x-apg-ebay-epn-surface'],'v1.2');
     assert.match(response.body,/data-ebay-official-creatives-v121="true"/,`${route} must expose visible governed eBay discovery`);
     assert.match(response.body,/data-ebay-official-version="121\.1"/,`${route} must expose the current premium eBay creative version`);
+    assert.match(response.body,/<section class="section apg-ebay-premium-v121-shell">/i,`${route} must render the premium eBay discovery shell`);
     assert.match(response.body,/Shop eBay Australia with official creative/i);
     assert.match(response.body,/More eBay Australia shopping pathways/i);
     assert.match(response.body,/Paid eBay Australia links\.<\/strong> APG may earn a commission from qualifying purchases\./);
@@ -102,7 +103,7 @@ async function assertSuppressedRoute(slug,label){
       assert.ok(response.body.includes(href),`${route} must include ${record.key}`);
       assert.ok(response.body.includes(`data-ebay-epn-collection="${record.key}"`));
     }
-    assert.doesNotMatch(response.body,/<[^>]+class="[^"]*(?:apg-amz-v41-home-grid|apg-amz-v41-art)[^"]*"[^>]*>/i,`${route} must not render the superseded oversized blank eBay promo artwork`);
+    assert.doesNotMatch(response.body,/<section class="section apg-amz-v41 apg-ebay-v11"[^>]*data-ebay-epn-discovery=/i,`${route} must not render the superseded legacy eBay discovery section`);
     assert.doesNotMatch(response.body,/data-ebay-exact-model="true"/,`${route} discovery cards must never claim exact-model identity`);
     if(route==='/deals/'){
       assert.doesNotMatch(response.body,/verified Amazon Australia destinations/i,'Deals hero/governance language must not imply Amazon-only retailer verification');
