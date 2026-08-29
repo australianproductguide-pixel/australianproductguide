@@ -1,0 +1,18 @@
+'use strict';
+const assert=require('node:assert/strict');
+const app=require('../api/index');
+const layer=require('../lib/audit-shopping-clarity-v122-runtime');
+assert.equal(app.AUDIT_SHOPPING_CLARITY_VERSION,layer.VERSION);
+assert.match(layer.JS,/cards\.length\+' of '\+total\+' products match'/,'filtered count must be based on rendered result cards');
+assert.match(layer.JS,/selectedOptions/,'active filter labels must come from selected SSR controls');
+assert.match(layer.JS,/Clear all/,'active filters need an explicit reset');
+assert.match(layer.JS,/clear\.href=path/,'Clear all must return to the canonical unfiltered category path');
+assert.match(layer.JS,/path!=='\/compare\/custom\/'/,'Compare refresh must be scoped to custom comparison only');
+assert.match(layer.JS,/button\[data-compare-product\]\[aria-pressed="true"\]/,'existing selected Compare control remains the removal trigger');
+assert.match(layer.JS,/setTimeout/,'refresh must yield to the existing shortlist owner before navigation');
+assert.match(layer.JS,/location\.replace/,'rendered comparison must refresh after shortlist removal');
+assert.doesNotMatch(layer.JS,/localStorage\.(setItem|removeItem)|sessionStorage\.(setItem|removeItem)/,'v122 must not become a second shortlist state owner');
+assert.doesNotMatch(layer.JS,/application\/ld\+json|numberOfItems/,'client layer must not rewrite canonical structured-data category totals');
+assert.match(layer.CSS,/@media\(max-width:720px\)/,'mobile density must be explicitly bounded');
+assert.match(layer.CSS,/-webkit-line-clamp:2/,'mobile card summaries should be compact without deleting source content');
+console.log(JSON.stringify({version:layer.VERSION,status:'PASS',checks:{truthfulFilteredCount:true,activeFilterChips:true,clearAll:true,compareRemovalRefresh:true,stateOwnershipPreserved:true,structuredDataUntouched:true,mobileDensity:true}},null,2));
