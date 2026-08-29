@@ -35,9 +35,9 @@ assert.equal(snap.evidence.evidenceDepthStandardVersion,'evidence-depth-standard
 assert.equal(snap.evidence.categories,90);
 assert.equal(snap.evidence.schemaDefinedCategories,90);
 assert.equal(snap.evidence.products,482);
-assert.equal(snap.evidence.strong,61);
-assert.equal(snap.evidence.belowStrong,421);
-assert.equal(snap.evidence.strongPct,12.7);
+assert.equal(snap.evidence.strong,66);
+assert.equal(snap.evidence.belowStrong,416);
+assert.equal(snap.evidence.strongPct,13.7);
 assert.equal(snap.evidence.backlogStatus,'ONGOING_MAINTENANCE');
 
 assert.ok(snap.decision,'canonical Decision State control must be reported');

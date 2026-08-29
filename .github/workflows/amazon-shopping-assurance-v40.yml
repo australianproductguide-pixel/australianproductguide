@@ -167,6 +167,29 @@ jobs:
           node-version: '24'
           package-manager-cache: false
 
+      - name: Start exact pull-request runtime
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          PORT=4173 node scripts/pr-runtime-server-v109.js >/tmp/apg-pr-runtime-health.log 2>&1 &
+          echo $! >/tmp/apg-pr-runtime-health.pid
+          ready=0
+          for attempt in $(seq 1 40); do
+            if curl -fsSL http://127.0.0.1:4173/deals/ -o /tmp/apg-pr-health-deals.html; then
+              ready=1
+              break
+            fi
+            sleep 0.5
+          done
+          if [ "$ready" != 1 ]; then
+            cat /tmp/apg-pr-runtime-health.log || true
+            echo 'Exact PR runtime did not become ready for destination health'
+            exit 1
+          fi
+          grep -F 'data-apg-experience-v109="true"' /tmp/apg-pr-health-deals.html >/dev/null
+          echo 'BASE_URL=http://127.0.0.1:4173' >> "$GITHUB_ENV"
+          echo "Destination health exact PR runtime verified at $(git rev-parse HEAD)"
+
       - name: Wait for exact Production deployment
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
@@ -195,6 +218,12 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/amazon-destination-health-v40.js
+
+      - name: Stop exact pull-request runtime
+        if: always() && github.event_name == 'pull_request'
+        run: |
+          if [ -f /tmp/apg-pr-runtime-health.pid ]; then kill "$(cat /tmp/apg-pr-runtime-health.pid)" 2>/dev/null || true; fi
+          cat /tmp/apg-pr-runtime-health.log || true
 
       - name: Publish link-integrity summary
         if: always()
