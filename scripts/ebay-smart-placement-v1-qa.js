@@ -22,23 +22,26 @@ function render(url,method='GET'){
 }
 
 (async()=>{
-  assert.equal(smart.VERSION,'1.0');
+  assert.equal(smart.VERSION,'1.1');
   assert.equal(smart.CONFIG_ID,'001370a99f586b44ba848056','Owner-supplied Smart Placement configuration must remain exact');
   assert.equal(smart.SMART_TOOLS_SRC,'https://epnt.ebay.com/static/epn-smart-tools.js');
-  assert.equal(app.EBAY_SMART_PLACEMENT_VERSION,'1.0','public handler must expose Smart Placement pilot version');
+  assert.equal(app.EBAY_SMART_PLACEMENT_VERSION,'1.1','public handler must expose Smart Placement pilot version');
 
   const deals=await render('/deals/');
   assert.equal(deals.status,200);
-  assert.equal(deals.headers['x-apg-ebay-smart-placement'],'v1.0');
-  assert.match(deals.body,/data-apg-ebay-smart-placement="v1\.0"/);
+  assert.equal(deals.headers['x-apg-ebay-smart-placement'],'v1.1');
+  assert.match(deals.body,/data-apg-ebay-smart-placement="v1\.1"/);
   assert.match(deals.body,/data-config-id="001370a99f586b44ba848056"/);
   assert.match(deals.body,/More electronics options on eBay Australia/);
   assert.match(deals.body,/separate from APG recommendations/i);
   assert.match(deals.body,/Paid marketplace content\./);
   assert.match(deals.body,/participation and commission do not influence APG product suitability, ranking or recommendations/i);
   assert.match(deals.body,/href="\/assets\/ebay-smart-placement-v1\.css"/);
-  assert.match(deals.body,/src="\/assets\/ebay-smart-placement-v1\.js" defer/);
-  assert.doesNotMatch(deals.body,/src="https:\/\/epnt\.ebay\.com\/static\/epn-smart-tools\.js"/,'Third-party Smart Tools script must be loaded by the same-origin gated loader rather than SSR HTML');
+  assert.match(deals.body,/src="https:\/\/epnt\.ebay\.com\/static\/epn-smart-tools\.js"/,'eBay supplied Smart Tools script must be directly present in the head');
+  assert.match(deals.body,/data-apg-ebay-smart-tools="true"/);
+  const smartIndex=deals.body.indexOf('data-apg-ebay-smart-placement="v1.1"');
+  const shoppingIndex=deals.body.indexOf('id="shopping-destinations"');
+  assert(smartIndex>-1&&shoppingIndex>-1&&smartIndex<shoppingIndex,'Smart Placement must appear before general shopping destinations, adjacent to the existing eBay discovery block');
   const csp=deals.headers['content-security-policy']||'';
   assert.match(csp,/script-src[^;]*https:\/\/epnt\.ebay\.com/i,'Deals CSP must permit the approved eBay Smart Tools origin');
   assert.match(csp,/connect-src[^;]*https:\/\/epnt\.ebay\.com/i,'Deals CSP must scope eBay network permission to the pilot route');
@@ -54,14 +57,16 @@ function render(url,method='GET'){
   const css=await render(smart.CSS_PATH);
   assert.equal(css.status,200);
   assert.equal(css.headers['content-type'],'text/css; charset=utf-8');
-  assert.match(css.body,/@media\(max-width:959px\)\{\.apg-ebay-smart-placement\{display:none\}\}/,'900x220 pilot must stay off mobile widths');
+  assert.doesNotMatch(css.body,/\.apg-ebay-smart-placement\{display:none\}/,'Smart Placement section must not be hidden at narrow/print widths');
+  assert.match(css.body,/@media\(max-width:959px\)/,'Narrow-width containment rules must exist');
+  assert.match(css.body,/overflow-x:auto/,'The fixed eBay unit must remain horizontally contained when the viewport is narrower than 900px');
   assert.match(css.body,/width:900px/);
 
   const loader=await render(smart.LOADER_PATH);
   assert.equal(loader.status,200);
   assert.equal(loader.headers['content-type'],'application/javascript; charset=utf-8');
-  assert.match(loader.body,/min-width: 960px/,'Smart Tools must only load for the desktop pilot');
   assert.match(loader.body,/https:\/\/epnt\.ebay\.com\/static\/epn-smart-tools\.js/);
+  assert.doesNotMatch(loader.body,/min-width: 960px/,'Compatibility loader must no longer suppress narrow-width loading');
   assert.doesNotMatch(loader.body,/localStorage|sessionStorage|document\.cookie|decision-lab|searchParams/i,'APG loader must not send browser state, decision state or search parameters to eBay');
 
   const privacy=await render('/privacy/');
@@ -76,5 +81,5 @@ function render(url,method='GET'){
   const source=require('node:fs').readFileSync(require('node:path').join(__dirname,'..','lib','ebay-smart-placement-v1-runtime.js'),'utf8');
   for(const banned of ['scoreProduct(','rankDecision(','publicDecision(','recommendationWeight=','commissionWeight'])assert(!source.includes(banned),`Smart Placement must remain outside decision scoring: ${banned}`);
 
-  console.log(`EBAY_SMART_PLACEMENT_V1_GREEN config=${smart.CONFIG_ID} route=/deals/ desktopOnly=true recommendationWeight=0 csp=route-scoped disclosures=PASS`);
+  console.log(`EBAY_SMART_PLACEMENT_V1_GREEN config=${smart.CONFIG_ID} route=/deals/ responsiveVisible=true directEbayHeadScript=true recommendationWeight=0 csp=route-scoped disclosures=PASS`);
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
