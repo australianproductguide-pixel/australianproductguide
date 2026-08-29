@@ -28,11 +28,17 @@ function render(url,method='GET'){
   assert.match(deals.body,/data-config-id="001370a99f586b44ba848056"/);
   assert.match(deals.body,/style="position:absolute!important;left:-10000px!important/);
 
-  for(const required of ['ebay-tech.jpg','ebay-home-garden.jpg','ebay-motors.jpg','ebay-sporting-goods.png']){
-    assert.match(deals.body,new RegExp('/assets/ebay/official/'+required.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  // Smart Placement v1.6 consumes the governed official-creative registry. The registry now
+  // supplies high-resolution 700x400 WebP artwork, so this contract follows those canonical
+  // assets instead of pinning the component to the superseded v121.0 thumbnail filenames.
+  const smartSection=smart.section();
+  for(const required of ['ebay-tech-700x400.webp','ebay-home-garden-700x400.webp','ebay-motors-700x400.webp','ebay-sporting-goods-700x400.webp']){
+    const expected='/assets/ebay/official/v121/'+required;
+    assert.match(smartSection,new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+    assert.match(deals.body,new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   }
-  assert.doesNotMatch(deals.body,/ebay-certified-refurbished\.jpg/);
-  assert.doesNotMatch(deals.body,/Official eBay creative/i,'removed customer-facing label must not return');
+  assert.doesNotMatch(smartSection,/ebay-certified-refurbished-700x400\.webp/,'Certified Refurbished is not one of the four Smart Placement static spotlight categories');
+  assert.doesNotMatch(smartSection,/Official eBay creative/i,'Smart Placement itself must not restore the removed customer-facing creative label');
   assert.match(deals.body,/style="color:#fff!important;-webkit-text-fill-color:#fff!important"/,'critical white contrast guard must be inline');
   assert.match(deals.body,/src="\/assets\/ebay-smart-placement-v16\.js" defer data-apg-ebay-smart-loader="v1\.6"/);
   assert.match(deals.body,/href="\/assets\/ebay-smart-placement-v16\.css"/);
@@ -60,5 +66,5 @@ function render(url,method='GET'){
     assert.doesNotMatch(response.body,/data-apg-ebay-smart-placement=/);
   }
 
-  console.log(`EBAY_SMART_PLACEMENT_V16_GREEN config=${smart.CONFIG_ID} route=/deals/ whiteContrast=true creativeLabelRemoved=true validatedCategoryCreative=4 dynamicAugmentOnly=true recommendationWeight=0`);
+  console.log(`EBAY_SMART_PLACEMENT_V16_GREEN config=${smart.CONFIG_ID} route=/deals/ whiteContrast=true creativeLabelRemovedFromSmartPlacement=true validatedCategoryCreative=4 highResolutionRegistryAssets=true dynamicAugmentOnly=true recommendationWeight=0`);
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
