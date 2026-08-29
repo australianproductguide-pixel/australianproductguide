@@ -1,0 +1,13 @@
+'use strict';
+const assert=require('node:assert/strict');
+const q=require('../lib/audit-quality-trust-v123-runtime');
+assert.equal(q.VERSION,'123.0');
+assert.equal(q.normaliseDuplicateBrandText('<h2>Eufy Eufy eufyCam 2C Pro</h2>'),'<h2>Eufy eufyCam 2C Pro</h2>');
+assert.equal(q.normaliseDuplicateBrandText('<h2>Sonos Sonos Ace</h2>'),'<h2>Sonos Ace</h2>');
+const updates='<body data-platform-page="/updates/"><h2 id="aug17-editorial-review">17 August 2026 — editorial, compliance and discovery review</h2><p>Legacy duplicate.</p><p><strong>Current scope:</strong> old scope.</p><h2 id="trust-centre">23 August 2026</h2><span class="pill good">Reviewed 23 August 2026</span></body>';
+const repaired=q.repairUpdates(updates);assert.doesNotMatch(repaired,/aug17-editorial-review/);assert.match(repaired,/trust-centre/);assert.match(repaired,/Reviewed 30 August 2026/);
+const desk='<html><head><title>Example Review | Australian Product Guide</title></head><body data-platform-page="/products/example/"><h1>Example review</h1><p>Unless stated otherwise, guidance is desk-researched.</p></body></html>';
+const relabelled=q.relabelResearch(desk);assert.match(relabelled,/Example Research brief/);assert.match(relabelled,/Example research brief/);
+assert.match(q.JS,/aria-label/);assert.match(q.JS,/Remove /);assert.match(q.JS,/Save /);assert.match(q.JS,/MutationObserver/);assert.match(q.JS,/addEventListener\('error'/);assert.match(q.JS,/data-apg-brand-fallback-v123/);
+assert.doesNotMatch(q.JS,/localStorage|sessionStorage/);assert.doesNotMatch(q.JS,/recommend|rank|score/i);
+console.log(JSON.stringify({version:q.VERSION,status:'PASS',checks:{duplicateBrandNames:true,updatesDuplicateRemoval:true,researchBriefHonesty:true,saveLabels:true,brandImageFallback:true}},null,2));
