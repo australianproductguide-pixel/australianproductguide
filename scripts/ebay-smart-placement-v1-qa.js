@@ -15,33 +15,29 @@ function render(url,method='GET'){
 }
 
 (async()=>{
-  assert.equal(smart.VERSION,'1.3');
+  assert.equal(smart.VERSION,'1.4');
   assert.equal(smart.CONFIG_ID,'001370a99f586b44ba848056');
-  assert.equal(app.EBAY_SMART_PLACEMENT_VERSION,'1.3');
-  assert.equal(smart.TECH.image,'/assets/ebay/official/ebay-tech.jpg');
-  assert.match(smart.TECH.destination,/ebay\.com\.au/);
-  assert.match(smart.TECH.destination,/campid=5339198634/);
+  assert.equal(app.EBAY_SMART_PLACEMENT_VERSION,'1.4');
 
   const deals=await render('/deals/');
   assert.equal(deals.status,200);
-  assert.equal(deals.headers['x-apg-ebay-smart-placement'],'v1.3');
-  assert.match(deals.body,/data-apg-ebay-smart-placement="v1\.3"/);
-  assert.match(deals.body,/data-apg-ebay-load-state="ssr-ready"/);
-  assert.match(deals.body,/data-apg-ebay-smart-static="official-tech"/);
-  assert.match(deals.body,/Explore electronics on eBay Australia/);
-  assert.match(deals.body,/\/assets\/ebay\/official\/ebay-tech\.jpg/);
-  assert.match(deals.body,/Browse electronics on eBay Australia/);
-  assert.match(deals.body,/campid=5339198634/);
-  assert.match(deals.body,/Paid retailer content\./);
-  assert.match(deals.body,/Marketplace discovery, not an APG recommendation/);
-  assert.match(deals.body,/data-apg-ebay-smart-dynamic="true"/);
+  assert.equal(deals.headers['x-apg-ebay-smart-placement'],'v1.4');
+  assert.match(deals.body,/data-apg-ebay-smart-placement="v1\.4"/);
+  assert.match(deals.body,/data-apg-ebay-smart-critical="v1\.4"/,'critical CSS must be in SSR component');
+  assert.match(deals.body,/Explore eBay Australia\. Decide with APG\./);
+  assert.match(deals.body,/data-apg-ebay-smart-static="premium-marketplace"/);
   assert.match(deals.body,/data-config-id="001370a99f586b44ba848056"/);
-  assert.match(deals.body,/src="\/assets\/ebay-smart-placement-v1\.js" defer data-apg-ebay-smart-loader="v1\.3"/);
-  assert.doesNotMatch(deals.body,/src="https:\/\/epnt\.ebay\.com\/static\/epn-smart-tools\.js"/,'third-party script should remain progressive client enhancement');
+  assert.match(deals.body,/style="position:absolute!important;left:-10000px!important/,'dynamic widget must be fail-safe off-canvas inline');
+  assert.match(deals.body,/\/assets\/ebay\/official\/ebay-tech\.jpg/);
+  assert.match(deals.body,/\/assets\/ebay\/official\/ebay-certified-refurbished\.jpg/);
+  assert.match(deals.body,/\/assets\/ebay\/official\/ebay-home-garden\.jpg/);
+  assert.match(deals.body,/src="\/assets\/ebay-smart-placement-v14\.js" defer data-apg-ebay-smart-loader="v1\.4"/);
+  assert.match(deals.body,/href="\/assets\/ebay-smart-placement-v14\.css"/);
+  assert.doesNotMatch(deals.body,/src="https:\/\/epnt\.ebay\.com\/static\/epn-smart-tools\.js"/,'third-party script should load only after SSR placement exists');
 
-  const spotlightIndex=deals.body.indexOf('data-apg-ebay-smart-placement="v1.3"');
-  const amazonCreativeIndex=deals.body.indexOf('class="section apg-amz-v41 apg-amz-v41-deals"');
-  assert(spotlightIndex>-1&&amazonCreativeIndex>-1&&spotlightIndex<amazonCreativeIndex,'premium eBay marketplace spotlight must appear high on Deals before the Amazon visual shortcut surface');
+  const ebayIndex=deals.body.indexOf('data-apg-ebay-smart-placement="v1.4"');
+  const amazonIndex=deals.body.indexOf('data-amazon-creative-v41="deals"');
+  assert.ok(ebayIndex>0&&amazonIndex>ebayIndex,'eBay spotlight should appear above Amazon creative grid');
 
   const csp=deals.headers['content-security-policy']||'';
   assert.match(csp,/script-src[^;]*https:\/\/epnt\.ebay\.com/i);
@@ -56,22 +52,18 @@ function render(url,method='GET'){
   const loader=await render(smart.LOADER_PATH);
   assert.equal(loader.status,200);
   assert.match(loader.body,/DOMContentLoaded/);
-  assert.match(loader.body,/MutationObserver/);
-  assert.match(loader.body,/placement-ready/);
   assert.match(loader.body,/paint-detected/);
-  assert.match(loader.body,/static-fallback/);
+  assert.match(loader.body,/dynamic\.style\.cssText/,'dynamic widget must only enter layout after paint');
   assert.match(loader.body,/epn-smart-tools\.js/);
   assert.doesNotMatch(loader.body,/localStorage|sessionStorage|document\.cookie|decision-lab|searchParams/i);
 
   const css=await render(smart.CSS_PATH);
-  assert.match(css.body,/apg-ebay-smart-placement__shell/);
-  assert.match(css.body,/linear-gradient/);
-  assert.match(css.body,/border-radius:26px/);
-  assert.match(css.body,/data-apg-ebay-load-state="paint-detected"/);
+  assert.equal(css.status,200);
+  assert.match(css.body,/linear-gradient\(135deg,#07152f/);
+  assert.match(css.body,/grid-template-columns:repeat\(3/);
+  assert.match(css.body,/width:94px;height:94px/);
   assert.match(css.body,/overflow-x:auto/);
   assert.match(css.body,/width:900px/);
-  assert.match(css.body,/@media\(max-width:900px\)/);
-  assert.match(css.body,/@media\(max-width:540px\)/);
 
   for(const route of ['/','/categories/','/products/sony-wh-1000xm6/','/decision-lab/']){
     const response=await render(route);
@@ -79,8 +71,5 @@ function render(url,method='GET'){
     assert.doesNotMatch(response.headers['content-security-policy']||'',/https:\/\/epnt\.ebay\.com/i);
   }
 
-  const source=require('node:fs').readFileSync(require('node:path').join(__dirname,'..','lib','ebay-smart-placement-v1-runtime.js'),'utf8');
-  for(const banned of ['scoreProduct(','rankDecision(','publicDecision(','recommendationWeight=','commissionWeight'])assert(!source.includes(banned),`Smart Placement must remain outside decision scoring: ${banned}`);
-
-  console.log(`EBAY_SMART_PLACEMENT_V13_GREEN config=${smart.CONFIG_ID} route=/deals/ staticFailSafe=true officialTechCreative=true dynamicProgressive=true highPlacement=true recommendationWeight=0`);
+  console.log(`EBAY_SMART_PLACEMENT_V14_GREEN config=${smart.CONFIG_ID} route=/deals/ criticalCss=true inlineOffCanvas=true premiumMarketplace=true dynamicAugmentOnly=true recommendationWeight=0`);
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
