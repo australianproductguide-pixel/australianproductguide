@@ -63,6 +63,11 @@
 // Compatibility lineage: module.exports=require('../lib/homepage-situation-images-v70')
 // Compatibility lineage: module.exports=require('../lib/related-decisions-ui-v69')
 // Compatibility lineage: module.exports=require('../lib/brand-mark-complete-v67')
+// v118 is a narrow Decision Engine V4 policy guard. Install it before any runtime can
+// capture Decision Engine exports so explicit exclusions and exact size requirements
+// remain authoritative across Decision Lab, Scout and shared decision surfaces.
+const decisionAuditConstraintGuard=require('../lib/decision-audit-constraint-guard-v118');
+decisionAuditConstraintGuard.install();
 require('../lib/scout-concierge-v5-runtime');
 require('../lib/consumer-intelligence-v47-runtime');
 require('../lib/catalogue-decision-v48-runtime');
@@ -129,6 +134,7 @@ const premiumMobileHandler=premiumMobileDecisionCommerce.wrap(stableJourneyHandl
 // v115 favicon parity, v116 About & trust navigation and v117 Trustpilot footer destination
 // without introducing another engine.
 const handler=wholeSiteExperience.wrap(premiumMobileHandler);
+handler.DECISION_AUDIT_CONSTRAINT_GUARD_VERSION=decisionAuditConstraintGuard.VERSION;
 handler.HARD_CONSTRAINT_RESULT_PARITY_VERSION=hardConstraintParity.VERSION;
 handler.DECISION_TRANSPORT_PARITY_VERSION=decisionTransportParity.VERSION;
 handler.SCOUT_CUSTOMER_INTELLIGENCE_VERSION=scoutCustomerIntelligence.VERSION;
@@ -150,4 +156,5 @@ handler.APG_PLATFORM_FACTS=wholeSiteExperience.FACTS;
 // evidence, retailer weighting, routes or shopper state.
 const finalHandler=scoutNavigatorPresentation.wrap(handler);
 finalHandler.SCOUT_NAVIGATOR_PRESENTATION_VERSION=scoutNavigatorPresentation.VERSION;
+finalHandler.DECISION_AUDIT_CONSTRAINT_GUARD_VERSION=decisionAuditConstraintGuard.VERSION;
 module.exports=finalHandler;
