@@ -56,9 +56,11 @@ async function assertMyApgV124ServerSmoke(port){
     {path:'/my-apg/?account=signup',label:'my-apg-signup'},
     {path:'/decision-lab/',label:'decision-lab'},
     {path:'/deals/',label:'deals'},
-    {path:'/assets/account-journey-v241.js?v=24.1',label:'account-journey-v241'},
-    {path:'/assets/my-apg-account-v124.js?v=124.0',label:'my-apg-v124-js'},
-    {path:'/assets/my-apg-account-v124.css?v=124.0',label:'my-apg-v124-css'}
+    // The local APG smoke server resolves static assets by pathname only. Versioned
+    // query strings are separately preserved and asserted in the loader contract above.
+    {path:'/assets/account-journey-v241.js',label:'account-journey-v241'},
+    {path:'/assets/my-apg-account-v124.js',label:'my-apg-v124-js'},
+    {path:'/assets/my-apg-account-v124.css',label:'my-apg-v124-css'}
   );
   for(const check of checks){
     const response=await fetch(`http://127.0.0.1:${port}${check.path}`,{redirect:'follow'});
