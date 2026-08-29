@@ -90,26 +90,26 @@ async function assertSuppressedRoute(slug,label){
     const response=await render(route);
     assert.equal(response.status,200,`${route} must render`);
     assert.equal(response.headers['x-apg-ebay-epn-surface'],'v1.2');
-    assert.match(response.body,/data-ebay-epn-discovery="v1\.2"/,`${route} must expose visible eBay discovery`);
-    assert.match(response.body,/eBay Australia shopping discovery/i);
-    assert.match(response.body,/Refurbished options and current eBay promotions/i);
-    assert.match(response.body,/Paid retailer links\.<\/strong> APG may earn a commission from qualifying purchases\./);
-    // Count only the six legacy governed collection/promotion cards. Official Creative Gallery
-    // category-discovery cards are a distinct v121 surface and deliberately share the retailer
-    // identity/disclosure contract without becoming collection records.
+    assert.match(response.body,/data-ebay-official-creatives-v121="true"/,`${route} must expose visible governed eBay discovery`);
+    assert.match(response.body,/data-ebay-official-version="121\.1"/,`${route} must expose the current premium eBay creative version`);
+    assert.match(response.body,/<section class="section apg-ebay-premium-v121-shell">/i,`${route} must render the premium eBay discovery shell`);
+    assert.match(response.body,/Shop eBay Australia with official creative/i);
+    assert.match(response.body,/More eBay Australia shopping pathways/i);
+    assert.match(response.body,/Paid eBay Australia links\.<\/strong> APG may earn a commission from qualifying purchases\./);
     const cards=response.body.match(/data-ebay-epn-collection="[^"]+"/g)||[];
-    assert.equal(cards.length,6,`${route} must render all six governed eBay promotion/collection cards`);
+    assert.equal(cards.length,6,`${route} must retain all six governed eBay promotion/collection pathways as compact secondary links`);
     for(const record of ebay.promotionRows()){
       const href=htmlHref(record.url);
       assert.ok(response.body.includes(href),`${route} must include ${record.key}`);
       assert.ok(response.body.includes(`data-ebay-epn-collection="${record.key}"`));
     }
+    assert.doesNotMatch(response.body,/<section class="section apg-amz-v41 apg-ebay-v11"[^>]*data-ebay-epn-discovery=/i,`${route} must not render the superseded legacy eBay discovery section`);
     assert.doesNotMatch(response.body,/data-ebay-exact-model="true"/,`${route} discovery cards must never claim exact-model identity`);
     if(route==='/deals/'){
       assert.doesNotMatch(response.body,/verified Amazon Australia destinations/i,'Deals hero/governance language must not imply Amazon-only retailer verification');
       assert.doesNotMatch(response.body,/Useful Amazon Australia shopping routes/i,'Deals navigation must not frame the whole shopping surface as Amazon-only');
     }
-    console.log(`EBAY_DISCOVERY route=${route} cards=6 PASS`);
+    console.log(`EBAY_DISCOVERY route=${route} premiumCreative=5 compactCollections=6 PASS`);
   }
 
   const affiliate=await render('/affiliate-disclosure/');
@@ -128,5 +128,5 @@ async function assertSuppressedRoute(slug,label){
   assert(!/user-agent|mobile\s*===|desktop\s*===/i.test(source),'eBay retailer truth must not fork by device/user agent');
   assert.doesNotMatch(source,/media-amazon|ebaystatic|i\.ebayimg/i,'eBay discovery must not use scraped or unauthorised retailer imagery');
 
-  console.log(`EBAY_EPN_RENDER_V12_GREEN productRoutes=${fixtures.length} categories=${new Set(fixtures.map(p=>p.category||p.categoryLabel)).size} discoveryRoutes=2 promoCardsPerRoute=6 identitySafetySuppression=PASS mergedRetailerOrder=PASS officialSourceIntegrity=PASS dealsNeutrality=PASS deviceNeutralSSR=true responsiveLayer=v112 disclosure=multi-retailer`);
+  console.log(`EBAY_EPN_RENDER_V12_GREEN productRoutes=${fixtures.length} categories=${new Set(fixtures.map(p=>p.category||p.categoryLabel)).size} discoveryRoutes=2 premiumCreativeCards=5 compactCollections=6 identitySafetySuppression=PASS mergedRetailerOrder=PASS officialSourceIntegrity=PASS dealsNeutrality=PASS deviceNeutralSSR=true responsiveLayer=v112 disclosure=multi-retailer`);
 })().catch(error=>{console.error(error.stack||error);process.exit(1);});
