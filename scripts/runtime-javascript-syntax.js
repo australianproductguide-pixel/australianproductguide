@@ -42,6 +42,33 @@ function assertMyApgV124Contract(){
   console.log(`MY_APG_ACCOUNT_V124=PASS route=my-apg accountSurface=single authOwner=account-platform failSafe=shell-first serverWrapper=none checks=${checks.length}`);
 }
 
+async function assertMyApgV124ServerSmoke(port){
+  // P0 regression: the rolled-back v123 account release destabilised the homepage.
+  // Repeatedly exercise the outer server runtime plus the account and adjacent routes
+  // before a deployment can pass qa:deploy. This is intentionally independent of the
+  // browser-only v124 presentation so an account UI change cannot hide a server failure.
+  const homeRepeats=8;
+  const checks=[];
+  for(let i=0;i<homeRepeats;i++)checks.push({path:'/',label:`home-${i+1}`});
+  checks.push(
+    {path:'/my-apg/',label:'my-apg'},
+    {path:'/my-apg/?account=login',label:'my-apg-login'},
+    {path:'/my-apg/?account=signup',label:'my-apg-signup'},
+    {path:'/decision-lab/',label:'decision-lab'},
+    {path:'/deals/',label:'deals'},
+    {path:'/assets/account-journey-v241.js?v=24.1',label:'account-journey-v241'},
+    {path:'/assets/my-apg-account-v124.js?v=124.0',label:'my-apg-v124-js'},
+    {path:'/assets/my-apg-account-v124.css?v=124.0',label:'my-apg-v124-css'}
+  );
+  for(const check of checks){
+    const response=await fetch(`http://127.0.0.1:${port}${check.path}`,{redirect:'follow'});
+    if(!response.ok)throw new Error(`MY_APG_V124_SERVER_SMOKE=FAIL ${check.label} HTTP ${response.status}`);
+    const body=await response.text();
+    if(!body)throw new Error(`MY_APG_V124_SERVER_SMOKE=FAIL ${check.label} empty-body`);
+  }
+  console.log(`MY_APG_V124_SERVER_SMOKE=PASS homeRepeats=${homeRepeats} keyRoutes=5 assets=3 serverWrapper=none`);
+}
+
 const server=http.createServer((req,res)=>app(req,res));
 server.listen(0,'127.0.0.1',async()=>{
   const {port}=server.address();
@@ -59,6 +86,7 @@ server.listen(0,'127.0.0.1',async()=>{
       console.log(`RUNTIME_JS_PARSE=PASS /assets/${path.basename(filePath)}`);
     }
     assertMyApgV124Contract();
+    await assertMyApgV124ServerSmoke(port);
     console.log(`RUNTIME_JS_SYNTAX=PASS assets=${runtimeAssets.length+publicAssets.length}`);
   }catch(error){
     console.error(error.stack||error.message||String(error));
