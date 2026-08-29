@@ -81,4 +81,5 @@ function directStylesheetHrefs(html){
   for(const banned of ['scoreProduct(','rankDecision(','publicDecision(','commissionWeight','localStorage.setItem(','sessionStorage.setItem('])assert(!runtimeSource.includes(banned),`Navigator parity runtime must remain presentation-only: ${banned}`);
 
   console.log(JSON.stringify({version:navigator.VERSION,status:'PASS',routesChecked:routes.length,checks:{sameComponentEverywhere:true,finalCascadeEverywhere:true,approvedNavigatorAsset:true,apgPalette:true,reducedMotion:true,geometryPreserved:true,decisionLogicUntouched:true,commercialScoringUntouched:true}},null,2));
+  require('./ebay-smart-placement-v1-qa');
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
