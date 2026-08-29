@@ -90,6 +90,7 @@ const faviconParity=require('../lib/favicon-parity-v115-runtime');
 const aboutTrustNavigation=require('../lib/about-trust-navigation-v116-runtime');
 const trustpilotFooter=require('../lib/trustpilot-footer-v117-runtime');
 const scoutNavigatorPresentation=require('../lib/scout-navigator-v7-global-runtime');
+const auditUiSafety=require('../lib/audit-ui-safety-v121-runtime');
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
 scoutResponseDepth.install();
@@ -150,4 +151,8 @@ handler.APG_PLATFORM_FACTS=wholeSiteExperience.FACTS;
 // evidence, retailer weighting, routes or shopper state.
 const finalHandler=scoutNavigatorPresentation.wrap(handler);
 finalHandler.SCOUT_NAVIGATOR_PRESENTATION_VERSION=scoutNavigatorPresentation.VERSION;
-module.exports=finalHandler;
+// Audit v121 is the final presentation-only safety layer. It coordinates fixed controls and
+// desktop drawer/comparison geometry without changing the semantic/runtime authority beneath it.
+const auditSafeHandler=auditUiSafety.wrap(finalHandler);
+auditSafeHandler.AUDIT_UI_SAFETY_VERSION=auditUiSafety.VERSION;
+module.exports=auditSafeHandler;
