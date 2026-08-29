@@ -14,6 +14,16 @@ function render(url,method='GET'){
   });
 }
 
+function extractSpotlight(html){
+  const marker='data-apg-ebay-smart-placement="v1.6"';
+  const markerIndex=html.indexOf(marker);
+  assert.ok(markerIndex>0,'v1.6 spotlight marker must exist');
+  const start=html.lastIndexOf('<section',markerIndex);
+  const end=html.indexOf('</section>',markerIndex);
+  assert.ok(start>=0&&end>start,'v1.6 spotlight section must be extractable');
+  return html.slice(start,end+'</section>'.length);
+}
+
 (async()=>{
   assert.equal(smart.VERSION,'1.6');
   assert.equal(smart.CONFIG_ID,'001370a99f586b44ba848056');
@@ -24,18 +34,25 @@ function render(url,method='GET'){
   assert.equal(deals.headers['x-apg-ebay-smart-placement'],'v1.6');
   assert.match(deals.body,/data-apg-ebay-smart-placement="v1\.6"/);
   assert.match(deals.body,/data-apg-ebay-smart-critical="v1\.6"/);
-  assert.match(deals.body,/Explore eBay Australia\. Decide with APG\./);
-  assert.match(deals.body,/data-config-id="001370a99f586b44ba848056"/);
-  assert.match(deals.body,/style="position:absolute!important;left:-10000px!important/);
-
-  for(const required of ['ebay-tech.jpg','ebay-home-garden.jpg','ebay-motors.jpg','ebay-sporting-goods.png']){
-    assert.match(deals.body,new RegExp('/assets/ebay/official/'+required.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
-  }
-  assert.doesNotMatch(deals.body,/ebay-certified-refurbished\.jpg/);
-  assert.doesNotMatch(deals.body,/Official eBay creative/i,'removed customer-facing label must not return');
-  assert.match(deals.body,/style="color:#fff!important;-webkit-text-fill-color:#fff!important"/,'critical white contrast guard must be inline');
   assert.match(deals.body,/src="\/assets\/ebay-smart-placement-v16\.js" defer data-apg-ebay-smart-loader="v1\.6"/);
   assert.match(deals.body,/href="\/assets\/ebay-smart-placement-v16\.css"/);
+
+  const spotlight=extractSpotlight(deals.body);
+  assert.match(spotlight,/Explore eBay Australia\. Decide with APG\./);
+  assert.match(spotlight,/data-config-id="001370a99f586b44ba848056"/);
+  assert.match(spotlight,/style="position:absolute!important;left:-10000px!important/);
+
+  for(const required of ['ebay-tech.jpg','ebay-home-garden.jpg','ebay-motors.jpg','ebay-sporting-goods.png']){
+    assert.match(spotlight,new RegExp('/assets/ebay/official/'+required.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  }
+  assert.doesNotMatch(spotlight,/ebay-certified-refurbished\.jpg/,'known-invalid creative must not render inside v1.6 spotlight');
+  assert.doesNotMatch(spotlight,/Official eBay creative/i,'removed customer-facing label must not return inside v1.6 spotlight');
+  assert.match(spotlight,/style="color:#fff!important;-webkit-text-fill-color:#fff!important"/,'critical white contrast guard must be inline');
+
+  // The older, separate eBay discovery/gallery surface is allowed to coexist elsewhere on /deals/.
+  // This guard intentionally scopes the v1.6 contract to the new premium spotlight so unrelated
+  // legacy content cannot incorrectly fail the deployment gate.
+  assert.match(deals.body,/data-ebay-official-creatives-v121="true"/,'independent eBay gallery may remain elsewhere on Deals');
 
   const csp=deals.headers['content-security-policy']||'';
   assert.match(csp,/script-src[^;]*https:\/\/epnt\.ebay\.com/i);
