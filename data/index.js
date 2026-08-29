@@ -18,6 +18,7 @@ const retailerVerificationRefreshV109=require('./retailer-verification-refresh-v
 const commerceEligibilityV114=require('./commerce-eligibility-v114');
 const searchConsoleDepthV85=require('./search-console-depth-v85');
 const evidenceEnrichmentV118=require('./catalogue-evidence-enrichment-v118');
+const evidenceEnrichmentV119=require('./catalogue-evidence-enrichment-v119');
 const REVIEWED='2026-08-18';
 const DEEP_RESEARCHED='2026-08-15';
 const NEXT_REVIEW='2026-09-16';
@@ -27,29 +28,16 @@ const deepCategories={
   'robot-vacuums':{slug:'robot-vacuums',label:'Robot vacuums',title:'Robot Vacuums Australia',icon:'robot',aliases:['robot vacuum','robot cleaner','robot mop'],description:'Compare maintained robot vacuums by mopping system, station automation, pet-hair handling and obstacle avoidance.',products:robots,priorities:['mopping','pets','low-maintenance','obstacle','premium','value'],factors:['Vacuum-only versus vacuum-and-mop','Dock emptying, washing and drying automation','Obstacle avoidance and navigation','Pet hair, carpets and threshold requirements'],faqs:[['Is more suction always better?','No. Navigation, brush design, carpet behaviour and dock automation can matter as much as a headline suction figure.'],['Do I need an Omni-style dock?','A full-service dock reduces routine emptying and mop maintenance, but takes more space and increases purchase cost.'],['What should pet owners prioritise?','Hair-management brushes, obstacle avoidance and reliable carpet transitions usually matter more than one specification in isolation.']],evidenceTier:'deep',comparisonLimit:14},
   'wireless-headphones':{slug:'wireless-headphones',label:'Wireless headphones',title:'Wireless Headphones Australia',icon:'headphones',aliases:['wireless headphones','headphones','noise cancelling headphones','anc headphones'],description:'Compare maintained wireless headphones by noise cancellation, battery life, ecosystem fit and listening priorities.',products:headphones,priorities:['anc','battery','travel','apple','bass','value'],factors:['Noise cancellation and transparency','Battery life and travel needs','Device and ecosystem compatibility','Sound preference, comfort and wired options'],faqs:[['What should travellers prioritise?','Strong ANC, long-wear comfort, battery life, folding/case design and easy multi-device switching.'],['Is longer battery always better?','Not if comfort, ANC or sound tuning are a worse match. Treat battery as one decision factor rather than the whole score.'],['Does ecosystem matter?','Yes for features such as spatial audio, TV integration or device switching. Cross-platform buyers should check what remains available outside the brand ecosystem.']],evidenceTier:'deep',comparisonLimit:14}
 };
-function canonicalBrand(value){
-  const raw=String(value||'').trim();
-  const key=raw.toLowerCase().replace(/[’']/g,'').replace(/[^a-z0-9]+/g,'');
-  const canonical={eufy:'eufy',delonghi:"De'Longhi",ghd:'GHD',nutribullet:'NutriBullet'};
-  return canonical[key]||raw;
-}
+function canonicalBrand(value){const raw=String(value||'').trim();const key=raw.toLowerCase().replace(/[’']/g,'').replace(/[^a-z0-9]+/g,'');const canonical={eufy:'eufy',delonghi:"De'Longhi",ghd:'GHD',nutribullet:'NutriBullet'};return canonical[key]||raw;}
 function deepProduct(p,c){const brand=canonicalBrand(p.brand);return {...p,brand,category:c.slug,categoryLabel:c.label,evidenceTier:'deep',firstResearched:DEEP_RESEARCHED,lastSubstantiveReview:DEEP_RESEARCHED,lastSourceVerification:REVIEWED,lastRetailerCheck:REVIEWED,lastPriceCheck:null,lastImageVerification:REVIEWED,nextReviewDue:NEXT_REVIEW,freshnessStatus:'reviewed-this-month',lastReviewed:DEEP_RESEARCHED,testingStatus:'Desk-researched / specification-based',retailers:retailersFor({...p,brand})};}
-function maintainedProduct(p,c){
-  const lastRetailerCheck=p.lastRetailerCheck||p.lastRetailerVerification||p.lastSourceVerification||REVIEWED;
-  const x={...p,brand:canonicalBrand(p.brand),category:c.slug,categoryLabel:c.label,lastReviewed:p.lastSubstantiveReview,lastRetailerCheck,lastPriceCheck:p.lastPriceCheck??null,freshnessStatus:p.freshnessStatus||'reviewed-this-month'};
-  return {...x,retailers:retailersFor(x)};
-}
+function maintainedProduct(p,c){const lastRetailerCheck=p.lastRetailerCheck||p.lastRetailerVerification||p.lastSourceVerification||REVIEWED;const x={...p,brand:canonicalBrand(p.brand),category:c.slug,categoryLabel:c.label,lastReviewed:p.lastSubstantiveReview,lastRetailerCheck,lastPriceCheck:p.lastPriceCheck??null,freshnessStatus:p.freshnessStatus||'reviewed-this-month'};return {...x,retailers:retailersFor(x)};}
 for(const c of Object.values(deepCategories))c.products=c.products.map(p=>deepProduct(p,c));
 for(const c of Object.values(starterCategories))c.products=c.products.map(p=>maintainedProduct(p,c));
 for(const c of Object.values(expandedCategories))c.products=c.products.map(p=>maintainedProduct(p,c));
 for(const c of Object.values(searchCategories))c.products=c.products.map(p=>maintainedProduct(p,c));
 for(const c of Object.values(nationalCategories))c.products=c.products.map(p=>maintainedProduct(p,c));
 for(const c of Object.values(authorityCategories))c.products=c.products.map(p=>maintainedProduct(p,c));
-for(const [slug,rows] of Object.entries(consumerV13)){
-  const c=nationalCategories[slug];
-  if(!c)continue;
-  for(const row of rows)if(!c.products.some(p=>p.slug===row.slug))c.products.push(maintainedProduct(row,c));
-}
+for(const [slug,rows] of Object.entries(consumerV13)){const c=nationalCategories[slug];if(!c)continue;for(const row of rows)if(!c.products.some(p=>p.slug===row.slug))c.products.push(maintainedProduct(row,c));}
 v41Depth.apply({deepCategories,nationalCategories,maintainedProduct});
 v42Priority.apply({nationalCategories,maintainedProduct});
 searchConsoleDepthV85.apply({expandedCategories,retailersFor});
@@ -57,23 +45,15 @@ const retailerCategoryMaps=[deepCategories,starterCategories,expandedCategories,
 v27Retailers.apply({categoryMaps:retailerCategoryMaps});
 v27RetailersPass5.apply({categoryMaps:retailerCategoryMaps});
 v27RetailersPass6.apply({categoryMaps:retailerCategoryMaps});
-// Apply narrowly refreshed evidence metadata only after every canonical retailer pass so
-// downstream consumer surfaces inherit the same checkedAt/reviewDue truth without adding,
-// removing or re-ranking retailer destinations.
 retailerVerificationRefreshV109.apply({categoryMaps:retailerCategoryMaps});
-// Product identity and safety are upstream of all commerce. Apply this fail-closed gate after
-// every retailer-enrichment pass so no later Amazon, eBay or other-retailer row can bypass it.
 commerceEligibilityV114.applyCategoryMaps(retailerCategoryMaps);
-// v118 begins the maintained evidence-depth backlog after commerce eligibility has been fixed.
-// It enriches product evidence and verified first-party/model-family discovery only; it never
-// changes recommendation scores, restores suppressed commerce or treats retailer participation
-// as evidence of suitability.
+// Evidence-depth passes run only after fail-closed commerce eligibility. They enrich research
+// and verified retailer evidence but do not change recommendation scoring or reinstate a
+// commerce pathway suppressed by the eligibility layer.
 const evidenceEnrichmentV118Result=evidenceEnrichmentV118.apply({categoryMaps:retailerCategoryMaps});
+const evidenceEnrichmentV119Result=evidenceEnrichmentV119.apply({categoryMaps:retailerCategoryMaps});
 const categories={...deepCategories,...starterCategories,...expandedCategories,...searchCategories,...nationalCategories,...authorityCategories};
-const legacyPathways=[
-['coffee-machines','Coffee machines'],['air-fryers','Air fryers'],['robot-vacuums','Robot vacuums'],['wireless-headphones','Wireless headphones'],
-['home-security-cameras','Home security cameras'],['stick-vacuums','Stick vacuums'],['mesh-wifi-systems','Mesh Wi-Fi systems'],['earbuds','Earbuds'],['dash-cameras','Dash cameras'],['luggage','Luggage'],['portable-power-stations','Portable power stations'],['computer-monitors','Computer monitors'],['office-chairs','Office chairs'],['automatic-pet-feeders','Automatic pet feeders'],['standing-desks','Standing desks'],['mechanical-keyboards','Mechanical keyboards'],['home-fitness-equipment','Home fitness equipment'],['computer-mice','Computer mice'],['dehumidifiers','Dehumidifiers'],['air-purifiers','Air purifiers'],['cordless-drills','Cordless drills'],['pressure-washers','Pressure washers'],['smart-doorbells','Smart doorbells'],['baby-monitors','Baby monitors'],['smartwatches','Smartwatches'],['fitness-trackers','Fitness trackers'],['bluetooth-speakers','Bluetooth speakers'],['soundbars','Soundbars'],['projectors','Projectors'],['gaming-monitors','Gaming monitors'],['gaming-headsets','Gaming headsets'],['webcams','Webcams'],['microphones','Microphones'],['external-ssds','External SSDs'],['power-banks','Power banks'],['portable-monitors','Portable monitors'],['tablets','Tablets'],['e-readers','E-readers'],['electric-toothbrushes','Electric toothbrushes'],['hair-dryers','Hair dryers'],['electric-shavers','Electric shavers'],['kitchen-mixers','Kitchen mixers'],['blenders','Blenders'],['rice-cookers','Rice cookers'],['multicookers','Multicookers'],['vacuum-sealers','Vacuum sealers'],['water-filters','Water filters'],['portable-air-conditioners','Portable air conditioners']
-];
+const legacyPathways=[['coffee-machines','Coffee machines'],['air-fryers','Air fryers'],['robot-vacuums','Robot vacuums'],['wireless-headphones','Wireless headphones'],['home-security-cameras','Home security cameras'],['stick-vacuums','Stick vacuums'],['mesh-wifi-systems','Mesh Wi-Fi systems'],['earbuds','Earbuds'],['dash-cameras','Dash cameras'],['luggage','Luggage'],['portable-power-stations','Portable power stations'],['computer-monitors','Computer monitors'],['office-chairs','Office chairs'],['automatic-pet-feeders','Automatic pet feeders'],['standing-desks','Standing desks'],['mechanical-keyboards','Mechanical keyboards'],['home-fitness-equipment','Home fitness equipment'],['computer-mice','Computer mice'],['dehumidifiers','Dehumidifiers'],['air-purifiers','Air purifiers'],['cordless-drills','Cordless drills'],['pressure-washers','Pressure washers'],['smart-doorbells','Smart doorbells'],['baby-monitors','Baby monitors'],['smartwatches','Smartwatches'],['fitness-trackers','Fitness trackers'],['bluetooth-speakers','Bluetooth speakers'],['soundbars','Soundbars'],['projectors','Projectors'],['gaming-monitors','Gaming monitors'],['gaming-headsets','Gaming headsets'],['webcams','Webcams'],['microphones','Microphones'],['external-ssds','External SSDs'],['power-banks','Power banks'],['portable-monitors','Portable monitors'],['tablets','Tablets'],['e-readers','E-readers'],['electric-toothbrushes','Electric toothbrushes'],['hair-dryers','Hair dryers'],['electric-shavers','Electric shavers'],['kitchen-mixers','Kitchen mixers'],['blenders','Blenders'],['rice-cookers','Rice cookers'],['multicookers','Multicookers'],['vacuum-sealers','Vacuum sealers'],['water-filters','Water filters'],['portable-air-conditioners','Portable air conditioners']];
 const expandedPathways=Object.values(expandedCategories).map(c=>[c.slug,c.label]);
 const searchPathways=Object.values(searchCategories).map(c=>[c.slug,c.label]);
 const nationalPathways=Object.values(nationalCategories).map(c=>[c.slug,c.label]);
@@ -81,4 +61,4 @@ const authorityPathways=Object.values(authorityCategories).map(c=>[c.slug,c.labe
 const pathwayMap=new Map([...legacyPathways,...expandedPathways,...searchPathways,...nationalPathways,...authorityPathways].map(([slug,label])=>[slug,label]));
 const pathways=[...pathwayMap].map(([slug,label])=>({slug,label,maintained:!!categories[slug],evidenceTier:categories[slug]?.evidenceTier||'unverified'}));
 const products=Object.values(categories).flatMap(c=>c.products);
-module.exports={categories,pathways,products,REVIEWED,DEEP_RESEARCHED,NEXT_REVIEW,evidenceEnrichmentV118Result};
+module.exports={categories,pathways,products,REVIEWED,DEEP_RESEARCHED,NEXT_REVIEW,evidenceEnrichmentV118Result,evidenceEnrichmentV119Result};
