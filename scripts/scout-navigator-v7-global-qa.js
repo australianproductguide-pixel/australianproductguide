@@ -59,7 +59,7 @@ function directStylesheetHrefs(html){
     assert(hrefs.length>0,`${route} must expose direct stylesheets`);
     assert.equal(hrefs[hrefs.length-1],'/assets/scout-navigator-v7-global.css?v=7.1',`${route} must make Navigator v7.1 the final direct stylesheet in the CSS cascade`);
     const finalPos=response.body.lastIndexOf('/assets/scout-navigator-v7-global.css?v=7.1');
-    for(const older of ['/assets/scout-concierge-v5.css','/assets/scout-global-surface-v111.css','/assets/premium-mobile-decision-commerce-v112.css','/assets/about-trust-navigation-v116.css','/assets/whole-site-experience-v109.css','/assets/pagespeed-home-v113.css']){
+    for(const older of ['/assets/scout-concierge-v5.css','/assets/scout-global-surface-v111.css','/assets/premium-mobile-decision-commerce-v112.css','/assets/about-trust-navigation-v116.css','/assets/whole-site-experience-v109.css','/assets/pagespeed-home-v113.css','/assets/header-marketplace-v1222.css']){
       const olderPos=response.body.lastIndexOf(older);
       if(olderPos>=0)assert(finalPos>olderPos,`${route} must load Navigator parity after ${older}`);
     }
@@ -81,5 +81,6 @@ function directStylesheetHrefs(html){
   for(const banned of ['scoreProduct(','rankDecision(','publicDecision(','commissionWeight','localStorage.setItem(','sessionStorage.setItem('])assert(!runtimeSource.includes(banned),`Navigator parity runtime must remain presentation-only: ${banned}`);
 
   console.log(JSON.stringify({version:navigator.VERSION,status:'PASS',routesChecked:routes.length,checks:{sameComponentEverywhere:true,finalCascadeEverywhere:true,approvedNavigatorAsset:true,apgPalette:true,reducedMotion:true,geometryPreserved:true,decisionLogicUntouched:true,commercialScoringUntouched:true}},null,2));
+  require('./header-marketplace-v1222-qa');
   require('./ebay-smart-placement-v1-qa');
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
