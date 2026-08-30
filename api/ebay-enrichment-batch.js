@@ -27,6 +27,7 @@ function publicResult(row){
     currentProductPhotography:row.currentProductPhotography,
     status:row.status,
     candidateCount:row.candidateCount,
+    detailChecks:row.detailChecks||0,
     chosen:chosen?{
       itemId:chosen.itemId,
       legacyItemId:chosen.legacyItemId,
@@ -34,6 +35,7 @@ function publicResult(row){
       condition:chosen.condition,
       price:chosen.price,
       imageUrl:chosen.imageUrl,
+      imageSource:chosen.imageSource||null,
       itemWebUrl:chosen.itemWebUrl,
       itemAffiliateWebUrl:chosen.itemAffiliateWebUrl,
       score:chosen.score,
@@ -44,6 +46,9 @@ function publicResult(row){
       modelCoverage:chosen.modelCoverage,
       nameCoverage:chosen.nameCoverage,
       priceRatio:chosen.priceRatio,
+      detailVerified:chosen.detailVerified===true,
+      verificationLevel:chosen.verificationLevel||null,
+      verificationEvidence:chosen.verificationEvidence||null,
       marketplaceId:'EBAY_AU',
       source:'eBay Buy Browse API',
       recommendationWeight:0
@@ -88,7 +93,7 @@ module.exports=async function handler(req,res){
   for(const row of results)counts[row.status]=(counts[row.status]||0)+1;
   const registry={};
   for(const row of results){
-    if(row.status!=='accept'||!row.chosen)continue;
+    if(row.status!=='accept'||!row.chosen||row.chosen.detailVerified!==true)continue;
     registry[row.slug]={
       product_id:row.id,
       slug:row.slug,
@@ -102,6 +107,10 @@ module.exports=async function handler(req,res){
       match_score:row.chosen.score,
       exact_model:true,
       price_ratio:row.chosen.priceRatio,
+      detail_verified:true,
+      verification_level:row.chosen.verificationLevel,
+      verification_evidence:row.chosen.verificationEvidence,
+      image_source:row.chosen.imageSource,
       match_reasons:row.chosen.reasons,
       match_flags:row.chosen.flags,
       marketplace_id:'EBAY_AU',
@@ -115,9 +124,13 @@ module.exports=async function handler(req,res){
   if(format==='registry')return res.status(200).json({ok:true,version:VERSION,totalProducts:products.length,processed:selected.length,counts,registry,durationMs:Date.now()-started});
   if(format==='compact')return res.status(200).json({
     ok:true,version:VERSION,totalProducts:products.length,processed:selected.length,counts,durationMs:Date.now()-started,
-    results:results.map(row=>({slug:row.slug,status:row.status,itemId:row.chosen&&row.chosen.itemId||null,title:row.chosen&&row.chosen.title||null,score:row.chosen&&row.chosen.score||null,flags:row.chosen&&row.chosen.flags||[]}))
+    results:results.map(row=>({
+      slug:row.slug,status:row.status,itemId:row.chosen&&row.chosen.itemId||null,title:row.chosen&&row.chosen.title||null,
+      score:row.chosen&&row.chosen.score||null,flags:row.chosen&&row.chosen.flags||[],detailVerified:row.chosen&&row.chosen.detailVerified===true,
+      verificationLevel:row.chosen&&row.chosen.verificationLevel||null,imageSource:row.chosen&&row.chosen.imageSource||null
+    }))
   });
-  const filtered=format==='accepted'?results.filter(row=>row.status==='accept'):
+  const filtered=format==='accepted'?results.filter(row=>row.status==='accept'&&row.chosen&&row.chosen.detailVerified===true):
     format==='actionable'?results.filter(row=>row.status==='accept'||row.status==='review'):results;
   return res.status(200).json({
     ok:true,
