@@ -1,0 +1,5 @@
+Production recovery marker.
+
+Purpose: force a fresh Vercel production deployment from the last known healthy application source after rollback to commit 1c40693bf68560b0482ee18f680667f87fb1bbb5.
+
+No runtime application behaviour is changed by this file.
