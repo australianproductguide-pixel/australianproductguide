@@ -7,6 +7,7 @@
 const {products}=require('../data');
 const {enrichProduct,VERSION:BASE_VERSION}=require('../lib/ebay-catalogue-enrichment-v1');
 const familyGuard=require('../lib/ebay-family-variant-guard-v131');
+const exactGuard=require('../lib/ebay-product-hero-exact-guard-v2');
 const ebay=require('../lib/ebay-browse-api-v1');
 const VERSION=familyGuard.VERSION;
 
@@ -36,6 +37,8 @@ function publicResult(row){
     candidateCount:row.candidateCount,
     detailChecks:row.detailChecks||0,
     guardReason:row.familyGuard&&row.familyGuard.reason||null,
+    heroEligible:row.heroGuard&&row.heroGuard.eligible===true,
+    heroGuardReason:row.heroGuard&&row.heroGuard.reason||null,
     chosen:chosen?{
       itemId:chosen.itemId,
       legacyItemId:chosen.legacyItemId,
@@ -76,7 +79,8 @@ async function pooled(rows,worker){
           slug:rows[index]&&rows[index].slug||null,
           status:'error',
           errorCode:error&&error.code?String(error.code):'ENRICHMENT_ERROR',
-          errorStatus:Number.isFinite(error&&error.status)?Number(error.status):null
+          errorStatus:Number.isFinite(error&&error.status)?Number(error.status):null,
+          heroGuard:{eligible:false,reason:'enrichment-error'}
         };
       }
     }
@@ -137,61 +141,74 @@ module.exports=async function handler(req,res){
   const selected=requested.slice(0,Math.min(requested.length,safeCapacity));
 
   const started=Date.now();
-  const raw=await pooled(selected,async product=>familyGuard.applyToEnrichment(product,await enrichProduct(product)));
+  const raw=await pooled(selected,async product=>{
+    const enriched=familyGuard.applyToEnrichment(product,await enrichProduct(product));
+    const heroGuard=exactGuard.evaluate(product,enriched,products,{now:Date.now()});
+    return {...enriched,heroGuard};
+  });
   const results=raw.map(publicResult).filter(Boolean);
   const counts={accept:0,review:0,'no-match':0,error:0,'no-query':0};
   for(const row of results)counts[row.status]=(counts[row.status]||0)+1;
+  const heroEligible=results.filter(row=>row.heroEligible===true).length;
   const registry={};
+  const observedAt=new Date().toISOString();
   for(const row of results){
-    if(row.status!=='accept'||!row.chosen||row.chosen.detailVerified!==true)continue;
+    if(row.status!=='accept'||row.heroEligible!==true||!row.chosen||row.chosen.detailVerified!==true)continue;
     registry[row.slug]={
-      product_id:row.id,
       slug:row.slug,
+      productId:row.id,
       brand:row.brand,
-      product_name:row.name,
+      productName:row.name,
       category:row.category,
-      ebay_item_id:row.chosen.itemId,
-      ebay_legacy_item_id:row.chosen.legacyItemId,
-      listing_title:row.chosen.title,
-      listing_condition:row.chosen.condition,
-      match_score:row.chosen.score,
-      exact_model:true,
-      price_ratio:row.chosen.priceRatio,
-      detail_verified:true,
-      verification_level:row.chosen.verificationLevel,
-      verification_evidence:row.chosen.verificationEvidence,
-      image_source:row.chosen.imageSource,
-      match_reasons:row.chosen.reasons,
-      match_flags:row.chosen.flags,
-      marketplace_id:'EBAY_AU',
+      status:'verified',
+      detailVerified:true,
+      exactModel:true,
+      verificationLevel:row.chosen.verificationLevel,
+      itemId:row.chosen.itemId,
+      legacyItemId:row.chosen.legacyItemId,
+      title:row.chosen.title,
+      condition:row.chosen.condition,
+      price:row.chosen.price,
+      imageUrl:row.chosen.imageUrl,
+      imageSource:row.chosen.imageSource,
+      itemWebUrl:row.chosen.itemWebUrl,
+      itemAffiliateWebUrl:row.chosen.itemAffiliateWebUrl,
+      matchScore:row.chosen.score,
+      priceRatio:row.chosen.priceRatio,
+      verificationEvidence:row.chosen.verificationEvidence,
+      matchReasons:row.chosen.reasons,
+      matchFlags:row.chosen.flags,
+      marketplaceId:'EBAY_AU',
       source:'eBay Buy Browse API',
-      observed_at:new Date().toISOString(),
-      recommendation_weight:0
+      observedAt,
+      recommendationWeight:0
     };
   }
   const meta={
-    ok:true,version:VERSION,baseMatcherVersion:BASE_VERSION,totalProducts:products.length,processed:selected.length,
-    requested:requested.length,quotaLimited:selected.length<requested.length,quota:quotaInfo,counts,durationMs:Date.now()-started
+    ok:true,version:VERSION,baseMatcherVersion:BASE_VERSION,heroGuardVersion:exactGuard.VERSION,totalProducts:products.length,
+    processed:selected.length,requested:requested.length,quotaLimited:selected.length<requested.length,quota:quotaInfo,counts,heroEligible,durationMs:Date.now()-started
   };
   if(format==='counts')return res.status(200).json(meta);
-  if(format==='registry')return res.status(200).json({...meta,registry});
+  if(format==='registry')return res.status(200).json({...meta,registrySchema:'ebay-verified-catalogue-v2',registry});
   if(format==='compact')return res.status(200).json({
     ...meta,
     results:results.map(row=>({
       slug:row.slug,status:row.status,errorCode:row.errorCode||null,errorStatus:row.errorStatus??null,
       itemId:row.chosen&&row.chosen.itemId||null,title:row.chosen&&row.chosen.title||null,
       score:row.chosen&&row.chosen.score||null,flags:row.chosen&&row.chosen.flags||[],guardReason:row.guardReason||null,
+      heroEligible:row.heroEligible===true,heroGuardReason:row.heroGuardReason||null,
       detailVerified:row.chosen&&row.chosen.detailVerified===true,verificationLevel:row.chosen&&row.chosen.verificationLevel||null,
       imageSource:row.chosen&&row.chosen.imageSource||null
     }))
   });
-  const filtered=format==='accepted'?results.filter(row=>row.status==='accept'&&row.chosen&&row.chosen.detailVerified===true):
+  const filtered=format==='accepted'?results.filter(row=>row.status==='accept'&&row.heroEligible===true&&row.chosen&&row.chosen.detailVerified===true):
     format==='actionable'?results.filter(row=>row.status==='accept'||row.status==='review'):results;
   return res.status(200).json({
     ...meta,
     run:RUN_ID,
     offset,
     nextOffset:requestedSlug?null:(offset+selected.length<products.length?offset+selected.length:null),
+    registrySchema:'ebay-verified-catalogue-v2',
     registry,
     results:filtered
   });
