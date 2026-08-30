@@ -32,6 +32,7 @@ function count(text,needle){return String(text).split(needle).length-1}
     assert.equal(count(response.body,'/assets/header-marketplace-v1226.css?v=122.6'),1,`${route} must include one v122.6 stylesheet`);
     assert.equal(count(response.body,'data-apg-mobile-search-v1226'),1,`${route} must include exactly one persistent mobile header Search`);
     assert.equal(count(response.body,'data-apg-drawer-supermenu="v122.5"'),1,`${route} must preserve the v122.5 priority-first supermenu`);
+    assert(response.body.includes('apg-mobile-account-label-v1226'),`${route} must include the compact mobile account label`);
     const headerStart=response.body.indexOf('<header class="site-header"');
     const menu=response.body.indexOf('class="mobile-toggle"',headerStart);
     const brand=response.body.indexOf('class="brand"',headerStart);
@@ -47,14 +48,18 @@ function count(text,needle){return String(text).split(needle).length-1}
   assert.equal(css.headers['content-type'],'text/css; charset=utf-8');
   assert.equal(css.headers['x-apg-header-marketplace-mobile-left-lockup'],'v122.6');
   for(const token of [
-    'position:relative!important','left:8px!important','left:56px!important','right:10px!important',
-    'max-width:calc(100% - 126px)!important','transform:translateY(-50%)!important','justify-content:flex-start!important',
-    'transform:none!important','left:53px!important','right:8px!important','prefers-reduced-motion:reduce',
+    'position:relative!important','left:12px!important','left:54px!important','right:12px!important',
+    'max-width:calc(100% - 170px)!important','transform:translateY(-50%)!important','justify-content:flex-start!important',
+    'transform:none!important','left:50px!important','right:10px!important','prefers-reduced-motion:reduce',
+    '.apg-mobile-account-label-v1226','Sign in','width:100%!important','max-width:none!important',
     '.apg-mobile-header-search-v1226{display:none!important','body[data-apg-route-family="home"] main#main .apg-home-search-v9{display:none!important}'
-  ])assert(css.body.includes(token),`v122.6 CSS must retain ${token}`);
+  ])assert(css.body.includes(token)||responseContainsFallback(token),`v122.6 CSS/header must retain ${token}`);
   assert(!css.body.includes('@media(min-width:921px)'),'v122.6 must not alter desktop header presentation');
 
   const source=require('node:fs').readFileSync(require('node:path').join(__dirname,'..','lib','header-marketplace-v1226-runtime.js'),'utf8');
+  assert(source.includes('Sign in <b aria-hidden="true">›</b>'),'v122.6 must render the signed-out mobile account cue');
   for(const banned of ['scoreProduct(','rankDecision(','commissionWeight','localStorage.setItem(','sessionStorage.setItem('])assert(!source.includes(banned),`v122.6 must remain presentation-only: ${banned}`);
-  console.log(`HEADER_MARKETPLACE_V1226=PASS routes=${routes.length} geometry=absolute-left-cluster mobileSearch=persistent-before-nav homeDuplicateSearch=mobile-hidden account=right-pinned supermenu=v122.5 desktop=preserved recommendationWeight=0`);
+  console.log(`HEADER_MARKETPLACE_V1226=PASS routes=${routes.length} geometry=full-width-left-cluster mobileSearch=persistent-before-nav homeDuplicateSearch=mobile-hidden account=right-pinned-with-sign-in-cue supermenu=v122.5 desktop=preserved recommendationWeight=0`);
+
+  function responseContainsFallback(){return false}
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
