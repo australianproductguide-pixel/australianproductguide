@@ -86,3 +86,7 @@ assert.strictEqual((hero.withEbayImageCsp(cspPatched).match(/https:\/\/i\.ebayim
   assert.strictEqual(nonPilot.html,sample,'non-pilot HTML must be byte-identical');
   console.log('PASS ebay verified product hero v1 QA');
 })().catch(error=>{console.error(error);process.exit(1);});
+
+// The existing deploy gate now also certifies catalogue-wide exact-match behaviour.
+require('./ebay-product-hero-exact-guard-v2-qa');
+require('./ebay-product-hero-catalogue-v2-qa');
