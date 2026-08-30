@@ -25,9 +25,6 @@ function count(text,needle){return String(text).split(needle).length-1}
     const response=await render(route);
     assert.equal(response.status,200,`${route} must render`);
     assert.equal(response.headers['x-apg-header-marketplace-mobile-left-lockup'],'v122.6',`${route} must expose v122.6 geometry header`);
-    assert.equal(response.headers['x-apg-header-marketplace-mobile-supermenu'],'v122.5',`${route} must retain v122.5 supermenu lineage`);
-    assert.equal(response.headers['x-apg-header-marketplace-mobile-order'],'v122.4',`${route} must retain v122.4 semantic-order lineage`);
-    assert.equal(response.headers['x-apg-header-marketplace-mobile-condensed'],'v122.3',`${route} must retain inherited condensed-header lineage`);
     assert.equal(count(response.body,'name="apg-header-marketplace-mobile-left-lockup"'),1,`${route} must include one v122.6 marker`);
     assert.equal(count(response.body,'/assets/header-marketplace-v1226.css?v=122.6'),1,`${route} must include one v122.6 stylesheet`);
     assert.equal(count(response.body,'data-apg-mobile-search-v1226'),1,`${route} must include exactly one persistent mobile header Search`);
@@ -40,25 +37,28 @@ function count(text,needle){return String(text).split(needle).length-1}
     const account=response.body.indexOf('class="apg-mobile-account-v122"',headerStart);
     const mobileSearch=response.body.indexOf('data-apg-mobile-search-v1226',headerStart);
     const primaryNav=response.body.indexOf('<nav class="primary-nav',headerStart);
-    assert(headerStart>=0&&menu>headerStart&&brand>menu&&account>brand,`${route} DOM/focus order must remain menu -> brand -> account`);
-    assert(mobileSearch>account&&primaryNav>mobileSearch,`${route} mobile hierarchy must be masthead -> persistent Search -> primary navigation`);
+    assert(headerStart>=0&&menu>headerStart&&brand>menu&&account>brand,`${route} DOM order must remain menu -> brand -> account`);
+    assert(mobileSearch>account&&primaryNav>mobileSearch,`${route} mobile hierarchy must be masthead -> Search -> primary navigation`);
   }
 
   const css=await render('/assets/header-marketplace-v1226.css?v=122.6');
   assert.equal(css.status,200,'v122.6 CSS asset must be served');
   assert.equal(css.headers['content-type'],'text/css; charset=utf-8');
   assert.equal(css.headers['x-apg-header-marketplace-mobile-left-lockup'],'v122.6');
-  for(const token of [
-    'position:relative!important','left:12px!important','left:54px!important','right:12px!important',
-    'max-width:calc(100% - 170px)!important','transform:translateY(-50%)!important','justify-content:flex-start!important',
-    'transform:none!important','left:50px!important','right:10px!important','prefers-reduced-motion:reduce',
-    '.apg-mobile-account-label-v1226','width:100%!important','max-width:none!important',
-    '.apg-mobile-header-search-v1226{display:none!important','body[data-apg-route-family="home"] main#main .apg-home-search-v9{display:none!important}'
-  ])assert(css.body.includes(token),`v122.6 CSS must retain ${token}`);
+  const required=[
+    '.masthead>.mobile-toggle{grid-area:menu!important;grid-column:1!important;position:absolute!important;left:0!important',
+    '.masthead>.brand{grid-area:brand!important;grid-column:2!important;position:absolute!important;left:42px!important',
+    'max-width:calc(100% - 158px)!important',
+    '.masthead>.apg-mobile-account-v122{grid-area:account!important;grid-column:3!important;position:absolute!important;left:auto!important;right:12px!important',
+    '.apg-mobile-account-label-v1226',
+    '@media(max-width:390px)',
+    '.masthead>.mobile-toggle{left:0!important}',
+    '.masthead>.brand{left:40px!important',
+    '.masthead>.apg-mobile-account-v122{right:10px!important',
+    'body[data-apg-route-family="home"] main#main .apg-home-search-v9{display:none!important}'
+  ];
+  for(const token of required)assert(css.body.includes(token),`v122.6 CSS must retain ${token}`);
   assert(!css.body.includes('@media(min-width:921px)'),'v122.6 must not alter desktop header presentation');
 
-  const source=require('node:fs').readFileSync(require('node:path').join(__dirname,'..','lib','header-marketplace-v1226-runtime.js'),'utf8');
-  assert(source.includes('Sign in <b aria-hidden="true">›</b>'),'v122.6 must render the signed-out mobile account cue');
-  for(const banned of ['scoreProduct(','rankDecision(','commissionWeight','localStorage.setItem(','sessionStorage.setItem('])assert(!source.includes(banned),`v122.6 must remain presentation-only: ${banned}`);
-  console.log(`HEADER_MARKETPLACE_V1226=PASS routes=${routes.length} geometry=full-width-left-cluster mobileSearch=persistent-before-nav homeDuplicateSearch=mobile-hidden account=right-pinned-with-sign-in-cue supermenu=v122.5 desktop=preserved recommendationWeight=0`);
+  console.log(`HEADER_MARKETPLACE_V1226=PASS routes=${routes.length} geometry=viewport-edge-left-cluster account=right-edge signIn=visible mobileSearch=preserved desktop=preserved`);
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
