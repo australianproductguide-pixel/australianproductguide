@@ -43,6 +43,7 @@ function publicResult(row){
       exactModel:chosen.exactModel,
       modelCoverage:chosen.modelCoverage,
       nameCoverage:chosen.nameCoverage,
+      priceRatio:chosen.priceRatio,
       marketplaceId:'EBAY_AU',
       source:'eBay Buy Browse API',
       recommendationWeight:0
@@ -74,17 +75,17 @@ module.exports=async function handler(req,res){
   if(Date.now()>EXPIRES_AT)return res.status(410).json({ok:false,status:'expired'});
   if(String(req.query&&req.query.run||'')!==RUN_ID)return res.status(404).json({ok:false,status:'not-found'});
 
+  const requestedSlug=String(req.query&&req.query.slug||'').trim();
   const offset=Math.max(0,int(req.query&&req.query.offset,0));
   const limit=Math.max(1,Math.min(MAX_LIMIT,int(req.query&&req.query.limit,40)));
-  const selected=products.slice(offset,offset+limit);
+  const selected=requestedSlug?products.filter(product=>product.slug===requestedSlug):products.slice(offset,offset+limit);
+  if(requestedSlug&&!selected.length)return res.status(404).json({ok:false,status:'unknown-product'});
+
   const started=Date.now();
   const raw=await pooled(selected,product=>enrichProduct(product));
   const results=raw.map(publicResult).filter(Boolean);
   const counts={accept:0,review:0,'no-match':0,error:0,'no-query':0};
   for(const row of results)counts[row.status]=(counts[row.status]||0)+1;
-  const format=String(req.query&&req.query.format||'full');
-  const filtered=format==='accepted'?results.filter(row=>row.status==='accept'):
-    format==='actionable'?results.filter(row=>row.status==='accept'||row.status==='review'):results;
   const registry={};
   for(const row of results){
     if(row.status!=='accept'||!row.chosen)continue;
@@ -98,11 +99,9 @@ module.exports=async function handler(req,res){
       ebay_legacy_item_id:row.chosen.legacyItemId,
       listing_title:row.chosen.title,
       listing_condition:row.chosen.condition,
-      image_url_observed:row.chosen.imageUrl,
-      item_url_observed:row.chosen.itemWebUrl,
-      affiliate_url_observed:row.chosen.itemAffiliateWebUrl,
       match_score:row.chosen.score,
       exact_model:true,
+      price_ratio:row.chosen.priceRatio,
       match_reasons:row.chosen.reasons,
       match_flags:row.chosen.flags,
       marketplace_id:'EBAY_AU',
@@ -111,15 +110,24 @@ module.exports=async function handler(req,res){
       recommendation_weight:0
     };
   }
+  const format=String(req.query&&req.query.format||'full');
+  if(format==='counts')return res.status(200).json({ok:true,version:VERSION,totalProducts:products.length,processed:selected.length,counts,durationMs:Date.now()-started});
+  if(format==='registry')return res.status(200).json({ok:true,version:VERSION,totalProducts:products.length,processed:selected.length,counts,registry,durationMs:Date.now()-started});
+  if(format==='compact')return res.status(200).json({
+    ok:true,version:VERSION,totalProducts:products.length,processed:selected.length,counts,durationMs:Date.now()-started,
+    results:results.map(row=>({slug:row.slug,status:row.status,itemId:row.chosen&&row.chosen.itemId||null,title:row.chosen&&row.chosen.title||null,score:row.chosen&&row.chosen.score||null,flags:row.chosen&&row.chosen.flags||[]}))
+  });
+  const filtered=format==='accepted'?results.filter(row=>row.status==='accept'):
+    format==='actionable'?results.filter(row=>row.status==='accept'||row.status==='review'):results;
   return res.status(200).json({
     ok:true,
     version:VERSION,
     run:RUN_ID,
     totalProducts:products.length,
     offset,
-    requested:limit,
+    requested:requestedSlug?1:limit,
     processed:selected.length,
-    nextOffset:offset+selected.length<products.length?offset+selected.length:null,
+    nextOffset:requestedSlug?null:(offset+selected.length<products.length?offset+selected.length:null),
     counts,
     durationMs:Date.now()-started,
     registry,
