@@ -23,7 +23,7 @@ function clean(value){return String(value==null?'':value).trim();}
 function complete(row){
   if(!row||row.status!=='verified'||row.detailVerified!==true||row.exactModel!==true)return false;
   if(row.marketplaceId!==MARKETPLACE||row.source!==SOURCE||row.recommendationWeight!==0)return false;
-  if(!row.slug||!row.productId||!row.productName||!row.itemId||!row.legacyItemId||!row.title||!row.condition)return false;
+  if(!row.slug||!row.productName||!row.itemId||!row.legacyItemId||!row.title||!row.condition)return false;
   if(!row.price||clean(row.price.currency)!=='AUD'||!clean(row.price.value))return false;
   if(!/^https:\/\/i\.ebayimg\.com\//i.test(clean(row.imageUrl)))return false;
   if(!/^https:\/\/www\.ebay\.com\.au\/itm\//i.test(clean(row.itemWebUrl)))return false;
