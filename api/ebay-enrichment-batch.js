@@ -5,7 +5,9 @@
 // Remove after the governed catalogue mapping has been generated and verified.
 
 const {products}=require('../data');
-const {enrichProduct,VERSION}=require('../lib/ebay-catalogue-enrichment-v1');
+const {enrichProduct,VERSION:BASE_VERSION}=require('../lib/ebay-catalogue-enrichment-v1');
+const familyGuard=require('../lib/ebay-family-variant-guard-v131');
+const VERSION=familyGuard.VERSION;
 
 const RUN_ID='apg-ebay-enrichment-v1';
 const EXPIRES_AT=Date.parse('2026-08-31T12:00:00Z');
@@ -28,6 +30,7 @@ function publicResult(row){
     status:row.status,
     candidateCount:row.candidateCount,
     detailChecks:row.detailChecks||0,
+    guardReason:row.familyGuard&&row.familyGuard.reason||null,
     chosen:chosen?{
       itemId:chosen.itemId,
       legacyItemId:chosen.legacyItemId,
@@ -87,7 +90,7 @@ module.exports=async function handler(req,res){
   if(requestedSlug&&!selected.length)return res.status(404).json({ok:false,status:'unknown-product'});
 
   const started=Date.now();
-  const raw=await pooled(selected,product=>enrichProduct(product));
+  const raw=await pooled(selected,async product=>familyGuard.applyToEnrichment(product,await enrichProduct(product)));
   const results=raw.map(publicResult).filter(Boolean);
   const counts={accept:0,review:0,'no-match':0,error:0,'no-query':0};
   for(const row of results)counts[row.status]=(counts[row.status]||0)+1;
@@ -120,29 +123,26 @@ module.exports=async function handler(req,res){
     };
   }
   const format=String(req.query&&req.query.format||'full');
-  if(format==='counts')return res.status(200).json({ok:true,version:VERSION,totalProducts:products.length,processed:selected.length,counts,durationMs:Date.now()-started});
-  if(format==='registry')return res.status(200).json({ok:true,version:VERSION,totalProducts:products.length,processed:selected.length,counts,registry,durationMs:Date.now()-started});
+  const meta={ok:true,version:VERSION,baseMatcherVersion:BASE_VERSION,totalProducts:products.length,processed:selected.length,counts,durationMs:Date.now()-started};
+  if(format==='counts')return res.status(200).json(meta);
+  if(format==='registry')return res.status(200).json({...meta,registry});
   if(format==='compact')return res.status(200).json({
-    ok:true,version:VERSION,totalProducts:products.length,processed:selected.length,counts,durationMs:Date.now()-started,
+    ...meta,
     results:results.map(row=>({
       slug:row.slug,status:row.status,itemId:row.chosen&&row.chosen.itemId||null,title:row.chosen&&row.chosen.title||null,
-      score:row.chosen&&row.chosen.score||null,flags:row.chosen&&row.chosen.flags||[],detailVerified:row.chosen&&row.chosen.detailVerified===true,
-      verificationLevel:row.chosen&&row.chosen.verificationLevel||null,imageSource:row.chosen&&row.chosen.imageSource||null
+      score:row.chosen&&row.chosen.score||null,flags:row.chosen&&row.chosen.flags||[],guardReason:row.guardReason||null,
+      detailVerified:row.chosen&&row.chosen.detailVerified===true,verificationLevel:row.chosen&&row.chosen.verificationLevel||null,
+      imageSource:row.chosen&&row.chosen.imageSource||null
     }))
   });
   const filtered=format==='accepted'?results.filter(row=>row.status==='accept'&&row.chosen&&row.chosen.detailVerified===true):
     format==='actionable'?results.filter(row=>row.status==='accept'||row.status==='review'):results;
   return res.status(200).json({
-    ok:true,
-    version:VERSION,
+    ...meta,
     run:RUN_ID,
-    totalProducts:products.length,
     offset,
     requested:requestedSlug?1:limit,
-    processed:selected.length,
     nextOffset:requestedSlug?null:(offset+selected.length<products.length?offset+selected.length:null),
-    counts,
-    durationMs:Date.now()-started,
     registry,
     results:filtered
   });
