@@ -28,6 +28,8 @@ function publicResult(row){
     priority:row.priority,
     currentProductPhotography:row.currentProductPhotography,
     status:row.status,
+    errorCode:row.errorCode||null,
+    errorStatus:Number.isFinite(row.errorStatus)?row.errorStatus:null,
     candidateCount:row.candidateCount,
     detailChecks:row.detailChecks||0,
     guardReason:row.familyGuard&&row.familyGuard.reason||null,
@@ -67,7 +69,12 @@ async function pooled(rows,worker){
       const index=cursor++;
       if(index>=rows.length)return;
       try{output[index]=await worker(rows[index],index);}catch(error){
-        output[index]={slug:rows[index]&&rows[index].slug||null,status:'error',errorCode:error&&error.code?String(error.code):'ENRICHMENT_ERROR'};
+        output[index]={
+          slug:rows[index]&&rows[index].slug||null,
+          status:'error',
+          errorCode:error&&error.code?String(error.code):'ENRICHMENT_ERROR',
+          errorStatus:Number.isFinite(error&&error.status)?Number(error.status):null
+        };
       }
     }
   }
@@ -129,7 +136,8 @@ module.exports=async function handler(req,res){
   if(format==='compact')return res.status(200).json({
     ...meta,
     results:results.map(row=>({
-      slug:row.slug,status:row.status,itemId:row.chosen&&row.chosen.itemId||null,title:row.chosen&&row.chosen.title||null,
+      slug:row.slug,status:row.status,errorCode:row.errorCode||null,errorStatus:row.errorStatus??null,
+      itemId:row.chosen&&row.chosen.itemId||null,title:row.chosen&&row.chosen.title||null,
       score:row.chosen&&row.chosen.score||null,flags:row.chosen&&row.chosen.flags||[],guardReason:row.guardReason||null,
       detailVerified:row.chosen&&row.chosen.detailVerified===true,verificationLevel:row.chosen&&row.chosen.verificationLevel||null,
       imageSource:row.chosen&&row.chosen.imageSource||null
