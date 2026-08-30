@@ -3,8 +3,11 @@
 const assert=require('assert');
 const registry=require('../data/ebay-verified-offers-v1');
 const hero=require('../lib/ebay-verified-product-hero-v1-runtime');
+const ebay=require('../lib/ebay-browse-api-v1');
 
 const slugs=Object.keys(hero.PRODUCTS);
+assert.strictEqual(hero.VERSION,'1.1');
+assert.strictEqual(ebay.VERSION,'1.2');
 assert.strictEqual(slugs.length,5,'pilot must remain exactly five products');
 assert.strictEqual(Object.keys(registry.offers).length,5,'registry must remain exactly five products');
 for(const slug of slugs){
@@ -56,7 +59,7 @@ const jsonLd='<script type="application/ld+json">{"@type":"Product","name":"Test
 const sample=`<!doctype html><html><head>${canonical}${jsonLd}</head><body><main><section class="product-hero"><div class="wrap product-hero-grid"><div class="product-visual large" role="img"><div class="apg-product-brand-placeholder" aria-hidden="true"><span>Brand identity</span></div><div class="visual-copy"><strong>Product</strong></div></div></div></section><section><article><div class="apg-product-brand-placeholder" aria-hidden="true"><span>Alternative logo</span></div></article></section></main></body></html>`;
 const transformed=hero.replaceHeroPlaceholder(sample,sampleSlug,sampleDetail);
 assert(transformed,'top hero placeholder should be replaceable');
-assert(transformed.includes('data-apg-ebay-product-hero="v1.0"'),'verified hero marker missing');
+assert(transformed.includes('data-apg-ebay-product-hero="v1.1"'),'verified hero marker missing');
 assert(transformed.includes(`src="${sampleRow.image}"`),'exact image missing');
 assert(transformed.includes(`alt="${hero.PRODUCTS[sampleSlug].name}"`),'exact product alt missing');
 assert(transformed.includes('fetchpriority="high"'),'hero image must be prioritised');
@@ -77,14 +80,42 @@ assert(cspPatched.includes('img-src \'self\' data: https://m.media-amazon.com ht
 assert(cspPatched.includes("connect-src 'self'"),'other CSP directives must be preserved');
 assert.strictEqual((hero.withEbayImageCsp(cspPatched).match(/https:\/\/i\.ebayimg\.com/g)||[]).length,1,'eBay CSP host must not duplicate');
 
+// Rate-limit backoff helper must honour Retry-After without exposing or depending on credentials.
+const mockHeaders={get:key=>String(key).toLowerCase()==='retry-after'?'120':null};
+assert.strictEqual(ebay.retryAfterDelay({headers:mockHeaders},0),120000,'Retry-After seconds must be honoured');
+ebay.clearRateLimitBackoff();
+const noted=ebay.noteRateLimit({headers:mockHeaders},1000);
+assert.strictEqual(noted,121000,'rate-limit circuit should record retry time');
+assert.strictEqual(ebay.activeRateLimitBackoff(2000),121000,'rate-limit circuit should remain active inside window');
+ebay.clearRateLimitBackoff();
+assert.strictEqual(ebay.activeRateLimitBackoff(2000),0,'rate-limit circuit should be clearable');
+
 (async()=>{
+  hero.cache.clear();
   const result=await hero.inject(sample,`/products/${sampleSlug}/`,{getItem:async()=>detailFor(sampleSlug),now:()=>Date.parse('2026-08-31T00:00:00Z')});
   assert.strictEqual(result.usedEbayImage,true,'valid exact item should produce hero image');
   assert(result.html.includes(hero.STYLE_HREF),'valid injection should include stylesheet');
+
+  // If eBay is temporarily rate limited, the five already-verified pilot records may bridge the
+  // outage only while their observedAt remains inside APG's five-hour freshness window.
+  hero.cache.clear();
+  const observed=Date.parse(sampleRow.observedAt);
+  const fallback=await hero.currentDetail(sampleSlug,sampleRow,{getItem:async()=>{const e=new Error('rate limited');e.code='EBAY_BROWSE_RATE_LIMITED';e.status=429;throw e;},now:()=>observed+(60*60*1000)});
+  assert.strictEqual(fallback.freshRegistryFallback,true,'fresh verified registry row should bridge a temporary rate limit');
+  assert.strictEqual(fallback.resolvedAt,observed,'fallback freshness must be anchored to original eBay observation time, not request time');
+  assert(hero.detailAge(fallback,observed+(60*60*1000))===60*60*1000,'fallback age should track original observation');
+  const fallbackHtml=hero.reconcileImageCopy('Brand identity placeholder via APG governed brand resolver',{freshRegistryFallback:true});
+  assert(fallbackHtml.includes('verified within freshness window'),'fallback provenance copy must not claim render-time verification');
+
+  hero.cache.clear();
+  let expiredRejected=false;
+  try{await hero.currentDetail(sampleSlug,sampleRow,{getItem:async()=>{throw new Error('offline');},now:()=>observed+hero.REGISTRY_FALLBACK_MAX_AGE_MS+1});}catch{expiredRejected=true;}
+  assert.strictEqual(expiredRejected,true,'registry fallback must fail closed after five hours');
+
   const nonPilot=await hero.inject(sample,'/products/not-in-pilot/',{getItem:async()=>{throw new Error('should not fetch')}});
   assert.strictEqual(nonPilot.usedEbayImage,false,'non-pilot must remain inactive');
   assert.strictEqual(nonPilot.html,sample,'non-pilot HTML must be byte-identical');
-  console.log('PASS ebay verified product hero v1 QA');
+  console.log('PASS ebay verified product hero v1.1 QA');
 })().catch(error=>{console.error(error);process.exit(1);});
 
 // The existing deploy gate now also certifies catalogue-wide exact-match behaviour.
