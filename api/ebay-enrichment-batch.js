@@ -7,12 +7,15 @@
 const {products}=require('../data');
 const {enrichProduct,VERSION:BASE_VERSION}=require('../lib/ebay-catalogue-enrichment-v1');
 const familyGuard=require('../lib/ebay-family-variant-guard-v131');
+const ebay=require('../lib/ebay-browse-api-v1');
 const VERSION=familyGuard.VERSION;
 
 const RUN_ID='apg-ebay-enrichment-v1';
-const EXPIRES_AT=Date.parse('2026-08-31T12:00:00Z');
+const EXPIRES_AT=Date.parse('2026-09-03T12:00:00Z');
 const MAX_LIMIT=482;
-const CONCURRENCY=8;
+const CONCURRENCY=3;
+const MAX_CALLS_PER_PRODUCT=5;
+const QUOTA_RESERVE=100;
 
 function int(value,fallback){const n=Number.parseInt(String(value??''),10);return Number.isFinite(n)?n:fallback;}
 function publicResult(row){
@@ -82,6 +85,22 @@ async function pooled(rows,worker){
   return output;
 }
 
+async function browseQuota(){
+  const payload=await ebay.getRateLimits({apiName:'browse',apiContext:'buy',timeoutMs:6000});
+  return ebay.summariseRateLimits(payload,{apiName:'browse',apiContext:'buy'});
+}
+function quotaPublic(quota){
+  return {
+    found:Boolean(quota&&quota.found),
+    exhausted:quota&&quota.exhausted===true,
+    lowestRemaining:Number.isFinite(quota&&quota.lowestRemaining)?Number(quota.lowestRemaining):null,
+    resetAt:quota&&quota.resetAt||null,
+    reserve:QUOTA_RESERVE,
+    maxCallsPerProduct:MAX_CALLS_PER_PRODUCT,
+    resources:Array.isArray(quota&&quota.resources)?quota.resources:[]
+  };
+}
+
 module.exports=async function handler(req,res){
   res.setHeader('Cache-Control','no-store, max-age=0');
   res.setHeader('X-Robots-Tag','noindex, nofollow, noarchive');
@@ -90,11 +109,32 @@ module.exports=async function handler(req,res){
   if(Date.now()>EXPIRES_AT)return res.status(410).json({ok:false,status:'expired'});
   if(String(req.query&&req.query.run||'')!==RUN_ID)return res.status(404).json({ok:false,status:'not-found'});
 
+  let quota;
+  try{quota=await browseQuota();}
+  catch(error){
+    return res.status(502).json({
+      ok:false,status:'quota-check-failed',version:VERSION,totalProducts:products.length,
+      errorCode:error&&error.code?String(error.code):'EBAY_QUOTA_CHECK_FAILED',
+      errorStatus:Number.isFinite(error&&error.status)?Number(error.status):null
+    });
+  }
+  const quotaInfo=quotaPublic(quota);
+  const format=String(req.query&&req.query.format||'full');
+  if(format==='quota')return res.status(200).json({ok:true,version:VERSION,totalProducts:products.length,quota:quotaInfo});
+  if(!quota.found)return res.status(503).json({ok:false,status:'quota-data-unavailable',version:VERSION,totalProducts:products.length,quota:quotaInfo});
+  if(quota.exhausted===true)return res.status(429).json({ok:false,status:'browse-quota-exhausted',version:VERSION,totalProducts:products.length,quota:quotaInfo});
+
   const requestedSlug=String(req.query&&req.query.slug||'').trim();
   const offset=Math.max(0,int(req.query&&req.query.offset,0));
   const limit=Math.max(1,Math.min(MAX_LIMIT,int(req.query&&req.query.limit,40)));
-  const selected=requestedSlug?products.filter(product=>product.slug===requestedSlug):products.slice(offset,offset+limit);
-  if(requestedSlug&&!selected.length)return res.status(404).json({ok:false,status:'unknown-product'});
+  const requested=requestedSlug?products.filter(product=>product.slug===requestedSlug):products.slice(offset,offset+limit);
+  if(requestedSlug&&!requested.length)return res.status(404).json({ok:false,status:'unknown-product'});
+
+  const safeCapacity=Number.isFinite(quota.lowestRemaining)
+    ?Math.max(0,Math.floor((quota.lowestRemaining-QUOTA_RESERVE)/MAX_CALLS_PER_PRODUCT))
+    :0;
+  if(safeCapacity<1)return res.status(429).json({ok:false,status:'browse-quota-reserved',version:VERSION,totalProducts:products.length,quota:quotaInfo});
+  const selected=requested.slice(0,Math.min(requested.length,safeCapacity));
 
   const started=Date.now();
   const raw=await pooled(selected,async product=>familyGuard.applyToEnrichment(product,await enrichProduct(product)));
@@ -129,8 +169,10 @@ module.exports=async function handler(req,res){
       recommendation_weight:0
     };
   }
-  const format=String(req.query&&req.query.format||'full');
-  const meta={ok:true,version:VERSION,baseMatcherVersion:BASE_VERSION,totalProducts:products.length,processed:selected.length,counts,durationMs:Date.now()-started};
+  const meta={
+    ok:true,version:VERSION,baseMatcherVersion:BASE_VERSION,totalProducts:products.length,processed:selected.length,
+    requested:requested.length,quotaLimited:selected.length<requested.length,quota:quotaInfo,counts,durationMs:Date.now()-started
+  };
   if(format==='counts')return res.status(200).json(meta);
   if(format==='registry')return res.status(200).json({...meta,registry});
   if(format==='compact')return res.status(200).json({
@@ -149,7 +191,6 @@ module.exports=async function handler(req,res){
     ...meta,
     run:RUN_ID,
     offset,
-    requested:requestedSlug?1:limit,
     nextOffset:requestedSlug?null:(offset+selected.length<products.length?offset+selected.length:null),
     registry,
     results:filtered
