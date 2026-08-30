@@ -34,3 +34,10 @@ assert(routes.some(r=>r.src==='/mcp'&&r.dest==='/api/mcp'));
 assert(routes.some(r=>r.src==='/oauth/consent'&&r.dest==='/api/oauth-consent'));
 assert(routes.some(r=>r.src==='/\.well-known/oauth-protected-resource/mcp'.replace('\\','')||r.src==='/.well-known/oauth-protected-resource/mcp'));
 console.log('APG MCP OAuth v1 source QA passed');
+
+// Feature-branch Preview validation only. This makes the Vercel build prove that the
+// newly configured eBay Sandbox Client ID / Cert ID can mint an OAuth application token
+// and call the Browse API, without ever printing credentials or tokens.
+if(process.env.VERCEL_ENV==='preview'&&String(process.env.EBAY_BROWSE_ENVIRONMENT||'').trim().toLowerCase()==='sandbox'){
+  require('./ebay-browse-sandbox-validation');
+}
