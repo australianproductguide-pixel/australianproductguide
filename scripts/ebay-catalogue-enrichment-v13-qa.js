@@ -69,6 +69,7 @@ assert.strictEqual(wrongSony.exactModel,false);
 
 const exactSony=matcher.scoreCandidate(wf1000xm6,listing('Sony WF-1000XM6 Truly Wireless Noise Cancelling Earbuds'));
 assert.strictEqual(exactSony.exactModel,true);
-assert.strictEqual(exactSony.status,'accept');
+assert.notStrictEqual(exactSony.status,'reject');
+assert.strictEqual(exactSony.status,'review');
 
-console.log('EBAY_CATALOGUE_ENRICHMENT_V13=PASS material-variants=screen-size|model-suffix compound-models=WF-1000XM6|S70D|X50 recommendationWeight=0');
+console.log('EBAY_CATALOGUE_ENRICHMENT_V13=PASS material-variants=screen-size|model-suffix compound-models=WF-1000XM6|S70D|X50 sparse-exact-model=review recommendationWeight=0');
