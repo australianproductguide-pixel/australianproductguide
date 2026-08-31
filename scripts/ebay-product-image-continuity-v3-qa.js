@@ -8,7 +8,7 @@ const pilot=require('../data/ebay-verified-offers-v1');
 const worker=require('../api/ebay-image-refresh');
 const stateClient=require('../lib/apg-supabase-public-v1');
 
-assert.strictEqual(continuity.VERSION,'3.1');
+assert.strictEqual(continuity.VERSION,'3.2');
 assert.strictEqual(worker.VERSION,'1.2');
 assert.strictEqual(stateClient.VERSION,'1.1');
 assert.strictEqual(stateClient.STATE_FUNCTION,'/functions/v1/apg-ebay-image-state','material image-state operations must use the protected Edge Function');
@@ -16,6 +16,7 @@ assert(!stateClient.rpc.toString().includes('/rest/v1/rpc'),'material image-stat
 assert.strictEqual(continuity.REFRESH_TARGET_MS,4*60*60*1000,'background refresh target must be four hours');
 assert(continuity.MAX_DISPLAY_AGE_MS<6*60*60*1000,'display ceiling must remain below six hours');
 assert(continuity.MAX_DISPLAY_AGE_MS>=5.5*60*60*1000,'continuity buffer should exceed the former five-hour cliff');
+assert.strictEqual(continuity.STATE_CACHE_TTL_MS,30*1000,'governed image-state cache must propagate revocations within about 30 seconds');
 assert.strictEqual(worker.REFRESH_QUOTA_RESERVE,500,'automatic refresh must preserve a 500-call ordinary Browse reserve');
 assert.strictEqual(worker.CONCURRENCY,3,'background refresh concurrency must remain conservative');
 assert.strictEqual(worker.MAX_RECOVERY_CALLS,5,'listing recovery must reserve at most five ordinary calls');
@@ -83,7 +84,7 @@ const html=`<!doctype html><html><head>${canonical}${jsonLd}</head><body><main><
     fetchState:async()=>{stateReads+=1;return state();}
   });
   assert.strictEqual(first.usedEbayImage,true,'continuity v3 must prevent the former five-hour logo cliff');
-  assert(first.html.includes('data-apg-ebay-product-hero="v3.1"'),'v3.1 hero marker missing');
+  assert(first.html.includes('data-apg-ebay-product-hero="v3.2"'),'v3.2 hero marker missing');
   assert(first.html.includes(source.image),'governed exact product image missing');
   assert(first.html.includes('automated background refresh'),'automatic refresh disclosure missing');
   assert(first.html.includes(canonical),'canonical must remain unchanged');
@@ -96,7 +97,16 @@ const html=`<!doctype html><html><head>${canonical}${jsonLd}</head><body><main><
     fetchState:async()=>{stateReads+=1;throw new Error('cache should prevent state service dependency');}
   });
   assert.strictEqual(second.usedEbayImage,true,'short state-service fault must not unnecessarily remove a still-current cached image');
-  assert.strictEqual(stateReads,1,'five-minute state cache should absorb repeat product-page reads');
+  assert.strictEqual(stateReads,1,'30-second state cache should absorb immediate repeat product-page reads');
+
+  const revoked=await continuity.inject(html,`/products/${slug}/`,{
+    now:()=>now+continuity.STATE_CACHE_TTL_MS+1,
+    fetchState:async()=>{stateReads+=1;return state({status:'retired',exact_model:false,recovery_required:true,last_error_code:'QA_REVOKED'});}
+  });
+  assert.strictEqual(revoked.usedEbayImage,false,'retired governed mapping must disappear after the short cache TTL');
+  assert.strictEqual(revoked.html,html,'retired mapping must restore the APG fallback rather than an old retailer image');
+  assert.strictEqual(stateReads,2,'runtime must re-read governed state after 30-second cache expiry');
+  assert.strictEqual(continuity.stateCache.has(slug),false,'authoritative retirement must evict any warm cached mapping');
 
   continuity.stateCache.clear();
   const expired=await continuity.inject(html,`/products/${slug}/`,{
@@ -137,5 +147,5 @@ const html=`<!doctype html><html><head>${canonical}${jsonLd}</head><body><main><
   const counts=worker.countStatuses([{status:'accepted'},{status:'no-match'},{status:'accepted'}],{accepted:0,'no-match':0,error:0});
   assert.deepStrictEqual(counts,{accepted:2,'no-match':1,error:0},'discovery reporting must retain honest outcome counts');
 
-  console.log(`EBAY_IMAGE_CONTINUITY_V31=PASS public-ebay-network=0 governed-state-precedence=fail-closed refresh-target=4h display-ceiling=${Math.round(continuity.MAX_DISPLAY_AGE_MS/60000)}m cache=5m worker-reserve=${worker.REFRESH_QUOTA_RESERVE} discovery-max=${worker.MAX_DISCOVERY_PRODUCTS_PER_RUN}x${worker.MAX_DISCOVERY_CALLS_PER_PRODUCT} recommendationWeight=0`);
+  console.log(`EBAY_IMAGE_CONTINUITY_V32=PASS public-ebay-network=0 governed-state-precedence=fail-closed refresh-target=4h display-ceiling=${Math.round(continuity.MAX_DISPLAY_AGE_MS/60000)}m cache=${Math.round(continuity.STATE_CACHE_TTL_MS/1000)}s worker-reserve=${worker.REFRESH_QUOTA_RESERVE} discovery-max=${worker.MAX_DISCOVERY_PRODUCTS_PER_RUN}x${worker.MAX_DISCOVERY_CALLS_PER_PRODUCT} recommendationWeight=0`);
 })().catch(error=>{console.error(error.stack||error);process.exit(1);});
