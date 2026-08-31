@@ -83,7 +83,10 @@ auditIntegration.install();
 verifiedEbayProductHero.install(auditIntegration);
 catalogueEbayProductHero.install(auditIntegration);
 ebayProductImageContinuity.install(auditIntegration);
-crossSurfaceProductImagery.install(auditIntegration);
+// P0 containment 1 Sep 2026: v33.1 remains source-controlled and regression-tested but is
+// deliberately not installed into the global response chain. Vercel Production proved that the
+// asynchronous response interception is unsafe under the serverless runtime even though source/PR
+// gates were green. Re-enable only through a production-semantics-safe integration and GREEN gate.
 ebayEpnSurface.install(premiumMobileDecisionCommerce);
 customerJourneyProgramme.install(wholeSiteExperience);
 faviconParity.install(wholeSiteExperience);
@@ -119,7 +122,7 @@ presentationHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
 presentationHandler.EBAY_VERIFIED_PRODUCT_HERO_VERSION=verifiedEbayProductHero.VERSION;
 presentationHandler.EBAY_PRODUCT_HERO_CATALOGUE_VERSION=catalogueEbayProductHero.VERSION;
 presentationHandler.EBAY_PRODUCT_IMAGE_CONTINUITY_VERSION=ebayProductImageContinuity.VERSION;
-presentationHandler.CROSS_SURFACE_PRODUCT_IMAGERY_VERSION=crossSurfaceProductImagery.VERSION;
+presentationHandler.CROSS_SURFACE_PRODUCT_IMAGERY_VERSION='STAGED_P0_DISABLED';
 // PageSpeed/agentic certification is intentionally the final response wrapper so it sees
 // every late-injected presentation stylesheet and can consolidate the complete homepage
 // render-blocking set without changing recommendation, retailer, account or decision logic.
@@ -129,5 +132,5 @@ finalHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
 finalHandler.EBAY_VERIFIED_PRODUCT_HERO_VERSION=verifiedEbayProductHero.VERSION;
 finalHandler.EBAY_PRODUCT_HERO_CATALOGUE_VERSION=catalogueEbayProductHero.VERSION;
 finalHandler.EBAY_PRODUCT_IMAGE_CONTINUITY_VERSION=ebayProductImageContinuity.VERSION;
-finalHandler.CROSS_SURFACE_PRODUCT_IMAGERY_VERSION=crossSurfaceProductImagery.VERSION;
+finalHandler.CROSS_SURFACE_PRODUCT_IMAGERY_VERSION='STAGED_P0_DISABLED';
 module.exports=finalHandler;
