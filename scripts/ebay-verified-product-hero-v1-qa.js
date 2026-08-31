@@ -135,6 +135,8 @@ assert.strictEqual(ebay.activeRateLimitBackoff(2000),0,'rate-limit circuit shoul
   console.log('PASS ebay verified product hero v1.2 QA registry-only public-network-calls=0 stale-max=5h recommendationWeight=0');
 })().catch(error=>{console.error(error);process.exit(1);});
 
-// The deploy gate also certifies catalogue-wide exact-match behaviour.
+// The deploy gate also certifies catalogue-wide exact-match behaviour and the outer continuous
+// background-refreshed image layer. v1/v2 remain compatibility guards; v3 owns the current UX.
 require('./ebay-product-hero-exact-guard-v2-qa');
 require('./ebay-product-hero-catalogue-v2-qa');
+require('./ebay-product-image-continuity-v3-qa');
