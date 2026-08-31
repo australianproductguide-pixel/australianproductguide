@@ -1,11 +1,11 @@
 'use strict';
 
 const fs=require('node:fs');
-const [,,strategy,file]=process.argv;
-if(!strategy||!file)throw new Error('Usage: node pagespeed-postrelease-measure.js <strategy> <file>');
+const [,,strategy,file,source='page-speed-api']=process.argv;
+if(!strategy||!file)throw new Error('Usage: node pagespeed-postrelease-measure.js <strategy> <file> [source]');
 const data=JSON.parse(fs.readFileSync(file,'utf8'));
 if(data.error){console.error(JSON.stringify(data.error));process.exit(1)}
-const lhr=data.lighthouseResult||{};
+const lhr=data.lighthouseResult||data;
 const categories=lhr.categories||{};
 const scores=Object.fromEntries(Object.entries(categories).map(([key,value])=>[key,Math.round(Number(value.score||0)*100)]));
 const audits=lhr.audits||{};
@@ -32,6 +32,7 @@ const opportunities=Object.values(audits)
   .sort((a,b)=>(b.savingsMs-a.savingsMs)||(b.savingsBytes-a.savingsBytes))
   .slice(0,15);
 const result={
+  source,
   strategy,
   analysisUTCTimestamp:data.analysisUTCTimestamp||lhr.fetchTime||null,
   lighthouseVersion:lhr.lighthouseVersion||null,
@@ -41,4 +42,4 @@ const result={
   metrics,
   opportunities
 };
-console.log(`PSI_RESULT=${JSON.stringify(result)}`);
+console.log(`APG_LIGHTHOUSE_RESULT=${JSON.stringify(result)}`);
