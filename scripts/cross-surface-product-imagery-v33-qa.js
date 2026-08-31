@@ -1,12 +1,12 @@
 'use strict';
 
 const assert=require('assert');
-const layer=require('../lib/cross-surface-product-imagery-v33-runtime');
+const layer=require('../lib/cross-surface-product-imagery-v331-runtime');
 const continuity=require('../lib/ebay-product-image-continuity-v3-runtime');
 const stateClient=require('../lib/apg-supabase-public-v1');
 const pilot=require('../data/ebay-verified-offers-v1');
 
-assert.strictEqual(layer.VERSION,'33.0');
+assert.strictEqual(layer.VERSION,'33.1');
 assert.strictEqual(stateClient.VERSION,'1.2');
 assert.strictEqual(layer.API_PATH,'/api/product-presentation-images-v33');
 assert.strictEqual(layer.MAX_PAGE_SLUGS,80);
@@ -71,10 +71,12 @@ function state(overrides={}){
 
   const twoProduct=`<article class="comparison-card"><div class="product-visual"><div class="apg-product-brand-placeholder" aria-hidden="true"><span>Sunbeam</span></div><div class="visual-copy">Sunbeam Barista Max EM5300S</div></div><a href="/products/sunbeam-barista-max-em5300s/">Open product guide</a></article><article class="comparison-card"><div class="product-visual"><div class="apg-product-brand-placeholder" aria-hidden="true"><span>Breville</span></div><div class="visual-copy">Breville Barista Express Impress BES876</div></div><a href="/products/${slug}/">Open product guide</a></article>`;
   const replaced=layer.replaceBrandPlaceholders(twoProduct,mappings);
-  assert(replaced.includes('Sunbeam</span>'),'unmapped product must retain brand fallback');
+  assert(replaced.includes('apg-product-brand-placeholder')&&replaced.includes('Sunbeam</span>'),'unmapped product must retain its own brand fallback');
   assert(replaced.includes(`data-product-slug="${slug}"`),'eligible product placeholder must become shared photo');
   assert(replaced.includes(source.image),'eligible product must reuse the governed exact image');
-  assert.strictEqual((replaced.match(/apg-product-presentation-image-v33/g)||[]).length>=1,true);
+  assert.strictEqual((replaced.match(/data-apg-product-presentation-image=/g)||[]).length,1,'only the mapped exact product may receive a photo');
+  const sunbeamArticle=replaced.match(/<article class="comparison-card">[\s\S]*?<\/article>/i)?.[0]||'';
+  assert(!sunbeamArticle.includes('i.ebayimg.com'),'Breville image must never spill into neighbouring Sunbeam card');
 
   const searchArticle=`<article class="feature-card"><p>Maintained match · Breville</p><h3><a href="/products/${slug}/">Barista Express Impress BES876</a></h3><p>Guided espresso workflow.</p></article>`;
   const enriched=layer.enrichProductArticles(searchArticle,mappings);
@@ -84,8 +86,9 @@ function state(overrides={}){
   const jsonLd='<script type="application/ld+json">{"@type":"Product","name":"Breville Barista Express Impress BES876"}</script>';
   const html=`<!doctype html><html><head>${jsonLd}</head><body>${twoProduct}${searchArticle}</body></html>`;
   const decorated=layer.decorateHtml(html,mappings);
-  assert(decorated.includes('/assets/cross-surface-product-imagery-v33.css?v=33.0'));
-  assert(decorated.includes('/assets/cross-surface-product-imagery-v33.js?v=33.0'));
+  assert(decorated.includes('/assets/cross-surface-product-imagery-v33.css?v=33.1'));
+  assert(decorated.includes('/assets/cross-surface-product-imagery-v33.js?v=33.1'));
+  assert(decorated.includes('name="apg-cross-surface-product-imagery" content="v33.1"'));
   assert(decorated.includes(jsonLd),'cross-surface presentation imagery must not mutate Product JSON-LD');
   assert(!/"image"\s*:\s*"https:\/\/i\.ebayimg\.com/i.test(decorated),'retailer presentation imagery must remain outside canonical Product.image structured data');
 
@@ -107,7 +110,7 @@ function state(overrides={}){
   continuity.stateCache.clear();
   const apiUrl=new URL(`https://australianproductguide.au${layer.API_PATH}?slug=${slug}&q=${encodeURIComponent('Breville Barista Express Impress BES876')}`);
   const payload=await layer.apiPayload(apiUrl,{now:()=>now,fetchStates:async()=>[state()]});
-  assert.strictEqual(payload.version,'33.0');
+  assert.strictEqual(payload.version,'33.1');
   assert.strictEqual(payload.commercialRecommendationWeight,0);
   assert.strictEqual(payload.images.length,1);
   assert.strictEqual(payload.images[0].slug,slug);
@@ -118,7 +121,8 @@ function state(overrides={}){
   const searchDecorated=layer.decorateSearchPayload(searchPayload,mappings);
   assert.strictEqual(searchDecorated.products[0].presentationImage.url,source.image);
   assert.strictEqual(searchDecorated.products[0].presentationImage.recommendationWeight,0);
+  assert.strictEqual(searchDecorated.crossSurfaceProductImagery.version,'33.1');
   assert(searchDecorated.bodyHtml.includes(source.image),'isolated Search JSON HTML must carry the same shared product image');
 
-  console.log('CROSS_SURFACE_PRODUCT_IMAGERY_V33=PASS exact-governed-image=shared placeholders+cards+search+autocomplete fail-closed=true recommendationWeight=0');
+  console.log('CROSS_SURFACE_PRODUCT_IMAGERY_V331=PASS canonical-surface-binding-before-image-eligibility shared=cards+search+autocomplete fail-closed=true recommendationWeight=0');
 })().catch(error=>{console.error(error.stack||error);process.exit(1);});
