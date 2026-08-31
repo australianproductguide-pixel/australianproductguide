@@ -1,0 +1,43 @@
+name: APG Post-release PageSpeed Measurement
+
+on:
+  push:
+    branches:
+      - measure-pagespeed-postrelease-20260831
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  measure-production:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout measurement branch
+        uses: actions/checkout@v7
+
+      - name: Run official Google PageSpeed Insights API
+        env:
+          APG_URL: https://australianproductguide.au/
+        run: |
+          set -euo pipefail
+          for strategy in mobile desktop; do
+            echo "Running Google PageSpeed Insights for ${strategy}..."
+            http_code=$(curl -sS --retry 2 --retry-delay 5 --get \
+              --data-urlencode "url=${APG_URL}" \
+              --data-urlencode "strategy=${strategy}" \
+              --data-urlencode "category=performance" \
+              --data-urlencode "category=accessibility" \
+              --data-urlencode "category=best-practices" \
+              --data-urlencode "category=seo" \
+              -o "${strategy}.json" \
+              -w '%{http_code}' \
+              'https://www.googleapis.com/pagespeedonline/v5/runPagespeed')
+            if [ "${http_code}" != "200" ]; then
+              echo "PageSpeed API returned HTTP ${http_code} for ${strategy}."
+              cat "${strategy}.json"
+              exit 1
+            fi
+            node scripts/pagespeed-postrelease-measure.js "${strategy}" "${strategy}.json"
+          done
