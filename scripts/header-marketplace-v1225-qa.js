@@ -29,7 +29,8 @@ function between(text,start,end){const a=String(text).indexOf(start);if(a<0)retu
     assert.equal(response.headers['x-apg-header-marketplace-mobile-order'],'v122.4',`${route} must retain v122.4 semantic-order lineage`);
     assert.equal(response.headers['x-apg-header-marketplace-mobile-condensed'],'v122.3',`${route} must retain v122.3 search-removal lineage`);
     assert.equal(count(response.body,'name="apg-header-marketplace-mobile-supermenu"'),1,`${route} must include one v122.5 marker`);
-    assert.equal(count(response.body,'/assets/header-marketplace-v1225.css?v=122.5'),1,`${route} must include one v122.5 stylesheet`);
+    assert.equal(count(response.body,'/assets/header-marketplace-v1225.css?v=122.5'),route==='/'?0:1,`${route} must ${route==='/'?'bundle':'include'} v122.5 styling`);
+    if(route==='/')assert(response.body.includes('/assets/pagespeed-home-v113.css?v='),'homepage must carry v122.5 through certified PageSpeed CSS');
     assert.equal(count(response.body,'/assets/header-marketplace-v1225.js?v=122.5'),1,`${route} must include one v122.5 script`);
     assert.equal(count(response.body,'data-apg-drawer-supermenu="v122.5"'),1,`${route} must expose one canonical supermenu drawer`);
     assert.equal(count(response.body,'id="apgAllDrawer"'),1,`${route} must retain one drawer id`);
@@ -77,5 +78,5 @@ function between(text,start,end){const a=String(text).indexOf(start);if(a<0)retu
 
   const source=require('node:fs').readFileSync(require('node:path').join(__dirname,'..','lib','header-marketplace-v1225-runtime.js'),'utf8');
   for(const banned of ['scoreProduct(','rankDecision(','commissionWeight','localStorage.setItem(','sessionStorage.setItem('])assert(!source.includes(banned),`v122.5 must remain presentation/navigation-only: ${banned}`);
-  console.log(`HEADER_MARKETPLACE_V1225=PASS routes=${routes.length} brand=menu-adjacent drawer=priority-first departments=collapsed allCategories=single-link desktop=preserved recommendationWeight=0`);
+  console.log(`HEADER_MARKETPLACE_V1225=PASS routes=${routes.length} brand=menu-adjacent drawer=priority-first departments=collapsed allCategories=single-link desktop=preserved recommendationWeight=0 homepageCss=certified-bundle`);
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
