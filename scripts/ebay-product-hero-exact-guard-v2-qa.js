@@ -21,7 +21,7 @@ function row(title,{model=[],categoryPath='Home Appliances',verificationLevel=mo
 }
 function eligible(product,accepted,allProducts=[product]){return guard.evaluate(product,accepted,allProducts,{now:Date.parse('2026-08-31T00:00:00Z')});}
 
-assert.strictEqual(guard.VERSION,'2.1');
+assert.strictEqual(guard.VERSION,'2.2');
 
 // Known false accepts from the live 482-product enrichment sweep must remain logo placeholders.
 const ryobi={slug:'ryobi-one-hp-18v-drill-driver',brand:'Ryobi',name:'ONE+ HP 18V Drill Driver'};
@@ -54,6 +54,14 @@ assert.strictEqual(eligible(smartTag,row('Samsung Galaxy SmartTag2 (4 Pack) Blue
 const ring={slug:'ring-battery-video-doorbell-2nd-gen',brand:'Ring',name:'Battery Video Doorbell (2nd Gen)'};
 assert.strictEqual(eligible(ring,row('Ring Video Doorbell (2nd Gen) & Chime Pro (2nd Gen) Satin Nickel')).reason,'unexpected-bundle-accessory');
 
+// Live regression from 31 Aug 2026: Anker sells materially different C300 and C300 DC variants.
+// The base C300 token alone must not let the DC sibling inherit the C300 product hero.
+const c300={slug:'anker-solix-c300',brand:'Anker',name:'SOLIX C300 Portable Power Station'};
+const c300Dc=eligible(c300,row('Anker Solix C300 Power Station DC Portable Power Bank 300W Solar - HUGE Capacity',{model:['C300'],categoryPath:'Home & Garden|Tools & Workshop Equipment|Power Tools|Generators'}));
+assert.strictEqual(c300Dc.eligible,false,'SOLIX C300 DC sibling must never populate the regular C300 hero');
+assert.strictEqual(c300Dc.reason,'product-variant-exclusion');
+assert.strictEqual(c300Dc.detail.code,'C300_DC_SIBLING');
+
 // Clean exact products should qualify, including current eBay listings where the exact model
 // is only in the listing title and listings with legitimate Australian/full-SKU suffixes.
 const bes876={slug:'breville-barista-express-impress-bes876',brand:'Breville',name:'Barista Express Impress BES876'};
@@ -76,7 +84,10 @@ assert.strictEqual(eligible(makita,row('GENUINE MAKITA Australian Model DHP485 1
 const canon={slug:'canon-selphy-cp1500',brand:'Canon',name:'SELPHY CP1500'};
 assert.strictEqual(eligible(canon,row('CANON SELPHY CP1500 Compact Photo Printer, White (CP1500WH)',{model:['CP1500WH'],categoryPath:'Computers/Tablets & Networking|Printers, Scanners & Supplies|Printers'})).eligible,true);
 
+assert.strictEqual(eligible(c300,row('Anker SOLIX C300 Portable Power Station 288Wh 300W',{model:['C300'],categoryPath:'Home & Garden|Tools & Workshop Equipment|Power Tools|Generators'})).eligible,true,'regular SOLIX C300 exact listing should remain eligible');
+assert.strictEqual(eligible(c300,row('Anker SOLIX C300 Portable Power Station A1722 288Wh 300W AC DC Outputs',{model:['C300','A1722'],categoryPath:'Home & Garden|Tools & Workshop Equipment|Power Tools|Generators'})).eligible,true,'manufacturer SKU A1722 should prove regular C300 even when DC outputs are mentioned');
+
 const ended=eligible(canon,row('CANON SELPHY CP1500 Compact Photo Printer, White (CP1500WH)',{model:['CP1500WH'],itemEndDate:'2020-01-01T00:00:00.000Z'}));
 assert.strictEqual(ended.reason,'ended-listing');
 
-console.log('EBAY_PRODUCT_HERO_EXACT_GUARD_V21=PASS false-positive-regressions=9 exact-positive-regressions=6 recommendationWeight=0');
+console.log('EBAY_PRODUCT_HERO_EXACT_GUARD_V22=PASS false-positive-regressions=10 exact-positive-regressions=8 recommendationWeight=0');
