@@ -1,6 +1,6 @@
 'use strict';
 
-// APG eBay image continuity worker v1.0.
+// APG eBay image continuity worker v1.1.
 // Invoked only by the Supabase pg_cron dispatcher using a one-time, short-lived capability.
 // Shopper product-page requests never call eBay. This worker refreshes exact-item evidence in
 // the background, retries failures, and only replaces a listing after the full APG exact-model
@@ -13,7 +13,7 @@ const enrichment=require('../lib/ebay-catalogue-enrichment-v1');
 const familyGuard=require('../lib/ebay-family-variant-guard-v131');
 const exactGuard=require('../lib/ebay-product-hero-exact-guard-v2');
 
-const VERSION='1.0';
+const VERSION='1.1';
 const REFRESH_QUOTA_RESERVE=500;
 const MAX_BATCH=24;
 const CONCURRENCY=3;
@@ -47,44 +47,21 @@ function transientVerificationFailure(result){
 }
 function stagedAccepted(candidate){
   if(!candidate)return null;
-  return {
-    status:'accept',
-    accepted:{
-      ...candidate,
-      detailVerified:true,
-      exactModel:true,
-      recommendationWeight:0
-    },
-    review:null,
-    candidates:[]
-  };
+  return {status:'accept',accepted:{...candidate,detailVerified:true,exactModel:true,recommendationWeight:0},review:null,candidates:[]};
 }
 function refreshPayload(candidate,verifiedAt=new Date().toISOString()){
   return {
-    itemId:candidate.itemId,
-    legacyItemId:candidate.legacyItemId,
-    title:candidate.title,
-    condition:candidate.condition,
-    price:candidate.price,
-    imageUrl:candidate.imageUrl,
-    imageSource:candidate.imageSource||'ebay-listing',
-    itemWebUrl:candidate.itemWebUrl,
-    itemAffiliateWebUrl:candidate.itemAffiliateWebUrl||null,
-    verificationLevel:candidate.verificationLevel,
-    verificationEvidence:candidate.verificationEvidence||{},
-    detailVerified:true,
-    exactModel:true,
-    recommendationWeight:0,
-    verifiedAt
+    itemId:candidate.itemId,legacyItemId:candidate.legacyItemId,title:candidate.title,condition:candidate.condition,price:candidate.price,
+    imageUrl:candidate.imageUrl,imageSource:candidate.imageSource||'ebay-listing',itemWebUrl:candidate.itemWebUrl,
+    itemAffiliateWebUrl:candidate.itemAffiliateWebUrl||null,verificationLevel:candidate.verificationLevel,
+    verificationEvidence:candidate.verificationEvidence||{},detailVerified:true,exactModel:true,recommendationWeight:0,verifiedAt
   };
 }
 function replacementPayload(candidate,heroEligible,verifiedAt=new Date().toISOString()){
   return {
-    ...refreshPayload(candidate,verifiedAt),
-    heroEligible:heroEligible===true,
+    ...refreshPayload(candidate,verifiedAt),heroEligible:heroEligible===true,
     matchScore:candidate.score==null?null:candidate.score,
-    matchReasons:Array.isArray(candidate.reasons)?candidate.reasons:[],
-    matchFlags:Array.isArray(candidate.flags)?candidate.flags:[]
+    matchReasons:Array.isArray(candidate.reasons)?candidate.reasons:[],matchFlags:Array.isArray(candidate.flags)?candidate.flags:[]
   };
 }
 async function quota(){
@@ -95,9 +72,7 @@ async function consumeCapability(triggerToken,workerToken){
   const result=await supabase.rpc('apg_consume_ebay_refresh_trigger',{p_trigger_token:triggerToken,p_worker_token:workerToken},{timeoutMs:3500});
   return result===true||(Array.isArray(result)&&result[0]===true);
 }
-async function finishCapability(workerToken){
-  try{await supabase.rpc('apg_finish_ebay_refresh_worker',{p_worker_token:workerToken},{timeoutMs:3500});}catch{}
-}
+async function finishCapability(workerToken){try{await supabase.rpc('apg_finish_ebay_refresh_worker',{p_worker_token:workerToken},{timeoutMs:3500});}catch{}}
 async function claim(workerToken,limit){
   const result=await supabase.rpc('apg_claim_ebay_image_refresh_batch',{p_proof:workerToken,p_limit:limit},{timeoutMs:5000});
   return Array.isArray(result)?result:[];
@@ -110,47 +85,75 @@ async function recordFailure(workerToken,slug,code){
 }
 async function recordReplacement(workerToken,slug,oldItemId,candidate){
   return supabase.rpc('apg_replace_ebay_image_state',{
-    p_proof:workerToken,
-    p_slug:slug,
-    p_expected_old_item_id:oldItemId,
-    p_payload:replacementPayload(candidate,true)
+    p_proof:workerToken,p_slug:slug,p_expected_old_item_id:oldItemId,p_payload:replacementPayload(candidate,true)
   },{timeoutMs:5000});
 }
 function claimedCandidate(row){
   return {
-    itemId:clean(row&&row.item_id),
-    legacyItemId:clean(row&&row.legacy_item_id),
-    title:'',
-    condition:'',
-    price:null,
-    imageUrl:null,
-    imageSource:null,
-    itemWebUrl:null,
-    itemAffiliateWebUrl:null,
-    score:100,
-    status:'accept',
-    reasons:['previously-exact-verified-item'],
-    flags:[],
-    exactModel:true,
-    modelCoverage:1,
-    nameCoverage:1,
-    priceRatio:null,
-    detailVerified:true,
-    verificationLevel:clean(row&&row.verification_level)||'detail-title-model',
+    itemId:clean(row&&row.item_id),legacyItemId:clean(row&&row.legacy_item_id),title:'',condition:'',price:null,imageUrl:null,imageSource:null,
+    itemWebUrl:null,itemAffiliateWebUrl:null,score:100,status:'accept',reasons:['previously-exact-verified-item'],flags:[],exactModel:true,
+    modelCoverage:1,nameCoverage:1,priceRatio:null,detailVerified:true,verificationLevel:clean(row&&row.verification_level)||'detail-title-model',
     verificationEvidence:row&&row.verification_evidence&&typeof row.verification_evidence==='object'?row.verification_evidence:{},
-    marketplaceId:'EBAY_AU',
-    source:'eBay Buy Browse API',
-    recommendationWeight:0
+    marketplaceId:'EBAY_AU',source:'eBay Buy Browse API',recommendationWeight:0
   };
 }
-async function verifyExisting(row,product){
-  const candidate=claimedCandidate(row);
-  const verified=await enrichment.verifyDetailedCandidate(product,candidate);
-  if(!verified||verified.ok!==true)return {ok:false,reason:clean(verified&&verified.reason)||'detail-verification-failed',code:clean(verified&&verified.code),errorStatus:Number(verified&&verified.errorStatus)||null,transient:transientVerificationFailure(verified)};
-  const accepted=stagedAccepted(verified.candidate);
+function detailVariantText(detail){
+  const aspects=Array.isArray(detail&&detail.localizedAspects)?detail.localizedAspects.map(row=>`${clean(row&&row.name)} ${clean(row&&row.value)}`).join(' '):'';
+  return `${clean(detail&&detail.title)} ${aspects}`.trim();
+}
+function structuredBrandMatches(product,brands,title){
+  const expected=enrichment.norm(product&&product.brand);
+  if(!expected)return false;
+  const titleBrand=enrichment.norm(title).includes(expected);
+  if(!titleBrand)return false;
+  if(!brands.length)return true;
+  return brands.some(value=>{
+    const candidate=enrichment.norm(value);
+    return candidate===expected||candidate.includes(expected)||expected.includes(candidate);
+  });
+}
+function exactDetailCandidate(row,product,detail){
+  if(!detail||typeof detail!=='object')return {ok:false,reason:'missing-detail',code:'EBAY_DETAIL_MISSING'};
+  const prior=claimedCandidate(row);
+  const itemId=clean(detail.itemId)||prior.itemId;
+  const legacyItemId=clean(detail.legacyItemId)||prior.legacyItemId;
+  if(itemId!==prior.itemId&&legacyItemId!==prior.legacyItemId)return {ok:false,reason:'detail-item-identity-mismatch',code:'EBAY_DETAIL_IDENTITY_MISMATCH'};
+  const title=clean(detail.title);const condition=clean(detail.condition);
+  if(!title)return {ok:false,reason:'detail-title-missing',code:'EBAY_DETAIL_TITLE_MISSING'};
+  if(enrichment.listingLooksAccessory(title,product))return {ok:false,reason:'detail-accessory-or-part-language',code:'EBAY_DETAIL_ACCESSORY'};
+  if(enrichment.listingLooksUsed(title,condition))return {ok:false,reason:'detail-used-or-refurbished',code:'EBAY_DETAIL_USED'};
+  if(enrichment.detailedCategoryRisk(detail))return {ok:false,reason:'detail-parts-category',code:'EBAY_DETAIL_PARTS_CATEGORY'};
+  const identityConflict=enrichment.materialIdentityConflict(product,detailVariantText(detail));
+  if(identityConflict.conflict)return {ok:false,reason:`detail-${identityConflict.reason}`,code:'EBAY_DETAIL_VARIANT_MISMATCH'};
+  const brands=enrichment.detailedBrandEvidence(detail);
+  if(!structuredBrandMatches(product,brands,title))return {ok:false,reason:'detail-brand-mismatch',code:'EBAY_DETAIL_BRAND_MISMATCH'};
+  const modelEvidence=enrichment.detailedModelEvidence(detail);
+  const imageUrl=clean(detail&&detail.product&&detail.product.image&&detail.product.image.imageUrl)||clean(detail&&detail.image&&detail.image.imageUrl);
+  const itemWebUrl=clean(detail.itemWebUrl);const itemAffiliateWebUrl=clean(detail.itemAffiliateWebUrl);
+  const price=detail.price&&typeof detail.price==='object'?{value:clean(detail.price.value),currency:clean(detail.price.currency)}:null;
+  if(!imageUrl||!itemWebUrl||!itemAffiliateWebUrl)return {ok:false,reason:'detail-image-or-item-url-missing',code:'EBAY_DETAIL_MEDIA_MISSING'};
+  if(!price||!price.value||price.currency!=='AUD')return {ok:false,reason:'detail-price-missing-or-non-aud',code:'EBAY_DETAIL_PRICE_INVALID'};
+  const categoryPath=clean(detail.categoryPath)||null;
+  const candidate={
+    ...prior,itemId,legacyItemId,title,condition,price,imageUrl,
+    imageSource:detail&&detail.product&&detail.product.image&&detail.product.image.imageUrl?'ebay-product-catalog':'ebay-listing',
+    itemWebUrl,itemAffiliateWebUrl,itemEndDate:clean(detail.itemEndDate)||null,
+    verificationLevel:modelEvidence.length?'detail-model-evidence':'detail-title-model',
+    verificationEvidence:{brands,model:modelEvidence,categoryPath},detailVerified:true,exactModel:true,recommendationWeight:0
+  };
+  const accepted=stagedAccepted(candidate);
   const guard=exactGuard.evaluate(product,accepted,products,{now:Date.now()});
-  if(!guard.eligible)return {ok:false,reason:`hero-${guard.reason}`,code:'EBAY_HERO_GUARD_REJECTED',transient:false};
+  if(!guard.eligible)return {ok:false,reason:`hero-${guard.reason}`,code:'EBAY_HERO_GUARD_REJECTED'};
   return {ok:true,candidate:accepted.accepted,guard};
+}
+async function verifyExisting(row,product){
+  let detail;
+  try{detail=await ebay.getItem(clean(row&&row.item_id),{referenceId:`apg:${product.slug}:image-refresh`,timeoutMs:10000});}
+  catch(error){
+    const failure={ok:false,reason:'detail-verification-error',code:clean(error&&error.code)||'EBAY_DETAIL_ERROR',errorStatus:Number(error&&error.status)||null};
+    failure.transient=transientVerificationFailure(failure);return failure;
+  }
+  return exactDetailCandidate(row,product,detail);
 }
 async function recoverExact(row,product){
   try{
@@ -160,21 +163,17 @@ async function recoverExact(row,product){
       return {ok:true,candidate:{...enriched.accepted,exactModel:true,recommendationWeight:0},guard};
     }
     return {ok:false,reason:`recovery-${guard&&guard.reason||enriched&&enriched.status||'no-match'}`,code:'EBAY_RECOVERY_NO_EXACT_MATCH'};
-  }catch(error){
-    return {ok:false,reason:'recovery-error',code:clean(error&&error.code)||'EBAY_RECOVERY_ERROR',errorStatus:Number(error&&error.status)||null};
-  }
+  }catch(error){return {ok:false,reason:'recovery-error',code:clean(error&&error.code)||'EBAY_RECOVERY_ERROR',errorStatus:Number(error&&error.status)||null};}
 }
 async function processRow(row,workerToken,budget){
-  const slug=clean(row&&row.slug);
-  const product=PRODUCT_MAP.get(slug);
+  const slug=clean(row&&row.slug);const product=PRODUCT_MAP.get(slug);
   if(!product){await recordFailure(workerToken,slug,'UNKNOWN_APG_PRODUCT');return {slug,status:'failed',reason:'unknown-product',callsReserved:0};}
   if(bool(row&&row.recovery_required)){
     if(budget.remaining<MAX_RECOVERY_CALLS)return {slug,status:'deferred',reason:'quota-reserved-for-recovery',callsReserved:0};
     budget.remaining-=MAX_RECOVERY_CALLS;
     const recovered=await recoverExact(row,product);
     if(recovered.ok){await recordReplacement(workerToken,slug,clean(row.item_id),recovered.candidate);return {slug,status:'replaced',callsReserved:MAX_RECOVERY_CALLS};}
-    await recordFailure(workerToken,slug,recovered.code||recovered.reason);
-    return {slug,status:'failed',reason:recovered.reason,callsReserved:MAX_RECOVERY_CALLS};
+    await recordFailure(workerToken,slug,recovered.code||recovered.reason);return {slug,status:'failed',reason:recovered.reason,callsReserved:MAX_RECOVERY_CALLS};
   }
   if(budget.remaining<1)return {slug,status:'deferred',reason:'quota-reserved-for-refresh',callsReserved:0};
   budget.remaining-=1;
@@ -186,56 +185,41 @@ async function processRow(row,workerToken,budget){
 async function pooled(rows,workerToken,budget){
   const output=new Array(rows.length);let cursor=0;
   async function run(){
-    while(true){const index=cursor++;if(index>=rows.length)return;try{output[index]=await processRow(rows[index],workerToken,budget);}catch(error){output[index]={slug:rows[index]&&rows[index].slug||null,status:'error',reason:clean(error&&error.code)||'REFRESH_WORKER_ERROR'};}}
+    while(true){
+      const index=cursor++;if(index>=rows.length)return;
+      try{output[index]=await processRow(rows[index],workerToken,budget);}
+      catch(error){output[index]={slug:rows[index]&&rows[index].slug||null,status:'error',reason:clean(error&&error.code)||'REFRESH_WORKER_ERROR'};}
+    }
   }
-  await Promise.all(Array.from({length:Math.min(CONCURRENCY,rows.length)},run));
-  return output;
+  await Promise.all(Array.from({length:Math.min(CONCURRENCY,rows.length)},run));return output;
 }
 
 async function handler(req,res){
-  res.setHeader('Cache-Control','no-store, max-age=0');
-  res.setHeader('X-Robots-Tag','noindex, nofollow, noarchive');
+  res.setHeader('Cache-Control','no-store, max-age=0');res.setHeader('X-Robots-Tag','noindex, nofollow, noarchive');
   if(req.method!=='POST'){res.setHeader('Allow','POST');return res.status(405).json({ok:false,status:'method-not-allowed'});}
   if(process.env.VERCEL_ENV!=='production')return res.status(404).json({ok:false,status:'production-only'});
-  const triggerToken=clean(req.body&&req.body.triggerToken);
-  const workerToken=clean(req.body&&req.body.workerToken);
+  const triggerToken=clean(req.body&&req.body.triggerToken);const workerToken=clean(req.body&&req.body.workerToken);
   if(triggerToken.length<40||workerToken.length<40)return res.status(401).json({ok:false,status:'unauthorized'});
-
   let consumed=false;
   try{consumed=await consumeCapability(triggerToken,workerToken);}catch{return res.status(503).json({ok:false,status:'capability-check-unavailable'});}
   if(!consumed)return res.status(401).json({ok:false,status:'unauthorized'});
-
   try{
     let currentQuota;
     try{currentQuota=await quota();}catch(error){return res.status(503).json({ok:false,status:'quota-check-failed',version:VERSION,errorCode:clean(error&&error.code)||'EBAY_QUOTA_CHECK_FAILED'});}
-    const remaining=ordinaryBrowseRemaining(currentQuota);
-    const info=quotaPublic(currentQuota);
+    const remaining=ordinaryBrowseRemaining(currentQuota);const info=quotaPublic(currentQuota);
     if(!Number.isFinite(remaining))return res.status(503).json({ok:false,status:'ordinary-quota-unknown',version:VERSION,quota:info});
     const usable=Math.max(0,remaining-REFRESH_QUOTA_RESERVE);
     if(usable<1)return res.status(200).json({ok:true,status:'quota-paused',version:VERSION,quota:info,processed:0});
-
-    const batchLimit=Math.max(1,Math.min(MAX_BATCH,usable));
-    const rows=await claim(workerToken,batchLimit);
+    const batchLimit=Math.max(1,Math.min(MAX_BATCH,usable));const rows=await claim(workerToken,batchLimit);
     if(!rows.length)return res.status(200).json({ok:true,status:'nothing-due',version:VERSION,quota:info,processed:0});
-    const budget={remaining:usable};
-    const results=await pooled(rows,workerToken,budget);
-    const counts={refreshed:0,replaced:0,failed:0,deferred:0,error:0};
-    for(const row of results)counts[row&&row.status]=(counts[row&&row.status]||0)+1;
+    const budget={remaining:usable};const results=await pooled(rows,workerToken,budget);
+    const counts={refreshed:0,replaced:0,failed:0,deferred:0,error:0};for(const row of results)counts[row&&row.status]=(counts[row&&row.status]||0)+1;
     return res.status(200).json({ok:true,status:'completed',version:VERSION,processed:results.length,counts,quota:info});
-  }finally{
-    await finishCapability(workerToken);
-  }
+  }finally{await finishCapability(workerToken);}
 }
 
-handler.VERSION=VERSION;
-handler.REFRESH_QUOTA_RESERVE=REFRESH_QUOTA_RESERVE;
-handler.MAX_BATCH=MAX_BATCH;
-handler.CONCURRENCY=CONCURRENCY;
-handler.ordinaryBrowseRows=ordinaryBrowseRows;
-handler.ordinaryBrowseRemaining=ordinaryBrowseRemaining;
-handler.transientVerificationFailure=transientVerificationFailure;
-handler.stagedAccepted=stagedAccepted;
-handler.refreshPayload=refreshPayload;
-handler.replacementPayload=replacementPayload;
-handler.claimedCandidate=claimedCandidate;
+handler.VERSION=VERSION;handler.REFRESH_QUOTA_RESERVE=REFRESH_QUOTA_RESERVE;handler.MAX_BATCH=MAX_BATCH;handler.CONCURRENCY=CONCURRENCY;
+handler.ordinaryBrowseRows=ordinaryBrowseRows;handler.ordinaryBrowseRemaining=ordinaryBrowseRemaining;handler.transientVerificationFailure=transientVerificationFailure;
+handler.stagedAccepted=stagedAccepted;handler.refreshPayload=refreshPayload;handler.replacementPayload=replacementPayload;handler.claimedCandidate=claimedCandidate;
+handler.detailVariantText=detailVariantText;handler.structuredBrandMatches=structuredBrandMatches;handler.exactDetailCandidate=exactDetailCandidate;
 module.exports=handler;
