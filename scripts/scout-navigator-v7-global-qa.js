@@ -63,7 +63,7 @@ function directStylesheetHrefs(html){
     if(route==='/'){
       assert.equal(count(response.body,'/assets/scout-navigator-v7-global.css?v=7.1'),0,'homepage Navigator CSS must be consolidated into the final PageSpeed bundle');
       assert.equal(count(response.body,'/assets/header-marketplace-v1226.css?v=122.6'),0,'homepage final header CSS must be consolidated into the final PageSpeed bundle');
-      const bundleMatch=response.body.match(/href="(\/assets\/pagespeed-home-v113\.css\?v=[^"]+)"[^>]*data-apg-pagespeed-css="v113\.3"/i);
+      const bundleMatch=response.body.match(/href="(\/assets\/pagespeed-home-v113\.css\?v=[^"]+)"[^>]*data-apg-pagespeed-css="v113\.4"/i);
       assert(bundleMatch,'homepage must expose one certified PageSpeed CSS bundle');
       homepageBundleHref=bundleMatch[1];
     }else{
