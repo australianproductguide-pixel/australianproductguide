@@ -6,6 +6,7 @@ const path=require('node:path');
 const brand=require('../lib/brand-system-v46');
 const cohesion=require('../lib/platform-cohesion-v26');
 const shoppingShell=require('../lib/amazon-shopping-shell-v39');
+const desktopSupermenu=require('../lib/header-marketplace-v1227-runtime');
 
 const root=path.join(__dirname,'..');
 const proofCss=fs.readFileSync(path.join(root,'public/assets/brand-system-v46-research-proof.css'),'utf8');
@@ -36,8 +37,22 @@ const proofIndex=branded.indexOf(`/assets/brand-system-v46-research-proof.css?v=
 assert(finalIndex>=0&&proofIndex>finalIndex,'maintained-research proof exception must remain after the normal v46 presentation layer');
 assert.equal(brand.inject(branded),branded,'brand injection must remain idempotent');
 
+// Desktop supermenu regression: v122.5 introduced these elements but scoped their
+// presentation to <=920px, which allowed browser-default SVG/link geometry on desktop.
+assert.equal(desktopSupermenu.VERSION,'122.7','desktop supermenu repair version must remain v122.7');
+assert.equal(desktopSupermenu.HEADER_MARKETPLACE_MOBILE_LEFT_LOCKUP_VERSION,'122.6','desktop repair must preserve the working v122.6 mobile lock-up');
+assert.equal(desktopSupermenu.HEADER_MARKETPLACE_MOBILE_SUPERMENU_VERSION,'122.5','desktop repair must preserve the working v122.5 mobile hierarchy');
+assert(desktopSupermenu.CSS.includes('@media(min-width:921px)'),'desktop supermenu repair must be explicitly desktop-scoped');
+assert(!desktopSupermenu.CSS.includes('@media(max-width:920px)'),'v122.7 must not introduce a mobile breakpoint override');
+assert(desktopSupermenu.CSS.includes('.apg-drawer-close-v1225 svg'),'desktop close icon must have explicit geometry');
+assert(desktopSupermenu.CSS.includes('max-width:24px!important'),'desktop close icon must remain bounded');
+assert(desktopSupermenu.CSS.includes('.apg-drawer-home-v1225 svg'),'desktop home icon must have explicit geometry');
+assert(desktopSupermenu.CSS.includes('max-width:25px!important'),'desktop home icon must remain bounded');
+assert(desktopSupermenu.CSS.includes('text-decoration:none!important'),'desktop home/navigation links must not fall back to browser-default underlines');
+assert(desktopSupermenu.CSS.includes('min-width:360px!important')&&desktopSupermenu.CSS.includes('max-width:430px!important'),'desktop drawer width must remain bounded for marketplace-style presentation');
+
 // Header fixes must not regress the owner-approved homepage yellow treatments.
 assert(proofCss.includes('#FFD65B')&&proofCss.includes('#F4BB45')&&proofCss.includes('#F2B348'),'maintained-research yellow proof treatment must remain intact');
 assert(decisionBadgeCss.toLowerCase().includes('#f3b548!important'),'homepage decision guidance badge must remain yellow');
 
-console.log('APG desktop nav parity v50 QA passed: native nav restored, Ask Scout inherits Products styling, Deals inherits ordinary link styling, mobile untouched, homepage yellow accents preserved.');
+console.log('APG desktop nav parity v50 QA passed: native nav restored, desktop v122.7 supermenu geometry bounded, v122.5/v122.6 mobile untouched, homepage yellow accents preserved.');
