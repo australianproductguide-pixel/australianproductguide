@@ -3,6 +3,7 @@
 const assert=require('node:assert/strict');
 const app=require('../api/index');
 const navigator=require('../lib/scout-navigator-v7-global-runtime');
+const pagespeed=require('../lib/pagespeed-agentic-certification-v113-runtime');
 
 function render(url,method='GET'){
   return new Promise((resolve,reject)=>{
@@ -31,6 +32,8 @@ function directStylesheetHrefs(html){
   assert.equal(app.HEADER_MARKETPLACE_DESKTOP_SUPERMENU_VERSION,'122.7','public handler must preserve the current desktop supermenu repair');
   assert.equal(navigator.VERSION,'7.1');
   assert.equal(navigator.CSS_PATH,'/assets/scout-navigator-v7-global.css');
+  assert.equal(pagespeed.VERSION,'113.5');
+  assert.equal(pagespeed.RUNTIME_CSS_CONSOLIDATION,'P0_DISABLED_RECURSIVE_CAPTURE');
 
   const routes=[
     '/',
@@ -46,15 +49,17 @@ function directStylesheetHrefs(html){
     '/retailers/'
   ];
 
-  let homepageBundleHref='';
   for(const route of routes){
     const response=await render(route);
     assert.equal(response.status,200,`${route} must render successfully`);
     assert.equal(response.headers['x-apg-scout-navigator-presentation'],'v7.1',`${route} must expose Scout Navigator parity header`);
     assert.equal(response.headers['x-apg-header-marketplace-mobile-left-lockup'],'v122.6',`${route} must expose final v122.6 mobile lock-up geometry`);
     assert.equal(response.headers['x-apg-header-marketplace-desktop-supermenu'],'v122.7',`${route} must expose current v122.7 desktop supermenu repair`);
+    assert.equal(response.headers['x-apg-pagespeed-agentic-certification'],'v113.5',`${route} must expose current PageSpeed transport certification`);
+    assert.equal(response.headers['x-apg-pagespeed-runtime-css'],'P0_DISABLED_RECURSIVE_CAPTURE',`${route} must prove recursive runtime CSS capture is disabled`);
     assert.equal(count(response.body,'name="apg-scout-navigator-presentation"'),1,`${route} must contain exactly one Navigator parity marker`);
     assert.equal(count(response.body,'name="apg-header-marketplace-desktop-supermenu"'),1,`${route} must contain exactly one v122.7 desktop supermenu marker`);
+    assert.equal(count(response.body,'name="apg-pagespeed-runtime-css"'),1,`${route} must expose exactly one P0 runtime-CSS state marker`);
     assert(response.body.includes('data-apg-scout-navigator="v7.1"'),`${route} must expose the Navigator body contract`);
     assert.equal(count(response.body,'id="apgAssistantLauncher"'),1,`${route} must retain exactly one Scout launcher`);
     assert.equal(count(response.body,'id="apgAssistantPanel"'),1,`${route} must retain exactly one Scout panel`);
@@ -63,35 +68,26 @@ function directStylesheetHrefs(html){
 
     const hrefs=directStylesheetHrefs(response.body);
     assert(hrefs.length>0,`${route} must expose direct stylesheets`);
+    assert.equal(count(response.body,'/assets/scout-navigator-v7-global.css?v=7.1'),1,`${route} must contain exactly one final Navigator stylesheet`);
+    assert.equal(count(response.body,'/assets/header-marketplace-v1226.css?v=122.6'),1,`${route} must contain exactly one v122.6 left-lockup stylesheet`);
+    assert.equal(count(response.body,'/assets/header-marketplace-v1227.css?v=122.7'),1,`${route} must contain exactly one v122.7 desktop supermenu stylesheet`);
+    assert.equal(hrefs[hrefs.length-1],'/assets/scout-navigator-v7-global.css?v=7.1',`${route} must make Navigator v7.1 the final direct stylesheet in the CSS cascade`);
+    const finalPos=response.body.lastIndexOf('/assets/scout-navigator-v7-global.css?v=7.1');
+    for(const older of ['/assets/scout-concierge-v5.css','/assets/scout-global-surface-v111.css','/assets/premium-mobile-decision-commerce-v112.css','/assets/about-trust-navigation-v116.css','/assets/whole-site-experience-v109.css','/assets/header-marketplace-v1222.css','/assets/header-marketplace-v1223.css','/assets/header-marketplace-v1224.css','/assets/header-marketplace-v1225.css','/assets/header-marketplace-v1226.css','/assets/header-marketplace-v1227.css']){
+      const olderPos=response.body.lastIndexOf(older);
+      if(olderPos>=0)assert(finalPos>olderPos,`${route} must load Navigator parity after ${older}`);
+    }
     if(route==='/'){
-      assert.equal(count(response.body,'/assets/scout-navigator-v7-global.css?v=7.1'),0,'homepage Navigator CSS must be consolidated into the final PageSpeed bundle');
-      assert.equal(count(response.body,'/assets/header-marketplace-v1226.css?v=122.6'),0,'homepage final mobile header CSS must be consolidated into the final PageSpeed bundle');
-      assert.equal(count(response.body,'/assets/header-marketplace-v1227.css?v=122.7'),0,'homepage current desktop supermenu CSS must be consolidated into the final PageSpeed bundle');
-      const bundleMatch=response.body.match(/href="(\/assets\/pagespeed-home-v113\.css\?v=[^"]+)"[^>]*data-apg-pagespeed-css="v113\.4"/i);
-      assert(bundleMatch,'homepage must expose one certified PageSpeed CSS bundle');
-      homepageBundleHref=bundleMatch[1];
-    }else{
-      assert.equal(count(response.body,'/assets/scout-navigator-v7-global.css?v=7.1'),1,`${route} must contain exactly one final Navigator stylesheet`);
-      assert.equal(count(response.body,'/assets/header-marketplace-v1226.css?v=122.6'),1,`${route} must contain exactly one v122.6 left-lockup stylesheet`);
-      assert.equal(count(response.body,'/assets/header-marketplace-v1227.css?v=122.7'),1,`${route} must contain exactly one v122.7 desktop supermenu stylesheet`);
-      assert.equal(hrefs[hrefs.length-1],'/assets/scout-navigator-v7-global.css?v=7.1',`${route} must make Navigator v7.1 the final direct stylesheet in the CSS cascade`);
-      const finalPos=response.body.lastIndexOf('/assets/scout-navigator-v7-global.css?v=7.1');
-      for(const older of ['/assets/scout-concierge-v5.css','/assets/scout-global-surface-v111.css','/assets/premium-mobile-decision-commerce-v112.css','/assets/about-trust-navigation-v116.css','/assets/whole-site-experience-v109.css','/assets/pagespeed-home-v113.css','/assets/header-marketplace-v1222.css','/assets/header-marketplace-v1223.css','/assets/header-marketplace-v1224.css','/assets/header-marketplace-v1225.css','/assets/header-marketplace-v1226.css','/assets/header-marketplace-v1227.css']){
-        const olderPos=response.body.lastIndexOf(older);
-        if(olderPos>=0)assert(finalPos>olderPos,`${route} must load Navigator parity after ${older}`);
-      }
+      assert.equal(count(response.body,'/assets/pagespeed-home-v113.css?'),0,'homepage must not reference the retired runtime-generated PageSpeed bundle during P0 containment');
+      assert(response.body.includes('name="apg-pagespeed-runtime-css" content="P0_DISABLED_RECURSIVE_CAPTURE"'),'homepage must disclose the availability-first PageSpeed state');
     }
   }
 
-  assert(homepageBundleHref,'homepage PageSpeed bundle href must be captured');
-  const homepageBundle=await render(homepageBundleHref);
-  assert.equal(homepageBundle.status,200,'homepage PageSpeed CSS bundle must be served');
-  assert.equal(homepageBundle.headers['content-type'],'text/css; charset=utf-8');
-  assert(homepageBundle.body.includes('.apg-assistant-launcher-copy strong{color:#fff!important}'),'homepage bundle must retain the final Navigator visual override');
-  assert(homepageBundle.body.includes('.apg-mobile-account-label-v1226'),'homepage bundle must retain final header-marketplace v122.6 styling');
-  assert(homepageBundle.body.includes('APG Header Marketplace Desktop Supermenu Repair v122.7'),'homepage bundle must retain the current v122.7 desktop supermenu repair');
-  assert(homepageBundle.body.includes('.apg-drawer-home-v1225 svg'),'homepage bundle must retain bounded v122.7 desktop home-icon geometry');
-  assert(homepageBundle.body.includes('max-width:430px!important'),'homepage bundle must retain the v122.7 desktop drawer width ceiling');
+  const retiredBundle=await render(`${pagespeed.CSS_PATH}?v=${pagespeed.BUILD_ID}`);
+  assert.equal(retiredBundle.status,503,'retired runtime-generated PageSpeed bundle must fail closed instead of recursively invoking the application');
+  assert.equal(retiredBundle.headers['cache-control'],'no-store');
+  assert.equal(retiredBundle.headers['x-apg-pagespeed-runtime-css'],'P0_DISABLED_RECURSIVE_CAPTURE');
+  assert(retiredBundle.body.includes('runtime recursive response capture disabled'),'retired bundle endpoint must explain the safe P0 state');
 
   const asset=await render('/assets/scout-navigator-v7-global.css?v=7.1');
   assert.equal(asset.status,200,'Navigator parity CSS asset must be served');
@@ -109,7 +105,7 @@ function directStylesheetHrefs(html){
   for(const banned of ['scoreProduct(','rankDecision(','publicDecision(','commissionWeight','localStorage.setItem(','sessionStorage.setItem('])assert(!runtimeSource.includes(banned),`Navigator parity runtime must remain presentation-only: ${banned}`);
   assert(runtimeSource.includes("require('./header-marketplace-v1227-runtime')"),'Navigator must retain the current v122.7 desktop supermenu layer');
 
-  console.log(JSON.stringify({version:navigator.VERSION,status:'PASS',routesChecked:routes.length,checks:{sameComponentEverywhere:true,finalCascadeEverywhere:true,homepageFinalCascadeBundled:true,desktopV1227PreservedInHomepageBundle:true,approvedNavigatorAsset:true,apgPalette:true,reducedMotion:true,geometryPreserved:true,decisionLogicUntouched:true,commercialScoringUntouched:true}},null,2));
+  console.log(JSON.stringify({version:navigator.VERSION,status:'PASS',routesChecked:routes.length,checks:{sameComponentEverywhere:true,finalCascadeEverywhere:true,homepageP0SafeDirectCascade:true,runtimeRecursiveCaptureDisabled:true,desktopV1227Preserved:true,approvedNavigatorAsset:true,apgPalette:true,reducedMotion:true,geometryPreserved:true,decisionLogicUntouched:true,commercialScoringUntouched:true}},null,2));
   require('./header-marketplace-v1222-qa');
   require('./header-marketplace-v1223-qa');
   require('./header-marketplace-v1224-qa');

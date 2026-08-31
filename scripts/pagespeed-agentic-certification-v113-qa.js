@@ -1,5 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
 const layer=require('../lib/pagespeed-agentic-certification-v113-runtime');
 
 const assets=new Map([
@@ -38,8 +40,9 @@ function request(handler,url,method='GET'){
   return {statusCode:res.statusCode,headers,body};
 }
 
-assert.equal(layer.VERSION,'113.4');
+assert.equal(layer.VERSION,'113.5');
 assert.equal(layer.CSS_PATH,'/assets/pagespeed-home-v113.css');
+assert.equal(layer.RUNTIME_CSS_CONSOLIDATION,'P0_DISABLED_RECURSIVE_CAPTURE');
 assert.equal(layer.repairScoutAriaJs(layer.REDUNDANT_SCOUT_ARIA),layer.SAFE_SCOUT_ARIA);
 
 const staticCss=layer.bundledStaticCss('/assets/platform-integrity-v15.css?v=15');
@@ -54,14 +57,19 @@ assert(!repairedScout.includes('aria-hidden'),'Scout must rely on native hidden 
 assert(!repairedScout.includes('role="dialog"'),'invalid dialog role must not remain on an aside host');
 assert(!repairedScout.includes('aria-modal'),'aria-modal must not remain after dialog semantics are removed');
 assert.equal(layer.blockingStylesheetLinks(home).length,3,'only normal screen styles should be considered render-blocking');
+assert.throws(()=>layer.capture(downstream,'/assets/feature-test-v113.css?v=1'),error=>error&&error.code==='APG_PAGESPEED_RUNTIME_CAPTURE_DISABLED');
+assert.throws(()=>layer.discoverAndBuildCombinedCss(downstream),error=>error&&error.code==='APG_PAGESPEED_RUNTIME_CAPTURE_DISABLED');
+assert.equal(layer.consolidateHomepageCss(home),home,'P0 containment must preserve the established homepage stylesheet cascade');
 
 const handler=layer.wrap(downstream);
 const homepage=request(handler,'/');
 assert.equal(homepage.statusCode,200);
-assert.equal(homepage.headers.get('x-apg-pagespeed-agentic-certification'),'v113.4');
-assert(homepage.body.includes('name="apg-pagespeed-agentic-certification" content="v113.4"'));
-assert(homepage.body.includes('/assets/pagespeed-home-v113.css?v='));
-assert.equal(layer.blockingStylesheetLinks(homepage.body).length,1,'homepage must expose one render-blocking internal stylesheet request');
+assert.equal(homepage.headers.get('x-apg-pagespeed-agentic-certification'),'v113.5');
+assert.equal(homepage.headers.get('x-apg-pagespeed-runtime-css'),'P0_DISABLED_RECURSIVE_CAPTURE');
+assert(homepage.body.includes('name="apg-pagespeed-agentic-certification" content="v113.5"'));
+assert(homepage.body.includes('name="apg-pagespeed-runtime-css" content="P0_DISABLED_RECURSIVE_CAPTURE"'));
+assert(!homepage.body.includes('/assets/pagespeed-home-v113.css?v='),'P0 homepage must not reference a runtime-generated bundle');
+assert.equal(layer.blockingStylesheetLinks(homepage.body).length,3,'homepage must retain its established direct blocking stylesheet requests during P0 containment');
 assert(homepage.body.includes('rel="preload" as="style" href="/assets/noncritical-test-v113.css?v=1"'),'preloaded noncritical CSS must be preserved');
 assert(homepage.body.includes('media="print"'),'print-switched noncritical CSS must be preserved');
 assert(homepage.body.includes('<noscript><link rel="stylesheet" href="/assets/noncritical-test-v113.css?v=1"></noscript>'),'noscript fallback must be preserved');
@@ -71,13 +79,10 @@ assert(!homepage.body.includes('role="dialog"'),'homepage must not expose the in
 assert(!homepage.body.includes('aria-modal="false"'),'homepage must not expose aria-modal without dialog semantics');
 
 const css=request(handler,`${layer.CSS_PATH}?v=${layer.BUILD_ID}`);
-assert.equal(css.statusCode,200);
-assert(css.body.includes('.v15-directory-tools'),'source-controlled static CSS must be present in the combined bundle');
-assert(css.body.includes('.feature-v113{display:grid}'),'redirected generated stylesheet must be included');
-assert(css.body.includes('.final-v113{color:#123}'));
-assert(!css.body.includes('.noncritical-v113{display:block}'),'noncritical CSS must remain outside the render-blocking bundle');
-assert.match(css.headers.get('cache-control'),/max-age=31536000/);
-assert.match(css.headers.get('cache-control'),/immutable/);
+assert.equal(css.statusCode,503,'runtime-generated CSS endpoint must fail closed while recursive capture is disabled');
+assert.equal(css.headers.get('cache-control'),'no-store');
+assert.equal(css.headers.get('x-apg-pagespeed-runtime-css'),'P0_DISABLED_RECURSIVE_CAPTURE');
+assert(css.body.includes('runtime recursive response capture disabled'));
 
 const premium=request(handler,'/assets/premium-experience-v107.js?v=107.1');
 assert.equal(premium.statusCode,200);
@@ -90,22 +95,31 @@ const aboutPage=request(handler,'/about/');
 assert.equal(layer.blockingStylesheetLinks(aboutPage.body).length,2,'non-home routes must keep their established stylesheet delivery');
 assert(!aboutPage.body.includes(layer.CSS_PATH));
 assert(aboutPage.body.includes('name="apg-pagespeed-agentic-certification"'));
+assert.equal(aboutPage.headers.get('x-apg-pagespeed-runtime-css'),'P0_DISABLED_RECURSIVE_CAPTURE');
+
+const source=fs.readFileSync(path.join(__dirname,'..','lib','pagespeed-agentic-certification-v113-runtime.js'),'utf8');
+assert(source.includes("const RUNTIME_CSS_CONSOLIDATION='P0_DISABLED_RECURSIVE_CAPTURE';"));
+assert(source.includes('function capture(_handler,url){throw unsafeCaptureError(url)}'));
+assert(!source.includes("const home=capture(downstream,'/');"),'live runtime must not recursively render Home for CSS discovery');
+assert(!source.includes('const asset=capture(downstream,href);'),'live runtime must not recursively invoke downstream for stylesheet capture');
 
 const wholeSite={wrap(next){return next}};
 layer.install(wholeSite);
 const installedHandler=wholeSite.wrap(downstream);
-assert.equal(request(installedHandler,'/').headers.get('x-apg-pagespeed-agentic-certification'),'v113.4');
+assert.equal(request(installedHandler,'/').headers.get('x-apg-pagespeed-agentic-certification'),'v113.5');
 
 console.log(JSON.stringify({
   ok:true,
   version:layer.VERSION,
-  homepageBlockingStylesheetRequests:1,
-  staticCssBundling:'verified',
+  homepageBlockingStylesheetRequests:3,
+  staticCssRead:'verified',
   noncriticalStyles:'preserved',
-  internalAssetRedirects:'followed',
+  runtimeCssConsolidation:'P0_DISABLED_RECURSIVE_CAPTURE',
+  runtimeRecursiveCapture:'prohibited',
+  retiredBundleEndpoint:'503-fail-closed',
   versionedAssetCaching:'immutable',
-  coldStartCssGeneration:'async-safe',
   scoutAriaRepair:'native-hidden-valid-aside',
-  agenticTarget:'3/3',
-  policy:'Transport optimisation only; recommendation, retailer, account and decision logic are unchanged.'
+  recommendationLogic:'unchanged',
+  commercialScoring:'unchanged',
+  policy:'Availability-first P0 transport containment; rebuild CSS consolidation as a static/build-time asset before re-enabling a one-file homepage bundle.'
 },null,2));
