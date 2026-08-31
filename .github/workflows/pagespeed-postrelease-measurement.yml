@@ -12,32 +12,55 @@ permissions:
 jobs:
   measure-production:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Checkout measurement branch
         uses: actions/checkout@v7
 
-      - name: Run official Google PageSpeed Insights API
+      - name: Measure live Production
         env:
           APG_URL: https://australianproductguide.au/
         run: |
           set -euo pipefail
+          psi_ok=1
           for strategy in mobile desktop; do
-            echo "Running Google PageSpeed Insights for ${strategy}..."
-            http_code=$(curl -sS --retry 2 --retry-delay 5 --get \
+            echo "Trying official Google PageSpeed Insights API for ${strategy}..."
+            http_code=$(curl -sS --get \
               --data-urlencode "url=${APG_URL}" \
               --data-urlencode "strategy=${strategy}" \
               --data-urlencode "category=performance" \
               --data-urlencode "category=accessibility" \
               --data-urlencode "category=best-practices" \
               --data-urlencode "category=seo" \
-              -o "${strategy}.json" \
+              -o "psi-${strategy}.json" \
               -w '%{http_code}' \
               'https://www.googleapis.com/pagespeedonline/v5/runPagespeed')
             if [ "${http_code}" != "200" ]; then
-              echo "PageSpeed API returned HTTP ${http_code} for ${strategy}."
-              cat "${strategy}.json"
-              exit 1
+              psi_ok=0
+              echo "PSI_API_UNAVAILABLE strategy=${strategy} http=${http_code}"
+              node -e "const d=require('./psi-${strategy}.json'); console.log('PSI_API_ERROR='+(d.error?.message||'unknown'))"
+              break
             fi
-            node scripts/pagespeed-postrelease-measure.js "${strategy}" "${strategy}.json"
+            node scripts/pagespeed-postrelease-measure.js "${strategy}" "psi-${strategy}.json" "google-pagespeed-insights-api"
           done
+
+          if [ "${psi_ok}" -eq 0 ]; then
+            echo "Official PSI numeric remeasurement is quota-blocked. Running Lighthouse lab fallback against live Production; these scores are diagnostic and must not be represented as PSI scores."
+            npx --yes lighthouse@13.0.1 --version
+            npx --yes lighthouse@13.0.1 "${APG_URL}" \
+              --quiet \
+              --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+              --only-categories=performance,accessibility,best-practices,seo \
+              --output=json \
+              --output-path=lh-mobile.json
+            node scripts/pagespeed-postrelease-measure.js mobile lh-mobile.json github-lighthouse-mobile
+
+            npx --yes lighthouse@13.0.1 "${APG_URL}" \
+              --quiet \
+              --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+              --preset=desktop \
+              --only-categories=performance,accessibility,best-practices,seo \
+              --output=json \
+              --output-path=lh-desktop.json
+            node scripts/pagespeed-postrelease-measure.js desktop lh-desktop.json github-lighthouse-desktop
+          fi
