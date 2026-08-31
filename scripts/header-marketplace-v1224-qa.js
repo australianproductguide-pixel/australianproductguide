@@ -26,7 +26,8 @@ function masthead(html){return (String(html).match(/<div\b[^>]*class=["'][^"']*\
     assert.equal(response.headers['x-apg-header-marketplace-mobile-order'],'v122.4',`${route} must expose v122.4 header`);
     assert.equal(response.headers['x-apg-header-marketplace-mobile-condensed'],'v122.3',`${route} must retain v122.3 mobile search-removal lineage`);
     assert.equal(count(response.body,'name="apg-header-marketplace-mobile-order"'),1,`${route} must include one v122.4 marker`);
-    assert.equal(count(response.body,'/assets/header-marketplace-v1224.css?v=122.4'),1,`${route} must include one v122.4 stylesheet`);
+    assert.equal(count(response.body,'/assets/header-marketplace-v1224.css?v=122.4'),route==='/'?0:1,`${route} must ${route==='/'?'bundle':'include'} v122.4 styling`);
+    if(route==='/')assert(response.body.includes('/assets/pagespeed-home-v113.css?v='),'homepage must carry v122.4 through certified PageSpeed CSS');
     assert.equal(count(response.body,'data-apg-mobile-account-v122'),1,`${route} must retain one canonical account control`);
     assert.equal(count(response.body,'class="mobile-toggle"'),1,`${route} must retain one canonical mobile drawer trigger`);
     assert(response.body.includes('data-apg-mobile-masthead-order="menu-brand-account"'),`${route} must expose the mobile masthead order contract`);
@@ -64,5 +65,5 @@ function masthead(html){return (String(html).match(/<div\b[^>]*class=["'][^"']*\
 
   const source=require('node:fs').readFileSync(require('node:path').join(__dirname,'..','lib','header-marketplace-v1224-runtime.js'),'utf8');
   for(const banned of ['scoreProduct(','rankDecision(','commissionWeight','localStorage.setItem(','sessionStorage.setItem('])assert(!source.includes(banned),`v122.4 must remain presentation-only: ${banned}`);
-  console.log(`HEADER_MARKETPLACE_V1224=PASS routes=${routes.length} order=menu-brand-account focusOrder=matched mobileSearch=removed desktopSearch=preserved recommendationWeight=0`);
+  console.log(`HEADER_MARKETPLACE_V1224=PASS routes=${routes.length} order=menu-brand-account focusOrder=matched mobileSearch=removed desktopSearch=preserved recommendationWeight=0 homepageCss=certified-bundle`);
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
