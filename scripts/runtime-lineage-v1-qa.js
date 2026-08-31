@@ -21,6 +21,7 @@ const premiumClientStabilityWrapper=(api.match(/const premiumClientStability=req
 const premiumMobileDecisionCommerceWrapper=(api.match(/const premiumMobileDecisionCommerce=require\('([^']+)'\);/)||[])[1]||null;
 const wholeSiteWrapper=(api.match(/const wholeSiteExperience=require\('([^']+)'\);/)||[])[1]||null;
 const scoutNavigatorWrapper=(api.match(/const scoutNavigatorPresentation=require\('([^']+)'\);/)||[])[1]||null;
+const pagespeedAgenticWrapper=(api.match(/const pagespeedAgenticCertification=require\('([^']+)'\);/)||[])[1]||null;
 const auditIntegrationWrapper=(api.match(/const auditIntegration=require\('([^']+)'\);/)||[])[1]||null;
 
 assert.equal(outerRuntime,'../lib/action5-catalogue-certification-v106-runtime');
@@ -34,6 +35,7 @@ assert.equal(premiumClientStabilityWrapper,'../lib/premium-client-stability-v109
 assert.equal(premiumMobileDecisionCommerceWrapper,'../lib/premium-mobile-decision-commerce-v112-runtime');
 assert.equal(wholeSiteWrapper,'../lib/whole-site-experience-v109-runtime');
 assert.equal(scoutNavigatorWrapper,'../lib/scout-navigator-v7-global-runtime');
+assert.equal(pagespeedAgenticWrapper,'../lib/pagespeed-agentic-certification-v113-runtime');
 assert.equal(auditIntegrationWrapper,'../lib/audit-integration-v124-runtime');
 assert(api.includes('hardConstraintParity.install();'));
 assert(api.includes('scoutCustomerIntelligence.install();'));
@@ -48,9 +50,11 @@ assert(api.includes('const stableJourneyHandler=premiumClientStability.wrap(jour
 assert(api.includes('const premiumMobileHandler=premiumMobileDecisionCommerce.wrap(stableJourneyHandler);'));
 assert(api.includes('const handler=wholeSiteExperience.wrap(premiumMobileHandler);'));
 assert(api.includes('const auditedHandler=auditIntegration.wrap(handler);'));
-assert(api.includes('const finalHandler=scoutNavigatorPresentation.wrap(auditedHandler);'));
+assert(api.includes('const presentationHandler=scoutNavigatorPresentation.wrap(auditedHandler);'));
+assert(api.includes('const finalHandler=pagespeedAgenticCertification.wrap(presentationHandler);'));
 assert(api.indexOf('const handler=wholeSiteExperience.wrap(premiumMobileHandler);')<api.indexOf('const auditedHandler=auditIntegration.wrap(handler);'));
-assert(api.indexOf('const auditedHandler=auditIntegration.wrap(handler);')<api.indexOf('const finalHandler=scoutNavigatorPresentation.wrap(auditedHandler);'));
+assert(api.indexOf('const auditedHandler=auditIntegration.wrap(handler);')<api.indexOf('const presentationHandler=scoutNavigatorPresentation.wrap(auditedHandler);'));
+assert(api.indexOf('const presentationHandler=scoutNavigatorPresentation.wrap(auditedHandler);')<api.indexOf('const finalHandler=pagespeedAgenticCertification.wrap(presentationHandler);'));
 assert(api.includes('module.exports=finalHandler;'));
 assert(compatibility.length>=40,`expected the documented compatibility chain to remain visible for controlled consolidation; found ${compatibility.length}`);
 for(const required of ['../lib/search-opportunity-depth-v104-runtime','../lib/decision-hard-constraint-fallback-v1036','../lib/action7-closure-v1016','../lib/action4-final-v981','../lib/brand-mark-canonical-parity-v91','../lib/analytics-funnel-v79'])assert(compatibility.includes(required),`missing compatibility anchor ${required}`);
@@ -70,6 +74,9 @@ for(const required of ['Retailers contribute 0 recommendation points','Model-sea
 const navigatorSource=fs.readFileSync(path.join(root,'lib','scout-navigator-v7-global-runtime.js'),'utf8');
 for(const banned of ['scoreProduct(','rankDecision(','publicDecision(','affiliateRecommendationWeight:1','commissionWeight','localStorage.setItem(','sessionStorage.setItem('])assert(!navigatorSource.includes(banned));
 assert(navigatorSource.includes("const CSS_PATH='/assets/scout-navigator-v7-global.css';"));
+const pagespeedSource=fs.readFileSync(path.join(root,'lib','pagespeed-agentic-certification-v113-runtime.js'),'utf8');
+for(const banned of ['scoreProduct(','rankDecision(','publicDecision(','affiliateRecommendationWeight:1','commissionWeight','localStorage.setItem(','sessionStorage.setItem('])assert(!pagespeedSource.includes(banned));
+assert(pagespeedSource.includes("const CSS_PATH='/assets/pagespeed-home-v113.css';"));
 const auditSource=fs.readFileSync(path.join(root,'lib','audit-integration-v124-runtime.js'),'utf8');
 assert(auditSource.includes("require('./decision-audit-constraint-guard-v118')"));
 assert(auditSource.includes("require('./scout-active-context-v120')"));
@@ -92,4 +99,4 @@ for(const required of ['platform-state-v1-qa.js','hard-constraint-verification-v
 const deps=Object.keys(pkg.dependencies||{});
 for(const framework of ['next','react','vue','@angular/core','svelte'])assert(!deps.includes(framework));
 
-console.log(JSON.stringify({ok:true,underlyingRuntime:outerRuntime,postLineageGuard,transportGuard,scoutPatch,scoutResponsePatch,premiumWrapper,journeyWrapper,premiumClientStabilityWrapper,premiumMobileDecisionCommerceWrapper,wholeSiteWrapper,auditIntegrationWrapper,scoutNavigatorWrapper,compatibilityLayerCount:compatibility.length,preRuntimeSideEffectInstallerCount:sideEffects.length,brandParityFirstGate:true,v112PresentationEvidenceOnly:true,wholeSitePresentationOnly:true,auditIntegrationSingleBoundary:true,scoutNavigatorFinalVisualCascadeOnly:true,prohibitedFrameworksAbsent:true,policy:'v106 remains the governed runtime; audit v124 is one narrow remediation boundary over the completed semantic response; Scout Navigator v7.1 remains the final visual cascade. Full documented compatibility lineage and existing deploy gates remain protected.'},null,2));
+console.log(JSON.stringify({ok:true,underlyingRuntime:outerRuntime,postLineageGuard,transportGuard,scoutPatch,scoutResponsePatch,premiumWrapper,journeyWrapper,premiumClientStabilityWrapper,premiumMobileDecisionCommerceWrapper,wholeSiteWrapper,auditIntegrationWrapper,scoutNavigatorWrapper,pagespeedAgenticWrapper,compatibilityLayerCount:compatibility.length,preRuntimeSideEffectInstallerCount:sideEffects.length,brandParityFirstGate:true,v112PresentationEvidenceOnly:true,wholeSitePresentationOnly:true,auditIntegrationSingleBoundary:true,scoutNavigatorFinalVisualCascadeOnly:true,pagespeedAgenticFinalTransportOnly:true,prohibitedFrameworksAbsent:true,policy:'v106 remains the governed runtime; audit v124 is one narrow remediation boundary over the completed semantic response; Scout Navigator v7.1 remains the final visual cascade; PageSpeed/agentic v113.4 is a transport-only outer certification layer. Full documented compatibility lineage and existing deploy gates remain protected.'},null,2));

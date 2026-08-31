@@ -1,5 +1,4 @@
 'use strict';
-
 const assert=require('node:assert/strict');
 const layer=require('../lib/pagespeed-agentic-certification-v113-runtime');
 
@@ -39,7 +38,7 @@ function request(handler,url,method='GET'){
   return {statusCode:res.statusCode,headers,body};
 }
 
-assert.equal(layer.VERSION,'113.3');
+assert.equal(layer.VERSION,'113.4');
 assert.equal(layer.CSS_PATH,'/assets/pagespeed-home-v113.css');
 assert.equal(layer.repairScoutAriaJs(layer.REDUNDANT_SCOUT_ARIA),layer.SAFE_SCOUT_ARIA);
 
@@ -59,8 +58,8 @@ assert.equal(layer.blockingStylesheetLinks(home).length,3,'only normal screen st
 const handler=layer.wrap(downstream);
 const homepage=request(handler,'/');
 assert.equal(homepage.statusCode,200);
-assert.equal(homepage.headers.get('x-apg-pagespeed-agentic-certification'),'v113.3');
-assert(homepage.body.includes('name="apg-pagespeed-agentic-certification" content="v113.3"'));
+assert.equal(homepage.headers.get('x-apg-pagespeed-agentic-certification'),'v113.4');
+assert(homepage.body.includes('name="apg-pagespeed-agentic-certification" content="v113.4"'));
 assert(homepage.body.includes('/assets/pagespeed-home-v113.css?v='));
 assert.equal(layer.blockingStylesheetLinks(homepage.body).length,1,'homepage must expose one render-blocking internal stylesheet request');
 assert(homepage.body.includes('rel="preload" as="style" href="/assets/noncritical-test-v113.css?v=1"'),'preloaded noncritical CSS must be preserved');
@@ -95,7 +94,7 @@ assert(aboutPage.body.includes('name="apg-pagespeed-agentic-certification"'));
 const wholeSite={wrap(next){return next}};
 layer.install(wholeSite);
 const installedHandler=wholeSite.wrap(downstream);
-assert.equal(request(installedHandler,'/').headers.get('x-apg-pagespeed-agentic-certification'),'v113.3');
+assert.equal(request(installedHandler,'/').headers.get('x-apg-pagespeed-agentic-certification'),'v113.4');
 
 console.log(JSON.stringify({
   ok:true,
@@ -105,6 +104,7 @@ console.log(JSON.stringify({
   noncriticalStyles:'preserved',
   internalAssetRedirects:'followed',
   versionedAssetCaching:'immutable',
+  coldStartCssGeneration:'async-safe',
   scoutAriaRepair:'native-hidden-valid-aside',
   agenticTarget:'3/3',
   policy:'Transport optimisation only; recommendation, retailer, account and decision logic are unchanged.'

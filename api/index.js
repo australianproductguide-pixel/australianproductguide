@@ -84,7 +84,6 @@ catalogueEbayProductHero.install(auditIntegration);
 ebayProductImageContinuity.install(auditIntegration);
 ebayEpnSurface.install(premiumMobileDecisionCommerce);
 customerJourneyProgramme.install(wholeSiteExperience);
-pagespeedAgenticCertification.install(wholeSiteExperience);
 faviconParity.install(wholeSiteExperience);
 aboutTrustNavigation.install(wholeSiteExperience);
 trustpilotFooter.install(wholeSiteExperience);
@@ -112,7 +111,16 @@ handler.TRUSTPILOT_FOOTER_VERSION=trustpilotFooter.VERSION;
 handler.APG_PLATFORM_FACTS=wholeSiteExperience.FACTS;
 const auditedHandler=auditIntegration.wrap(handler);
 auditedHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
-const finalHandler=scoutNavigatorPresentation.wrap(auditedHandler);
+const presentationHandler=scoutNavigatorPresentation.wrap(auditedHandler);
+presentationHandler.SCOUT_NAVIGATOR_PRESENTATION_VERSION=scoutNavigatorPresentation.VERSION;
+presentationHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
+presentationHandler.EBAY_VERIFIED_PRODUCT_HERO_VERSION=verifiedEbayProductHero.VERSION;
+presentationHandler.EBAY_PRODUCT_HERO_CATALOGUE_VERSION=catalogueEbayProductHero.VERSION;
+presentationHandler.EBAY_PRODUCT_IMAGE_CONTINUITY_VERSION=ebayProductImageContinuity.VERSION;
+// PageSpeed/agentic certification is intentionally the final response wrapper so it sees
+// every late-injected presentation stylesheet and can consolidate the complete homepage
+// render-blocking set without changing recommendation, retailer, account or decision logic.
+const finalHandler=pagespeedAgenticCertification.wrap(presentationHandler);
 finalHandler.SCOUT_NAVIGATOR_PRESENTATION_VERSION=scoutNavigatorPresentation.VERSION;
 finalHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
 finalHandler.EBAY_VERIFIED_PRODUCT_HERO_VERSION=verifiedEbayProductHero.VERSION;
