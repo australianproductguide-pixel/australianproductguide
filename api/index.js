@@ -67,6 +67,7 @@ const premiumMobileDecisionCommerce=require('../lib/premium-mobile-decision-comm
 const ebayEpnSurface=require('../lib/ebay-epn-surface-v1-runtime');
 const verifiedEbayProductHero=require('../lib/ebay-verified-product-hero-v1-runtime');
 const catalogueEbayProductHero=require('../lib/ebay-product-hero-catalogue-v2-runtime');
+const ebayProductImageContinuity=require('../lib/ebay-product-image-continuity-v3-runtime');
 const wholeSiteExperience=require('../lib/whole-site-experience-v109-runtime');
 const pagespeedAgenticCertification=require('../lib/pagespeed-agentic-certification-v113-runtime');
 const customerJourneyProgramme=require('../lib/customer-journey-programme-v1144-runtime');
@@ -80,6 +81,7 @@ scoutResponseDepth.install();
 auditIntegration.install();
 verifiedEbayProductHero.install(auditIntegration);
 catalogueEbayProductHero.install(auditIntegration);
+ebayProductImageContinuity.install(auditIntegration);
 ebayEpnSurface.install(premiumMobileDecisionCommerce);
 customerJourneyProgramme.install(wholeSiteExperience);
 pagespeedAgenticCertification.install(wholeSiteExperience);
@@ -115,4 +117,5 @@ finalHandler.SCOUT_NAVIGATOR_PRESENTATION_VERSION=scoutNavigatorPresentation.VER
 finalHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
 finalHandler.EBAY_VERIFIED_PRODUCT_HERO_VERSION=verifiedEbayProductHero.VERSION;
 finalHandler.EBAY_PRODUCT_HERO_CATALOGUE_VERSION=catalogueEbayProductHero.VERSION;
+finalHandler.EBAY_PRODUCT_IMAGE_CONTINUITY_VERSION=ebayProductImageContinuity.VERSION;
 module.exports=finalHandler;
