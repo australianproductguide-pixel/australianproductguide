@@ -4,9 +4,6 @@
   "functions": {
     "api/index.js": {
       "includeFiles": "public/assets/**/*.css"
-    },
-    "api/continuous-index.js": {
-      "includeFiles": "public/assets/**/*.css"
     }
   },
   "git": {
@@ -26,6 +23,6 @@
     { "src": "/.well-known/oauth-protected-resource/mcp", "dest": "/api/mcp-oauth-metadata" },
     { "src": "/.well-known/oauth-protected-resource", "dest": "/api/mcp-oauth-metadata" },
     { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/api/continuous-index" }
+    { "src": "/(.*)", "dest": "/api" }
   ]
 }
