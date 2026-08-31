@@ -68,6 +68,7 @@ const ebayEpnSurface=require('../lib/ebay-epn-surface-v1-runtime');
 const verifiedEbayProductHero=require('../lib/ebay-verified-product-hero-v1-runtime');
 const catalogueEbayProductHero=require('../lib/ebay-product-hero-catalogue-v2-runtime');
 const ebayProductImageContinuity=require('../lib/ebay-product-image-continuity-v3-runtime');
+const crossSurfaceProductImagery=require('../lib/cross-surface-product-imagery-v33-runtime');
 const wholeSiteExperience=require('../lib/whole-site-experience-v109-runtime');
 const pagespeedAgenticCertification=require('../lib/pagespeed-agentic-certification-v113-runtime');
 const customerJourneyProgramme=require('../lib/customer-journey-programme-v1144-runtime');
@@ -82,6 +83,7 @@ auditIntegration.install();
 verifiedEbayProductHero.install(auditIntegration);
 catalogueEbayProductHero.install(auditIntegration);
 ebayProductImageContinuity.install(auditIntegration);
+crossSurfaceProductImagery.install(auditIntegration);
 ebayEpnSurface.install(premiumMobileDecisionCommerce);
 customerJourneyProgramme.install(wholeSiteExperience);
 faviconParity.install(wholeSiteExperience);
@@ -117,6 +119,7 @@ presentationHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
 presentationHandler.EBAY_VERIFIED_PRODUCT_HERO_VERSION=verifiedEbayProductHero.VERSION;
 presentationHandler.EBAY_PRODUCT_HERO_CATALOGUE_VERSION=catalogueEbayProductHero.VERSION;
 presentationHandler.EBAY_PRODUCT_IMAGE_CONTINUITY_VERSION=ebayProductImageContinuity.VERSION;
+presentationHandler.CROSS_SURFACE_PRODUCT_IMAGERY_VERSION=crossSurfaceProductImagery.VERSION;
 // PageSpeed/agentic certification is intentionally the final response wrapper so it sees
 // every late-injected presentation stylesheet and can consolidate the complete homepage
 // render-blocking set without changing recommendation, retailer, account or decision logic.
@@ -126,4 +129,5 @@ finalHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
 finalHandler.EBAY_VERIFIED_PRODUCT_HERO_VERSION=verifiedEbayProductHero.VERSION;
 finalHandler.EBAY_PRODUCT_HERO_CATALOGUE_VERSION=catalogueEbayProductHero.VERSION;
 finalHandler.EBAY_PRODUCT_IMAGE_CONTINUITY_VERSION=ebayProductImageContinuity.VERSION;
+finalHandler.CROSS_SURFACE_PRODUCT_IMAGERY_VERSION=crossSurfaceProductImagery.VERSION;
 module.exports=finalHandler;
