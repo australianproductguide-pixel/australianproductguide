@@ -7,10 +7,13 @@
 // product-hero exact guard. The five original pilot products remain owned by
 // ebay-verified-offers-v1.js and are deliberately not duplicated here.
 //
-// A row in this registry is identity evidence, not permission to display stale eBay content.
-// Runtime must refresh the mapped item through the eBay Browse API before public display, or
-// fail closed. Retailer/affiliate participation contributes zero recommendation points and
-// these rows must not be written into APG canonical Product.image structured data.
+// A row in this registry is time-bounded retailer evidence, not a permanent image entitlement.
+// Public product-page requests do not call the eBay Browse API. They may display a row only while
+// its original Production observedAt remains inside APG's five-hour freshness window and the
+// strict hero guard still passes. Discovery and refresh happen only through the controlled
+// Production enrichment process; stale, missing or uncertain rows fail closed to the APG logo.
+// Retailer/affiliate participation contributes zero recommendation points and these rows must not
+// be written into APG canonical Product.image structured data.
 
 const VERSION='2.0';
 const MARKETPLACE='EBAY_AU';
