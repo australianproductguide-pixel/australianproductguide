@@ -1,17 +1,29 @@
 'use strict';
 
 const assert=require('assert');
+const fs=require('fs');
+const path=require('path');
 const continuity=require('../lib/ebay-product-image-continuity-v3-runtime');
 const pilot=require('../data/ebay-verified-offers-v1');
 const worker=require('../api/ebay-image-refresh');
+const stateClient=require('../lib/apg-supabase-public-v1');
 
 assert.strictEqual(continuity.VERSION,'3.0');
-assert.strictEqual(worker.VERSION,'1.0');
+assert.strictEqual(worker.VERSION,'1.2');
+assert.strictEqual(stateClient.VERSION,'1.1');
+assert.strictEqual(stateClient.STATE_FUNCTION,'/functions/v1/apg-ebay-image-state','material image-state operations must use the protected Edge Function');
+assert(!stateClient.rpc.toString().includes('/rest/v1/rpc'),'material image-state writes must not call anonymous PostgREST RPC directly');
 assert.strictEqual(continuity.REFRESH_TARGET_MS,4*60*60*1000,'background refresh target must be four hours');
 assert(continuity.MAX_DISPLAY_AGE_MS<6*60*60*1000,'display ceiling must remain below six hours');
 assert(continuity.MAX_DISPLAY_AGE_MS>=5.5*60*60*1000,'continuity buffer should exceed the former five-hour cliff');
 assert.strictEqual(worker.REFRESH_QUOTA_RESERVE,500,'automatic refresh must preserve a 500-call ordinary Browse reserve');
 assert.strictEqual(worker.CONCURRENCY,3,'background refresh concurrency must remain conservative');
+assert.strictEqual(worker.MAX_RECOVERY_CALLS,5,'listing recovery must reserve at most five ordinary calls');
+assert.strictEqual(worker.MAX_DISCOVERY_PRODUCTS_PER_RUN,2,'new-image discovery must stay tightly bounded per scheduled run');
+assert.strictEqual(worker.MAX_DISCOVERY_CALLS_PER_PRODUCT,5,'each discovery product must reserve the matcher maximum before network work');
+assert(worker.DISCOVERY_SLUGS.length>=480,'automatic discovery must cover the maintained catalogue, not only the pilot');
+const continuitySource=fs.readFileSync(path.join(__dirname,'..','lib','ebay-product-image-continuity-v3-runtime.js'),'utf8');
+assert(!/require\(['"]\.\/ebay-browse-api-v1['"]\)/.test(continuitySource),'public continuity runtime must not import the eBay network client');
 
 const slug='breville-barista-express-impress-bes876';
 const product=continuity.productForSlug(slug);
@@ -105,10 +117,24 @@ const html=`<!doctype html><html><head>${canonical}${jsonLd}</head><body><main><
     {resource:'buy.browse.item.bulk',limit:5000,remaining:5000,count:0,reset:'2026-09-01T07:00:00Z'}
   ]};
   assert.strictEqual(worker.ordinaryBrowseRemaining(summary),4200,'worker must budget against ordinary Browse, not the untouched bulk pool');
-  const payload=worker.refreshPayload({...continuity.toGuardRow(mapping).accepted,verificationLevel:mapping.verificationLevel,verificationEvidence:mapping.verificationEvidence});
+  const accepted={
+    ...continuity.toGuardRow(mapping).accepted,
+    verificationLevel:mapping.verificationLevel,
+    verificationEvidence:mapping.verificationEvidence,
+    score:106,reasons:['brand-match','exact-model'],flags:[]
+  };
+  const payload=worker.refreshPayload(accepted);
   assert.strictEqual(payload.recommendationWeight,0,'refresh payload must preserve zero commercial recommendation weight');
   assert.strictEqual(payload.detailVerified,true);
   assert.strictEqual(payload.exactModel,true);
+  const discovered=worker.discoveryPayload(product,accepted,true,'2026-08-31T07:05:00.000Z');
+  assert.strictEqual(discovered.slug,slug,'discovery payload must bind to the maintained APG slug');
+  assert(discovered.productName.includes('Breville'),'discovery payload must retain maintained product identity');
+  assert.strictEqual(discovered.heroEligible,true,'only hero-guard-passing discovery may be persisted');
+  assert.strictEqual(discovered.recommendationWeight,0,'newly discovered retailer imagery must contribute zero recommendation points');
+  assert.strictEqual(discovered.verifiedAt,'2026-08-31T07:05:00.000Z','discovery freshness must be anchored to a real verification timestamp');
+  const counts=worker.countStatuses([{status:'accepted'},{status:'no-match'},{status:'accepted'}],{accepted:0,'no-match':0,error:0});
+  assert.deepStrictEqual(counts,{accepted:2,'no-match':1,error:0},'discovery reporting must retain honest outcome counts');
 
-  console.log(`EBAY_IMAGE_CONTINUITY_V3=PASS public-ebay-network=0 refresh-target=4h display-ceiling=${Math.round(continuity.MAX_DISPLAY_AGE_MS/60000)}m cache=5m worker-reserve=${worker.REFRESH_QUOTA_RESERVE} recommendationWeight=0`);
+  console.log(`EBAY_IMAGE_CONTINUITY_V3=PASS public-ebay-network=0 refresh-target=4h display-ceiling=${Math.round(continuity.MAX_DISPLAY_AGE_MS/60000)}m cache=5m worker-reserve=${worker.REFRESH_QUOTA_RESERVE} discovery-max=${worker.MAX_DISCOVERY_PRODUCTS_PER_RUN}x${worker.MAX_DISCOVERY_CALLS_PER_PRODUCT} recommendationWeight=0`);
 })().catch(error=>{console.error(error.stack||error);process.exit(1);});
