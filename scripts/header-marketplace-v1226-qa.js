@@ -26,7 +26,8 @@ function count(text,needle){return String(text).split(needle).length-1}
     assert.equal(response.status,200,`${route} must render`);
     assert.equal(response.headers['x-apg-header-marketplace-mobile-left-lockup'],'v122.6',`${route} must expose v122.6 geometry header`);
     assert.equal(count(response.body,'name="apg-header-marketplace-mobile-left-lockup"'),1,`${route} must include one v122.6 marker`);
-    assert.equal(count(response.body,'/assets/header-marketplace-v1226.css?v=122.6'),1,`${route} must include one v122.6 stylesheet`);
+    assert.equal(count(response.body,'/assets/header-marketplace-v1226.css?v=122.6'),route==='/'?0:1,`${route} must ${route==='/'?'bundle':'include'} v122.6 styling`);
+    if(route==='/')assert(response.body.includes('/assets/pagespeed-home-v113.css?v='),'homepage must carry v122.6 through certified PageSpeed CSS');
     assert.equal(count(response.body,'data-apg-mobile-search-v1226'),1,`${route} must include exactly one persistent mobile header Search`);
     assert.equal(count(response.body,'data-apg-drawer-supermenu="v122.5"'),1,`${route} must preserve the v122.5 priority-first supermenu`);
     assert(response.body.includes('apg-mobile-account-label-v1226'),`${route} must include the compact mobile account label`);
@@ -60,5 +61,5 @@ function count(text,needle){return String(text).split(needle).length-1}
   for(const token of required)assert(css.body.includes(token),`v122.6 CSS must retain ${token}`);
   assert(!css.body.includes('@media(min-width:921px)'),'v122.6 must not alter desktop header presentation');
 
-  console.log(`HEADER_MARKETPLACE_V1226=PASS routes=${routes.length} geometry=viewport-edge-left-cluster account=right-edge signIn=visible mobileSearch=preserved desktop=preserved`);
+  console.log(`HEADER_MARKETPLACE_V1226=PASS routes=${routes.length} geometry=viewport-edge-left-cluster account=right-edge signIn=visible mobileSearch=preserved desktop=preserved homepageCss=certified-bundle`);
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
