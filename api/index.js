@@ -65,9 +65,6 @@ const decisionJourneyContinuity=require('../lib/decision-journey-continuity-v108
 const premiumClientStability=require('../lib/premium-client-stability-v1091-runtime');
 const premiumMobileDecisionCommerce=require('../lib/premium-mobile-decision-commerce-v112-runtime');
 const ebayEpnSurface=require('../lib/ebay-epn-surface-v1-runtime');
-const verifiedEbayProductHero=require('../lib/ebay-verified-product-hero-v1-runtime');
-const catalogueEbayProductHero=require('../lib/ebay-product-hero-catalogue-v2-runtime');
-const ebayProductImageContinuity=require('../lib/ebay-product-image-continuity-v3-runtime');
 const wholeSiteExperience=require('../lib/whole-site-experience-v109-runtime');
 const pagespeedAgenticCertification=require('../lib/pagespeed-agentic-certification-v113-runtime');
 const customerJourneyProgramme=require('../lib/customer-journey-programme-v1144-runtime');
@@ -79,9 +76,12 @@ hardConstraintParity.install();
 scoutCustomerIntelligence.install();
 scoutResponseDepth.install();
 auditIntegration.install();
-verifiedEbayProductHero.install(auditIntegration);
-catalogueEbayProductHero.install(auditIntegration);
-ebayProductImageContinuity.install(auditIntegration);
+// P0 containment 1 Sep 2026: retailer-scoped eBay product photography remains governed in the
+// registry/background worker, but the three presentation wrappers are deliberately detached from
+// the global response chain. They used asynchronous res.write/res.end interception on every HTML
+// route, including Home, despite only changing product pages. Restore photography only through a
+// route-scoped implementation that never intercepts non-product responses and passes exact-SHA
+// serverless cold-start + repeated browser certification.
 ebayEpnSurface.install(premiumMobileDecisionCommerce);
 customerJourneyProgramme.install(wholeSiteExperience);
 faviconParity.install(wholeSiteExperience);
@@ -114,16 +114,12 @@ auditedHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
 const presentationHandler=scoutNavigatorPresentation.wrap(auditedHandler);
 presentationHandler.SCOUT_NAVIGATOR_PRESENTATION_VERSION=scoutNavigatorPresentation.VERSION;
 presentationHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
-presentationHandler.EBAY_VERIFIED_PRODUCT_HERO_VERSION=verifiedEbayProductHero.VERSION;
-presentationHandler.EBAY_PRODUCT_HERO_CATALOGUE_VERSION=catalogueEbayProductHero.VERSION;
-presentationHandler.EBAY_PRODUCT_IMAGE_CONTINUITY_VERSION=ebayProductImageContinuity.VERSION;
+presentationHandler.EBAY_PRODUCT_IMAGE_PRESENTATION_STATE='P0_DETACHED_GLOBAL_WRAPPERS';
 // PageSpeed/agentic certification is intentionally the final response wrapper so it sees
 // every late-injected presentation stylesheet and can consolidate the complete homepage
 // render-blocking set without changing recommendation, retailer, account or decision logic.
 const finalHandler=pagespeedAgenticCertification.wrap(presentationHandler);
 finalHandler.SCOUT_NAVIGATOR_PRESENTATION_VERSION=scoutNavigatorPresentation.VERSION;
 finalHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
-finalHandler.EBAY_VERIFIED_PRODUCT_HERO_VERSION=verifiedEbayProductHero.VERSION;
-finalHandler.EBAY_PRODUCT_HERO_CATALOGUE_VERSION=catalogueEbayProductHero.VERSION;
-finalHandler.EBAY_PRODUCT_IMAGE_CONTINUITY_VERSION=ebayProductImageContinuity.VERSION;
+finalHandler.EBAY_PRODUCT_IMAGE_PRESENTATION_STATE='P0_DETACHED_GLOBAL_WRAPPERS';
 module.exports=finalHandler;
