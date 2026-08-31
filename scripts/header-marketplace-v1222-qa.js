@@ -24,7 +24,8 @@ function count(text,needle){return String(text).split(needle).length-1}
     assert.equal(response.status,200,`${route} must render`);
     assert.equal(response.headers['x-apg-header-marketplace-mobile-ownership'],'v122.2',`${route} must expose v122.2 mobile ownership header`);
     assert.equal(count(response.body,'name="apg-header-marketplace-mobile-ownership"'),1,`${route} must include one v122.2 marker`);
-    assert.equal(count(response.body,'/assets/header-marketplace-v1222.css?v=122.2'),1,`${route} must include one v122.2 stylesheet`);
+    assert.equal(count(response.body,'/assets/header-marketplace-v1222.css?v=122.2'),route==='/'?0:1,`${route} must ${route==='/'?'bundle':'include'} v122.2 styling`);
+    if(route==='/')assert(response.body.includes('/assets/pagespeed-home-v113.css?v='),'homepage must carry v122.2 through certified PageSpeed CSS');
     assert.equal(count(response.body,'data-apg-mobile-account-v122'),1,`${route} must retain exactly one canonical mobile account affordance`);
     assert(response.body.includes('data-apg-search-category'),`${route} must preserve desktop category search`);
     assert(response.body.includes('class="mobile-toggle"'),`${route} must preserve the canonical mobile drawer trigger`);
@@ -48,5 +49,5 @@ function count(text,needle){return String(text).split(needle).length-1}
   for(const token of required)assert(asset.body.includes(token),`v122.2 CSS must retain ${token}`);
   const source=require('node:fs').readFileSync(require('node:path').join(__dirname,'..','lib','header-marketplace-v1222-runtime.js'),'utf8');
   for(const banned of ['scoreProduct(','rankDecision(','commissionWeight','localStorage.setItem(','sessionStorage.setItem('])assert(!source.includes(banned),`v122.2 must remain presentation-only: ${banned}`);
-  console.log(`HEADER_MARKETPLACE_V1222=PASS routes=${routes.length} mobileAccountText=zero mobileBrand=full mobileSearch=row2 desktopSearch=premium recommendationWeight=0`);
+  console.log(`HEADER_MARKETPLACE_V1222=PASS routes=${routes.length} mobileAccountText=zero mobileBrand=full mobileSearch=row2 desktopSearch=premium recommendationWeight=0 homepageCss=certified-bundle`);
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
