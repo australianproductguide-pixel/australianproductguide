@@ -7,7 +7,7 @@ const stateClient=require('../lib/apg-supabase-public-v1');
 const pilot=require('../data/ebay-verified-offers-v1');
 
 assert.strictEqual(layer.VERSION,'33.1');
-assert.strictEqual(stateClient.VERSION,'1.2');
+assert.strictEqual(stateClient.VERSION,'1.1');
 assert.strictEqual(layer.API_PATH,'/api/product-presentation-images-v33');
 assert.strictEqual(layer.MAX_PAGE_SLUGS,80);
 assert.strictEqual(layer.MAX_API_SLUGS,30);
