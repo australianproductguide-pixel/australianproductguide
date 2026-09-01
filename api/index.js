@@ -72,16 +72,16 @@ const faviconParity=require('../lib/favicon-parity-v115-runtime');
 const aboutTrustNavigation=require('../lib/about-trust-navigation-v116-runtime');
 const trustpilotFooter=require('../lib/trustpilot-footer-v117-runtime');
 const scoutNavigatorPresentation=require('../lib/scout-navigator-v7-global-runtime');
+const ebayProductImageContinuity=require('../lib/ebay-product-image-continuity-v3-runtime');
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
 scoutResponseDepth.install();
 auditIntegration.install();
 // P0 containment 1 Sep 2026: retailer-scoped eBay product photography remains governed in the
-// registry/background worker, but the three presentation wrappers are deliberately detached from
-// the global response chain. They used asynchronous res.write/res.end interception on every HTML
-// route, including Home, despite only changing product pages. Restore photography only through a
-// route-scoped implementation that never intercepts non-product responses and passes exact-SHA
-// serverless cold-start + repeated browser certification.
+// registry/background worker. The former global image wrappers stay detached because they used
+// asynchronous res.write/res.end interception on every HTML route, including Home. Product-page
+// photography is restored below only after an exact /products/{slug}/ route gate; non-product
+// responses never enter the image continuity wrapper.
 ebayEpnSurface.install(premiumMobileDecisionCommerce);
 customerJourneyProgramme.install(wholeSiteExperience);
 faviconParity.install(wholeSiteExperience);
@@ -114,14 +114,32 @@ auditedHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
 const presentationHandler=scoutNavigatorPresentation.wrap(auditedHandler);
 presentationHandler.SCOUT_NAVIGATOR_PRESENTATION_VERSION=scoutNavigatorPresentation.VERSION;
 presentationHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
-presentationHandler.EBAY_PRODUCT_IMAGE_PRESENTATION_STATE='P0_DETACHED_GLOBAL_WRAPPERS';
+presentationHandler.EBAY_PRODUCT_IMAGE_PRESENTATION_STATE='P0_GLOBAL_WRAPPERS_DETACHED';
+
+// Route-scoped eBay image restoration v1. The continuity wrapper is constructed once, but is only
+// invoked for canonical product-page paths. Home, Search, Compare, categories, guides, APIs and
+// every other route call presentationHandler directly, so their response streams are never
+// intercepted by retailer-image logic.
+const ebayProductPresentationHandler=ebayProductImageContinuity.wrap(presentationHandler);
+function routeScopedPresentationHandler(req,res){
+  let pathname='/';
+  try{pathname=new URL(req&&req.url||'/','https://australianproductguide.au').pathname;}catch{}
+  if(/^\/products\/[a-z0-9][a-z0-9-]{1,160}\/$/.test(pathname))return ebayProductPresentationHandler(req,res);
+  return presentationHandler(req,res);
+}
+Object.assign(routeScopedPresentationHandler,presentationHandler,{
+  EBAY_PRODUCT_IMAGE_CONTINUITY_VERSION:ebayProductImageContinuity.VERSION,
+  EBAY_PRODUCT_IMAGE_PRESENTATION_STATE:'ROUTE_SCOPED_PRODUCT_PAGES_V1'
+});
+
 // PageSpeed/agentic certification is intentionally the final response wrapper so it sees
 // every late-injected presentation stylesheet and can consolidate the complete homepage
 // render-blocking set without changing recommendation, retailer, account or decision logic.
-const finalHandler=pagespeedAgenticCertification.wrap(presentationHandler);
+const finalHandler=pagespeedAgenticCertification.wrap(routeScopedPresentationHandler);
 finalHandler.SCOUT_NAVIGATOR_PRESENTATION_VERSION=scoutNavigatorPresentation.VERSION;
 finalHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
-finalHandler.EBAY_PRODUCT_IMAGE_PRESENTATION_STATE='P0_DETACHED_GLOBAL_WRAPPERS';
+finalHandler.EBAY_PRODUCT_IMAGE_CONTINUITY_VERSION=ebayProductImageContinuity.VERSION;
+finalHandler.EBAY_PRODUCT_IMAGE_PRESENTATION_STATE='ROUTE_SCOPED_PRODUCT_PAGES_V1';
 
 // P0 diagnostic metadata only (1 Sep 2026). The public export remains finalHandler unchanged.
 // A separate no-store/noindex diagnostic function uses these already-assembled boundaries to
@@ -137,7 +155,7 @@ const p0HomeAssemblyHandlers=Object.freeze({
   mobile:premiumMobileHandler,
   whole:handler,
   audit:auditedHandler,
-  presentation:presentationHandler,
+  presentation:routeScopedPresentationHandler,
   final:finalHandler
 });
 finalHandler.APG_P0_HOME_ASSEMBLY_HANDLERS=p0HomeAssemblyHandlers;
