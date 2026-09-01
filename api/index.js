@@ -122,4 +122,22 @@ const finalHandler=pagespeedAgenticCertification.wrap(presentationHandler);
 finalHandler.SCOUT_NAVIGATOR_PRESENTATION_VERSION=scoutNavigatorPresentation.VERSION;
 finalHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
 finalHandler.EBAY_PRODUCT_IMAGE_PRESENTATION_STATE='P0_DETACHED_GLOBAL_WRAPPERS';
+
+// P0 diagnostic-only stage registry. This does not alter the governed export or public routing.
+// The separate hidden diagnostic function may invoke these already-assembled handlers to identify
+// the first layer at which native Home fails in Vercel Production. Remove with the P0 containment.
+const p0HomeStageHandlers=Object.freeze({
+  runtime,
+  transport:transportHandler,
+  premium:premiumHandler,
+  journey:journeyHandler,
+  stable:stableJourneyHandler,
+  mobile:premiumMobileHandler,
+  whole:handler,
+  audit:auditedHandler,
+  presentation:presentationHandler,
+  final:finalHandler
+});
+finalHandler.APG_P0_HOME_STAGE_HANDLERS=p0HomeStageHandlers;
+finalHandler.APG_P0_HOME_STAGE_NAMES=Object.freeze(Object.keys(p0HomeStageHandlers));
 module.exports=finalHandler;
