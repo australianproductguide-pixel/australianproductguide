@@ -1,0 +1,7 @@
+/* APG governed product-card imagery v1.0 */
+.apg-governed-product-image-v1{display:block;margin:0 0 .8rem;text-decoration:none;color:inherit}
+.apg-governed-product-image-v1__media{display:flex;align-items:center;justify-content:center;width:100%;min-height:150px;aspect-ratio:4/3;padding:.75rem;box-sizing:border-box;background:#fff;border:1px solid rgba(15,23,42,.10);border-radius:14px;overflow:hidden}
+.apg-governed-product-image-v1__img{display:block;width:100%;height:100%;max-width:240px;max-height:220px;object-fit:contain;object-position:center;background:#fff}
+.apg-governed-product-image-v1__source{display:block;margin-top:.35rem;font-size:.67rem;line-height:1.3;color:#64748b;text-align:center}
+.apg-governed-product-image-v1:focus-visible{outline:3px solid #2563eb;outline-offset:3px;border-radius:14px}
+@media(max-width:720px){.apg-governed-product-image-v1__media{min-height:130px;padding:.6rem}.apg-governed-product-image-v1__img{max-height:190px}.apg-governed-product-image-v1__source{font-size:.64rem}}
