@@ -11,8 +11,8 @@ const assets=new Map([
   ['/assets/premium-experience-v107.js?v=107.1',['application/javascript; charset=utf-8',`function setAria(el,name,value){el.setAttribute(name,String(value))}function syncScoutAria(){const panel=document.querySelector('#apgAssistantPanel');${layer.REDUNDANT_SCOUT_ARIA}}`]],
 ]);
 
-const home='<!doctype html><html><head><title>Home</title><link rel="stylesheet" href="/assets/platform-integrity-v15.css?v=15"><link rel="stylesheet" href="/assets/feature-test-v113.css?v=1"><link rel="stylesheet" href="/assets/final-test-v113.css?v=2"><link rel="preload" as="style" href="/assets/noncritical-test-v113.css?v=1" onload="this.rel=\'stylesheet\'"><link rel="stylesheet" href="/assets/noncritical-test-v113.css?v=1" media="print"><noscript><link rel="stylesheet" href="/assets/noncritical-test-v113.css?v=1"></noscript></head><body><main><h1>APG</h1></main><aside id="apgAssistantPanel" hidden role="dialog" aria-modal="false" aria-labelledby="apgScoutTitle" aria-hidden="true"><strong id="apgScoutTitle">Scout</strong><button>Close</button></aside></body></html>';
-const search='<!doctype html><html><head><title>Search</title></head><body><main><h1>Search</h1></main></body></html>';
+const home='<!doctype html><html><head><title>Home</title><link rel="canonical" href="https://australianproductguide.au/"><link rel="stylesheet" href="/assets/platform-integrity-v15.css?v=15"><link rel="stylesheet" href="/assets/feature-test-v113.css?v=1"><link rel="stylesheet" href="/assets/final-test-v113.css?v=2"><link rel="preload" as="style" href="/assets/noncritical-test-v113.css?v=1" onload="this.rel=\'stylesheet\'"><link rel="stylesheet" href="/assets/noncritical-test-v113.css?v=1" media="print"><noscript><link rel="stylesheet" href="/assets/noncritical-test-v113.css?v=1"></noscript></head><body data-apg-route-family="home"><main><h1>APG</h1></main><aside id="apgAssistantPanel" hidden role="dialog" aria-modal="false" aria-labelledby="apgScoutTitle" aria-hidden="true"><strong id="apgScoutTitle">Scout</strong><button>Close</button></aside></body></html>';
+const search='<!doctype html><html><head><title>Search</title><link rel="canonical" href="https://australianproductguide.au/search/"></head><body data-apg-route-family="search"><main><h1>Search</h1></main></body></html>';
 const about='<!doctype html><html><head><title>About</title><link rel="stylesheet" href="/assets/platform-integrity-v15.css?v=15"><link rel="stylesheet" href="/assets/final-test-v113.css?v=2"></head><body><main><h1>About</h1></main></body></html>';
 
 function downstream(req,res){
@@ -46,6 +46,7 @@ function request(handler,url,method='GET',live=false){
 assert.equal(layer.VERSION,'113.5');
 assert.equal(layer.CSS_PATH,'/assets/pagespeed-home-v113.css');
 assert.equal(layer.RUNTIME_CSS_CONSOLIDATION,'P0_DISABLED_RECURSIVE_CAPTURE');
+assert.equal(layer.HOME_ROUTING_STATE,'NATIVE_HOME_RESTORED');
 assert.equal(layer.HOME_DIAGNOSTIC_PATH,'/__apg-p0-home-native-20260901');
 assert.equal(layer.repairScoutAriaJs(layer.REDUNDANT_SCOUT_ARIA),layer.SAFE_SCOUT_ARIA);
 
@@ -83,10 +84,18 @@ assert(!homepage.body.includes('role="dialog"'),'homepage must not expose the in
 assert(!homepage.body.includes('aria-modal="false"'),'homepage must not expose aria-modal without dialog semantics');
 
 const liveHomepage=request(handler,'/','GET',true);
-assert.equal(liveHomepage.statusCode,200,'live Home containment must remain usable while native Home is under diagnosis');
-assert(liveHomepage.body.includes('<h1>Search</h1>'),'live Home containment must use the healthy Search renderer');
-assert.equal(liveHomepage.headers.get('x-apg-p0-home-availability'),layer.HOME_AVAILABILITY_STATE);
-assert.equal(liveHomepage.finalUrl,layer.HOME_FALLBACK_URL);
+assert.equal(liveHomepage.statusCode,200,'live Home must remain available after retiring the temporary Search fallback');
+assert(liveHomepage.body.includes('<h1>APG</h1>'),'live root must render native Home, not Search');
+assert(liveHomepage.body.includes('data-apg-route-family="home"'),'live root must preserve native Home route identity');
+assert(liveHomepage.body.includes('rel="canonical" href="https://australianproductguide.au/"'),'live root must preserve the Home canonical');
+assert(!liveHomepage.body.includes('<h1>Search</h1>'),'live root must not render the Search fallback');
+assert.equal(liveHomepage.headers.get('x-apg-p0-home-availability'),undefined,'retired internal fallback marker must not appear on public Home');
+assert.equal(liveHomepage.finalUrl,'/','PageSpeed transport must not rewrite the public root');
+
+const retiredReq={url:'/',method:'GET',httpVersion:'1.1',socket:{remoteAddress:'127.0.0.1'}};
+const retiredRes={setHeader(){},getHeader(){},removeHeader(){}};
+assert.equal(layer.applyHomeAvailabilityFallback(retiredReq,retiredRes,new URL('https://australianproductguide.au/')),false,'legacy Home availability fallback hook must remain inert');
+assert.equal(retiredReq.url,'/','legacy fallback hook must not rewrite Home');
 
 const nativeHomeDiagnostic=request(handler,layer.HOME_DIAGNOSTIC_PATH,'GET',true);
 assert.equal(nativeHomeDiagnostic.statusCode,200,'diagnostic path must enter the native Home renderer in deterministic QA');
@@ -95,7 +104,13 @@ assert.equal(nativeHomeDiagnostic.headers.get('x-apg-p0-home-diagnostic'),layer.
 assert.match(String(nativeHomeDiagnostic.headers.get('x-robots-tag')||''),/noindex/);
 assert.equal(nativeHomeDiagnostic.headers.get('cache-control'),'no-store, max-age=0');
 assert.equal(nativeHomeDiagnostic.finalUrl,`/?${layer.HOME_DIAGNOSTIC_QUERY}=1`);
-assert.equal(nativeHomeDiagnostic.headers.get('x-apg-p0-home-availability'),undefined,'native Home diagnostic must bypass the ordinary live Home fallback');
+assert.equal(nativeHomeDiagnostic.headers.get('x-apg-p0-home-availability'),undefined,'native Home diagnostic must not expose the retired fallback marker');
+
+const liveSearch=request(handler,'/search/','GET',true);
+assert.equal(liveSearch.statusCode,200);
+assert(liveSearch.body.includes('<h1>Search</h1>'),'Search must remain independently healthy');
+assert(liveSearch.body.includes('rel="canonical" href="https://australianproductguide.au/search/"'));
+assert.equal(liveSearch.finalUrl,'/search/');
 
 const css=request(handler,`${layer.CSS_PATH}?v=${layer.BUILD_ID}`);
 assert.equal(css.statusCode,503,'runtime-generated CSS endpoint must fail closed while recursive capture is disabled');
@@ -118,8 +133,12 @@ assert.equal(aboutPage.headers.get('x-apg-pagespeed-runtime-css'),'P0_DISABLED_R
 
 const source=fs.readFileSync(path.join(__dirname,'..','lib','pagespeed-agentic-certification-v113-runtime.js'),'utf8');
 assert(source.includes("const RUNTIME_CSS_CONSOLIDATION='P0_DISABLED_RECURSIVE_CAPTURE';"));
+assert(source.includes("const HOME_ROUTING_STATE='NATIVE_HOME_RESTORED';"));
 assert(source.includes("const HOME_DIAGNOSTIC_PATH='/__apg-p0-home-native-20260901';"));
 assert(source.includes('function capture(_handler,url){throw unsafeCaptureError(url)}'));
+assert(source.includes('function applyHomeAvailabilityFallback(_req,_res,_u){'),'legacy incident hook must remain explicit and auditable');
+assert(source.includes('return false;\n}'),'retired fallback hook must fail inert');
+assert(!source.includes('const homeFallback=applyHomeAvailabilityFallback'),'public handler must never invoke the retired fallback hook');
 assert(!source.includes("const home=capture(downstream,'/');"),'live runtime must not recursively render Home for CSS discovery');
 assert(!source.includes('const asset=capture(downstream,href);'),'live runtime must not recursively invoke downstream for stylesheet capture');
 
@@ -137,11 +156,13 @@ console.log(JSON.stringify({
   runtimeCssConsolidation:'P0_DISABLED_RECURSIVE_CAPTURE',
   runtimeRecursiveCapture:'prohibited',
   retiredBundleEndpoint:'503-fail-closed',
-  liveHomeContainment:'Search-renderer',
-  nativeHomeDiagnostic:'isolated-live-path-noindex-no-store',
+  publicHomeRouting:'NATIVE_HOME_RESTORED',
+  internalSearchFallback:'RETIRED_INERT',
+  nativeHomeDiagnostic:'post-recovery-noindex-no-store',
+  searchRoute:'preserved',
   versionedAssetCaching:'immutable',
   scoutAriaRepair:'native-hidden-valid-aside',
   recommendationLogic:'unchanged',
   commercialScoring:'unchanged',
-  policy:'Availability-first P0 transport containment; diagnose native Home behind the edge redirect; rebuild CSS consolidation as a static/build-time asset before re-enabling a one-file homepage bundle.'
+  policy:'Native Home restored after exact-Production assembly bisect; PageSpeed retains no-recursive-capture transport safety and diagnostics but no longer rewrites public Home to Search.'
 },null,2));
