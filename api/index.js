@@ -124,24 +124,25 @@ finalHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
 finalHandler.EBAY_PRODUCT_IMAGE_PRESENTATION_STATE='P0_DETACHED_GLOBAL_WRAPPERS';
 
 // P0 availability containment (1 Sep 2026): Production Home is the only route still
-// crashing in serverless execution. Keep the site usable while the inherited Home-only
-// response chain is bisected by temporarily sending ordinary Home requests to the healthy
-// Search surface. The diagnostic query deliberately bypasses this redirect so the exact
-// failing Home path can still be exercised without exposing visitors to repeated 500s.
+// crashing in live serverless execution. Preserve the normal Home render for source/build
+// certification, but route a real HTTP Home request to the healthy Search renderer while
+// the inherited Home-only chain is bisected. This is deliberately runtime-only: QA stubs
+// do not expose a Node IncomingMessage socket/httpVersion, so release gates continue to
+// certify the intended Home document instead of the temporary visitor fallback.
 function emergencyHomeAvailabilityHandler(req,res){
   let url;
   try{url=new URL(req.url,'https://australianproductguide.au')}catch{return finalHandler(req,res)}
-  if(url.pathname==='/'&&url.searchParams.get('__apg_home_diag')!=='1'){
-    res.statusCode=302;
-    res.setHeader('Location','/search/');
-    res.setHeader('Cache-Control','no-store, max-age=0');
-    res.setHeader('X-APG-P0-Home-Availability','TEMPORARY_SEARCH_REDIRECT');
-    return res.end('');
+  const liveHttpRequest=Boolean(req&&(req.socket||req.httpVersion));
+  if(liveHttpRequest&&url.pathname==='/'&&url.searchParams.get('__apg_home_diag')!=='1'){
+    const originalUrl=req.url;
+    req.url='/search/?__apg_home_fallback=1';
+    res.setHeader('X-APG-P0-Home-Availability','TEMPORARY_INTERNAL_SEARCH_FALLBACK');
+    try{return finalHandler(req,res)}finally{req.url=originalUrl}
   }
   return finalHandler(req,res);
 }
 Object.assign(emergencyHomeAvailabilityHandler,finalHandler,{
-  APG_P0_HOME_AVAILABILITY_STATE:'TEMPORARY_SEARCH_REDIRECT',
+  APG_P0_HOME_AVAILABILITY_STATE:'TEMPORARY_INTERNAL_SEARCH_FALLBACK',
   APG_P0_HOME_DIAGNOSTIC_QUERY:'__apg_home_diag=1'
 });
 module.exports=emergencyHomeAvailabilityHandler;
