@@ -122,4 +122,24 @@ const finalHandler=pagespeedAgenticCertification.wrap(presentationHandler);
 finalHandler.SCOUT_NAVIGATOR_PRESENTATION_VERSION=scoutNavigatorPresentation.VERSION;
 finalHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
 finalHandler.EBAY_PRODUCT_IMAGE_PRESENTATION_STATE='P0_DETACHED_GLOBAL_WRAPPERS';
+
+// P0 diagnostic metadata only (1 Sep 2026). The public export remains finalHandler unchanged.
+// A separate no-store/noindex diagnostic function uses these already-assembled boundaries to
+// identify the first outer layer at which native Home fails in Vercel Production. Because this
+// registry is created after all normal installers run, the `runtime` checkpoint also tests whether
+// installer side-effects alone can destabilise the otherwise healthy Action 5 Home renderer.
+const p0HomeAssemblyHandlers=Object.freeze({
+  runtime,
+  transport:transportHandler,
+  premium:premiumHandler,
+  journey:journeyHandler,
+  stable:stableJourneyHandler,
+  mobile:premiumMobileHandler,
+  whole:handler,
+  audit:auditedHandler,
+  presentation:presentationHandler,
+  final:finalHandler
+});
+finalHandler.APG_P0_HOME_ASSEMBLY_HANDLERS=p0HomeAssemblyHandlers;
+finalHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES=Object.freeze(Object.keys(p0HomeAssemblyHandlers));
 module.exports=finalHandler;
