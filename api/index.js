@@ -73,6 +73,7 @@ const aboutTrustNavigation=require('../lib/about-trust-navigation-v116-runtime')
 const trustpilotFooter=require('../lib/trustpilot-footer-v117-runtime');
 const scoutNavigatorPresentation=require('../lib/scout-navigator-v7-global-runtime');
 const ebayProductImageContinuity=require('../lib/ebay-product-image-continuity-v3-runtime');
+const governedProductCardImagery=require('../lib/governed-product-card-imagery-v1-runtime');
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
 scoutResponseDepth.install();
@@ -116,20 +117,23 @@ presentationHandler.SCOUT_NAVIGATOR_PRESENTATION_VERSION=scoutNavigatorPresentat
 presentationHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
 presentationHandler.EBAY_PRODUCT_IMAGE_PRESENTATION_STATE='P0_GLOBAL_WRAPPERS_DETACHED';
 
-// Route-scoped eBay image restoration v1. The continuity wrapper is constructed once, but is only
-// invoked for canonical product-page paths. Home, Search, Compare, categories, guides, APIs and
-// every other route call presentationHandler directly, so their response streams are never
-// intercepted by retailer-image logic.
+// Route-scoped product imagery. Product heroes use the existing exact-model continuity renderer.
+// Category and comparison pages use the same governed image state through a separate card renderer.
+// Home, Search, Decision Lab, Scout, guides, APIs and unrelated routes bypass both async image
+// presentation wrappers, preserving the single-pass Home recovery boundary.
 const ebayProductPresentationHandler=ebayProductImageContinuity.wrap(presentationHandler);
+const governedProductCardPresentationHandler=governedProductCardImagery.wrap(presentationHandler);
 function routeScopedPresentationHandler(req,res){
   let pathname='/';
   try{pathname=new URL(req&&req.url||'/','https://australianproductguide.au').pathname;}catch{}
   if(/^\/products\/[a-z0-9][a-z0-9-]{1,160}\/$/.test(pathname))return ebayProductPresentationHandler(req,res);
+  if(governedProductCardImagery.eligiblePath(pathname))return governedProductCardPresentationHandler(req,res);
   return presentationHandler(req,res);
 }
 Object.assign(routeScopedPresentationHandler,presentationHandler,{
   EBAY_PRODUCT_IMAGE_CONTINUITY_VERSION:ebayProductImageContinuity.VERSION,
-  EBAY_PRODUCT_IMAGE_PRESENTATION_STATE:'ROUTE_SCOPED_PRODUCT_PAGES_V1'
+  GOVERNED_PRODUCT_CARD_IMAGERY_VERSION:governedProductCardImagery.VERSION,
+  EBAY_PRODUCT_IMAGE_PRESENTATION_STATE:'ROUTE_SCOPED_PRODUCT_AND_CARD_SURFACES_V1'
 });
 
 // PageSpeed/agentic certification is intentionally the final response wrapper so it sees
@@ -139,7 +143,8 @@ const finalHandler=pagespeedAgenticCertification.wrap(routeScopedPresentationHan
 finalHandler.SCOUT_NAVIGATOR_PRESENTATION_VERSION=scoutNavigatorPresentation.VERSION;
 finalHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
 finalHandler.EBAY_PRODUCT_IMAGE_CONTINUITY_VERSION=ebayProductImageContinuity.VERSION;
-finalHandler.EBAY_PRODUCT_IMAGE_PRESENTATION_STATE='ROUTE_SCOPED_PRODUCT_PAGES_V1';
+finalHandler.GOVERNED_PRODUCT_CARD_IMAGERY_VERSION=governedProductCardImagery.VERSION;
+finalHandler.EBAY_PRODUCT_IMAGE_PRESENTATION_STATE='ROUTE_SCOPED_PRODUCT_AND_CARD_SURFACES_V1';
 
 // P0 diagnostic metadata only (1 Sep 2026). The public export remains finalHandler unchanged.
 // A separate no-store/noindex diagnostic function uses these already-assembled boundaries to
