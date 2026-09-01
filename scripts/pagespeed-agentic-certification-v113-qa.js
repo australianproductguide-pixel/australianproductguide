@@ -12,22 +12,25 @@ const assets=new Map([
 ]);
 
 const home='<!doctype html><html><head><title>Home</title><link rel="stylesheet" href="/assets/platform-integrity-v15.css?v=15"><link rel="stylesheet" href="/assets/feature-test-v113.css?v=1"><link rel="stylesheet" href="/assets/final-test-v113.css?v=2"><link rel="preload" as="style" href="/assets/noncritical-test-v113.css?v=1" onload="this.rel=\'stylesheet\'"><link rel="stylesheet" href="/assets/noncritical-test-v113.css?v=1" media="print"><noscript><link rel="stylesheet" href="/assets/noncritical-test-v113.css?v=1"></noscript></head><body><main><h1>APG</h1></main><aside id="apgAssistantPanel" hidden role="dialog" aria-modal="false" aria-labelledby="apgScoutTitle" aria-hidden="true"><strong id="apgScoutTitle">Scout</strong><button>Close</button></aside></body></html>';
+const search='<!doctype html><html><head><title>Search</title></head><body><main><h1>Search</h1></main></body></html>';
 const about='<!doctype html><html><head><title>About</title><link rel="stylesheet" href="/assets/platform-integrity-v15.css?v=15"><link rel="stylesheet" href="/assets/final-test-v113.css?v=2"></head><body><main><h1>About</h1></main></body></html>';
 
 function downstream(req,res){
   const u=new URL(req.url,'https://australianproductguide.au');
   const key=u.pathname+u.search;
   if(u.pathname==='/'){res.setHeader('Content-Type','text/html; charset=utf-8');return res.end(home)}
+  if(u.pathname==='/search/'){res.setHeader('Content-Type','text/html; charset=utf-8');return res.end(search)}
   if(u.pathname==='/about/'){res.setHeader('Content-Type','text/html; charset=utf-8');return res.end(about)}
   if(key==='/assets/feature-test-v113.css?v=1'){res.statusCode=308;res.setHeader('Location','/assets/feature-test-v113.css');return res.end()}
   const asset=assets.get(key);
   if(asset){res.setHeader('Content-Type',asset[0]);res.setHeader('Cache-Control','public, max-age=0, must-revalidate');return res.end(asset[1])}
   res.statusCode=404;res.setHeader('Content-Type','text/plain; charset=utf-8');return res.end('not found');
 }
-function request(handler,url,method='GET'){
+function request(handler,url,method='GET',live=false){
   let body='';
   const headers=new Map();
   const req={url,method,headers:{host:'australianproductguide.au'}};
+  if(live){req.httpVersion='1.1';req.socket={remoteAddress:'127.0.0.1'}}
   const res={
     statusCode:200,
     setHeader(name,value){headers.set(String(name).toLowerCase(),value);return this},
@@ -37,12 +40,13 @@ function request(handler,url,method='GET'){
     end(chunk){if(chunk!==undefined&&chunk!==null)body+=Buffer.isBuffer(chunk)?chunk.toString('utf8'):String(chunk);return body}
   };
   handler(req,res);
-  return {statusCode:res.statusCode,headers,body};
+  return {statusCode:res.statusCode,headers,body,finalUrl:req.url};
 }
 
 assert.equal(layer.VERSION,'113.5');
 assert.equal(layer.CSS_PATH,'/assets/pagespeed-home-v113.css');
 assert.equal(layer.RUNTIME_CSS_CONSOLIDATION,'P0_DISABLED_RECURSIVE_CAPTURE');
+assert.equal(layer.HOME_DIAGNOSTIC_PATH,'/__apg-p0-home-native-20260901');
 assert.equal(layer.repairScoutAriaJs(layer.REDUNDANT_SCOUT_ARIA),layer.SAFE_SCOUT_ARIA);
 
 const staticCss=layer.bundledStaticCss('/assets/platform-integrity-v15.css?v=15');
@@ -78,6 +82,21 @@ assert(!homepage.body.includes('aria-hidden="true"'),'static Scout panel must re
 assert(!homepage.body.includes('role="dialog"'),'homepage must not expose the invalid aside/dialog combination');
 assert(!homepage.body.includes('aria-modal="false"'),'homepage must not expose aria-modal without dialog semantics');
 
+const liveHomepage=request(handler,'/','GET',true);
+assert.equal(liveHomepage.statusCode,200,'live Home containment must remain usable while native Home is under diagnosis');
+assert(liveHomepage.body.includes('<h1>Search</h1>'),'live Home containment must use the healthy Search renderer');
+assert.equal(liveHomepage.headers.get('x-apg-p0-home-availability'),layer.HOME_AVAILABILITY_STATE);
+assert.equal(liveHomepage.finalUrl,layer.HOME_FALLBACK_URL);
+
+const nativeHomeDiagnostic=request(handler,layer.HOME_DIAGNOSTIC_PATH,'GET',true);
+assert.equal(nativeHomeDiagnostic.statusCode,200,'diagnostic path must enter the native Home renderer in deterministic QA');
+assert(nativeHomeDiagnostic.body.includes('<h1>APG</h1>'),'diagnostic path must render Home, not Search');
+assert.equal(nativeHomeDiagnostic.headers.get('x-apg-p0-home-diagnostic'),layer.HOME_DIAGNOSTIC_STATE);
+assert.match(String(nativeHomeDiagnostic.headers.get('x-robots-tag')||''),/noindex/);
+assert.equal(nativeHomeDiagnostic.headers.get('cache-control'),'no-store, max-age=0');
+assert.equal(nativeHomeDiagnostic.finalUrl,`/?${layer.HOME_DIAGNOSTIC_QUERY}=1`);
+assert.equal(nativeHomeDiagnostic.headers.get('x-apg-p0-home-availability'),undefined,'native Home diagnostic must bypass the ordinary live Home fallback');
+
 const css=request(handler,`${layer.CSS_PATH}?v=${layer.BUILD_ID}`);
 assert.equal(css.statusCode,503,'runtime-generated CSS endpoint must fail closed while recursive capture is disabled');
 assert.equal(css.headers.get('cache-control'),'no-store');
@@ -99,6 +118,7 @@ assert.equal(aboutPage.headers.get('x-apg-pagespeed-runtime-css'),'P0_DISABLED_R
 
 const source=fs.readFileSync(path.join(__dirname,'..','lib','pagespeed-agentic-certification-v113-runtime.js'),'utf8');
 assert(source.includes("const RUNTIME_CSS_CONSOLIDATION='P0_DISABLED_RECURSIVE_CAPTURE';"));
+assert(source.includes("const HOME_DIAGNOSTIC_PATH='/__apg-p0-home-native-20260901';"));
 assert(source.includes('function capture(_handler,url){throw unsafeCaptureError(url)}'));
 assert(!source.includes("const home=capture(downstream,'/');"),'live runtime must not recursively render Home for CSS discovery');
 assert(!source.includes('const asset=capture(downstream,href);'),'live runtime must not recursively invoke downstream for stylesheet capture');
@@ -117,9 +137,11 @@ console.log(JSON.stringify({
   runtimeCssConsolidation:'P0_DISABLED_RECURSIVE_CAPTURE',
   runtimeRecursiveCapture:'prohibited',
   retiredBundleEndpoint:'503-fail-closed',
+  liveHomeContainment:'Search-renderer',
+  nativeHomeDiagnostic:'isolated-live-path-noindex-no-store',
   versionedAssetCaching:'immutable',
   scoutAriaRepair:'native-hidden-valid-aside',
   recommendationLogic:'unchanged',
   commercialScoring:'unchanged',
-  policy:'Availability-first P0 transport containment; rebuild CSS consolidation as a static/build-time asset before re-enabling a one-file homepage bundle.'
+  policy:'Availability-first P0 transport containment; diagnose native Home behind the edge redirect; rebuild CSS consolidation as a static/build-time asset before re-enabling a one-file homepage bundle.'
 },null,2));
