@@ -22,7 +22,7 @@ assert.notEqual(app.APG_P0_HOME_ASSEMBLY_HANDLERS.runtime,app,'runtime checkpoin
 assert.equal(diagnostic.VERSION,'3.0');
 assert.equal(diagnostic.NATIVE_HOME_URL,'/?__apg_home_diag=1');
 
-assert(diagnosticSource.includes("req.url=`${NATIVE_HOME_URL}&__apg_home_assembly_stage=${encodeURIComponent(stage)}`"),'diagnostic must enter native Home behind the P0 bypass marker');
+assert(diagnosticSource.includes("req.url=`${NATIVE_HOME_URL}&__apg_home_assembly_stage=${encodeURIComponent(stage)}`"),'diagnostic must enter native Home behind the diagnostic bypass marker');
 assert(diagnosticSource.includes("res.setHeader('Cache-Control','no-store, max-age=0')"),'diagnostic must remain no-store');
 assert(diagnosticSource.includes("res.setHeader('X-Robots-Tag','noindex, nofollow, noarchive')"),'diagnostic must remain noindex');
 assert(diagnosticSource.includes('throw error'),'diagnostic must preserve real failure semantics');
@@ -31,9 +31,12 @@ assert(!diagnosticSource.includes('EBAY_BROWSE'),'diagnostic must not touch eBay
 assert(!diagnosticSource.includes('fetch('),'diagnostic must create zero outbound network calls');
 assert(!diagnosticSource.includes('recommendationWeight'),'diagnostic must not alter recommendation scoring');
 assert.equal(config.functions?.['api/home-assembly-diagnostic.js']?.includeFiles,'public/assets/**/*.css','diagnostic must package the same governed CSS assets needed by outer Home wrappers');
-assert.equal((config.routes||[])[0]?.src,'/','public P0 Home containment must remain first');
-assert.equal((config.routes||[])[0]?.status,307,'public P0 Home containment must remain a 307');
-assert.equal((config.routes||[])[0]?.headers?.Location,'/search/','public P0 Home containment must remain Search-backed');
+assert.equal((config.routes||[]).length,6,'post-recovery Vercel routing must contain only the four protected routes, filesystem handling and API fallback');
+assert(!(config.routes||[]).some(route=>route&&route.src==='/'&&('status' in route||route.headers?.Location)),'native Home must not be hidden behind the retired P0 Search redirect');
+assert.equal((config.routes||[])[0]?.src,'/mcp','protected MCP routing must remain first after native Home restoration');
+assert.equal((config.routes||[])[4]?.handle,'filesystem','filesystem routing must remain before the general API fallback');
+assert.equal((config.routes||[])[5]?.src,'/(.*)','general API fallback must remain last');
+assert.equal((config.routes||[])[5]?.dest,'/api','general API fallback destination must remain unchanged');
 
 function invokeUnknown(){
   return new Promise((resolve,reject)=>{
@@ -54,5 +57,5 @@ function invokeUnknown(){
   assert.equal(unknown.body,'Not found','unknown stages must not disclose valid stage names');
   assert.match(String(unknown.headers['cache-control']||''),/no-store/);
   assert.match(String(unknown.headers['x-robots-tag']||''),/noindex/);
-  console.log(`P0_HOME_ASSEMBLY_BISECT_V3=PASS stages=${EXPECTED.length} publicExport=finalHandler publicHome=edge-protected publicEbayNetwork=0 commercialWeight=unchanged`);
+  console.log(`P0_HOME_ASSEMBLY_BISECT_V3=PASS stages=${EXPECTED.length} publicExport=finalHandler publicHome=native-restored diagnostic=post-recovery-watch publicEbayNetwork=0 commercialWeight=unchanged`);
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
