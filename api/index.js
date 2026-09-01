@@ -66,8 +66,9 @@ presentationHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
 presentationHandler.EBAY_PRODUCT_IMAGE_PRESENTATION_STATE='P0_GLOBAL_WRAPPERS_DETACHED';
 
 // Route-scoped governed imagery. Product heroes and result cards share the same exact-model
-// registry. Home remains outside both HTML wrappers. Search autocomplete imagery is delivered
-// through static asset augmentation plus a bounded read-only lookup, so it never buffers Home.
+// registry. Home remains outside both presentation wrappers. Result-surface imagery is a
+// non-blocking progressive enhancement; the governed wrapper only permits the verified image
+// origin in CSP and never buffers HTML or waits on image-state reads.
 const ebayProductPresentationHandler=ebayProductImageContinuity.wrap(presentationHandler);
 const governedProductCardPresentationHandler=governedProductCardImagery.wrap(presentationHandler);
 function routeScopedPresentationHandler(req,res){
@@ -80,7 +81,7 @@ function routeScopedPresentationHandler(req,res){
 Object.assign(routeScopedPresentationHandler,presentationHandler,{
   EBAY_PRODUCT_IMAGE_CONTINUITY_VERSION:ebayProductImageContinuity.VERSION,
   GOVERNED_PRODUCT_CARD_IMAGERY_VERSION:governedProductCardImagery.VERSION,
-  EBAY_PRODUCT_IMAGE_PRESENTATION_STATE:'ROUTE_SCOPED_PRODUCT_AND_RESULT_SURFACES_V12'
+  EBAY_PRODUCT_IMAGE_PRESENTATION_STATE:'NON_BLOCKING_UNIVERSAL_PRODUCT_IMAGERY_V15'
 });
 const searchImageHandler=searchProductImagery.wrap(routeScopedPresentationHandler);
 const finalHandler=pagespeedAgenticCertification.wrap(searchImageHandler);
@@ -89,7 +90,7 @@ finalHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
 finalHandler.EBAY_PRODUCT_IMAGE_CONTINUITY_VERSION=ebayProductImageContinuity.VERSION;
 finalHandler.GOVERNED_PRODUCT_CARD_IMAGERY_VERSION=governedProductCardImagery.VERSION;
 finalHandler.SEARCH_PRODUCT_IMAGERY_VERSION=searchProductImagery.VERSION;
-finalHandler.EBAY_PRODUCT_IMAGE_PRESENTATION_STATE='ROUTE_SCOPED_PRODUCT_AND_RESULT_SURFACES_V12';
+finalHandler.EBAY_PRODUCT_IMAGE_PRESENTATION_STATE='NON_BLOCKING_UNIVERSAL_PRODUCT_IMAGERY_V15';
 const p0HomeAssemblyHandlers=Object.freeze({runtime,transport:transportHandler,premium:premiumHandler,journey:journeyHandler,stable:stableJourneyHandler,mobile:premiumMobileHandler,whole:handler,audit:auditedHandler,presentation:routeScopedPresentationHandler,searchImages:searchImageHandler,final:finalHandler});
 finalHandler.APG_P0_HOME_ASSEMBLY_HANDLERS=p0HomeAssemblyHandlers;
 finalHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES=Object.freeze(Object.keys(p0HomeAssemblyHandlers));
