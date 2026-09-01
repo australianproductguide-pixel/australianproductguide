@@ -26,6 +26,7 @@ const trustpilotFooter=require('../lib/trustpilot-footer-v117-runtime');
 const scoutNavigatorPresentation=require('../lib/scout-navigator-v7-global-runtime');
 const ebayProductImageContinuity=require('../lib/ebay-product-image-continuity-v3-runtime');
 const governedProductCardImagery=require('../lib/governed-product-card-imagery-v1-runtime');
+const searchProductImagery=require('../lib/search-product-imagery-v1-runtime');
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
 scoutResponseDepth.install();
@@ -65,8 +66,8 @@ presentationHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
 presentationHandler.EBAY_PRODUCT_IMAGE_PRESENTATION_STATE='P0_GLOBAL_WRAPPERS_DETACHED';
 
 // Route-scoped governed imagery. Product heroes and result cards share the same exact-model
-// registry. Home remains outside both wrappers. Search, Decision Lab, maintained category/finder
-// pages and Compare enter the card wrapper only after the route gate.
+// registry. Home remains outside both HTML wrappers. Search autocomplete imagery is delivered
+// through static asset augmentation plus a bounded read-only lookup, so it never buffers Home.
 const ebayProductPresentationHandler=ebayProductImageContinuity.wrap(presentationHandler);
 const governedProductCardPresentationHandler=governedProductCardImagery.wrap(presentationHandler);
 function routeScopedPresentationHandler(req,res){
@@ -79,15 +80,17 @@ function routeScopedPresentationHandler(req,res){
 Object.assign(routeScopedPresentationHandler,presentationHandler,{
   EBAY_PRODUCT_IMAGE_CONTINUITY_VERSION:ebayProductImageContinuity.VERSION,
   GOVERNED_PRODUCT_CARD_IMAGERY_VERSION:governedProductCardImagery.VERSION,
-  EBAY_PRODUCT_IMAGE_PRESENTATION_STATE:'ROUTE_SCOPED_PRODUCT_AND_RESULT_SURFACES_V11'
+  EBAY_PRODUCT_IMAGE_PRESENTATION_STATE:'ROUTE_SCOPED_PRODUCT_AND_RESULT_SURFACES_V12'
 });
-const finalHandler=pagespeedAgenticCertification.wrap(routeScopedPresentationHandler);
+const searchImageHandler=searchProductImagery.wrap(routeScopedPresentationHandler);
+const finalHandler=pagespeedAgenticCertification.wrap(searchImageHandler);
 finalHandler.SCOUT_NAVIGATOR_PRESENTATION_VERSION=scoutNavigatorPresentation.VERSION;
 finalHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
 finalHandler.EBAY_PRODUCT_IMAGE_CONTINUITY_VERSION=ebayProductImageContinuity.VERSION;
 finalHandler.GOVERNED_PRODUCT_CARD_IMAGERY_VERSION=governedProductCardImagery.VERSION;
-finalHandler.EBAY_PRODUCT_IMAGE_PRESENTATION_STATE='ROUTE_SCOPED_PRODUCT_AND_RESULT_SURFACES_V11';
-const p0HomeAssemblyHandlers=Object.freeze({runtime,transport:transportHandler,premium:premiumHandler,journey:journeyHandler,stable:stableJourneyHandler,mobile:premiumMobileHandler,whole:handler,audit:auditedHandler,presentation:routeScopedPresentationHandler,final:finalHandler});
+finalHandler.SEARCH_PRODUCT_IMAGERY_VERSION=searchProductImagery.VERSION;
+finalHandler.EBAY_PRODUCT_IMAGE_PRESENTATION_STATE='ROUTE_SCOPED_PRODUCT_AND_RESULT_SURFACES_V12';
+const p0HomeAssemblyHandlers=Object.freeze({runtime,transport:transportHandler,premium:premiumHandler,journey:journeyHandler,stable:stableJourneyHandler,mobile:premiumMobileHandler,whole:handler,audit:auditedHandler,presentation:routeScopedPresentationHandler,searchImages:searchImageHandler,final:finalHandler});
 finalHandler.APG_P0_HOME_ASSEMBLY_HANDLERS=p0HomeAssemblyHandlers;
 finalHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES=Object.freeze(Object.keys(p0HomeAssemblyHandlers));
 module.exports=finalHandler;
