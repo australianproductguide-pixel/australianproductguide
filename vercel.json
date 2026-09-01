@@ -4,6 +4,9 @@
   "functions": {
     "api/index.js": {
       "includeFiles": "public/assets/**/*.css"
+    },
+    "api/p0-home-stage.js": {
+      "includeFiles": "public/assets/**/*.css"
     }
   },
   "git": {
@@ -27,6 +30,7 @@
       },
       "status": 307
     },
+    { "src": "/__apg-p0-home-stage-20260901", "dest": "/api/p0-home-stage" },
     { "src": "/mcp", "dest": "/api/mcp" },
     { "src": "/oauth/consent", "dest": "/api/oauth-consent" },
     { "src": "/.well-known/oauth-protected-resource/mcp", "dest": "/api/mcp-oauth-metadata" },
