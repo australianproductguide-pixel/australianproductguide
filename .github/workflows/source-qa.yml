@@ -33,6 +33,7 @@ jobs:
           npm run qa:full
           node scripts/pagespeed-agentic-certification-v113-qa.js
           node scripts/p0-home-bisect-v2-qa.js
+          node scripts/p0-home-assembly-bisect-v3-qa.js
           node scripts/premium-mobile-decision-commerce-v112-qa.js
           node scripts/production-premium-mobile-v112-contract-qa.js
           node scripts/customer-journey-v114-qa.js
@@ -83,6 +84,7 @@ jobs:
           expect(homeP0.headers?.['Cache-Control']==='no-store, max-age=0','P0 Home availability route must not be cached');
           expect(homeP0.headers?.['X-APG-P0-Home-Availability']==='TEMPORARY_SEARCH_REDIRECT','P0 Home availability route must retain the explicit incident marker');
           expect(!('dest' in homeP0),'P0 Home availability route must remain a redirect, not an opaque rewrite');
+          expect(config.functions?.['api/home-assembly-diagnostic.js']?.includeFiles==='public/assets/**/*.css','P0 Home assembly diagnostic must package the same governed CSS assets as public SSR');
           const protectedRoutes=[
             ['/mcp','/api/mcp'],
             ['/oauth/consent','/api/oauth-consent'],
@@ -101,7 +103,7 @@ jobs:
           expect(JSON.stringify(actual)===JSON.stringify(allowed),`Workflow allowlist mismatch: ${actual.join(', ')}`);
           const ops=fs.readFileSync('docs/APG-OPERATIONS.md','utf8');
           for(const token of ['Source-of-truth hierarchy','Affiliate relationships, retailer availability and commission contribute **zero recommendation points**','APG Release Gate','APG Production Verification','07 – QA, Releases & Production Evidence','Australian Tradie Software Matcher']) expect(ops.includes(token),`Operating control missing: ${token}`);
-          console.log('INFRASTRUCTURE_GOVERNANCE=PASS P0_HOME_EDGE_ROUTE=STRICTLY_GOVERNED');
+          console.log('INFRASTRUCTURE_GOVERNANCE=PASS P0_HOME_EDGE_ROUTE=STRICTLY_GOVERNED P0_HOME_ASSEMBLY_DIAGNOSTIC=STRICTLY_GOVERNED');
           NODE
 
       - name: Upload release-control evidence

@@ -1,0 +1,58 @@
+'use strict';
+
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+
+const root=path.resolve(__dirname,'..');
+const app=require('../api/index');
+const diagnostic=require('../api/home-assembly-diagnostic');
+const apiSource=fs.readFileSync(path.join(root,'api','index.js'),'utf8');
+const diagnosticSource=fs.readFileSync(path.join(root,'api','home-assembly-diagnostic.js'),'utf8');
+const config=JSON.parse(fs.readFileSync(path.join(root,'vercel.json'),'utf8'));
+
+const EXPECTED=['runtime','transport','premium','journey','stable','mobile','whole','audit','presentation','final'];
+assert.equal(typeof app,'function');
+assert(apiSource.includes('module.exports=finalHandler;'),'governed public export must remain finalHandler');
+assert.deepEqual(Array.from(app.APG_P0_HOME_ASSEMBLY_STAGE_NAMES||[]),EXPECTED,'assembly stage order must be explicit');
+assert.deepEqual(Object.keys(app.APG_P0_HOME_ASSEMBLY_HANDLERS||{}),EXPECTED,'only intended assembly boundaries may be exposed');
+for(const stage of EXPECTED)assert.equal(typeof app.APG_P0_HOME_ASSEMBLY_HANDLERS[stage],'function',`${stage}: stage must be a function`);
+assert.equal(app.APG_P0_HOME_ASSEMBLY_HANDLERS.final,app,'final checkpoint must be the governed public handler');
+assert.notEqual(app.APG_P0_HOME_ASSEMBLY_HANDLERS.runtime,app,'runtime checkpoint must remain below outer assembly');
+assert.equal(diagnostic.VERSION,'3.0');
+assert.equal(diagnostic.NATIVE_HOME_URL,'/?__apg_home_diag=1');
+
+assert(diagnosticSource.includes("req.url=`${NATIVE_HOME_URL}&__apg_home_assembly_stage=${encodeURIComponent(stage)}`"),'diagnostic must enter native Home behind the P0 bypass marker');
+assert(diagnosticSource.includes("res.setHeader('Cache-Control','no-store, max-age=0')"),'diagnostic must remain no-store');
+assert(diagnosticSource.includes("res.setHeader('X-Robots-Tag','noindex, nofollow, noarchive')"),'diagnostic must remain noindex');
+assert(diagnosticSource.includes('throw error'),'diagnostic must preserve real failure semantics');
+assert(!diagnosticSource.includes('ebay-browse-api'),'diagnostic must not import eBay Browse');
+assert(!diagnosticSource.includes('EBAY_BROWSE'),'diagnostic must not touch eBay Browse configuration');
+assert(!diagnosticSource.includes('fetch('),'diagnostic must create zero outbound network calls');
+assert(!diagnosticSource.includes('recommendationWeight'),'diagnostic must not alter recommendation scoring');
+assert.equal(config.functions?.['api/home-assembly-diagnostic.js']?.includeFiles,'public/assets/**/*.css','diagnostic must package the same governed CSS assets needed by outer Home wrappers');
+assert.equal((config.routes||[])[0]?.src,'/','public P0 Home containment must remain first');
+assert.equal((config.routes||[])[0]?.status,307,'public P0 Home containment must remain a 307');
+assert.equal((config.routes||[])[0]?.headers?.Location,'/search/','public P0 Home containment must remain Search-backed');
+
+function invokeUnknown(){
+  return new Promise((resolve,reject)=>{
+    const headers={};
+    const req={url:'/api/home-assembly-diagnostic?target=not-a-stage',method:'GET',headers:{host:'australianproductguide.au'}};
+    const res={
+      statusCode:200,
+      setHeader(name,value){headers[String(name).toLowerCase()]=String(value);return this},
+      end(body=''){resolve({status:this.statusCode,headers,body:String(body||'')})}
+    };
+    try{const result=diagnostic(req,res);if(result&&typeof result.then==='function')result.catch(reject)}catch(error){reject(error)}
+  });
+}
+
+(async()=>{
+  const unknown=await invokeUnknown();
+  assert.equal(unknown.status,404,'unknown stages must fail closed');
+  assert.equal(unknown.body,'Not found','unknown stages must not disclose valid stage names');
+  assert.match(String(unknown.headers['cache-control']||''),/no-store/);
+  assert.match(String(unknown.headers['x-robots-tag']||''),/noindex/);
+  console.log(`P0_HOME_ASSEMBLY_BISECT_V3=PASS stages=${EXPECTED.length} publicExport=finalHandler publicHome=edge-protected publicEbayNetwork=0 commercialWeight=unchanged`);
+})().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
