@@ -16,12 +16,14 @@ const curated=read('lib/brand-mark-curated-v66.js');
 const quality=read('lib/brand-mark-quality-v65.js');
 const placeholder=read('lib/product-brand-placeholder-v64.js');
 const brandIndex=read('lib/brand-index-logos-v62.js');
+const stability=read('lib/brand-logo-stability-v125-runtime.js');
 const entry=read('api/index.js');
 
 assert.doesNotThrow(()=>new Function(complete),'brand-mark-complete-v67.js must parse');
 assert.doesNotThrow(()=>new Function(parity),'brand-mark-device-parity-v66.js must parse');
 assert.doesNotThrow(()=>new Function(curated),'brand-mark-curated-v66.js must parse');
 assert.doesNotThrow(()=>new Function(quality),'brand-mark-quality-v65.js must parse');
+assert.doesNotThrow(()=>new Function(stability),'brand-logo-stability-v125-runtime.js must parse');
 assert.equal(products.length,482,'brand integrity gate expects the current 482-product canonical catalogue');
 assert.equal(brands.length,178,'brand integrity gate expects the current 178-brand canonical directory');
 
@@ -50,7 +52,15 @@ assert.deepEqual(missingDomain,[],'every canonical brand must have a governed of
 const extraDomain=Object.keys(officialDomains).filter(slug=>!canonicalBySlug.has(slug));
 assert.deepEqual(extraDomain,[],'official-domain registry must not contain orphan brand slugs');
 
-assert(entry.includes("module.exports=require('../lib/brand-mark-complete-v67')"),'public entrypoint must use complete brand identity v67.2');
+assert(entry.includes("const brandLogoStability=require('../lib/brand-logo-stability-v125-runtime')"),'public entrypoint must import brand-logo stability v125');
+assert(entry.includes('const finalHandler=brandLogoStability.wrap(reviewProfileHandler)'),'public entrypoint must keep governed brand identity outermost after current review-profile layer');
+assert(entry.includes('BRAND_LOGO_STABILITY_VERSION=brandLogoStability.VERSION'),'public entrypoint must expose brand-logo stability version');
+assert(stability.includes("const complete=require('./brand-mark-complete-v67')"),'v125 stability must preserve complete brand identity v67.2');
+assert(stability.includes("const missing=require('./brand-mark-missing-only-v73')"),'v125 stability must preserve missing-only remediation v73.1');
+assert(stability.includes('const match=pathname.match')&&stability.includes('assets\\/brand-marks'),'v125 must intercept governed brand-mark asset requests');
+assert(stability.includes('resolveStableBrandMark(slug)'),'v125 must use a shared stable resolver for canonical brand marks');
+assert(stability.includes('complete.canonicalFallbackImage(slug)'),'v125 must terminate unresolved marks in a canonical same-origin graphic rather than a broken image');
+assert(stability.includes("img.addEventListener('error',()=>failed(img))"),'v125 must provide CSP-safe failed-image handling independently of inline handlers');
 assert(complete.includes("require('./brand-mark-device-parity-v66')"),'v67.2 must preserve v66.2 device parity/integrity underneath');
 assert(complete.includes("BRAND_MARK_COMPLETE_VERSION='67.2'"),'v67.2 must expose the current complete-brand generation');
 assert(complete.includes("BRAND_MARK_ASSET_VERSION='67.2'"),'v67.2 must pin the current brand asset generation');
@@ -82,7 +92,7 @@ assert(parity.includes("'empty-or-hidden-svg-rejected'"),'v66.2 must reject empt
 assert(parity.includes("slug==='amazon'"),'v66.2 must prevent Amazon sub-brand/promotional artwork from standing in for the canonical Amazon identity');
 assert(parity.includes('fallbackBrandSvg'),'v66.2 must provide the deterministic same-origin SVG fallback reused by v67.2');
 assert(!parity.includes('removeObsoleteBrandImageErrorHandlers'),'v66.2 must preserve browser-side image error safety rather than stripping it');
-assert(brandIndex.includes('onerror="this.hidden=true"'),'brand directory must retain the browser-side fallback that exposes canonical text when an image request fails');
+assert(brandIndex.includes('onerror="this.hidden=true"'),'brand directory must retain its legacy browser-side fallback in addition to CSP-safe v125 handling');
 assert(curated.includes("require('./brand-mark-quality-v65')"),'v66 must preserve v65 brand quality immediately underneath');
 assert(quality.includes("require('./product-brand-placeholder-v64')"),'v65 must preserve product placeholder v64 underneath');
 assert(placeholder.includes('/assets/brand-marks/'),'product placeholders must resolve through the governed brand-mark endpoint');
@@ -106,4 +116,4 @@ for(const slug of expectedCurated){
 assert(curated.includes("X-APG-Brand-Mark-Source','curated-reviewed-vector-override"),'v66 must expose curated provenance for live verification');
 assert(curated.includes("X-APG-Brand-Mark-Quality','premium-vector"),'v66 curated marks must report premium-vector quality');
 
-console.log(`APG Brand Integrity v67.2 QA passed: ${products.length}/${products.length} products -> ${used.size}/${brands.length} canonical brands -> ${Object.keys(officialDomains).length} governed domains; ${expectedCurated.length} curated premium-vector overrides retained; complete official-domain identity resolver active; white official SVGs are contrast-safe; terminal fallback prevents rejected assets leaking downstream; desktop/mobile parity and bad-image protections preserved.`);
+console.log(`APG Brand Integrity v67.2 + Stability v125 QA passed: ${products.length}/${products.length} products -> ${used.size}/${brands.length} canonical brands -> ${Object.keys(officialDomains).length} governed domains; ${expectedCurated.length} curated premium-vector overrides retained; current public runtime cannot bypass governed brand-mark serving; terminal fallback and CSP-safe failed-image handling are enforced.`);
