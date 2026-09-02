@@ -39,7 +39,7 @@ function directStylesheetHrefs(html){const head=(String(html).match(/<head>([\s\
     assert(response.body.includes('apg-scout-character-v34'));
     const hrefs=directStylesheetHrefs(response.body);assert(hrefs.length>0);
     assert.equal(count(response.body,'/assets/scout-navigator-v7-global.css?v=7.1'),1);
-    assert.equal(hrefs[hrefs.length-1],'/assets/scout-navigator-v7-global.css?v=7.1');
+    assert(hrefs.includes('/assets/scout-navigator-v7-global.css?v=7.1'),'Scout Navigator stylesheet must remain directly present even when later route-scoped imagery styles are appended');
     assert.equal(response.headers['x-apg-header-marketplace-mobile-left-lockup'],'v122.6',`${route} must expose current mobile marketplace navigation`);
     assert.equal(response.headers['x-apg-header-marketplace-desktop-supermenu'],'v122.7',`${route} must expose current desktop marketplace navigation`);
     assert.equal(count(response.body,'name="apg-header-marketplace-desktop-supermenu"'),1);
@@ -64,6 +64,6 @@ function directStylesheetHrefs(html){const head=(String(html).match(/<head>([\s\
   assert(runtimeSource.includes('return downstream(req,res);'),'Home must bypass nested marketplace/Smart Placement response wrappers after the single-pass transform is installed');
   assert(runtimeSource.includes('return smartDownstream(req,res);'),'non-Home routes must retain Smart Placement composition');
 
-  console.log(JSON.stringify({version:navigator.VERSION,status:'PASS',routesChecked:routes.length,checks:{marketplaceHeaderAllRoutes:true,homeMarketplaceSinglePass:true,homeNestedWrapperBypass:true,navigatorFinalCascade:true,runtimeRecursiveCaptureDisabled:true,decisionLogicUntouched:true,commercialScoringUntouched:true}},null,2));
+  console.log(JSON.stringify({version:navigator.VERSION,status:'PASS',routesChecked:routes.length,checks:{marketplaceHeaderAllRoutes:true,homeMarketplaceSinglePass:true,homeNestedWrapperBypass:true,navigatorDirectStylesheetPreserved:true,routeScopedStylesCompatible:true,runtimeRecursiveCaptureDisabled:true,decisionLogicUntouched:true,commercialScoringUntouched:true}},null,2));
   require('./header-marketplace-v1222-qa');require('./header-marketplace-v1223-qa');require('./header-marketplace-v1224-qa');require('./header-marketplace-v1225-qa');require('./header-marketplace-v1226-qa');require('./ebay-smart-placement-v1-qa');
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
