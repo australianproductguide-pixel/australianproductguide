@@ -5,10 +5,10 @@ const fs=require('node:fs');
 const path=require('node:path');
 
 const root=path.resolve(__dirname,'..');
-const api=fs.readFileSync(path.join(root,'api','index.js'),'utf8');
-const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const api=read('api/index.js');
+const pkg=JSON.parse(read('package.json'));
 
-const compatibility=[...api.matchAll(/Compatibility lineage: module\.exports=require\('([^']+)'\)/g)].map(m=>m[1]);
 const sideEffects=[...api.matchAll(/^require\('([^']+)'\);$/gm)].map(m=>m[1]);
 const outerRuntime=(api.match(/const runtime=require\('([^']+)'\);/)||[])[1]||null;
 const postLineageGuard=(api.match(/const hardConstraintParity=require\('([^']+)'\);/)||[])[1]||null;
@@ -69,33 +69,39 @@ assert(routeIndex>navigatorIndex&&searchImageIndex>routeIndex,'governed route/se
 assert(categoryImageIndex>searchImageIndex&&pagespeedIndex>categoryImageIndex,'PageSpeed/agentic transport certification must run after governed imagery composition');
 assert(finalIndex>pagespeedIndex,'additive outer presentation wrappers must remain outside the certified governed-imagery transport chain');
 assert(api.includes('module.exports=finalHandler;'));
-assert(compatibility.length>=40,`expected the documented compatibility chain to remain visible for controlled consolidation; found ${compatibility.length}`);
-for(const required of ['../lib/search-opportunity-depth-v104-runtime','../lib/decision-hard-constraint-fallback-v1036','../lib/action7-closure-v1016','../lib/action4-final-v981','../lib/brand-mark-canonical-parity-v91','../lib/analytics-funnel-v79'])assert(compatibility.includes(required),`missing compatibility anchor ${required}`);
+
+// Verify the real transitive semantic chain rather than historic comments that used to mirror it.
+const action5Source=read('lib/action5-catalogue-certification-v106-runtime.js');
+const v104Source=read('lib/search-opportunity-depth-v104-runtime.js');
+const v1036Source=read('lib/decision-hard-constraint-fallback-v1036.js');
+assert(action5Source.includes("require('./search-opportunity-depth-v104-runtime')"),'v106 must retain Search Opportunity Depth v104 immediately downstream');
+assert(v104Source.includes("require('./decision-hard-constraint-fallback-v1036')"),'v104 must retain hard-constraint fallback v103.6 immediately downstream');
+assert(v1036Source.includes("require('./apg-proof-rail-runtime-v103')"),'v103.6 must retain the proof-rail compatibility boundary');
 
 const expectedSideEffects=['../lib/scout-concierge-v5-runtime','../lib/consumer-intelligence-v47-runtime','../lib/catalogue-decision-v48-runtime','../lib/brand-system-v46','../lib/consumer-intelligence-v47'];
 assert.deepEqual(sideEffects,expectedSideEffects);
 
-const responseSource=fs.readFileSync(path.join(root,'lib','scout-response-depth-v61.js'),'utf8');
+const responseSource=read('lib/scout-response-depth-v61.js');
 for(const banned of ['scoreProduct(','rankDecision(','publicDecision(','affiliateRecommendationWeight:1','commissionWeight'])assert(!responseSource.includes(banned));
 assert(responseSource.includes('commercialRecommendationWeight:0'));
-const wholeSiteSource=fs.readFileSync(path.join(root,'lib','whole-site-experience-v109-runtime.js'),'utf8');
+const wholeSiteSource=read('lib/whole-site-experience-v109-runtime.js');
 for(const banned of ['scoreProduct(','rankDecision(','publicDecision(','affiliateRecommendationWeight:1','commissionWeight','localStorage.setItem(','sessionStorage.setItem('])assert(!wholeSiteSource.includes(banned));
 assert(wholeSiteSource.includes("const {categories,products}=require('../data');"));
-const v112Source=fs.readFileSync(path.join(root,'lib','premium-mobile-decision-commerce-v112-runtime.js'),'utf8');
+const v112Source=read('lib/premium-mobile-decision-commerce-v112-runtime.js');
 for(const banned of ['scoreProduct(','rankDecision(','publicDecision(','affiliateRecommendationWeight:1','commissionWeight','localStorage.setItem(','sessionStorage.setItem('])assert(!v112Source.includes(banned));
 for(const required of ['Retailers contribute 0 recommendation points','Model-search fallback','Verified variant','Exact verified destination'])assert(v112Source.includes(required));
-const navigatorSource=fs.readFileSync(path.join(root,'lib','scout-navigator-v7-global-runtime.js'),'utf8');
+const navigatorSource=read('lib/scout-navigator-v7-global-runtime.js');
 for(const banned of ['scoreProduct(','rankDecision(','publicDecision(','affiliateRecommendationWeight:1','commissionWeight','localStorage.setItem(','sessionStorage.setItem('])assert(!navigatorSource.includes(banned));
 assert(navigatorSource.includes("const CSS_PATH='/assets/scout-navigator-v7-global.css';"));
-const pagespeedSource=fs.readFileSync(path.join(root,'lib','pagespeed-agentic-certification-v113-runtime.js'),'utf8');
+const pagespeedSource=read('lib/pagespeed-agentic-certification-v113-runtime.js');
 for(const banned of ['scoreProduct(','rankDecision(','publicDecision(','affiliateRecommendationWeight:1','commissionWeight','localStorage.setItem(','sessionStorage.setItem('])assert(!pagespeedSource.includes(banned));
 assert(pagespeedSource.includes("const CSS_PATH='/assets/pagespeed-home-v113.css';"));
-const auditSource=fs.readFileSync(path.join(root,'lib','audit-integration-v124-runtime.js'),'utf8');
+const auditSource=read('lib/audit-integration-v124-runtime.js');
 assert(auditSource.includes("require('./decision-audit-constraint-guard-v118')"));
 assert(auditSource.includes("require('./scout-active-context-v120')"));
 for(const banned of ['affiliateRecommendationWeight:1','commissionWeight'])assert(!auditSource.includes(banned));
 
-const sourceGate=fs.readFileSync(path.join(root,'.github','workflows','source-qa.yml'),'utf8');
+const sourceGate=read('.github/workflows/source-qa.yml');
 assert(sourceGate.includes('node scripts/premium-mobile-decision-commerce-v112-qa.js'));
 const premiumStability=require(path.join(root,'lib','premium-client-stability-v1091-runtime.js'));
 assert.equal(premiumStability.VERSION,'109.1');
@@ -103,7 +109,7 @@ assert(premiumStability.clientJs.includes("function setAria(el,name,value){const
 assert(premiumStability.clientJs.includes("attributeFilter:['hidden']"));
 assert(!/attributeFilter:\[[^\]]*aria-expanded/.test(premiumStability.clientJs));
 assert(!premiumStability.clientJs.includes(premiumStability.UNSAFE));
-const premiumStabilitySource=fs.readFileSync(path.join(root,'lib','premium-client-stability-v1091-runtime.js'),'utf8');
+const premiumStabilitySource=read('lib/premium-client-stability-v1091-runtime.js');
 for(const banned of ['scoreProduct(','rankDecision(','publicDecision(','affiliateRecommendationWeight:1','commissionWeight','localStorage.setItem(','sessionStorage.setItem('])assert(!premiumStabilitySource.includes(banned));
 
 const deploy=String(pkg.scripts&&pkg.scripts['qa:deploy']||'');
@@ -112,4 +118,4 @@ for(const required of ['platform-state-v1-qa.js','hard-constraint-verification-v
 const deps=Object.keys(pkg.dependencies||{});
 for(const framework of ['next','react','vue','@angular/core','svelte'])assert(!deps.includes(framework));
 
-console.log(JSON.stringify({ok:true,underlyingRuntime:outerRuntime,postLineageGuard,transportGuard,scoutPatch,scoutResponsePatch,premiumWrapper,journeyWrapper,premiumClientStabilityWrapper,premiumMobileDecisionCommerceWrapper,wholeSiteWrapper,auditIntegrationWrapper,scoutNavigatorWrapper,pagespeedAgenticWrapper,compatibilityLayerCount:compatibility.length,preRuntimeSideEffectInstallerCount:sideEffects.length,brandParityFirstGate:true,v112PresentationEvidenceOnly:true,wholeSitePresentationOnly:true,auditIntegrationSingleBoundary:true,scoutNavigatorPresentationBoundary:true,governedImageryAfterNavigator:true,pagespeedAgenticTransportAfterImagery:true,outerPresentationAllowed:true,prohibitedFrameworksAbsent:true,policy:'v106 remains the governed semantic runtime; audit v124 is one narrow remediation boundary; Scout Navigator v7.1 is the coordinated presentation base; governed imagery composes after Navigator; PageSpeed/agentic certification remains transport-only after imagery; additive outer presentation wrappers may follow without changing recommendation semantics. Full documented compatibility lineage and existing deploy gates remain protected.'},null,2));
+console.log(JSON.stringify({ok:true,underlyingRuntime:outerRuntime,postLineageGuard,transportGuard,scoutPatch,scoutResponsePatch,premiumWrapper,journeyWrapper,premiumClientStabilityWrapper,premiumMobileDecisionCommerceWrapper,wholeSiteWrapper,auditIntegrationWrapper,scoutNavigatorWrapper,pagespeedAgenticWrapper,semanticSubchain:'v106>v104>v103.6>proof-rail',preRuntimeSideEffectInstallerCount:sideEffects.length,brandParityFirstGate:true,v112PresentationEvidenceOnly:true,wholeSitePresentationOnly:true,auditIntegrationSingleBoundary:true,scoutNavigatorPresentationBoundary:true,governedImageryAfterNavigator:true,pagespeedAgenticTransportAfterImagery:true,outerPresentationAllowed:true,prohibitedFrameworksAbsent:true,policy:'v106 remains the governed semantic runtime; the real v106>v104>v103.6>proof-rail transitive chain is verified from source; audit v124 is one narrow remediation boundary; Scout Navigator v7.1 is the coordinated presentation base; governed imagery composes after Navigator; PageSpeed/agentic certification remains transport-only after imagery; additive outer presentation wrappers may follow without changing recommendation semantics.'},null,2));
