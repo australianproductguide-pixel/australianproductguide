@@ -3,6 +3,12 @@ name: APG Production Verification
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '.github/**'
+      - 'docs/**'
+      - 'ops/**'
+      - 'README.md'
+      - 'RELEASE'
   workflow_dispatch:
     inputs:
       full_certification:
