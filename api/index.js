@@ -28,6 +28,7 @@ const ebayProductImageContinuity=require('../lib/ebay-product-image-continuity-v
 const governedProductCardImagery=require('../lib/governed-product-card-imagery-v1-runtime');
 const searchProductImagery=require('../lib/search-product-imagery-v1-runtime');
 const categoryFeaturedImagery=require('../lib/category-featured-product-imagery-v1-runtime');
+const brandLogoStability=require('../lib/brand-logo-stability-v125-runtime');
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
 scoutResponseDepth.install();
@@ -86,15 +87,17 @@ Object.assign(routeScopedPresentationHandler,presentationHandler,{
 });
 const searchImageHandler=searchProductImagery.wrap(routeScopedPresentationHandler);
 const categoryImageHandler=categoryFeaturedImagery.wrap(searchImageHandler);
-const finalHandler=pagespeedAgenticCertification.wrap(categoryImageHandler);
+const certifiedHandler=pagespeedAgenticCertification.wrap(categoryImageHandler);
+const finalHandler=brandLogoStability.wrap(certifiedHandler);
 finalHandler.SCOUT_NAVIGATOR_PRESENTATION_VERSION=scoutNavigatorPresentation.VERSION;
 finalHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
 finalHandler.EBAY_PRODUCT_IMAGE_CONTINUITY_VERSION=ebayProductImageContinuity.VERSION;
 finalHandler.GOVERNED_PRODUCT_CARD_IMAGERY_VERSION=governedProductCardImagery.VERSION;
 finalHandler.SEARCH_PRODUCT_IMAGERY_VERSION=searchProductImagery.VERSION;
 finalHandler.CATEGORY_FEATURED_IMAGERY_VERSION=categoryFeaturedImagery.VERSION;
+finalHandler.BRAND_LOGO_STABILITY_VERSION=brandLogoStability.VERSION;
 finalHandler.EBAY_PRODUCT_IMAGE_PRESENTATION_STATE='NON_BLOCKING_UNIVERSAL_PRODUCT_IMAGERY_V16';
-const p0HomeAssemblyHandlers=Object.freeze({runtime,transport:transportHandler,premium:premiumHandler,journey:journeyHandler,stable:stableJourneyHandler,mobile:premiumMobileHandler,whole:handler,audit:auditedHandler,presentation:routeScopedPresentationHandler,searchImages:searchImageHandler,categoryImages:categoryImageHandler,final:finalHandler});
+const p0HomeAssemblyHandlers=Object.freeze({runtime,transport:transportHandler,premium:premiumHandler,journey:journeyHandler,stable:stableJourneyHandler,mobile:premiumMobileHandler,whole:handler,audit:auditedHandler,presentation:routeScopedPresentationHandler,searchImages:searchImageHandler,categoryImages:categoryImageHandler,certified:certifiedHandler,final:finalHandler});
 finalHandler.APG_P0_HOME_ASSEMBLY_HANDLERS=p0HomeAssemblyHandlers;
 finalHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES=Object.freeze(Object.keys(p0HomeAssemblyHandlers));
 module.exports=finalHandler;
