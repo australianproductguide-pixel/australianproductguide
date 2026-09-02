@@ -27,6 +27,7 @@ const scoutNavigatorPresentation=require('../lib/scout-navigator-v7-global-runti
 const ebayProductImageContinuity=require('../lib/ebay-product-image-continuity-v3-runtime');
 const governedProductCardImagery=require('../lib/governed-product-card-imagery-v1-runtime');
 const searchProductImagery=require('../lib/search-product-imagery-v1-runtime');
+const categoryFeaturedImagery=require('../lib/category-featured-product-imagery-v1-runtime');
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
 scoutResponseDepth.install();
@@ -81,17 +82,19 @@ function routeScopedPresentationHandler(req,res){
 Object.assign(routeScopedPresentationHandler,presentationHandler,{
   EBAY_PRODUCT_IMAGE_CONTINUITY_VERSION:ebayProductImageContinuity.VERSION,
   GOVERNED_PRODUCT_CARD_IMAGERY_VERSION:governedProductCardImagery.VERSION,
-  EBAY_PRODUCT_IMAGE_PRESENTATION_STATE:'NON_BLOCKING_UNIVERSAL_PRODUCT_IMAGERY_V15'
+  EBAY_PRODUCT_IMAGE_PRESENTATION_STATE:'NON_BLOCKING_UNIVERSAL_PRODUCT_IMAGERY_V16'
 });
 const searchImageHandler=searchProductImagery.wrap(routeScopedPresentationHandler);
-const finalHandler=pagespeedAgenticCertification.wrap(searchImageHandler);
+const categoryImageHandler=categoryFeaturedImagery.wrap(searchImageHandler);
+const finalHandler=pagespeedAgenticCertification.wrap(categoryImageHandler);
 finalHandler.SCOUT_NAVIGATOR_PRESENTATION_VERSION=scoutNavigatorPresentation.VERSION;
 finalHandler.AUDIT_INTEGRATION_VERSION=auditIntegration.VERSION;
 finalHandler.EBAY_PRODUCT_IMAGE_CONTINUITY_VERSION=ebayProductImageContinuity.VERSION;
 finalHandler.GOVERNED_PRODUCT_CARD_IMAGERY_VERSION=governedProductCardImagery.VERSION;
 finalHandler.SEARCH_PRODUCT_IMAGERY_VERSION=searchProductImagery.VERSION;
-finalHandler.EBAY_PRODUCT_IMAGE_PRESENTATION_STATE='NON_BLOCKING_UNIVERSAL_PRODUCT_IMAGERY_V15';
-const p0HomeAssemblyHandlers=Object.freeze({runtime,transport:transportHandler,premium:premiumHandler,journey:journeyHandler,stable:stableJourneyHandler,mobile:premiumMobileHandler,whole:handler,audit:auditedHandler,presentation:routeScopedPresentationHandler,searchImages:searchImageHandler,final:finalHandler});
+finalHandler.CATEGORY_FEATURED_IMAGERY_VERSION=categoryFeaturedImagery.VERSION;
+finalHandler.EBAY_PRODUCT_IMAGE_PRESENTATION_STATE='NON_BLOCKING_UNIVERSAL_PRODUCT_IMAGERY_V16';
+const p0HomeAssemblyHandlers=Object.freeze({runtime,transport:transportHandler,premium:premiumHandler,journey:journeyHandler,stable:stableJourneyHandler,mobile:premiumMobileHandler,whole:handler,audit:auditedHandler,presentation:routeScopedPresentationHandler,searchImages:searchImageHandler,categoryImages:categoryImageHandler,final:finalHandler});
 finalHandler.APG_P0_HOME_ASSEMBLY_HANDLERS=p0HomeAssemblyHandlers;
 finalHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES=Object.freeze(Object.keys(p0HomeAssemblyHandlers));
 module.exports=finalHandler;
