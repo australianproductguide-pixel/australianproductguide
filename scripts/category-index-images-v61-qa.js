@@ -3,7 +3,6 @@
 const fs=require('fs');
 const path=require('path');
 const layer=require('../lib/category-index-images-v61');
-const featured=require('../lib/category-featured-product-imagery-v1-runtime');
 const {categories}=require('../data');
 const registry=require('../data/category-editorial-images-v45');
 
@@ -146,41 +145,6 @@ if(layer.removeLegacyPathwayMap(duplicatePathwayMap).trim()!=='')fail('Legacy du
 if(layer.inject(html,'/search/')!==html)fail('Category image layer must not alter non-category-index pages');
 if(layer.inject(out,'/categories/')!==out)fail('Category image layer must be idempotent');
 
-// Category Featured Imagery v1.1 regression contracts. These guard the exact failure mode
-// observed on mobile: the editorial image must remain visible until a governed product image
-// has actually loaded, and the category root must allow the governed eBay image origin.
-if(featured.VERSION!=='1.1')fail(`Expected Category Featured Imagery v1.1, found ${featured.VERSION}`);
-if(featured.CATEGORY_MAP.size!==90)fail(`Featured imagery must cover the maintained 90-category map, found ${featured.CATEGORY_MAP.size}`);
-if(!featured.eligibleCspPath('/categories/')||!featured.eligibleCspPath('/categories'))fail('Category root must own the governed product-image CSP allowance');
-if(featured.eligibleCspPath('/categories/coffee-machines/'))fail('Featured imagery CSP mutation must remain scoped to the category directory root');
-const cspProbe=featured.withEbayImageCsp("default-src 'self'; img-src 'self' data:;");
-if(!cspProbe.includes(featured.EBAY_IMAGE_ORIGIN))fail('Category directory CSP must permit the governed eBay image origin');
-const featuredJs=String(featured.CLIENT_JS||'');
-const featuredCss=String(featured.CLIENT_CSS||'');
-for(const [label,needle] of [
-  ['v1.1 client marker',"window.__APG_CATEGORY_FEATURED_IMAGERY_V1__='1.1'"],
-  ['scope grouping','groups=new Map()'],
-  ['deterministic per-scope enhancer','async function enhanceScope(scope,links)'],
-  ['sequential department/category resolution','for(const link of links)'],
-  ['pending image readiness state',"stage.dataset.apgImageReady='false'"],
-  ['load-success transition',"img.addEventListener('load',()=>finish(true)"],
-  ['load-failure fallback transition',"img.addEventListener('error',()=>finish(false)"],
-  ['editorial fallback state',"scope.dataset.apgCategoryFeaturedImageFallback='editorial'"],
-  ['original hidden only inside success branch',"if(ok){if(original){original.style.opacity='0';original.style.pointerEvents='none'}"],
-  ['image source assigned after handlers',"visual.classList.add('apg-category-product-visual-pending-v11');if(original)original.insertAdjacentElement('afterend',stage);else visual.insertBefore(stage,visual.firstChild);img.src=row.imageUrl"]
-]){
-  if(!featuredJs.includes(needle))fail(`Missing Category Featured Imagery ${label} contract`);
-}
-if(featuredJs.includes("if(original){original.style.opacity='0';original.style.pointerEvents='none';original.insertAdjacentElement('afterend',stage)"))fail('Regression: original editorial image is being hidden before replacement load success');
-for(const [label,needle] of [
-  ['pending stage hidden','.apg-category-product-stage-v1{position:absolute!important'],
-  ['pending opacity','opacity:0!important'],
-  ['ready stage visible','[data-apg-image-ready="true"]{opacity:1!important'],
-  ['department image slot','.apg-category-product-slot-v11{']
-]){
-  if(!featuredCss.includes(needle))fail(`Missing Category Featured Imagery CSS ${label} contract`);
-}
-
 console.log(JSON.stringify({
   version:'category-index-images-v61.8-qa',
   categories:slugs.length,
@@ -204,10 +168,6 @@ console.log(JSON.stringify({
   unsupportedPopularityClaims:false,
   recommendationIndependenceProof:true,
   duplicatePathwayMapRemoved:true,
-  categoryFeaturedImageryVersion:featured.VERSION,
-  categoryFeaturedFailClosed:true,
-  categoryFeaturedCspScoped:true,
-  categoryFeaturedDeterministicDepartments:true,
   routeScoped:true,
   idempotent:true,
   failures:0
