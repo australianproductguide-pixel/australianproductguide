@@ -51,10 +51,23 @@ assert(api.includes('const premiumMobileHandler=premiumMobileDecisionCommerce.wr
 assert(api.includes('const handler=wholeSiteExperience.wrap(premiumMobileHandler);'));
 assert(api.includes('const auditedHandler=auditIntegration.wrap(handler);'));
 assert(api.includes('const presentationHandler=scoutNavigatorPresentation.wrap(auditedHandler);'));
-assert(api.includes('const finalHandler=pagespeedAgenticCertification.wrap(presentationHandler);'));
-assert(api.indexOf('const handler=wholeSiteExperience.wrap(premiumMobileHandler);')<api.indexOf('const auditedHandler=auditIntegration.wrap(handler);'));
-assert(api.indexOf('const auditedHandler=auditIntegration.wrap(handler);')<api.indexOf('const presentationHandler=scoutNavigatorPresentation.wrap(auditedHandler);'));
-assert(api.indexOf('const presentationHandler=scoutNavigatorPresentation.wrap(auditedHandler);')<api.indexOf('const finalHandler=pagespeedAgenticCertification.wrap(presentationHandler);'));
+assert(api.includes('const searchImageHandler=searchProductImagery.wrap(routeScopedPresentationHandler);'));
+assert(api.includes('const categoryImageHandler=categoryFeaturedImagery.wrap(searchImageHandler);'));
+assert(api.includes('const pagespeedHandler=pagespeedAgenticCertification.wrap(categoryImageHandler);'));
+assert(/const finalHandler=[A-Za-z0-9_]+\.wrap\([A-Za-z0-9_]+\);/.test(api),'current public runtime must retain an explicit final presentation wrapper');
+const wholeIndex=api.indexOf('const handler=wholeSiteExperience.wrap(premiumMobileHandler);');
+const auditIndex=api.indexOf('const auditedHandler=auditIntegration.wrap(handler);');
+const navigatorIndex=api.indexOf('const presentationHandler=scoutNavigatorPresentation.wrap(auditedHandler);');
+const routeIndex=api.indexOf('function routeScopedPresentationHandler(req,res)');
+const searchImageIndex=api.indexOf('const searchImageHandler=searchProductImagery.wrap(routeScopedPresentationHandler);');
+const categoryImageIndex=api.indexOf('const categoryImageHandler=categoryFeaturedImagery.wrap(searchImageHandler);');
+const pagespeedIndex=api.indexOf('const pagespeedHandler=pagespeedAgenticCertification.wrap(categoryImageHandler);');
+const finalIndex=api.indexOf('const finalHandler=');
+assert(wholeIndex>=0&&auditIndex>wholeIndex,'audit integration must wrap after whole-site presentation');
+assert(navigatorIndex>auditIndex,'Scout Navigator must wrap the audited semantic response');
+assert(routeIndex>navigatorIndex&&searchImageIndex>routeIndex,'governed route/search imagery must compose after Navigator');
+assert(categoryImageIndex>searchImageIndex&&pagespeedIndex>categoryImageIndex,'PageSpeed/agentic transport certification must run after governed imagery composition');
+assert(finalIndex>pagespeedIndex,'additive outer presentation wrappers must remain outside the certified governed-imagery transport chain');
 assert(api.includes('module.exports=finalHandler;'));
 assert(compatibility.length>=40,`expected the documented compatibility chain to remain visible for controlled consolidation; found ${compatibility.length}`);
 for(const required of ['../lib/search-opportunity-depth-v104-runtime','../lib/decision-hard-constraint-fallback-v1036','../lib/action7-closure-v1016','../lib/action4-final-v981','../lib/brand-mark-canonical-parity-v91','../lib/analytics-funnel-v79'])assert(compatibility.includes(required),`missing compatibility anchor ${required}`);
@@ -99,4 +112,4 @@ for(const required of ['platform-state-v1-qa.js','hard-constraint-verification-v
 const deps=Object.keys(pkg.dependencies||{});
 for(const framework of ['next','react','vue','@angular/core','svelte'])assert(!deps.includes(framework));
 
-console.log(JSON.stringify({ok:true,underlyingRuntime:outerRuntime,postLineageGuard,transportGuard,scoutPatch,scoutResponsePatch,premiumWrapper,journeyWrapper,premiumClientStabilityWrapper,premiumMobileDecisionCommerceWrapper,wholeSiteWrapper,auditIntegrationWrapper,scoutNavigatorWrapper,pagespeedAgenticWrapper,compatibilityLayerCount:compatibility.length,preRuntimeSideEffectInstallerCount:sideEffects.length,brandParityFirstGate:true,v112PresentationEvidenceOnly:true,wholeSitePresentationOnly:true,auditIntegrationSingleBoundary:true,scoutNavigatorFinalVisualCascadeOnly:true,pagespeedAgenticFinalTransportOnly:true,prohibitedFrameworksAbsent:true,policy:'v106 remains the governed runtime; audit v124 is one narrow remediation boundary over the completed semantic response; Scout Navigator v7.1 remains the final visual cascade; PageSpeed/agentic v113.4 is a transport-only outer certification layer. Full documented compatibility lineage and existing deploy gates remain protected.'},null,2));
+console.log(JSON.stringify({ok:true,underlyingRuntime:outerRuntime,postLineageGuard,transportGuard,scoutPatch,scoutResponsePatch,premiumWrapper,journeyWrapper,premiumClientStabilityWrapper,premiumMobileDecisionCommerceWrapper,wholeSiteWrapper,auditIntegrationWrapper,scoutNavigatorWrapper,pagespeedAgenticWrapper,compatibilityLayerCount:compatibility.length,preRuntimeSideEffectInstallerCount:sideEffects.length,brandParityFirstGate:true,v112PresentationEvidenceOnly:true,wholeSitePresentationOnly:true,auditIntegrationSingleBoundary:true,scoutNavigatorPresentationBoundary:true,governedImageryAfterNavigator:true,pagespeedAgenticTransportAfterImagery:true,outerPresentationAllowed:true,prohibitedFrameworksAbsent:true,policy:'v106 remains the governed semantic runtime; audit v124 is one narrow remediation boundary; Scout Navigator v7.1 is the coordinated presentation base; governed imagery composes after Navigator; PageSpeed/agentic certification remains transport-only after imagery; additive outer presentation wrappers may follow without changing recommendation semantics. Full documented compatibility lineage and existing deploy gates remain protected.'},null,2));
