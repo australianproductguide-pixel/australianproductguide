@@ -32,9 +32,18 @@ assert(!patched.includes('data-apg-missing-logo-target="apple"'),'known-good bra
 assert(patched.includes('src="/assets/brand-marks/apple" loading="lazy"'),'known-good brand must retain existing lazy-loading behaviour');
 
 const api=fs.readFileSync(path.join(__dirname,'..','api','index.js'),'utf8');
-assert(api.includes("module.exports=require('../lib/brand-mark-missing-only-v73')"),'v73 must be outermost public API layer');
+const stability=fs.readFileSync(path.join(__dirname,'..','lib','brand-logo-stability-v125-runtime.js'),'utf8');
+assert(api.includes("const brandLogoStability=require('../lib/brand-logo-stability-v125-runtime')"),'current public runtime must import brand-logo stability v125');
+assert(api.includes('const finalHandler=brandLogoStability.wrap(reviewProfileHandler)'),'brand-logo stability v125 must wrap the current review-profile public runtime');
+assert(api.includes('BRAND_LOGO_STABILITY_VERSION=brandLogoStability.VERSION'),'current public runtime must expose the brand-logo stability version');
+assert(stability.includes("const missing=require('./brand-mark-missing-only-v73')"),'brand-logo stability v125 must preserve the v73 missing-only remediation layer');
+assert(stability.includes('missing.TARGETS&&missing.TARGETS.has(slug)'),'v125 must only invoke missing-only remediation for governed target slugs');
+assert(stability.includes('missing.resolveMissingOnly(slug)'),'v125 must invoke the governed v73 remediation resolver');
+assert(stability.includes("const complete=require('./brand-mark-complete-v67')"),'v125 must preserve complete governed brand identity underneath');
+assert(stability.includes('complete.canonicalFallbackImage(slug)'),'v125 must fail closed to a canonical brand-name graphic rather than a broken image');
+assert(stability.includes("img.addEventListener('error',()=>failed(img))"),'v125 must retain CSP-safe browser error handling for all rendered brand marks');
 const runtime=fs.readFileSync(path.join(__dirname,'..','public','assets','brand-missing-logo-loader-v73.js'),'utf8');
 assert(runtime.includes("const VERSION='73.1'"),'runtime loader version must match v73.1');
 assert(runtime.includes("img.loading='eager'"),'targeted missing marks must retain CSP-safe eager hydration');
 
-console.log(`APG BRAND MISSING LOGO v73.1 QA PASSED: targets=${layer.MISSING_ONLY_SLUGS.length}; existing visible brands excluded; invisible SVG rejection active; server-eager + CSP-safe targeted hydration active.`);
+console.log(`APG BRAND MISSING LOGO v73.1 + STABILITY v125 QA PASSED: targets=${layer.MISSING_ONLY_SLUGS.length}; current public runtime retains missing-only recovery, complete governed resolver, terminal canonical fallback and CSP-safe browser failure handling.`);
