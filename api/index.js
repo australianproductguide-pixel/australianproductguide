@@ -30,6 +30,7 @@ const governedProductCardImagery=require('../lib/governed-product-card-imagery-v
 const searchProductImagery=require('../lib/search-product-imagery-v1-runtime');
 const categoryFeaturedImagery=require('../lib/category-featured-product-imagery-v1-runtime');
 const brandLogoStability=require('../lib/brand-logo-stability-v125-runtime');
+const desktopHomeHeader=require('../lib/desktop-home-header-v126-runtime');
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
 scoutResponseDepth.install();
@@ -104,4 +105,7 @@ finalHandler.EBAY_PRODUCT_IMAGE_PRESENTATION_STATE='NON_BLOCKING_UNIVERSAL_PRODU
 const p0HomeAssemblyHandlers=Object.freeze({runtime,transport:transportHandler,premium:premiumHandler,journey:journeyHandler,stable:stableJourneyHandler,mobile:premiumMobileHandler,whole:handler,audit:auditedHandler,presentation:routeScopedPresentationHandler,searchImages:searchImageHandler,categoryImages:categoryImageHandler,pagespeed:pagespeedHandler,reviewProfiles:reviewProfileHandler,final:finalHandler});
 finalHandler.APG_P0_HOME_ASSEMBLY_HANDLERS=p0HomeAssemblyHandlers;
 finalHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES=Object.freeze(Object.keys(p0HomeAssemblyHandlers));
-module.exports=finalHandler;
+const desktopHomeHeaderHandler=desktopHomeHeader.wrap(finalHandler);
+desktopHomeHeaderHandler.APG_P0_HOME_ASSEMBLY_HANDLERS=p0HomeAssemblyHandlers;
+desktopHomeHeaderHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES=finalHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES;
+module.exports=desktopHomeHeaderHandler;
