@@ -35,12 +35,15 @@ assert(runtime.includes("require('./seo-optimisation-v58-runtime')"),'v59 must w
 
 // The public entry point is now a composed runtime rather than a direct export of v67.2.
 // Brand Logo Stability v125 is the explicit current attachment point and must continue to
-// delegate to the complete v67.2 resolver before later desktop and v128 delivery wrappers.
+// delegate to the complete v67.2 resolver before later desktop, v128 delivery and v132
+// Home-only response-header layers.
 assert(entry.includes("const brandLogoStability=require('../lib/brand-logo-stability-v125-runtime')"),'public entrypoint must attach the governed brand-logo stability layer');
 assert(entry.includes('const finalHandler=brandLogoStability.wrap(reviewProfileHandler)'),'brand-logo stability must wrap the current public response after review-profile presentation');
 assert(brandLogoStability.includes("const complete=require('./brand-mark-complete-v67')"),'brand-logo stability must retain complete brand identity v67.2 as its governed resolver');
 assert(entry.includes("const googleDiscoverabilityPerformance=require('../lib/google-discoverability-performance-v128-runtime')"),'later v128 delivery must remain explicit and non-scoring');
-assert(entry.trim().endsWith('module.exports=googleDiscoverabilityPerformanceHandler;'),'public entrypoint must export the completed v128-wrapped handler without bypassing brand stability');
+assert(entry.includes("const homeResponseHeaderBudget=require('../lib/home-response-header-budget-v132-runtime')"),'v132 Home response-header budget must remain explicit and non-scoring');
+assert(entry.includes('const homeResponseHeaderBudgetHandler=homeResponseHeaderBudget.wrap(googleDiscoverabilityPerformanceHandler)'),'v132 must wrap the completed v128 response without bypassing brand stability');
+assert(entry.trim().endsWith('module.exports=homeResponseHeaderBudgetHandler;'),'public entrypoint must export the completed v132-wrapped handler without bypassing brand stability');
 
 assert(brandMarkComplete.includes("require('./brand-mark-device-parity-v66')"),'v67.2 must preserve v66.2 parity/integrity immediately underneath');
 assert(brandMarkComplete.includes("BRAND_MARK_COMPLETE_VERSION='67.2'"),'v67.2 must expose the current complete-brand generation');
@@ -109,4 +112,4 @@ assert.deepEqual(manifest.icons.slice(1).map(({src,sizes,type,purpose})=>({src,s
   {src:'/icon-512.png',sizes:'512x512',type:'image/png',purpose:'any'}
 ],'v115 manifest must preserve conservative raster fallbacks without an unverified maskable claim');
 
-console.log('APG Search Brand Identity v59 source QA passed beneath v60-v67.2 and current v125 stability; historical v105 cache-busted identity remains intact while Favicon Parity v115 makes /favicon.svg plus 192/512 PNGs the stable non-maskable manifest identity');
+console.log('APG Search Brand Identity v59 source QA passed beneath v60-v67.2 and current v125 stability; v128 delivery and v132 Home-header budgeting remain non-scoring outer layers; historical v105 cache-busted identity remains intact while Favicon Parity v115 makes /favicon.svg plus 192/512 PNGs the stable non-maskable manifest identity');
