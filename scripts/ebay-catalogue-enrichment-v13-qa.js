@@ -29,8 +29,10 @@ const wf1000xm6={brand:'Sony',name:'Sony WF-1000XM6',slug:'sony-wf-1000xm6',cate
 const sihooC300ProV2={brand:'SIHOO',name:'Doro C300 Pro V2',slug:'sihoo-doro-c300-pro-v2',category:'office-chairs',price:699};
 const winix360={brand:'Winix',name:'ZERO+ 360 5-Stage Air Purifier',slug:'winix-zero-360-5-stage-air-purifier',category:'air-purifiers',price:599};
 const winixPro={brand:'Winix',name:'ZERO+ PRO 5-Stage Air Purifier',slug:'winix-zero-pro-5-stage-air-purifier',category:'air-purifiers',price:599};
+const keychronK2Pro={brand:'Keychron',name:'K2 Pro',model:'K2 Pro',slug:'keychron-k2-pro',category:'mechanical-keyboards',price:189};
+const zojirushi={brand:'Zojirushi',name:'NS-ZCC10 Rice Cooker',model:'NS-ZCC10',slug:'zojirushi-ns-zcc10-rice-cooker',category:'rice-cookers',price:399};
 
-assert.strictEqual(matcher.VERSION,'1.3');
+assert.strictEqual(matcher.VERSION,'1.4');
 assert.strictEqual(familyGuard.VERSION,'1.3.2');
 assert.deepStrictEqual(matcher.modelTokens(s70d),['S70D']);
 assert.deepStrictEqual(matcher.modelTokens(x50),['X50']);
@@ -67,6 +69,22 @@ for(const [suffix,title] of [
   assert.strictEqual(guarded.accepted,null);
   assert.strictEqual(guarded.familyGuard.reason,`family-model-variant-mismatch:${suffix}`);
 }
+
+// Live 3 Sep 2026 regression: the maintained Keychron keyboard must never accept a palm/wrist-rest accessory,
+// even when the accessory title and structured item specifics contain the exact K2 Pro family token.
+const keychronPalmRest='Keychron Silicone Palm Rest for K2 / K2 Pro/ K2 Max / K2 HE / K6 / K6 Pro Black';
+assert.strictEqual(matcher.listingLooksAccessory(keychronPalmRest,keychronK2Pro),true);
+assert.strictEqual(matcher.scoreCandidate(keychronK2Pro,listing(keychronPalmRest,'39')).status,'reject');
+
+// Live 3 Sep 2026 regression: an exact NS-ZCC10 identity is still unsafe for Australian shoppers when
+// the listing explicitly advertises a low-voltage import. Universal 100-240V input must remain eligible.
+const lowVoltage='Zojirushi NS-ZCC10-WZ New Neuro Fuzzy Rice Cooker Warmer 5.5-Cup 120V White';
+const lowVoltageConflict=matcher.materialIdentityConflict(zojirushi,lowVoltage);
+assert.strictEqual(lowVoltageConflict.conflict,true);
+assert.strictEqual(lowVoltageConflict.reason,'regional-voltage-mismatch');
+assert.strictEqual(matcher.scoreCandidate(zojirushi,listing(lowVoltage,'429')).status,'reject');
+assert.strictEqual(matcher.regionalVoltageConflict('Zojirushi NS-ZCC10 Rice Cooker 100-240V universal input').conflict,false,'universal 100-240V must not be treated as a low-voltage-only import');
+assert.strictEqual(matcher.regionalVoltageConflict('Zojirushi NS-ZCC10 Rice Cooker 230V Australian model').conflict,false,'230V Australian listing must remain eligible on voltage grounds');
 
 // Live sweep regression: C300 Pro V2 must not collapse to the older/base C300.
 const wrongSihoo=familyGuard.applyToEnrichment(sihooC300ProV2,acceptedRow(
@@ -109,4 +127,4 @@ assert.strictEqual(exactSony.exactModel,true);
 assert.notStrictEqual(exactSony.status,'reject');
 assert.strictEqual(exactSony.status,'review');
 
-console.log('EBAY_CATALOGUE_ENRICHMENT_V132=PASS material-variants=screen-size|model-suffix family-variants=X50-DSL|X50-Outdoor|X50-PoE|X50-5G required-family=SIHOO-C300-Pro-V2|Winix-ZERO360|Winix-ZERO-PRO compound-models=WF-1000XM6|S70D|X50 recommendationWeight=0');
+console.log('EBAY_CATALOGUE_ENRICHMENT_V14=PASS material-variants=screen-size|model-suffix|regional-voltage accessory-regressions=palm-rest|wrist-rest family-variants=X50-DSL|X50-Outdoor|X50-PoE|X50-5G required-family=SIHOO-C300-Pro-V2|Winix-ZERO360|Winix-ZERO-PRO compound-models=WF-1000XM6|S70D|X50 recommendationWeight=0');
