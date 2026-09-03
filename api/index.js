@@ -117,4 +117,26 @@ const googleDiscoverabilityPerformanceHandler=googleDiscoverabilityPerformance.w
 googleDiscoverabilityPerformanceHandler.APG_P0_HOME_ASSEMBLY_HANDLERS=p0HomeAssemblyHandlers;
 googleDiscoverabilityPerformanceHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES=finalHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES;
 googleDiscoverabilityPerformanceHandler.GOOGLE_DISCOVERABILITY_PERFORMANCE_VERSION=googleDiscoverabilityPerformance.VERSION;
-module.exports=googleDiscoverabilityPerformanceHandler;
+const previewHomeOuterStageHandlers=Object.freeze({
+  final:finalHandler,
+  desktopHome:desktopHomeHeaderHandler,
+  desktopAbout:desktopAboutTrustContrastHandler,
+  delivery:googleDiscoverabilityPerformanceHandler
+});
+function previewHomeOuterStageDiagnostic(req,res){
+  let url;
+  try{url=new URL(req&&req.url||'/','https://australianproductguide.au');}catch{url=new URL('https://australianproductguide.au/');}
+  const stage=url.searchParams.get('__apg_outer_stage')||'';
+  if(process.env.VERCEL_ENV!=='production'&&url.pathname==='/'&&Object.prototype.hasOwnProperty.call(previewHomeOuterStageHandlers,stage)){
+    try{res.setHeader('Cache-Control','no-store, max-age=0');}catch{}
+    try{res.setHeader('X-Robots-Tag','noindex, nofollow, noarchive');}catch{}
+    try{res.setHeader('X-APG-Preview-Home-Outer-Stage',stage);}catch{}
+    return previewHomeOuterStageHandlers[stage](req,res);
+  }
+  return googleDiscoverabilityPerformanceHandler(req,res);
+}
+Object.assign(previewHomeOuterStageDiagnostic,googleDiscoverabilityPerformanceHandler,{
+  APG_PREVIEW_HOME_OUTER_STAGE_HANDLERS:previewHomeOuterStageHandlers,
+  APG_PREVIEW_HOME_OUTER_STAGE_NAMES:Object.freeze(Object.keys(previewHomeOuterStageHandlers))
+});
+module.exports=previewHomeOuterStageDiagnostic;
