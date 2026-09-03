@@ -75,7 +75,7 @@ async function invoke(url,userAgent){
   assert.equal(layer.DECISION_VERSION,'50.6','Decision Lab v50.6 protected export must survive v91');
 
   // Validate the direct current wrapper chain. The established v126/v127 visual modules are
-  // retained inside v131, which owns their pre-commit and streaming-safe response boundary.
+  // retained inside v131, while v132 adds only the final Home response-header budget boundary.
   const api=read('api/index.js');
   const requiredModules=[
     "require('../lib/audit-integration-v124-runtime')",
@@ -88,7 +88,8 @@ async function invoke(url,userAgent){
     "require('../lib/review-profiles-v118-runtime')",
     "require('../lib/brand-logo-stability-v125-runtime')",
     "require('../lib/final-presentation-stability-v131-runtime')",
-    "require('../lib/google-discoverability-performance-v128-runtime')"
+    "require('../lib/google-discoverability-performance-v128-runtime')",
+    "require('../lib/home-response-header-budget-v132-runtime')"
   ];
   for(const marker of requiredModules)assert(api.includes(marker),`missing explicit wrapper module ${marker}`);
   const finalPresentation=read('lib/final-presentation-stability-v131-runtime.js');
@@ -107,7 +108,8 @@ async function invoke(url,userAgent){
     'const desktopHomeHeaderHandler=finalPresentationStability.wrapDesktopHome(finalHandler)',
     'const desktopAboutTrustContrastHandler=finalPresentationStability.wrapDesktopTrust(desktopHomeHeaderHandler)',
     'const googleDiscoverabilityPerformanceHandler=googleDiscoverabilityPerformance.wrap(desktopAboutTrustContrastHandler)',
-    'module.exports=googleDiscoverabilityPerformanceHandler'
+    'const homeResponseHeaderBudgetHandler=homeResponseHeaderBudget.wrap(googleDiscoverabilityPerformanceHandler)',
+    'module.exports=homeResponseHeaderBudgetHandler'
   ];
   let previous=-1;
   for(const marker of chain){
@@ -117,6 +119,7 @@ async function invoke(url,userAgent){
   }
   assert(api.includes('FINAL_PRESENTATION_STABILITY_VERSION=finalPresentationStability.VERSION'),'final presentation boundary must expose v131');
   assert(api.includes('GOOGLE_DISCOVERABILITY_PERFORMANCE_VERSION=googleDiscoverabilityPerformance.VERSION'),'final delivery wrapper must expose its source version');
+  assert(api.includes('HOME_RESPONSE_HEADER_BUDGET_VERSION=homeResponseHeaderBudget.VERSION'),'Home delivery boundary must expose v132');
   assert(!api.includes('desktopHomeHeader.wrap(finalHandler)'),'unsafe legacy desktop Home response wrapper must be detached');
   assert(!api.includes('desktopAboutTrustContrast.wrap(desktopHomeHeaderHandler)'),'unsafe legacy trust response wrapper must be detached');
 
@@ -126,5 +129,5 @@ async function invoke(url,userAgent){
   const full=String(pkg.scripts['qa:full']||'');
   assert(full==='npm run qa:deploy'||full.startsWith('node scripts/brand-mark-canonical-parity-v91-qa.js &&'),'full-source gate must delegate to, or preserve, the deploy gate');
 
-  console.log(`BRAND_MARK_CANONICAL_PARITY_V91=PASS targets=2 amazonDesktopMobileHash=${sha(desktop.body).slice(0,16)} breville=reviewed-vector cacheVersion=91.0 search=${layer.VERSION} decision=${layer.DECISION_VERSION} composition=current-direct-chain+v131-streaming-safety+v128-finaliser`);
+  console.log(`BRAND_MARK_CANONICAL_PARITY_V91=PASS targets=2 amazonDesktopMobileHash=${sha(desktop.body).slice(0,16)} breville=reviewed-vector cacheVersion=91.0 search=${layer.VERSION} decision=${layer.DECISION_VERSION} composition=current-direct-chain+v131-streaming-safety+v128-finaliser+v132-home-header-budget`);
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1);});
