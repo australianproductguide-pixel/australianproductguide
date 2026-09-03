@@ -227,3 +227,175 @@ jobs:
           path: artifacts/amazon-link-integrity-v51
           retention-days: 30
           if-no-files-found: error
+
+  google-discoverability-certification:
+    name: Google discoverability v128 browser and Lighthouse
+    needs: compliance-guard
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && startsWith(github.head_ref, 'seo/google-discoverability-performance-v128')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Verify exact certification source SHA
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          actual=$(git rev-parse HEAD)
+          test "$actual" = "$EXPECTED_SHA"
+          echo "Exact certification source verified: $actual"
+
+      - name: Start exact pull-request runtime
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          PORT=4174 node scripts/pr-runtime-server-v109.js >/tmp/apg-v128-runtime.log 2>&1 &
+          echo $! >/tmp/apg-v128-runtime.pid
+          ready=0
+          for attempt in $(seq 1 60); do
+            if curl -fsSL http://127.0.0.1:4174/ -o /tmp/apg-v128-home.html; then
+              ready=1
+              break
+            fi
+            sleep 0.5
+          done
+          if [ "$ready" != 1 ]; then
+            cat /tmp/apg-v128-runtime.log || true
+            echo 'Exact v128 pull-request runtime did not become ready'
+            exit 1
+          fi
+          grep -F 'name="apg-google-discoverability-performance" content="v128.2"' /tmp/apg-v128-home.html >/dev/null
+          echo 'BASE_URL=http://127.0.0.1:4174' >> "$GITHUB_ENV"
+          echo 'Exact v128 pull-request runtime ready at http://127.0.0.1:4174'
+
+      - name: Wait for exact Production deployment
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          ready=0
+          for attempt in $(seq 1 90); do
+            deployments=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments?sha=$SHA")
+            id=$(echo "$deployments" | jq -r '[.[]|select(.environment=="Production" or .original_environment=="Production")][0].id//empty')
+            if [ -n "$id" ]; then
+              statuses=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/deployments/$id/statuses")
+              state=$(echo "$statuses" | jq -r '.[0].state//empty')
+              echo "Production state=${state:-pending}"
+              if [ "$state" = failure ] || [ "$state" = error ]; then exit 1; fi
+              if [ "$state" = success ]; then ready=1; break; fi
+            fi
+            sleep 5
+          done
+          test "$ready" = 1
+          for attempt in $(seq 1 24); do
+            if curl -fsSL "$BASE_URL/" -o /tmp/apg-v128-production-home.html && grep -F 'name="apg-google-discoverability-performance" content="v128.2"' /tmp/apg-v128-production-home.html >/dev/null; then
+              curl -fsSI "$BASE_URL/" | grep -i '^x-apg-google-discoverability-performance: v128.2' >/dev/null
+              echo "Exact v128.2 Production runtime verified for $SHA"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo 'Production did not expose the v128.2 runtime marker and header'
+          exit 1
+
+      - name: Install pinned browser and Lighthouse dependencies
+        run: |
+          set -euo pipefail
+          CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser)
+          test -n "$CHROME"
+          echo "CHROME=$CHROME" >> "$GITHUB_ENV"
+          echo "CHROME_PATH=$CHROME" >> "$GITHUB_ENV"
+          npm install --no-save --package-lock=false puppeteer-core@24.16.0 lighthouse@13.4.1 >/dev/null 2>&1
+          test -x node_modules/.bin/lighthouse
+
+      - name: Certify representative journeys, discovery controls and 3/3 agentic browsing
+        env:
+          OUTPUT_DIR: artifacts/google-discoverability-v128-browser
+        run: |
+          set -euo pipefail
+          node scripts/google-discoverability-v128-browser-cert.js
+
+      - name: Run five mobile and five desktop Lighthouse tests
+        env:
+          OUTPUT_DIR: artifacts/google-discoverability-v128-lighthouse
+        run: |
+          set -euo pipefail
+          mkdir -p "$OUTPUT_DIR"
+          for run in $(seq 1 5); do
+            node_modules/.bin/lighthouse "$BASE_URL/" \
+              --only-categories=performance,accessibility,best-practices,seo \
+              --output=json \
+              --output-path="$OUTPUT_DIR/mobile-$run.json" \
+              --chrome-flags="--headless=new --no-sandbox --disable-dev-shm-usage --disable-gpu" \
+              --max-wait-for-load=45000 \
+              --disable-full-page-screenshot \
+              --quiet
+            sleep 1
+          done
+          for run in $(seq 1 5); do
+            node_modules/.bin/lighthouse "$BASE_URL/" \
+              --preset=desktop \
+              --only-categories=performance,accessibility,best-practices,seo \
+              --output=json \
+              --output-path="$OUTPUT_DIR/desktop-$run.json" \
+              --chrome-flags="--headless=new --no-sandbox --disable-dev-shm-usage --disable-gpu" \
+              --max-wait-for-load=45000 \
+              --disable-full-page-screenshot \
+              --quiet
+            sleep 1
+          done
+
+      - name: Enforce five-run median Lighthouse thresholds
+        env:
+          OUTPUT_DIR: artifacts/google-discoverability-v128-lighthouse
+        run: |
+          set -euo pipefail
+          node scripts/google-discoverability-v128-lighthouse-cert.js "$OUTPUT_DIR"
+
+      - name: Stop exact pull-request runtime
+        if: always() && github.event_name == 'pull_request'
+        run: |
+          if [ -f /tmp/apg-v128-runtime.pid ]; then kill "$(cat /tmp/apg-v128-runtime.pid)" 2>/dev/null || true; fi
+          cat /tmp/apg-v128-runtime.log || true
+
+      - name: Publish v128 certification summary
+        if: always()
+        run: |
+          if [ -f artifacts/google-discoverability-v128-browser/report.json ]; then
+            node - <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          const fs=require('fs');
+          const report=JSON.parse(fs.readFileSync('artifacts/google-discoverability-v128-browser/report.json','utf8'));
+          console.log('## APG v128 browser and agentic certification');
+          console.log(`**Status:** ${report.status || 'UNKNOWN'}`);
+          console.log(`\n**Base:** ${report.base || 'unknown'}`);
+          console.log(`\n**Representative routes:** ${report.summary?.routesPassed ?? 0}/${report.summary?.routesTotal ?? 0}`);
+          console.log(`\n**Agentic browsing:** ${report.summary?.agenticBrowsing || 'unknown'}`);
+          console.log(`\n**Meaningful browser errors:** ${report.summary?.browserErrors ?? 'unknown'}`);
+          if((report.failures||[]).length){console.log('\n### Failures');for(const failure of report.failures)console.log(`- ${failure.scope}: ${failure.error}`);}
+          NODE
+          fi
+          if [ -f artifacts/google-discoverability-v128-lighthouse/summary.md ]; then
+            cat artifacts/google-discoverability-v128-lighthouse/summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload v128 browser and Lighthouse evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: google-discoverability-v128-${{ github.run_id }}
+          path: |
+            artifacts/google-discoverability-v128-browser
+            artifacts/google-discoverability-v128-lighthouse
+          retention-days: 30
+          if-no-files-found: error
