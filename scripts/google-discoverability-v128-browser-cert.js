@@ -29,7 +29,7 @@ const viewports=[
   {label:'mobile',width:390,height:844,isMobile:true,hasTouch:true}
 ];
 const routes=[
-  {name:'home',path:'/',discoveryLinks:4,search:true,scout:true,screenshot:true},
+  {name:'home',path:'/',discoveryLinks:4,search:true,scout:true,screenshot:true,homeBundle:true},
   {name:'search',path:'/search/?q=breville',productLinks:1,screenshot:true},
   {name:'category',path:'/categories/coffee-machines/',productLinks:3},
   {name:'product',path:'/products/breville-barista-express-impress-bes876/',productJsonLd:true,scout:true,screenshot:true},
@@ -39,11 +39,11 @@ const routes=[
   {name:'deals',path:'/deals/',shoppingCards:6}
 ];
 
-function assert(ok,message){if(!ok)throw new Error(message)}
-function safeName(value){return String(value).replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').toLowerCase()}
-function sameOrigin(value){try{return new URL(value).origin===new URL(BASE).origin}catch{return false}}
-function delay(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
-function criticalResource(type){return ['document','script','stylesheet','fetch','xhr'].includes(type)}
+function assert(ok,message){if(!ok)throw new Error(message);}
+function safeName(value){return String(value).replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').toLowerCase();}
+function sameOrigin(value){try{return new URL(value).origin===new URL(BASE).origin;}catch{return false;}}
+function delay(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
+function criticalResource(type){return ['document','script','stylesheet','fetch','xhr'].includes(type);}
 async function textResponse(pathname,options={}){
   const response=await fetch(BASE+pathname,{signal:AbortSignal.timeout(20000),...options});
   return {response,text:await response.text()};
@@ -73,7 +73,8 @@ async function preflight(){
     assert(text.includes('<h1'),`${userAgent}: server-rendered H1 missing`);
     assert(text.includes('rel="canonical"'),`${userAgent}: canonical missing`);
     assert(text.includes('name="apg-google-discoverability-performance" content="v128.2"'),`${userAgent}: v128.2 marker missing`);
-    report.preflight.push({name:`agent:${userAgent}`,status:response.status,serverRendered:true});
+    assert(text.includes('data-apg-home-css-bundle="v128.2"'),`${userAgent}: signature-verified Home bundle missing`);
+    report.preflight.push({name:`agent:${userAgent}`,status:response.status,serverRendered:true,homeBundle:true});
   }
 
   const redirects=[
@@ -106,11 +107,24 @@ async function preflight(){
   assert(/immutable/i.test(versioned.headers.get('cache-control')||''),'versioned repository asset must be immutable');
   assert(!/immutable/i.test(unversioned.headers.get('cache-control')||''),'unversioned repository asset must remain revalidated');
   assert(!/immutable/i.test(empty.headers.get('cache-control')||''),'empty version query must remain revalidated');
+
+  const home=await textResponse('/');
+  const bundleHref=(home.text.match(/<link\b[^>]*data-apg-home-css-bundle="v128\.2"[^>]*href="([^"]+)"[^>]*>|<link\b[^>]*href="([^"]+)"[^>]*data-apg-home-css-bundle="v128\.2"[^>]*>/i)||[]);
+  const href=bundleHref[1]||bundleHref[2]||'';
+  assert(/^\/assets\/home-v128-bundle\.css\?v=[a-f0-9]{20}$/.test(href),`Home bundle href invalid: ${href}`);
+  const bundle=await fetch(BASE+href,{signal:AbortSignal.timeout(20000)});
+  const bundleText=await bundle.text();
+  assert(bundle.status===200,'Home bundle must return 200');
+  assert(/immutable/i.test(bundle.headers.get('cache-control')||''),'Home bundle must be immutable');
+  assert(bundleText.includes('APG_HOME_CSS_LINK_SIGNATURE:'),'Home bundle signature missing');
+  assert(bundleText.length>250000,'Home bundle unexpectedly small');
   report.preflight.push({
     name:'asset-cache-parity',
     versioned:versioned.headers.get('cache-control'),
     unversioned:unversioned.headers.get('cache-control'),
-    emptyVersion:empty.headers.get('cache-control')
+    emptyVersion:empty.headers.get('cache-control'),
+    homeBundle:href,
+    homeBundleBytes:Buffer.byteLength(bundleText)
   });
 }
 
@@ -159,6 +173,14 @@ async function inspectRoute(page,route,viewport,response){
     const decisionControls=[...document.querySelectorAll('main form input,main form select,main form textarea,main form button')].filter(visible);
     const shoppingCards=[...document.querySelectorAll('.apg-shopping-card')].filter(visible);
     const mediaFor=needle=>[...document.querySelectorAll('link[rel="stylesheet"]')].find(link=>(link.getAttribute('href')||'').includes(needle))?.getAttribute('media')||'';
+    const activeInternalStyles=[...document.querySelectorAll('link[rel="stylesheet"]')].filter(link=>{
+      const href=link.getAttribute('href')||'';
+      return href.startsWith('/assets/')||href.startsWith(location.origin+'/assets/');
+    });
+    const internalStylePreloads=[...document.querySelectorAll('link[rel="preload"][as="style"]')].filter(link=>{
+      const href=link.getAttribute('href')||'';
+      return href.startsWith('/assets/')||href.startsWith(location.origin+'/assets/');
+    });
     return {
       title:document.title,
       h1:[...document.querySelectorAll('h1')].map(node=>node.textContent.trim()).filter(Boolean),
@@ -180,7 +202,12 @@ async function inspectRoute(page,route,viewport,response){
       desktopHomeMedia:mediaFor('desktop-home-header-v126.css'),
       desktopTrustMedia:mediaFor('desktop-about-trust-contrast-v127.css'),
       mobileWordmarkMedia:mediaFor('mobile-header-wordmark-v75.css'),
-      mobileMenuMedia:mediaFor('mobile-menu-polish-v21.css')
+      mobileMenuMedia:mediaFor('mobile-menu-polish-v21.css'),
+      homeBundleHref:document.querySelector('link[data-apg-home-css-bundle="v128.2"]')?.getAttribute('href')||'',
+      activeInternalStylesheetCount:activeInternalStyles.length,
+      internalStylePreloadCount:internalStylePreloads.length,
+      headerWordmarkAria:document.querySelector('header a.brand')?.getAttribute('aria-label'),
+      footerWordmarkAria:document.querySelector('footer a.footer-v11-wordmark')?.getAttribute('aria-label')
     };
   });
 
@@ -196,10 +223,19 @@ async function inspectRoute(page,route,viewport,response){
   assert(state.skipLink,`${viewport.label}/${route.name}: skip link missing`);
   assert(state.scoutLauncherVisible&&state.scoutPanelPresent,`${viewport.label}/${route.name}: Scout surface missing`);
   assert(state.scrollWidth<=state.clientWidth+2,`${viewport.label}/${route.name}: horizontal overflow ${state.scrollWidth}/${state.clientWidth}`);
-  assert(state.desktopHomeMedia==='(min-width:981px)',`${viewport.label}/${route.name}: desktop Home media hint missing`);
-  assert(state.desktopTrustMedia==='(min-width:921px)',`${viewport.label}/${route.name}: desktop trust media hint missing`);
-  assert(state.mobileWordmarkMedia==='(max-width:920px)',`${viewport.label}/${route.name}: mobile wordmark media hint missing`);
-  assert(state.mobileMenuMedia==='(max-width:920px)',`${viewport.label}/${route.name}: mobile menu media hint missing`);
+  assert(state.headerWordmarkAria!=='Australian Product Guide home',`${viewport.label}/${route.name}: header wordmark accessible-name mismatch retained`);
+  assert(state.footerWordmarkAria!=='Australian Product Guide home',`${viewport.label}/${route.name}: footer wordmark accessible-name mismatch retained`);
+  if(route.homeBundle){
+    assert(/^\/assets\/home-v128-bundle\.css\?v=[a-f0-9]{20}$/.test(state.homeBundleHref),`${viewport.label}/${route.name}: Home bundle missing`);
+    assert(state.activeInternalStylesheetCount===1,`${viewport.label}/${route.name}: expected one active internal stylesheet, found ${state.activeInternalStylesheetCount}`);
+    assert(state.internalStylePreloadCount===0,`${viewport.label}/${route.name}: superseded CSS preloads remain`);
+    assert(headers['x-apg-home-css-bundle']==='v128.2',`${viewport.label}/${route.name}: Home bundle response header missing`);
+  }else{
+    assert(state.desktopHomeMedia==='(min-width:981px)',`${viewport.label}/${route.name}: desktop Home media hint missing`);
+    assert(state.desktopTrustMedia==='(min-width:921px)',`${viewport.label}/${route.name}: desktop trust media hint missing`);
+    assert(state.mobileWordmarkMedia==='(max-width:920px)',`${viewport.label}/${route.name}: mobile wordmark media hint missing`);
+    assert(state.mobileMenuMedia==='(max-width:920px)',`${viewport.label}/${route.name}: mobile menu media hint missing`);
+  }
   if(route.productLinks)assert(state.productLinks.length>=route.productLinks,`${viewport.label}/${route.name}: expected at least ${route.productLinks} product links, found ${state.productLinks.length}`);
   if(route.discoveryLinks)assert(state.discoveryLinks.length>=route.discoveryLinks,`${viewport.label}/${route.name}: expected at least ${route.discoveryLinks} crawlable decision links, found ${state.discoveryLinks.length}`);
   if(route.search)assert(state.searchVisible,`${viewport.label}/${route.name}: visible search surface missing`);
@@ -245,7 +281,7 @@ async function certifyRoute(browser,route,viewport){
   }catch(error){
     report.failures.push({scope,path:route.path,error:String(error&&error.message||error)});
     report.routes.push({scope,path:route.path,ok:false,durationMs:Date.now()-started,error:String(error&&error.message||error)});
-    try{await screenshot(page,`${scope}-failure`,true)}catch{}
+    try{await screenshot(page,`${scope}-failure`,true);}catch{}
   }finally{
     await page.close();
   }
