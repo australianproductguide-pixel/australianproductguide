@@ -1,7 +1,13 @@
 'use strict';
 
 const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
 const layer=require('../lib/google-discoverability-performance-v128-runtime');
+
+const root=path.resolve(__dirname,'..');
+const vercel=JSON.parse(fs.readFileSync(path.join(root,'vercel.json'),'utf8'));
+const prServerSource=fs.readFileSync(path.join(root,'scripts','pr-runtime-server-v109.js'),'utf8');
 
 function response(resolve){
   const headers=new Map();
@@ -80,6 +86,8 @@ async function main(){
   assert.equal(rendered.headers.get('content-length'),undefined);
   assert.equal(rendered.headers.get('x-apg-google-discoverability-performance'),'v128.2');
 
+  // Dynamic/generated assets pass through the wrapper; repository assets are served by
+  // Vercel's filesystem layer. Both paths must apply the same non-empty explicit version rule.
   const asset=layer.wrap((req,res)=>{
     res.statusCode=200;
     res.setHeader('Content-Type','text/css; charset=utf-8');
@@ -90,12 +98,25 @@ async function main(){
   assert.equal(versioned.headers.get('cache-control'),'public, max-age=31536000, immutable');
   const unversioned=await invoke(asset,'/assets/privacy-experience.css');
   assert.equal(unversioned.headers.get('cache-control'),'public, max-age=0, must-revalidate');
+  const emptyVersion=await invoke(asset,'/assets/privacy-experience.css?v=');
+  assert.equal(emptyVersion.headers.get('cache-control'),'public, max-age=0, must-revalidate','empty version query must not create an immutable cache');
+
+  assert.equal(Array.isArray(vercel.headers),true,'Vercel edge headers must be source controlled');
+  assert.equal(vercel.headers.length,1,'v128 must add one narrow edge-cache rule');
+  const edge=vercel.headers[0];
+  assert.equal(edge.source,'/assets/(.*)');
+  assert.deepEqual(edge.has,[{type:'query',key:'v',value:'.+'}],'edge cache must require a non-empty explicit asset version');
+  assert.deepEqual(edge.headers,[{key:'Cache-Control',value:'public, max-age=31536000, immutable'}]);
+  assert(prServerSource.includes('function explicitlyVersionedAsset(req)'),'exact PR runtime must model the deployed filesystem cache rule');
+  assert(prServerSource.includes("Boolean(url.searchParams.get('v'))"),'PR runtime must require a non-empty asset version');
+  assert(prServerSource.includes("?'public, max-age=31536000, immutable'"),'PR runtime must expose the immutable header for versioned repository assets');
+  assert(prServerSource.includes(":'public, max-age=0, must-revalidate'"),'PR runtime must preserve revalidation for unversioned repository assets');
 
   console.log(JSON.stringify({
     status:'PASS',version:layer.VERSION,
-    safeBaseline:{viewportScopedStyles:4,versionedAssetCaching:true,legacyAliasRedirects:2},
-    protected:{privacyCssBlocking:true,canonical:true,structuredData:true,agenticSearchAffordance:true,governedImageUrlsUnchanged:true},
-    security:{redirectQueryDiscarded:true,redirectBodyStatic:true}
+    safeBaseline:{viewportScopedStyles:4,versionedAssetCaching:true,edgeVersionedAssetCaching:true,legacyAliasRedirects:2},
+    protected:{privacyCssBlocking:true,canonical:true,structuredData:true,agenticSearchAffordance:true,governedImageUrlsUnchanged:true,unversionedAssetRevalidation:true},
+    security:{redirectQueryDiscarded:true,redirectBodyStatic:true,emptyVersionNotImmutable:true}
   },null,2));
 }
 
