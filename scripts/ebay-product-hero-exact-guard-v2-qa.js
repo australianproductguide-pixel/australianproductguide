@@ -21,7 +21,7 @@ function row(title,{model=[],categoryPath='Home Appliances',verificationLevel=mo
 }
 function eligible(product,accepted,allProducts=[product]){return guard.evaluate(product,accepted,allProducts,{now:Date.parse('2026-08-31T00:00:00Z')});}
 
-assert.strictEqual(guard.VERSION,'2.2');
+assert.strictEqual(guard.VERSION,'2.3');
 
 // Known false accepts from the live 482-product enrichment sweep must remain logo placeholders.
 const ryobi={slug:'ryobi-one-hp-18v-drill-driver',brand:'Ryobi',name:'ONE+ HP 18V Drill Driver'};
@@ -38,6 +38,10 @@ assert.strictEqual(eligible(dyson,row('OEM Genuine Dyson Corrale Straightener HS
 
 const sunbeam={slug:'sunbeam-secretchef-electronic-sear-and-slow-cooker-hp8555',brand:'Sunbeam',name:'SecretChef Electronic Sear and Slow Cooker HP8555'};
 assert.strictEqual(eligible(sunbeam,row('Sunbeam SecretChef Electronic Sear & Slow Cooker HP8555 Cooker Rubber 2x Handles',{model:['HP855502','Sunbeam SecretChef Electronic Sear and Slow Cooker'],categoryPath:'Home Appliances|Small Kitchen Appliances|Small Kitchen Appliance Accessories'})).reason,'accessory-title');
+
+const keychron={slug:'keychron-k2-pro',brand:'Keychron',name:'K2 Pro',model:'K2 Pro'};
+assert.strictEqual(eligible(keychron,row('Keychron Silicone Palm Rest for K2 / K2 Pro/ K2 Max / K2 HE / K6 / K6 Pro Black',{model:['K2 Pro'],categoryPath:'Computers/Tablets & Networking|Keyboards, Mice & Pointers|Keyboard & Mouse Accessories'})).reason,'accessory-title','palm rest accessory must never populate the K2 Pro hero');
+assert.strictEqual(eligible(keychron,row('Keychron Wrist Rest for K2 Pro Mechanical Keyboard',{model:['K2 Pro'],categoryPath:'Computers/Tablets & Networking|Keyboards, Mice & Pointers|Keyboard & Mouse Accessories'})).reason,'accessory-title','wrist rest accessory must never populate the K2 Pro hero');
 
 const shark={slug:'shark-speedstyle-5-in-1-hair-dryer',brand:'Shark',name:'SpeedStyle 5-in-1 Hair Dryer'};
 assert.strictEqual(eligible(shark,row('Shark FlexStyle HD430 5 in 1 Hair Dryer Curler Styler Negative Ion Air Styler')).eligible,false,'generic 5-in-1 wording must not prove SpeedStyle');
@@ -61,6 +65,15 @@ const c300Dc=eligible(c300,row('Anker Solix C300 Power Station DC Portable Power
 assert.strictEqual(c300Dc.eligible,false,'SOLIX C300 DC sibling must never populate the regular C300 hero');
 assert.strictEqual(c300Dc.reason,'product-variant-exclusion');
 assert.strictEqual(c300Dc.detail.code,'C300_DC_SIBLING');
+
+// Live regression from 3 Sep 2026: exact product identity does not make a low-voltage import an
+// Australian-safe product image candidate. Universal 100-240V input remains acceptable on voltage grounds.
+const zojirushi={slug:'zojirushi-ns-zcc10-rice-cooker',brand:'Zojirushi',name:'NS-ZCC10 Rice Cooker',model:'NS-ZCC10'};
+const lowVoltageZojirushi=eligible(zojirushi,row('Zojirushi NS-ZCC10-WZ New Neuro Fuzzy Rice Cooker Warmer 5.5-Cup 120V White',{model:['NS-ZCC10-WZ','NS-ZCC10'],categoryPath:'Home & Garden|Kitchen, Dining & Bar|Small Kitchen Appliances|Rice Cookers'}));
+assert.strictEqual(lowVoltageZojirushi.eligible,false,'120V exact-model listing must never populate an Australian product hero');
+assert.strictEqual(lowVoltageZojirushi.reason,'regional-voltage-mismatch');
+const universalVoltageZojirushi=eligible(zojirushi,row('Zojirushi NS-ZCC10 Rice Cooker 100-240V Universal Input',{model:['NS-ZCC10'],categoryPath:'Home & Garden|Kitchen, Dining & Bar|Small Kitchen Appliances|Rice Cookers'}));
+assert.strictEqual(universalVoltageZojirushi.eligible,true,'100-240V universal input must not be rejected as a low-voltage-only import');
 
 // Clean exact products should qualify, including current eBay listings where the exact model
 // is only in the listing title and listings with legitimate Australian/full-SKU suffixes.
@@ -90,4 +103,4 @@ assert.strictEqual(eligible(c300,row('Anker SOLIX C300 Portable Power Station A1
 const ended=eligible(canon,row('CANON SELPHY CP1500 Compact Photo Printer, White (CP1500WH)',{model:['CP1500WH'],itemEndDate:'2020-01-01T00:00:00.000Z'}));
 assert.strictEqual(ended.reason,'ended-listing');
 
-console.log('EBAY_PRODUCT_HERO_EXACT_GUARD_V22=PASS false-positive-regressions=10 exact-positive-regressions=8 recommendationWeight=0');
+console.log('EBAY_PRODUCT_HERO_EXACT_GUARD_V23=PASS false-positive-regressions=13 exact-positive-regressions=9 recommendationWeight=0');
