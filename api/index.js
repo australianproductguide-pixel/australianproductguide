@@ -32,6 +32,7 @@ const categoryFeaturedImagery=require('../lib/category-featured-product-imagery-
 const brandLogoStability=require('../lib/brand-logo-stability-v125-runtime');
 const finalPresentationStability=require('../lib/final-presentation-stability-v131-runtime');
 const googleDiscoverabilityPerformance=require('../lib/google-discoverability-performance-v128-runtime');
+const homeResponseHeaderBudget=require('../lib/home-response-header-budget-v132-runtime');
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
 scoutResponseDepth.install();
@@ -104,12 +105,14 @@ finalHandler.REVIEW_PROFILES_VERSION=reviewProfiles.VERSION;
 finalHandler.BRAND_LOGO_STABILITY_VERSION=brandLogoStability.VERSION;
 finalHandler.EBAY_PRODUCT_IMAGE_PRESENTATION_STATE='NON_BLOCKING_UNIVERSAL_PRODUCT_IMAGERY_V16';
 
-// The two final desktop layers retain their existing visual assets and order, but now share a
-// pre-commit, streaming-safe response contract. The stage map deliberately exposes each boundary
-// so Production diagnostics can distinguish core Home rendering from final presentation delivery.
+// The two final desktop layers retain their existing visual assets and order, but share a
+// pre-commit, streaming-safe response contract. The final Home-only header budget then removes
+// superseded diagnostic X-APG headers immediately before commit, without touching standard HTTP,
+// security, SEO, privacy, content or cache headers.
 const desktopHomeHeaderHandler=finalPresentationStability.wrapDesktopHome(finalHandler);
 const desktopAboutTrustContrastHandler=finalPresentationStability.wrapDesktopTrust(desktopHomeHeaderHandler);
 const googleDiscoverabilityPerformanceHandler=googleDiscoverabilityPerformance.wrap(desktopAboutTrustContrastHandler);
+const homeResponseHeaderBudgetHandler=homeResponseHeaderBudget.wrap(googleDiscoverabilityPerformanceHandler);
 const p0HomeAssemblyHandlers=Object.freeze({
   runtime,
   transport:transportHandler,
@@ -127,9 +130,10 @@ const p0HomeAssemblyHandlers=Object.freeze({
   final:finalHandler,
   desktopHome:desktopHomeHeaderHandler,
   desktopTrust:desktopAboutTrustContrastHandler,
-  googleDelivery:googleDiscoverabilityPerformanceHandler
+  googleDelivery:googleDiscoverabilityPerformanceHandler,
+  homeBudget:homeResponseHeaderBudgetHandler
 });
-for(const stageHandler of [finalHandler,desktopHomeHeaderHandler,desktopAboutTrustContrastHandler,googleDiscoverabilityPerformanceHandler]){
+for(const stageHandler of [finalHandler,desktopHomeHeaderHandler,desktopAboutTrustContrastHandler,googleDiscoverabilityPerformanceHandler,homeResponseHeaderBudgetHandler]){
   stageHandler.APG_P0_HOME_ASSEMBLY_HANDLERS=p0HomeAssemblyHandlers;
   stageHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES=Object.freeze(Object.keys(p0HomeAssemblyHandlers));
 }
@@ -137,4 +141,7 @@ desktopHomeHeaderHandler.FINAL_PRESENTATION_STABILITY_VERSION=finalPresentationS
 desktopAboutTrustContrastHandler.FINAL_PRESENTATION_STABILITY_VERSION=finalPresentationStability.VERSION;
 googleDiscoverabilityPerformanceHandler.FINAL_PRESENTATION_STABILITY_VERSION=finalPresentationStability.VERSION;
 googleDiscoverabilityPerformanceHandler.GOOGLE_DISCOVERABILITY_PERFORMANCE_VERSION=googleDiscoverabilityPerformance.VERSION;
-module.exports=googleDiscoverabilityPerformanceHandler;
+homeResponseHeaderBudgetHandler.FINAL_PRESENTATION_STABILITY_VERSION=finalPresentationStability.VERSION;
+homeResponseHeaderBudgetHandler.GOOGLE_DISCOVERABILITY_PERFORMANCE_VERSION=googleDiscoverabilityPerformance.VERSION;
+homeResponseHeaderBudgetHandler.HOME_RESPONSE_HEADER_BUDGET_VERSION=homeResponseHeaderBudget.VERSION;
+module.exports=homeResponseHeaderBudgetHandler;
