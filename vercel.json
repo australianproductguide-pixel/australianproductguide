@@ -3,9 +3,6 @@
   "regions": ["syd1"],
   "buildCommand": "node scripts/build-home-css-v128.js && npm run vercel-build",
   "functions": {
-    "api/index.js": {
-      "includeFiles": "public/assets/**/*.css"
-    },
     "api/home-assembly-diagnostic.js": {
       "includeFiles": "public/assets/**/*.css"
     }
