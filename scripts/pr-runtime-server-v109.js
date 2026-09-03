@@ -4,11 +4,26 @@ const fs=require('node:fs');
 const http=require('node:http');
 const path=require('node:path');
 const zlib=require('node:zlib');
+const {execFileSync}=require('node:child_process');
+
+const root=path.resolve(__dirname,'..');
+const homeBundle=path.join(root,'public','assets','home-v128-bundle.css');
+// The exact PR runtime mirrors Vercel's build output. Generate the static Home bundle before the
+// application is imported, unless this process is itself the unbundled source runtime used by the
+// build script. The build remains outside every public response and fails closed on any error.
+if(process.env.APG_HOME_CSS_BUILD!=='1'&&!fs.existsSync(homeBundle)){
+  execFileSync(process.execPath,[path.join(root,'scripts','build-home-css-v128.js')],{
+    cwd:root,
+    env:{...process.env,APG_HOME_CSS_BUILD:'1'},
+    stdio:'inherit'
+  });
+}
+
 const app=require('../api/index');
 
 const host=process.env.HOST||'127.0.0.1';
 const port=Number(process.env.PORT||4173);
-const publicRoot=path.resolve(__dirname,'..','public');
+const publicRoot=path.resolve(root,'public');
 const mime={
   '.css':'text/css; charset=utf-8',
   '.js':'application/javascript; charset=utf-8',
