@@ -28,6 +28,7 @@ jobs:
         run: |
           set -euo pipefail
           for f in api/*.js data/*.js lib/*.js scripts/*.js; do node --check "$f"; done
+          node scripts/vercel-ignore-build-qa.js
           node scripts/favicon-parity-v115-qa.js
           node scripts/ebay-official-creatives-v121-qa.js
           npm run qa:full
@@ -77,6 +78,7 @@ jobs:
           const expect=(ok,msg)=>{if(!ok)throw new Error(msg)};
           expect(config.$schema==='https://openapi.vercel.sh/vercel.json','Vercel schema declaration missing');
           expect(JSON.stringify(config.regions)===JSON.stringify(['syd1']),`Expected Sydney function region, got ${JSON.stringify(config.regions)}`);
+          expect(config.ignoreCommand==='node scripts/vercel-ignore-build.js','Fail-safe Vercel ignored-build control must remain configured');
           expect(Array.isArray(config.routes)&&config.routes.length===6,'Expected four private MCP/OAuth routes, filesystem handling and the API fallback with native Home restored');
           expect(!config.routes.some(route=>route&&route.src==='/'&&('status' in route||route.headers?.Location)),'Native Home must not be hidden behind the temporary P0 Search redirect');
           expect(config.functions?.['api/home-assembly-diagnostic.js']?.includeFiles==='public/assets/**/*.css','P0 Home assembly diagnostic must package the same governed CSS assets as public SSR during post-recovery watch');
@@ -91,6 +93,7 @@ jobs:
           expect(config.routes[5].src==='/(.*)'&&config.routes[5].dest==='/api','Unexpected dynamic fallback route');
           const deploymentEnabled=config.git?.deploymentEnabled||{};
           expect(deploymentEnabled['apg/*']===false&&deploymentEnabled['apg-*']===false,'Routine APG feature branches must not auto-deploy');
+          expect(deploymentEnabled['cost-control-*']===false,'Cost-control working branches must not auto-deploy');
           const authoritativeWorkflowFiles=['amazon-shopping-assurance-v40.yml','catalogue-freshness-qa.yml','codeql.yml','indexnow.yml','production-smoke.yml','source-qa.yml'].sort();
           const supportWorkflowFiles=['category-editorial-research-v41.yml'].sort();
           const allowed=[...authoritativeWorkflowFiles,...supportWorkflowFiles].sort();
@@ -98,7 +101,7 @@ jobs:
           expect(JSON.stringify(actual)===JSON.stringify(allowed),`Workflow allowlist mismatch: ${actual.join(', ')}`);
           const ops=fs.readFileSync('docs/APG-OPERATIONS.md','utf8');
           for(const token of ['Source-of-truth hierarchy','Affiliate relationships, retailer availability and commission contribute **zero recommendation points**','APG Release Gate','APG Production Verification','07 – QA, Releases & Production Evidence','Australian Tradie Software Matcher']) expect(ops.includes(token),`Operating control missing: ${token}`);
-          console.log('INFRASTRUCTURE_GOVERNANCE=PASS NATIVE_HOME_ROUTE=RESTORED P0_HOME_ASSEMBLY_DIAGNOSTIC=POST_RECOVERY_WATCH');
+          console.log('INFRASTRUCTURE_GOVERNANCE=PASS NATIVE_HOME_ROUTE=RESTORED VERCEL_IGNORE_BUILD=FAIL_SAFE');
           NODE
 
       - name: Upload release-control evidence

@@ -53,25 +53,32 @@ async function invoke(url,userAgent){const req={method:'GET',url,headers:{'user-
   assert(patched.includes('/assets/brand-marks/breville?v=91.0'),'Breville HTML must invalidate historical brand caches');
   assert(patched.includes('/assets/brand-marks/samsung?v=73.1'),'unrelated brand URLs must remain untouched');
 
-  // v91 remains authoritative for brand canonicalisation and protected Search/Decision exports.
-  // Audit v124 composes underneath Scout Navigator v7.1, which remains the final direct visual skin.
-  // The PageSpeed/agentic layer may wrap that completed visual response as a transport-only finaliser.
   assert(source.includes("require('./action3-search-commerce-v90')"),'v91 must preserve Action 3 v90 immediately underneath');
   assert.equal(layer.VERSION,'52.0','Search v52 protected export must survive v91');
   assert.equal(layer.DECISION_VERSION,'50.6','Decision Lab v50.6 protected export must survive v91');
   const api=read('api/index.js');
   assert(api.includes("require('../lib/audit-integration-v124-runtime')"),'v124 integration boundary must be explicit');
   assert(api.includes('const auditedHandler=auditIntegration.wrap(handler)'),'v124 must wrap the established application handler');
-  assert(api.includes('const presentationHandler=scoutNavigatorPresentation.wrap(auditedHandler)'),'Scout Navigator v7.1 must remain the final visual wrapper');
-  assert(api.includes('const finalHandler=pagespeedAgenticCertification.wrap(presentationHandler)'),'transport certification must wrap the completed visual response');
+  assert(api.includes('const presentationHandler=scoutNavigatorPresentation.wrap(auditedHandler)'),'Scout Navigator v7.1 must remain the visual presentation base');
+  assert(api.includes('const searchImageHandler=searchProductImagery.wrap(routeScopedPresentationHandler)'),'search imagery must wrap the governed route-scoped presentation handler');
+  assert(api.includes('const categoryImageHandler=categoryFeaturedImagery.wrap(searchImageHandler)'),'featured-category imagery must compose after search/result imagery');
+  assert(api.includes('const pagespeedHandler=pagespeedAgenticCertification.wrap(categoryImageHandler)'),'PageSpeed/agentic transport certification must wrap the completed governed imagery response');
+  assert(/const finalHandler=[A-Za-z0-9_]+\.wrap\([A-Za-z0-9_]+\)/.test(api),'current public runtime must retain an explicit final presentation handler');
+  assert(api.includes('module.exports=finalHandler'),'current public runtime must export the final presentation handler');
   const auditIndex=api.indexOf('const auditedHandler=auditIntegration.wrap(handler)');
   const navigatorIndex=api.indexOf('const presentationHandler=scoutNavigatorPresentation.wrap(auditedHandler)');
-  const transportIndex=api.indexOf('const finalHandler=pagespeedAgenticCertification.wrap(presentationHandler)');
+  const routeIndex=api.indexOf('function routeScopedPresentationHandler(req,res)');
+  const searchImageIndex=api.indexOf('const searchImageHandler=searchProductImagery.wrap(routeScopedPresentationHandler)');
+  const categoryImageIndex=api.indexOf('const categoryImageHandler=categoryFeaturedImagery.wrap(searchImageHandler)');
+  const pagespeedIndex=api.indexOf('const pagespeedHandler=pagespeedAgenticCertification.wrap(categoryImageHandler)');
+  const finalIndex=api.indexOf('const finalHandler=');
   assert(auditIndex>=0&&navigatorIndex>auditIndex,'Navigator must wrap after the audit integration boundary');
-  assert(transportIndex>navigatorIndex,'transport certification must occur after the final visual wrapper');
+  assert(routeIndex>navigatorIndex&&searchImageIndex>routeIndex,'governed imagery must compose after the Navigator presentation base');
+  assert(categoryImageIndex>searchImageIndex&&pagespeedIndex>categoryImageIndex,'transport certification must occur after all governed imagery composition');
+  assert(finalIndex>pagespeedIndex,'any later presentation wrappers must remain outside the transport-certified governed-imagery chain');
   const pkg=JSON.parse(read('package.json'));
   assert(pkg.scripts['qa:brand-canonical-parity']==='node scripts/brand-mark-canonical-parity-v91-qa.js','package must expose v91 QA command');
   assert(pkg.scripts['qa:deploy'].startsWith('node scripts/brand-mark-canonical-parity-v91-qa.js &&'),'v91 must be the first deploy gate');
-  assert(pkg.scripts['qa:full'].startsWith('node scripts/brand-mark-canonical-parity-v91-qa.js &&'),'v91 must be the first full-source gate');
-  console.log(`BRAND_MARK_CANONICAL_PARITY_V91=PASS targets=2 amazonDesktopMobileHash=${sha(desktop.body).slice(0,16)} breville=reviewed-vector cacheVersion=91.0 search=${layer.VERSION} decision=${layer.DECISION_VERSION} composition=v124+navigator-final+transport-certification`);
+  assert(pkg.scripts['qa:full']==='npm run qa:deploy'||pkg.scripts['qa:full'].startsWith('node scripts/brand-mark-canonical-parity-v91-qa.js &&'),'full-source gate must resolve to the canonical deploy assurance chain');
+  console.log(`BRAND_MARK_CANONICAL_PARITY_V91=PASS targets=2 amazonDesktopMobileHash=${sha(desktop.body).slice(0,16)} breville=reviewed-vector cacheVersion=91.0 search=${layer.VERSION} decision=${layer.DECISION_VERSION} composition=v124+navigator+governed-imagery+transport-certification+outer-presentation`);
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1);});
