@@ -39,40 +39,46 @@ jobs:
           if((source.split(requireNeedle).length-1)!==1)throw new Error('unexpected pagespeed import count');
           source=source.replace(requireNeedle,requireReplacement);
 
-          const oldBlock=`    const hrefs=directStylesheetHrefs(response.body);assert(hrefs.length>0);
-    assert.equal(count(response.body,'/assets/scout-navigator-v7-global.css?v=7.2'),1);
-    assert(hrefs.includes('/assets/scout-navigator-v7-global.css?v=7.2'),'Navigator stylesheet must remain directly discoverable in the rendered head');
-    assert.equal(count(response.body,'name="apg-header-navigation"'),1,'single-pass header navigation marker must be unique');
-    assert.equal(count(response.body,'name="apg-header-marketplace-desktop-supermenu"'),1);
-    assert(response.body.includes('data-apg-drawer-supermenu="v122.5"'));
-    assert.equal(count(response.body,'/assets/header-marketplace-v1226.css?v=122.6'),1);
-    assert.equal(count(response.body,'/assets/header-marketplace-v1227.css?v=122.7'),1);`;
-          const newBlock=`    const hrefs=directStylesheetHrefs(response.body);assert(hrefs.length>0);
-    const homeBundled=isHome&&response.body.includes('/assets/home-v128-bundle.css');
-    const navigatorHref='/assets/scout-navigator-v7-global.css?v=7.2';
-    if(homeBundled){
-      assert.equal(count(response.body,navigatorHref),0,'Home signed bundle must replace the direct Navigator stylesheet link');
-      assert(!hrefs.includes(navigatorHref),'Home must not retain a duplicate direct Navigator stylesheet after bundling');
-      assert(homeBundleCss.includes('APG_HOME_CSS_LINK_SIGNATURE:69378df1a5f50c8965113dbfc040eb32cc4ba692be83aa460ed7ad4ab3a8d63e'),'tracked Home bundle must match the certified stylesheet-link signature');
-      assert(homeBundleCss.includes("url('/assets/scout-navigator-v7.svg')"),'Home bundle must retain the Scout Navigator visual asset');
-      assert(homeBundleCss.includes('apgScoutNavigatorHelloV7'),'Home bundle must retain Scout Navigator presentation rules');
-    }else{
-      assert.equal(count(response.body,navigatorHref),1);
-      assert(hrefs.includes(navigatorHref),'Navigator stylesheet must remain directly discoverable on non-Home routes');
-    }
-    assert.equal(count(response.body,'name="apg-header-navigation"'),1,'single-pass header navigation marker must be unique');
-    assert.equal(count(response.body,'name="apg-header-marketplace-desktop-supermenu"'),1);
-    assert(response.body.includes('data-apg-drawer-supermenu="v122.5"'));
-    if(homeBundled){
-      assert.equal(count(response.body,'/assets/header-marketplace-v1226.css?v=122.6'),0,'Home bundle must replace direct v122.6 CSS');
-      assert.equal(count(response.body,'/assets/header-marketplace-v1227.css?v=122.7'),0,'Home bundle must replace direct v122.7 CSS');
-      assert(homeBundleCss.includes('.apg-mobile-header-search-v1226'),'Home bundle must retain v122.6 mobile search presentation');
-      assert(homeBundleCss.includes('.apg-drawer-close-v1225'),'Home bundle must retain v122.7 desktop drawer presentation');
-      assert(homeBundleCss.includes('@media(min-width:921px)'),'Home bundle must retain the v122.7 desktop breakpoint');
-    }else{
-      assert.equal(count(response.body,'/assets/header-marketplace-v1226.css?v=122.6'),1);
-      assert.equal(count(response.body,'/assets/header-marketplace-v1227.css?v=122.7'),1);
-    }`;
+          const oldLines=[
+            "    const hrefs=directStylesheetHrefs(response.body);assert(hrefs.length>0);",
+            "    assert.equal(count(response.body,'/assets/scout-navigator-v7-global.css?v=7.2'),1);",
+            "    assert(hrefs.includes('/assets/scout-navigator-v7-global.css?v=7.2'),'Navigator stylesheet must remain directly discoverable in the rendered head');",
+            "    assert.equal(count(response.body,'name=\"apg-header-navigation\"'),1,'single-pass header navigation marker must be unique');",
+            "    assert.equal(count(response.body,'name=\"apg-header-marketplace-desktop-supermenu\"'),1);",
+            "    assert(response.body.includes('data-apg-drawer-supermenu=\"v122.5\"'));",
+            "    assert.equal(count(response.body,'/assets/header-marketplace-v1226.css?v=122.6'),1);",
+            "    assert.equal(count(response.body,'/assets/header-marketplace-v1227.css?v=122.7'),1);"
+          ];
+          const newLines=[
+            "    const hrefs=directStylesheetHrefs(response.body);assert(hrefs.length>0);",
+            "    const homeBundled=isHome&&response.body.includes('/assets/home-v128-bundle.css');",
+            "    const navigatorHref='/assets/scout-navigator-v7-global.css?v=7.2';",
+            "    if(homeBundled){",
+            "      assert.equal(count(response.body,navigatorHref),0,'Home signed bundle must replace the direct Navigator stylesheet link');",
+            "      assert(!hrefs.includes(navigatorHref),'Home must not retain a duplicate direct Navigator stylesheet after bundling');",
+            "      assert(homeBundleCss.includes('APG_HOME_CSS_LINK_SIGNATURE:69378df1a5f50c8965113dbfc040eb32cc4ba692be83aa460ed7ad4ab3a8d63e'),'tracked Home bundle must match the certified stylesheet-link signature');",
+            "      assert(homeBundleCss.includes(\"url('/assets/scout-navigator-v7.svg')\"),'Home bundle must retain the Scout Navigator visual asset');",
+            "      assert(homeBundleCss.includes('apgScoutNavigatorHelloV7'),'Home bundle must retain Scout Navigator presentation rules');",
+            "    }else{",
+            "      assert.equal(count(response.body,navigatorHref),1);",
+            "      assert(hrefs.includes(navigatorHref),'Navigator stylesheet must remain directly discoverable on non-Home routes');",
+            "    }",
+            "    assert.equal(count(response.body,'name=\"apg-header-navigation\"'),1,'single-pass header navigation marker must be unique');",
+            "    assert.equal(count(response.body,'name=\"apg-header-marketplace-desktop-supermenu\"'),1);",
+            "    assert(response.body.includes('data-apg-drawer-supermenu=\"v122.5\"'));",
+            "    if(homeBundled){",
+            "      assert.equal(count(response.body,'/assets/header-marketplace-v1226.css?v=122.6'),0,'Home bundle must replace direct v122.6 CSS');",
+            "      assert.equal(count(response.body,'/assets/header-marketplace-v1227.css?v=122.7'),0,'Home bundle must replace direct v122.7 CSS');",
+            "      assert(homeBundleCss.includes('.apg-mobile-header-search-v1226'),'Home bundle must retain v122.6 mobile search presentation');",
+            "      assert(homeBundleCss.includes('.apg-drawer-close-v1225'),'Home bundle must retain v122.7 desktop drawer presentation');",
+            "      assert(homeBundleCss.includes('@media(min-width:921px)'),'Home bundle must retain the v122.7 desktop breakpoint');",
+            "    }else{",
+            "      assert.equal(count(response.body,'/assets/header-marketplace-v1226.css?v=122.6'),1);",
+            "      assert.equal(count(response.body,'/assets/header-marketplace-v1227.css?v=122.7'),1);",
+            "    }"
+          ];
+          const oldBlock=oldLines.join('\n');
+          const newBlock=newLines.join('\n');
           if((source.split(oldBlock).length-1)!==1)throw new Error('unexpected Scout direct-stylesheet assertion block');
           source=source.replace(oldBlock,newBlock);
           fs.writeFileSync(file,source);
