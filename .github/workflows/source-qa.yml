@@ -32,6 +32,7 @@ jobs:
           node scripts/ebay-official-creatives-v121-qa.js
           npm run qa:full
           node scripts/production-verification-closure-v129-qa.js
+          node scripts/home-function-stability-v1291-qa.js
           node scripts/pagespeed-agentic-certification-v113-qa.js
           node scripts/p0-home-bisect-v2-qa.js
           node scripts/p0-home-assembly-bisect-v3-qa.js
