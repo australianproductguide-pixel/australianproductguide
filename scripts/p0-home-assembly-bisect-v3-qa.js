@@ -11,14 +11,20 @@ const apiSource=fs.readFileSync(path.join(root,'api','index.js'),'utf8');
 const diagnosticSource=fs.readFileSync(path.join(root,'api','home-assembly-diagnostic.js'),'utf8');
 const config=JSON.parse(fs.readFileSync(path.join(root,'vercel.json'),'utf8'));
 
-const EXPECTED=['runtime','transport','premium','journey','stable','mobile','whole','audit','presentation','final'];
+// These are the already-built diagnostic boundaries retained beneath the later desktop and
+// v128 delivery wrappers. The diagnostic is deliberately not a second production entry point.
+const EXPECTED=['runtime','transport','premium','journey','stable','mobile','whole','audit','presentation','searchImages','categoryImages','pagespeed','reviewProfiles','final'];
 assert.equal(typeof app,'function');
-assert(apiSource.includes('module.exports=finalHandler;'),'governed public export must remain finalHandler');
+assert(apiSource.includes('const googleDiscoverabilityPerformanceHandler=googleDiscoverabilityPerformance.wrap(desktopAboutTrustContrastHandler);'),'public export must retain the narrow v128 final delivery wrapper');
+assert(apiSource.trim().endsWith('module.exports=googleDiscoverabilityPerformanceHandler;'),'governed public export must remain the completed v128-wrapped handler');
+assert.equal(app.GOOGLE_DISCOVERABILITY_PERFORMANCE_VERSION,'128.2','public export must expose the current v128 delivery generation');
 assert.deepEqual(Array.from(app.APG_P0_HOME_ASSEMBLY_STAGE_NAMES||[]),EXPECTED,'assembly stage order must be explicit');
-assert.deepEqual(Object.keys(app.APG_P0_HOME_ASSEMBLY_HANDLERS||{}),EXPECTED,'only intended assembly boundaries may be exposed');
+assert.deepEqual(Object.keys(app.APG_P0_HOME_ASSEMBLY_HANDLERS||{}),EXPECTED,'only intended diagnostic assembly boundaries may be exposed');
 for(const stage of EXPECTED)assert.equal(typeof app.APG_P0_HOME_ASSEMBLY_HANDLERS[stage],'function',`${stage}: stage must be a function`);
-assert.equal(app.APG_P0_HOME_ASSEMBLY_HANDLERS.final,app,'final checkpoint must be the governed public handler');
+assert.notEqual(app.APG_P0_HOME_ASSEMBLY_HANDLERS.final,app,'diagnostic final checkpoint must remain below desktop and v128 public delivery wrappers');
 assert.notEqual(app.APG_P0_HOME_ASSEMBLY_HANDLERS.runtime,app,'runtime checkpoint must remain below outer assembly');
+assert.equal(app.APG_P0_HOME_ASSEMBLY_HANDLERS.final.BRAND_LOGO_STABILITY_VERSION,'125.0','diagnostic final checkpoint must retain governed brand stability');
+assert.equal(app.APG_P0_HOME_ASSEMBLY_HANDLERS.pagespeed.PAGESPEED_AGENTIC_CERTIFICATION_VERSION,'113.5','diagnostic PageSpeed checkpoint must retain P0-safe transport certification');
 assert.equal(diagnostic.VERSION,'3.0');
 assert.equal(diagnostic.NATIVE_HOME_URL,'/?__apg_home_diag=1');
 
@@ -57,5 +63,5 @@ function invokeUnknown(){
   assert.equal(unknown.body,'Not found','unknown stages must not disclose valid stage names');
   assert.match(String(unknown.headers['cache-control']||''),/no-store/);
   assert.match(String(unknown.headers['x-robots-tag']||''),/noindex/);
-  console.log(`P0_HOME_ASSEMBLY_BISECT_V3=PASS stages=${EXPECTED.length} publicExport=finalHandler publicHome=native-restored diagnostic=post-recovery-watch publicEbayNetwork=0 commercialWeight=unchanged`);
+  console.log(`P0_HOME_ASSEMBLY_BISECT_V3=PASS stages=${EXPECTED.length} publicExport=v128.2 diagnosticFinal=brand-stability-v125 publicHome=native-restored diagnostic=post-recovery-watch publicEbayNetwork=0 commercialWeight=unchanged`);
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
