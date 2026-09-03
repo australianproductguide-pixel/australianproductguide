@@ -8,10 +8,12 @@ const {execFileSync}=require('node:child_process');
 
 const root=path.resolve(__dirname,'..');
 const homeBundle=path.join(root,'public','assets','home-v128-bundle.css');
-// The exact PR runtime mirrors Vercel's build output. Generate the static Home bundle before the
-// application is imported, unless this process is itself the unbundled source runtime used by the
-// build script. The build remains outside every public response and fails closed on any error.
-if(process.env.APG_HOME_CSS_BUILD!=='1'&&!fs.existsSync(homeBundle)){
+const homeBundleSidecars=[homeBundle,homeBundle+'.br',homeBundle+'.gz'];
+// The exact PR runtime mirrors Vercel's build output. Generate the static Home bundle and its
+// deterministic precompressed sidecars before the application is imported, unless this process
+// is itself the unbundled source runtime used by the build script. The build remains outside every
+// public response and fails closed on any error.
+if(process.env.APG_HOME_CSS_BUILD!=='1'&&homeBundleSidecars.some(filename=>!fs.existsSync(filename))){
   execFileSync(process.execPath,[path.join(root,'scripts','build-home-css-v128.js')],{
     cwd:root,
     env:{...process.env,APG_HOME_CSS_BUILD:'1'},
@@ -89,6 +91,15 @@ function acceptedCompression(req,type){
   return null;
 }
 const staticCompression=acceptedCompression;
+function precompressedStaticFile(filename,encoding){
+  const suffix=encoding==='br'?'.br':encoding==='gzip'?'.gz':'';
+  if(!suffix)return null;
+  const candidate=filename+suffix;
+  try{
+    const stat=fs.statSync(candidate);
+    return stat.isFile()?candidate:null;
+  }catch{return null;}
+}
 function staticStream(filename,encoding){
   const input=fs.createReadStream(filename);
   if(encoding==='br')return input.pipe(zlib.createBrotliCompress({params:{[zlib.constants.BROTLI_PARAM_QUALITY]:6}}));
@@ -160,6 +171,10 @@ function dynamicCompression(req,res){
 
 function serveStatic(req,res,filename){
   const type=mime[path.extname(filename).toLowerCase()]||'application/octet-stream';
+  const encoding=acceptedCompression(req,type);
+  const sidecar=precompressedStaticFile(filename,encoding);
+  const representation=sidecar||filename;
+  const representationBytes=fs.statSync(representation).size;
   res.statusCode=200;
   res.setHeader('Content-Type',type);
   // Mirror the Vercel edge rule used by the exact candidate: only an asset request carrying
@@ -169,16 +184,25 @@ function serveStatic(req,res,filename){
     ?'public, max-age=31536000, immutable'
     :'public, max-age=0, must-revalidate');
   res.setHeader('X-Content-Type-Options','nosniff');
-  const encoding=acceptedCompression(req,type);
   if(encoding){
     res.setHeader('Content-Encoding',encoding);
-    res.setHeader('Vary','Accept-Encoding');
+    res.setHeader('Vary',mergeVary(res.getHeader&&res.getHeader('Vary'),'Accept-Encoding'));
+  }
+  if(sidecar){
+    res.setHeader('Content-Length',String(representationBytes));
+    res.setHeader('X-APG-PR-Static-Compression','precompressed-'+encoding);
+  }else if(!encoding){
+    res.setHeader('Content-Length',String(representationBytes));
   }
   if(req.method==='HEAD')return res.end();
-  const stream=staticStream(filename,encoding);
+
+  // Precompressed sidecars exist only for the generated Home bundle in this exact CI harness.
+  // Serving them directly mirrors CDN delivery and avoids spending the critical rendering path
+  // recompressing a static 500+ KiB stylesheet. Vercel still owns public Production compression.
+  const stream=sidecar?fs.createReadStream(sidecar):staticStream(filename,encoding);
   return stream
     .on('error',error=>{
-      console.error('APG_PR_STATIC_ERROR',filename,error&&error.stack||error);
+      console.error('APG_PR_STATIC_ERROR',representation,error&&error.stack||error);
       if(!res.headersSent)res.statusCode=500;
       if(!res.writableEnded)res.end('Static asset error');
     })
@@ -262,5 +286,6 @@ process.on('SIGINT',()=>shutdown('SIGINT'));
 
 module.exports={
   DYNAMIC_COMPRESSION_MIN_BYTES,requestPath,explicitlyVersionedAsset,staticFileFor,compressible,
-  acceptedCompression,staticCompression,staticStream,mergeVary,toBuffer,dynamicCompression,serveStatic
+  acceptedCompression,staticCompression,precompressedStaticFile,staticStream,mergeVary,toBuffer,
+  dynamicCompression,serveStatic
 };
