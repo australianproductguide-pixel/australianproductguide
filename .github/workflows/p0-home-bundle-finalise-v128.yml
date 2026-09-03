@@ -1,0 +1,156 @@
+name: APG P0 Home bundle final validation v128
+
+on:
+  push:
+    branches:
+      - release/p0-home-bundle-source-v1282
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apg-p0-home-bundle-finalise-v128
+  cancel-in-progress: false
+
+jobs:
+  validate-and-commit:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: release/p0-home-bundle-source-v1282
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Align Scout Navigator QA with signed Home bundle delivery
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const file='scripts/scout-navigator-v7-global-qa.js';
+          let source=fs.readFileSync(file,'utf8');
+          const requireNeedle="const pagespeed=require('../lib/pagespeed-agentic-certification-v113-runtime');";
+          const requireReplacement=requireNeedle+"\nconst HOME_BUNDLE_PATH=path.join(__dirname,'..','public','assets','home-v128-bundle.css');\nconst homeBundleCss=fs.existsSync(HOME_BUNDLE_PATH)?fs.readFileSync(HOME_BUNDLE_PATH,'utf8'):'';";
+          if((source.split(requireNeedle).length-1)!==1)throw new Error('unexpected pagespeed import count');
+          source=source.replace(requireNeedle,requireReplacement);
+
+          const oldLines=[
+            "    const hrefs=directStylesheetHrefs(response.body);assert(hrefs.length>0);",
+            "    assert.equal(count(response.body,'/assets/scout-navigator-v7-global.css?v=7.2'),1);",
+            "    assert(hrefs.includes('/assets/scout-navigator-v7-global.css?v=7.2'),'Navigator stylesheet must remain directly discoverable in the rendered head');",
+            "    assert.equal(count(response.body,'name=\"apg-header-navigation\"'),1,'single-pass header navigation marker must be unique');",
+            "    assert.equal(count(response.body,'name=\"apg-header-marketplace-desktop-supermenu\"'),1);",
+            "    assert(response.body.includes('data-apg-drawer-supermenu=\"v122.5\"'));",
+            "    assert.equal(count(response.body,'/assets/header-marketplace-v1226.css?v=122.6'),1);",
+            "    assert.equal(count(response.body,'/assets/header-marketplace-v1227.css?v=122.7'),1);"
+          ];
+          const newLines=[
+            "    const hrefs=directStylesheetHrefs(response.body);assert(hrefs.length>0);",
+            "    const homeBundled=isHome&&response.body.includes('/assets/home-v128-bundle.css');",
+            "    const navigatorHref='/assets/scout-navigator-v7-global.css?v=7.2';",
+            "    if(homeBundled){",
+            "      assert.equal(count(response.body,navigatorHref),0,'Home signed bundle must replace the direct Navigator stylesheet link');",
+            "      assert(!hrefs.includes(navigatorHref),'Home must not retain a duplicate direct Navigator stylesheet after bundling');",
+            "      assert(homeBundleCss.includes('APG_HOME_CSS_LINK_SIGNATURE:69378df1a5f50c8965113dbfc040eb32cc4ba692be83aa460ed7ad4ab3a8d63e'),'tracked Home bundle must match the certified stylesheet-link signature');",
+            "      assert(homeBundleCss.includes(\"url('/assets/scout-navigator-v7.svg')\"),'Home bundle must retain the Scout Navigator visual asset');",
+            "      assert(homeBundleCss.includes('apgScoutNavigatorHelloV7'),'Home bundle must retain Scout Navigator presentation rules');",
+            "    }else{",
+            "      assert.equal(count(response.body,navigatorHref),1);",
+            "      assert(hrefs.includes(navigatorHref),'Navigator stylesheet must remain directly discoverable on non-Home routes');",
+            "    }",
+            "    assert.equal(count(response.body,'name=\"apg-header-navigation\"'),1,'single-pass header navigation marker must be unique');",
+            "    assert.equal(count(response.body,'name=\"apg-header-marketplace-desktop-supermenu\"'),1);",
+            "    assert(response.body.includes('data-apg-drawer-supermenu=\"v122.5\"'));",
+            "    if(homeBundled){",
+            "      assert.equal(count(response.body,'/assets/header-marketplace-v1226.css?v=122.6'),0,'Home bundle must replace direct v122.6 CSS');",
+            "      assert.equal(count(response.body,'/assets/header-marketplace-v1227.css?v=122.7'),0,'Home bundle must replace direct v122.7 CSS');",
+            "      assert(homeBundleCss.includes('.apg-mobile-header-search-v1226'),'Home bundle must retain v122.6 mobile search presentation');",
+            "      assert(homeBundleCss.includes('.apg-drawer-close-v1225'),'Home bundle must retain v122.7 desktop drawer presentation');",
+            "      assert(homeBundleCss.includes('@media(min-width:921px)'),'Home bundle must retain the v122.7 desktop breakpoint');",
+            "    }else{",
+            "      assert.equal(count(response.body,'/assets/header-marketplace-v1226.css?v=122.6'),1);",
+            "      assert.equal(count(response.body,'/assets/header-marketplace-v1227.css?v=122.7'),1);",
+            "    }"
+          ];
+          const oldBlock=oldLines.join('\n');
+          const newBlock=newLines.join('\n');
+          if((source.split(oldBlock).length-1)!==1)throw new Error('unexpected Scout direct-stylesheet assertion block');
+          source=source.replace(oldBlock,newBlock);
+          fs.writeFileSync(file,source);
+          NODE
+          node --check scripts/scout-navigator-v7-global-qa.js
+          rm .github/workflows/p0-home-bundle-finalise-v128.yml
+
+      - name: Run complete APG Release Gate before committing
+        run: |
+          set -euo pipefail
+          for f in api/*.js data/*.js lib/*.js scripts/*.js; do node --check "$f"; done
+          node scripts/favicon-parity-v115-qa.js
+          node scripts/ebay-official-creatives-v121-qa.js
+          npm run qa:full
+          node scripts/pagespeed-agentic-certification-v113-qa.js
+          node scripts/p0-home-bisect-v2-qa.js
+          node scripts/p0-home-assembly-bisect-v3-qa.js
+          node scripts/premium-mobile-decision-commerce-v112-qa.js
+          node scripts/production-premium-mobile-v112-contract-qa.js
+          node scripts/customer-journey-v114-qa.js
+          node scripts/premium-mobile-decision-commerce-v112-depth-audit.js
+          node scripts/scout-global-surface-v111-qa.js
+          node scripts/runtime-chain-qa.js \
+            vercel-analytics-v38 \
+            pagespeed-certification-v30 \
+            interaction-reliability-v37 \
+            brand-conformity-v352 \
+            brand-conformity-v351 \
+            brand-conformity-v35 \
+            brand-fidelity-v325 \
+            brand-fidelity-v32
+
+          node scripts/account-profile-v24-qa.js
+          node scripts/account-journey-v241-qa.js
+          node scripts/account-governance-v25-qa.js
+          node scripts/auth-hardening-v23-qa.js
+          node scripts/auth-password-policy-v361-qa.js
+          node scripts/search-model-relevance-v36-qa.js
+          node scripts/catalogue-source-authority-qa.js
+          node scripts/brand-entity-reconciliation.js
+          node scripts/amazon-asin-inventory-v33.js
+          node scripts/amazon-associates-qa.js
+          node scripts/amazon-conversion-v29-qa.js
+          node scripts/evidence-commerce-depth-v27-qa.js
+          node scripts/product-image-qa.js
+          node scripts/editorial-compliance-qa.js
+          node scripts/trust-infrastructure-v28-qa.js
+
+          node - <<'NODE'
+          const fs=require('fs');
+          const config=JSON.parse(fs.readFileSync('vercel.json','utf8'));
+          const expect=(ok,msg)=>{if(!ok)throw new Error(msg)};
+          expect(config.$schema==='https://openapi.vercel.sh/vercel.json','Vercel schema declaration missing');
+          expect(JSON.stringify(config.regions)===JSON.stringify(['syd1']),`Expected Sydney function region, got ${JSON.stringify(config.regions)}`);
+          expect(Array.isArray(config.routes)&&config.routes.length===6,'Expected protected routes, filesystem handling and API fallback');
+          expect(!config.routes.some(route=>route&&route.src==='/'&&('status' in route||route.headers?.Location)),'Native Home must remain restored');
+          expect(config.functions?.['api/home-assembly-diagnostic.js']?.includeFiles==='public/assets/**/*.css','Home diagnostic must package governed CSS assets');
+          const allowed=['amazon-shopping-assurance-v40.yml','catalogue-freshness-qa.yml','category-editorial-research-v41.yml','codeql.yml','indexnow.yml','production-smoke.yml','source-qa.yml'].sort();
+          const actual=fs.readdirSync('.github/workflows').filter(x=>/\.ya?ml$/.test(x)).sort();
+          expect(JSON.stringify(actual)===JSON.stringify(allowed),`Workflow allowlist mismatch: ${actual.join(', ')}`);
+          console.log('P0_HOME_BUNDLE_FINAL_SOURCE_GATE=PASS');
+          NODE
+
+      - name: Commit only the validated QA alignment and remove this temporary workflow
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add scripts/scout-navigator-v7-global-qa.js
+          git add -u .github/workflows/p0-home-bundle-finalise-v128.yml
+          changed=$(git diff --cached --name-only | sort)
+          expected=$(printf '%s\n%s' '.github/workflows/p0-home-bundle-finalise-v128.yml' 'scripts/scout-navigator-v7-global-qa.js')
+          test "$changed" = "$expected"
+          git commit -m 'Recognise signed Home CSS consolidation in Scout Navigator QA'
+          git push origin HEAD:release/p0-home-bundle-source-v1282
