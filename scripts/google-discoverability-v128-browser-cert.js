@@ -29,7 +29,7 @@ const viewports=[
   {label:'mobile',width:390,height:844,isMobile:true,hasTouch:true}
 ];
 const routes=[
-  {name:'home',path:'/',productLinks:1,search:true,scout:true,screenshot:true},
+  {name:'home',path:'/',discoveryLinks:4,search:true,scout:true,screenshot:true},
   {name:'search',path:'/search/?q=breville',productLinks:1,screenshot:true},
   {name:'category',path:'/categories/coffee-machines/',productLinks:3},
   {name:'product',path:'/products/breville-barista-express-impress-bes876/',productJsonLd:true,scout:true,screenshot:true},
@@ -154,6 +154,7 @@ async function inspectRoute(page,route,viewport,response){
     const canonical=document.querySelector('link[rel="canonical"]')?.href||'';
     const ld=[...document.querySelectorAll('script[type="application/ld+json"]')].map(node=>node.textContent||'').join('\n');
     const productLinks=[...new Set([...document.querySelectorAll('a[href^="/products/"]')].map(link=>link.getAttribute('href')).filter(Boolean))];
+    const discoveryLinks=[...new Set([...document.querySelectorAll('main a[href^="/products/"],main a[href^="/categories/"],main a[href^="/guides/"],main a[href^="/compare/"],main a[href^="/decision-lab/"]')].map(link=>link.getAttribute('href')).filter(Boolean))];
     const searchInputs=[...document.querySelectorAll('input[type="search"],form[role="search"] input,.header-search input,[data-apg-mobile-search-v1226] input')];
     const decisionControls=[...document.querySelectorAll('main form input,main form select,main form textarea,main form button')].filter(visible);
     const shoppingCards=[...document.querySelectorAll('.apg-shopping-card')].filter(visible);
@@ -167,6 +168,7 @@ async function inspectRoute(page,route,viewport,response){
       mainId:document.querySelector('main')?.id||'',
       skipLink:Boolean(document.querySelector('a[href="#main"]')),
       productLinks,
+      discoveryLinks,
       productJsonLd:/"@type"\s*:\s*"Product"/.test(ld),
       searchVisible:searchInputs.some(visible),
       decisionControlCount:decisionControls.length,
@@ -199,6 +201,7 @@ async function inspectRoute(page,route,viewport,response){
   assert(state.mobileWordmarkMedia==='(max-width:920px)',`${viewport.label}/${route.name}: mobile wordmark media hint missing`);
   assert(state.mobileMenuMedia==='(max-width:920px)',`${viewport.label}/${route.name}: mobile menu media hint missing`);
   if(route.productLinks)assert(state.productLinks.length>=route.productLinks,`${viewport.label}/${route.name}: expected at least ${route.productLinks} product links, found ${state.productLinks.length}`);
+  if(route.discoveryLinks)assert(state.discoveryLinks.length>=route.discoveryLinks,`${viewport.label}/${route.name}: expected at least ${route.discoveryLinks} crawlable decision links, found ${state.discoveryLinks.length}`);
   if(route.search)assert(state.searchVisible,`${viewport.label}/${route.name}: visible search surface missing`);
   if(route.productJsonLd)assert(state.productJsonLd,`${viewport.label}/${route.name}: Product JSON-LD missing`);
   if(route.decisionControls)assert(state.decisionControlCount>=3,`${viewport.label}/${route.name}: Decision Lab controls missing`);
