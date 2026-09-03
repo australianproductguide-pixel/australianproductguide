@@ -126,11 +126,14 @@ assert(/Observed search demand/.test(growth.expansionGate.rule),'Expansion must 
 const untouched=pages.categoryPage(req,categories['air-fryers'],url('/categories/air-fryers/'));
 assert.strictEqual(depth.transformHtml(untouched,'/categories/air-fryers/'),untouched,'Non-target category must remain unchanged');
 
+// The maintained public entry point is governed by v106. v106 delegates directly to
+// v104, and v104 delegates directly to the v103.6 hard-constraint correction.
 const apiEntry=fs.readFileSync(require.resolve('../api/index'),'utf8');
+const v106Source=fs.readFileSync(require.resolve('../lib/action5-catalogue-certification-v106-runtime'),'utf8');
 const runtimeSource=fs.readFileSync(require.resolve('../lib/search-opportunity-depth-v104-runtime'),'utf8');
-has(apiEntry,"module.exports=require('../lib/search-opportunity-depth-v104-runtime')",'API entry is not wired to v104 outer runtime');
-has(apiEntry,"module.exports=require('../lib/decision-hard-constraint-fallback-v1036')",'API lineage must retain v103.6 beneath v104');
-has(runtimeSource,"require('./decision-hard-constraint-fallback-v1036')",'v104 runtime must directly delegate to v103.6');
+has(apiEntry,"const runtime=require('../lib/action5-catalogue-certification-v106-runtime')",'API entry must retain the governed v106 runtime');
+has(v106Source,"const downstream=require('./search-opportunity-depth-v104-runtime')",'v106 must directly retain v104 beneath its catalogue certification controls');
+has(runtimeSource,"const downstream=require('./decision-hard-constraint-fallback-v1036')",'v104 runtime must directly delegate to v103.6');
 
 (async()=>{
   let certifiedRuntimeRoutes=0;
