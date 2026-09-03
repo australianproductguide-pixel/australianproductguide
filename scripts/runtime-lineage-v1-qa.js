@@ -56,8 +56,7 @@ const expectedModules={
   searchProductImagery:'../lib/search-product-imagery-v1-runtime',
   categoryFeaturedImagery:'../lib/category-featured-product-imagery-v1-runtime',
   brandLogoStability:'../lib/brand-logo-stability-v125-runtime',
-  desktopHomeHeader:'../lib/desktop-home-header-v126-runtime',
-  desktopAboutTrustContrast:'../lib/desktop-about-trust-contrast-v127-runtime',
+  finalPresentationStability:'../lib/final-presentation-stability-v131-runtime',
   googleDiscoverabilityPerformance:'../lib/google-discoverability-performance-v128-runtime'
 };
 for(const [variable,expected] of Object.entries(expectedModules)){
@@ -85,9 +84,8 @@ assertOrdered([
   'trustpilotFooter.install(wholeSiteExperience);'
 ]);
 
-// Validate the current direct runtime chain rather than the superseded compatibility-comment
-// model. The sequence is deliberately explicit so new wrappers cannot silently jump across the
-// governed recommendation, audit, visual, safety or final-delivery boundaries.
+// Validate the current direct runtime chain. The final two desktop transforms retain their
+// established visual modules, but their active response boundary is the streaming-safe v131 layer.
 assertOrdered([
   'const transportHandler=decisionTransportParity.wrap(runtime)',
   'const premiumHandler=premiumExperience.wrap(transportHandler)',
@@ -102,15 +100,19 @@ assertOrdered([
   'const pagespeedHandler=pagespeedAgenticCertification.wrap(categoryImageHandler)',
   'const reviewProfileHandler=reviewProfiles.wrap(pagespeedHandler)',
   'const finalHandler=brandLogoStability.wrap(reviewProfileHandler)',
-  'const desktopHomeHeaderHandler=desktopHomeHeader.wrap(finalHandler)',
-  'const desktopAboutTrustContrastHandler=desktopAboutTrustContrast.wrap(desktopHomeHeaderHandler)',
+  'const desktopHomeHeaderHandler=finalPresentationStability.wrapDesktopHome(finalHandler)',
+  'const desktopAboutTrustContrastHandler=finalPresentationStability.wrapDesktopTrust(desktopHomeHeaderHandler)',
   'const googleDiscoverabilityPerformanceHandler=googleDiscoverabilityPerformance.wrap(desktopAboutTrustContrastHandler)',
   'module.exports=googleDiscoverabilityPerformanceHandler'
 ]);
 
 for(const marker of [
-  'APG_P0_HOME_ASSEMBLY_HANDLERS=p0HomeAssemblyHandlers',
-  'APG_P0_HOME_ASSEMBLY_STAGE_NAMES=finalHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES',
+  'desktopHome:desktopHomeHeaderHandler',
+  'desktopTrust:desktopAboutTrustContrastHandler',
+  'googleDelivery:googleDiscoverabilityPerformanceHandler',
+  'stageHandler.APG_P0_HOME_ASSEMBLY_HANDLERS=p0HomeAssemblyHandlers',
+  'stageHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES=Object.freeze(Object.keys(p0HomeAssemblyHandlers))',
+  'FINAL_PRESENTATION_STABILITY_VERSION=finalPresentationStability.VERSION',
   'GOOGLE_DISCOVERABILITY_PERFORMANCE_VERSION=googleDiscoverabilityPerformance.VERSION'
 ])assert(api.includes(marker),`missing propagated runtime contract ${marker}`);
 
@@ -134,8 +136,27 @@ for(const relative of [
   'lib/review-profiles-v118-runtime.js',
   'lib/brand-logo-stability-v125-runtime.js',
   'lib/desktop-home-header-v126-runtime.js',
-  'lib/desktop-about-trust-contrast-v127-runtime.js'
+  'lib/desktop-about-trust-contrast-v127-runtime.js',
+  'lib/final-presentation-stability-v131-runtime.js'
 ])assertPresentationOnly(relative);
+
+const finalPresentationSource=read('lib/final-presentation-stability-v131-runtime.js');
+for(const required of [
+  "const VERSION='131.0'",
+  "const HEADER_NAME='X-APG-Final-Presentation-Stability'",
+  "const FALLBACK_HEADER='X-APG-Final-Presentation-Fallback'",
+  "safeSetHeader(res,headerName,'v'+headerVersion)",
+  "const headersMutable=res.headersSent!==true",
+  "safeRemoveHeader(res,'Content-Length')",
+  "safeSetHeader(res,FALLBACK_HEADER,'v'+VERSION)",
+  'wrapDesktopHome','wrapDesktopTrust'
+])assert(finalPresentationSource.includes(required),`v131 final presentation contract missing ${required}`);
+for(const prohibited of [
+  'desktopHomeHeader.wrap(','desktopAboutTrustContrast.wrap(',
+  'localStorage.setItem(','sessionStorage.setItem('
+])assert(!finalPresentationSource.includes(prohibited),`v131 final presentation must not contain ${prohibited}`);
+assert(!api.includes('desktopHomeHeader.wrap(finalHandler)'),'unsafe desktop Home response wrapper must be detached');
+assert(!api.includes('desktopAboutTrustContrast.wrap(desktopHomeHeaderHandler)'),'unsafe desktop trust response wrapper must be detached');
 
 const googleSource=assertPresentationOnly('lib/google-discoverability-performance-v128-runtime.js',['localStorage.setItem(','sessionStorage.setItem(']);
 for(const required of [
@@ -168,7 +189,8 @@ assert(!premiumStability.clientJs.includes(premiumStability.UNSAFE));
 
 const sourceGate=read('.github/workflows/source-qa.yml');
 assert(sourceGate.includes('npm run qa:full'),'source workflow must call the full source gate');
-assert(sourceGate.includes('node scripts/home-function-stability-v1291-qa.js'),'source workflow must run the final Home availability regression');
+assert(sourceGate.includes('node scripts/home-function-stability-v1291-qa.js'),'source workflow must run the Home availability regression');
+assert(sourceGate.includes('node scripts/final-presentation-streaming-v131-qa.js'),'source workflow must run the final streaming response regression');
 assert(sourceGate.includes('node scripts/premium-mobile-decision-commerce-v112-qa.js'));
 const deploy=String(pkg.scripts&&pkg.scripts['qa:deploy']||'');
 assert(deploy.startsWith('node scripts/brand-mark-canonical-parity-v91-qa.js'));
@@ -196,11 +218,12 @@ console.log(JSON.stringify({
   recursiveRuntimeCssCaptureDisabled:true,
   googleV128FinalDeliveryOnly:true,
   homeDeliveryStability:'v130.1',
-  runtimeCssFileReads:0,
-  publicFunctionCssTreePackaging:false,
+  finalPresentationStability:'v131.0',
+  finalDiagnosticStages:['desktopHome','desktopTrust','googleDelivery'],
+  unsafeDesktopResponseWrappersDetached:true,
   postCommitMutationBlocked:true,
   presentationFallbackFailClosed:true,
   fullSourceGateRestored:true,
   prohibitedFrameworksAbsent:true,
-  policy:'v106 remains the governed recommendation runtime; audit and decision state remain explicit; visual and route-scoped imagery layers remain presentation-only; PageSpeed v113 safety remains fail-closed; v128.2/v130.1 is the final narrow canonicalisation, static-manifest, cache, viewport-delivery and fail-safe availability layer.'
+  policy:'v106 remains the governed recommendation runtime; audit and decision state remain explicit; visual and route-scoped imagery layers remain presentation-only; PageSpeed v113 safety remains fail-closed; v131.0 preserves the v126/v127 visual assets through pre-commit, streaming-safe final presentation before v128.2/v130.1 delivery.'
 },null,2));
