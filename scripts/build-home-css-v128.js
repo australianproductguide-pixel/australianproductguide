@@ -1,6 +1,6 @@
 'use strict';
 
-// Build-time homepage CSS consolidation for APG v128.3.
+// Build-time homepage CSS consolidation for APG v128.2.
 //
 // This script runs outside the public request path. It starts the exact source runtime with the
 // bundle disabled, renders Home once, retrieves each applied first-party stylesheet in final
@@ -35,6 +35,7 @@ function internalCss(href){
 function stylesheetLinks(html){
   const head=(String(html||'').match(/<head\b[^>]*>([\s\S]*?)<\/head>/i)||[])[1]||'';
   const active=head.replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi,'');
+  if(/<style\b/i.test(active))throw new Error('Home contains an inline style block; exact cascade consolidation requires explicit review');
   const links=[];
   for(const match of active.matchAll(/<link\b[^>]*>/gi)){
     const tag=match[0];
@@ -102,7 +103,8 @@ async function build(){
 
     const chunks=[];
     for(const row of links)chunks.push(await fetchCss(row));
-    const banner='/* Australian Product Guide — deterministic build-time Home CSS bundle v128.3. Source order and media semantics preserved. */\n';
+    const signature=crypto.createHash('sha256').update(JSON.stringify(links)).digest('hex');
+    const banner=`/* Australian Product Guide — deterministic build-time Home CSS bundle v128.2. Source order and media semantics preserved. */\n/* APG_HOME_CSS_LINK_SIGNATURE:${signature} */\n`;
     const body=banner+chunks.join('\n\n')+'\n';
     if(Buffer.byteLength(body)<MIN_BYTES)throw new Error(`bundle unexpectedly small: ${Buffer.byteLength(body)} bytes`);
     for(const token of ['.site-header','.apg-home-hero-v9','.apg-ebay-official-v121-card','#apgAssistantLauncher']){
@@ -112,7 +114,7 @@ async function build(){
     fs.writeFileSync(temporary,body,'utf8');
     fs.renameSync(temporary,OUTPUT);
     const hash=crypto.createHash('sha256').update(body).digest('hex');
-    console.log(`APG_HOME_CSS_BUNDLE_V128=PASS styles=${links.length} bytes=${Buffer.byteLength(body)} sha256=${hash}`);
+    console.log(`APG_HOME_CSS_BUNDLE_V128=PASS styles=${links.length} bytes=${Buffer.byteLength(body)} linkSignature=${signature} sha256=${hash}`);
   }finally{
     if(child.exitCode==null)child.kill('SIGTERM');
   }
