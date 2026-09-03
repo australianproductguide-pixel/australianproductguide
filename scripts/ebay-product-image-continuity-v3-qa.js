@@ -32,6 +32,14 @@ const source=pilot.forSlug(slug);
 assert(product&&source,'pilot product and source row must exist');
 const observed=Date.parse(source.observedAt);
 
+function cspDirectiveSources(value,directive){
+  const wanted=String(directive||'').trim().toLowerCase();
+  for(const row of String(value||'').split(';')){
+    const tokens=row.trim().split(/\s+/).filter(Boolean);
+    if(tokens.length&&tokens[0].toLowerCase()===wanted)return tokens.slice(1);
+  }
+  return [];
+}
 function state(overrides={}){
   return {
     slug,
@@ -69,7 +77,7 @@ assert.strictEqual(mapping.slug,slug);
 assert.strictEqual(mapping.recommendationWeight,0);
 assert.strictEqual(continuity.displayFresh(mapping),true,'verified state must retain an observed timestamp');
 assert.strictEqual(continuity.guardEligible(slug,mapping,observed+(5*60*60*1000)),true,'five-hour-old verified image must remain eligible');
-assert.strictEqual(continuity.guardEligible(slug,mapping,observed+(365*24*60*60*1000)),true,'eligibility must follow explicit governed state and exact identity rather than an arbitrary time cliff');
+assert.strictEqual(continuity.guardEligible(slug,mapping,observed+(365*24*60*60*1000)),true,'eligibility must follow explicit governed state and exact identity rather than an arbitrary age cliff');
 assert.strictEqual(continuity.completeMapping(mapping,slug),true,'exact HTTPS eBay image origin must be accepted');
 const lookalikeImageMapping={...mapping,imageUrl:'https://i.ebayimg.com.evil.example/images/g/example/s-l1600.jpg'};
 assert.strictEqual(continuity.completeMapping(lookalikeImageMapping,slug),false,'lookalike image hosts must be rejected');
@@ -141,7 +149,9 @@ const html=`<!doctype html><html><head>${canonical}${jsonLd}</head><body><main><
   assert(progressive.includes('/api/ebay-product-image-public?slug='),'browser recovery must read only the same-origin APG endpoint');
   assert(!progressive.includes('searchItems('),'browser recovery must not perform marketplace discovery');
   const csp=continuity.withEbayImageCsp("default-src 'self'; img-src 'self' data:");
-  assert(csp.includes('https://i.ebayimg.com'),'product response CSP must permit only the governed image origin required by the hero');
+  const imgSources=cspDirectiveSources(csp,'img-src');
+  assert(imgSources.some(value=>value==='https://i.ebayimg.com'),'product response CSP must include the exact governed image origin token');
+  assert(!imgSources.some(value=>value==='https://i.ebayimg.com.evil.example'),'product response CSP must not accept a lookalike origin token');
 
   const summary={resources:[
     {resource:'buy.browse',limit:5000,remaining:4200,count:800,reset:'2026-09-01T07:00:00Z'},
