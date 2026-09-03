@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "regions": ["syd1"],
+  "buildCommand": "node scripts/build-home-css-v128.js && npm run vercel-build",
   "functions": {
     "api/index.js": {
       "includeFiles": "public/assets/**/*.css"
