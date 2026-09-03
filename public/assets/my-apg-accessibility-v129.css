@@ -1,0 +1,13 @@
+/* APG My APG Production Verification accessibility closure v129.0 */
+body[data-apg-route-family="my-apg"] :where(.crumbs,.apg-my-apg-crumbs-v124){
+  color:#334155;
+}
+body[data-apg-route-family="my-apg"] :where(.crumbs,.apg-my-apg-crumbs-v124)>a{
+  color:#1d4ed8!important;
+  text-decoration-line:underline!important;
+  text-decoration-thickness:2px!important;
+  text-underline-offset:3px!important;
+}
+body[data-apg-route-family="my-apg"] :where(.crumbs,.apg-my-apg-crumbs-v124) span[aria-current="page"]{
+  color:#334155!important;
+}
