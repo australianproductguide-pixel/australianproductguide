@@ -39,6 +39,18 @@ function explicitlyVersionedAsset(req){
     return requestPath(req).startsWith('/assets/')&&Boolean(url.searchParams.get('v'));
   }catch{return false}
 }
+function normalisePublicRequest(req){
+  // The loopback transport is only a test harness. Canonical, Open Graph and JSON-LD URLs must
+  // be rendered exactly as they are on public Production, otherwise the certification would
+  // validate localhost artefacts rather than APG's real search identity.
+  req.headers={
+    ...(req.headers||{}),
+    host:'australianproductguide.au',
+    'x-forwarded-host':'australianproductguide.au',
+    'x-forwarded-proto':'https'
+  };
+  return req;
+}
 
 function staticFileFor(pathname){
   if(!pathname.startsWith('/'))return null;
@@ -90,6 +102,8 @@ const server=http.createServer((req,res)=>{
   // and therefore continue into the real application handler below.
   const staticFile=staticFileFor(pathname);
   if(staticFile&&['GET','HEAD'].includes(req.method||'GET'))return serveStatic(req,res,staticFile);
+
+  normalisePublicRequest(req);
 
   // This harness serves the exact application runtime over loopback HTTP. Production's
   // `upgrade-insecure-requests` CSP directive is correct for the public HTTPS site, but on
