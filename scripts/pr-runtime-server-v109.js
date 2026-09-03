@@ -24,6 +24,7 @@ const app=require('../api/index');
 const host=process.env.HOST||'127.0.0.1';
 const port=Number(process.env.PORT||4173);
 const publicRoot=path.resolve(root,'public');
+const DYNAMIC_COMPRESSION_MIN_BYTES=1024;
 const mime={
   '.css':'text/css; charset=utf-8',
   '.js':'application/javascript; charset=utf-8',
@@ -43,7 +44,7 @@ const mime={
 
 function requestPath(req){
   let pathname='/';
-  try{pathname=decodeURIComponent(new URL(req.url||'/','http://127.0.0.1').pathname)}catch{}
+  try{pathname=decodeURIComponent(new URL(req.url||'/','http://127.0.0.1').pathname);}catch{}
   // Some legacy APG asset references contain a slash after a filename, e.g. foo.css/?v=1.
   // Vercel filesystem routing resolves the file; normalise only that file-shaped suffix.
   pathname=pathname.replace(/(\.[a-z0-9]{1,12})\/$/i,'$1');
@@ -53,7 +54,7 @@ function explicitlyVersionedAsset(req){
   try{
     const url=new URL(req&&req.url||'/','http://127.0.0.1');
     return requestPath(req).startsWith('/assets/')&&Boolean(url.searchParams.get('v'));
-  }catch{return false}
+  }catch{return false;}
 }
 function normalisePublicRequest(req){
   // The loopback transport is only a test harness. Canonical, Open Graph and JSON-LD URLs must
@@ -75,23 +76,86 @@ function staticFileFor(pathname){
   try{
     const stat=fs.statSync(candidate);
     return stat.isFile()?candidate:null;
-  }catch{return null}
+  }catch{return null;}
 }
 function compressible(type){
   return /^(?:text\/|application\/(?:javascript|json|xml|manifest\+json))/i.test(String(type||''));
 }
-function staticCompression(req,type){
+function acceptedCompression(req,type){
   if(!compressible(type))return null;
   const accepted=String(req&&req.headers&&req.headers['accept-encoding']||'').toLowerCase();
   if(/(?:^|[,\s])br(?:[,\s]|$)/.test(accepted))return 'br';
   if(/(?:^|[,\s])gzip(?:[,\s]|$)/.test(accepted))return 'gzip';
   return null;
 }
+const staticCompression=acceptedCompression;
 function staticStream(filename,encoding){
   const input=fs.createReadStream(filename);
   if(encoding==='br')return input.pipe(zlib.createBrotliCompress({params:{[zlib.constants.BROTLI_PARAM_QUALITY]:6}}));
   if(encoding==='gzip')return input.pipe(zlib.createGzip({level:9}));
   return input;
+}
+function mergeVary(current,token){
+  const values=(Array.isArray(current)?current:[current]).flatMap(value=>String(value||'').split(',')).map(value=>value.trim()).filter(Boolean);
+  if(values.includes('*'))return '*';
+  if(!values.some(value=>value.toLowerCase()===String(token).toLowerCase()))values.push(token);
+  return values.join(', ');
+}
+function toBuffer(chunk,encoding){
+  if(chunk==null)return null;
+  if(Buffer.isBuffer(chunk))return chunk;
+  if(ArrayBuffer.isView(chunk))return Buffer.from(chunk.buffer,chunk.byteOffset,chunk.byteLength);
+  return Buffer.from(String(chunk),typeof encoding==='string'?encoding:'utf8');
+}
+function dynamicCompression(req,res){
+  const originalWrite=res.write.bind(res);
+  const originalEnd=res.end.bind(res);
+  const chunks=[];
+  let ended=false;
+
+  function collect(chunk,encoding){
+    const buffer=toBuffer(chunk,encoding);
+    if(buffer&&buffer.length)chunks.push(buffer);
+  }
+  res.write=(chunk,encoding,callback)=>{
+    collect(chunk,encoding);
+    if(typeof encoding==='function')encoding();
+    else if(typeof callback==='function')callback();
+    return true;
+  };
+  res.end=(chunk,encoding,callback)=>{
+    if(ended)return res;
+    ended=true;
+    collect(chunk,encoding);
+    const done=typeof encoding==='function'?encoding:callback;
+    const body=chunks.length?Buffer.concat(chunks):Buffer.alloc(0);
+    const status=Number(res.statusCode||200);
+    const type=String(res.getHeader&&res.getHeader('Content-Type')||'').toLowerCase();
+    const existingEncoding=String(res.getHeader&&res.getHeader('Content-Encoding')||'').trim();
+    const selected=acceptedCompression(req,type);
+    const eligible=(req.method||'GET')!=='HEAD'&&status>=200&&status<300&&status!==204&&body.length>=DYNAMIC_COMPRESSION_MIN_BYTES&&!existingEncoding&&!res.headersSent&&selected;
+
+    if(!eligible){
+      if((req.method||'GET')==='HEAD'||status===204||status===304)return originalEnd(undefined,done);
+      return originalEnd(body.length?body:undefined,done);
+    }
+
+    try{
+      const compressed=selected==='br'
+        ?zlib.brotliCompressSync(body,{params:{[zlib.constants.BROTLI_PARAM_QUALITY]:6}})
+        :zlib.gzipSync(body,{level:9});
+      res.setHeader('Content-Encoding',selected);
+      res.setHeader('Vary',mergeVary(res.getHeader&&res.getHeader('Vary'),'Accept-Encoding'));
+      try{res.removeHeader('Content-Length');}catch{}
+      res.setHeader('Content-Length',String(compressed.length));
+      res.setHeader('X-APG-PR-Dynamic-Compression',selected);
+      return originalEnd(compressed,done);
+    }catch(error){
+      console.error('APG_PR_DYNAMIC_COMPRESSION_ERROR',error&&error.stack||error);
+      return originalEnd(body.length?body:undefined,done);
+    }
+  };
+  return {originalWrite,originalEnd};
 }
 
 function serveStatic(req,res,filename){
@@ -105,7 +169,7 @@ function serveStatic(req,res,filename){
     ?'public, max-age=31536000, immutable'
     :'public, max-age=0, must-revalidate');
   res.setHeader('X-Content-Type-Options','nosniff');
-  const encoding=staticCompression(req,type);
+  const encoding=acceptedCompression(req,type);
   if(encoding){
     res.setHeader('Content-Encoding',encoding);
     res.setHeader('Vary','Accept-Encoding');
@@ -162,6 +226,12 @@ const server=http.createServer((req,res)=>{
     return setHeader(name,value);
   };
 
+  // Vercel serves Production HTML with Brotli/gzip when the client advertises support. Mirror
+  // that transport in this CI-only exact-runtime harness so Lighthouse measures the candidate
+  // application rather than an artificial uncompressed loopback response. Static assets have
+  // already returned above and are never compressed twice.
+  dynamicCompression(req,res);
+
   try{
     const result=app(req,res);
     if(result&&typeof result.then==='function'){
@@ -190,4 +260,7 @@ function shutdown(signal){
 process.on('SIGTERM',()=>shutdown('SIGTERM'));
 process.on('SIGINT',()=>shutdown('SIGINT'));
 
-module.exports={requestPath,explicitlyVersionedAsset,staticFileFor,compressible,staticCompression,staticStream,serveStatic};
+module.exports={
+  DYNAMIC_COMPRESSION_MIN_BYTES,requestPath,explicitlyVersionedAsset,staticFileFor,compressible,
+  acceptedCompression,staticCompression,staticStream,mergeVary,toBuffer,dynamicCompression,serveStatic
+};
