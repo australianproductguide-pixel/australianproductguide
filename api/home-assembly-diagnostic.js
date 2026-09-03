@@ -1,27 +1,30 @@
 'use strict';
 
-// Temporary P0 diagnostic endpoint for the 1 Sep 2026 native Home serverless incident.
-// Public `/` remains protected by the Vercel edge redirect. This function loads the normal
-// api/index.js assembly (therefore running the same installers) and invokes one already-built
-// handler boundary at a time. It performs no discovery/network work of its own, changes no
-// recommendation/commercial logic, and must be removed with the P0 containment.
+// Private noindex Home assembly diagnostic. It loads the normal api/index.js assembly and invokes
+// one already-built handler boundary at a time. It performs no discovery or outbound network work,
+// changes no recommendation or commercial logic, and is retained while the Home availability
+// incident remains under post-release observation.
 const app=require('./index');
 
 const ORIGIN='https://australianproductguide.au';
 const VERSION='3.0';
 const NATIVE_HOME_URL='/?__apg_home_diag=1';
 
+function safeSetHeader(res,name,value){
+  if(!res||res.headersSent===true||typeof res.setHeader!=='function')return false;
+  try{res.setHeader(name,value);return true;}catch{return false;}
+}
 function diagnosticHeaders(res,stage){
-  res.setHeader('Cache-Control','no-store, max-age=0');
-  res.setHeader('X-Robots-Tag','noindex, nofollow, noarchive');
-  res.setHeader('X-APG-P0-Home-Assembly-Bisect','v'+VERSION);
-  res.setHeader('X-APG-P0-Home-Assembly-Stage',stage);
+  safeSetHeader(res,'Cache-Control','no-store, max-age=0');
+  safeSetHeader(res,'X-Robots-Tag','noindex, nofollow, noarchive');
+  safeSetHeader(res,'X-APG-P0-Home-Assembly-Bisect','v'+VERSION);
+  safeSetHeader(res,'X-APG-P0-Home-Assembly-Stage',stage);
 }
 function plain(res,status,body){
   res.statusCode=status;
-  res.setHeader('Content-Type','text/plain; charset=utf-8');
-  res.setHeader('Cache-Control','no-store, max-age=0');
-  res.setHeader('X-Robots-Tag','noindex, nofollow, noarchive');
+  safeSetHeader(res,'Content-Type','text/plain; charset=utf-8');
+  safeSetHeader(res,'Cache-Control','no-store, max-age=0');
+  safeSetHeader(res,'X-Robots-Tag','noindex, nofollow, noarchive');
   return res.end(body);
 }
 function log(kind,stage,detail){
@@ -39,10 +42,11 @@ function handler(req,res){
   const stageHandler=stages[stage];
   if(typeof stageHandler!=='function')return plain(res,404,'Not found');
 
+  // Set diagnostic headers before the selected stage can stream or commit a large Home response.
   diagnosticHeaders(res,stage);
   const nativeEnd=res.end.bind(res);
   res.end=(body,...args)=>{
-    diagnosticHeaders(res,stage);
+    if(res.headersSent!==true)diagnosticHeaders(res,stage);
     log('END',stage,`status=${res.statusCode}`);
     return nativeEnd(req.method==='HEAD'?'':body,...args);
   };
@@ -68,5 +72,5 @@ function handler(req,res){
   }
 }
 
-Object.assign(handler,{VERSION,NATIVE_HOME_URL});
+Object.assign(handler,{VERSION,NATIVE_HOME_URL,safeSetHeader});
 module.exports=handler;
