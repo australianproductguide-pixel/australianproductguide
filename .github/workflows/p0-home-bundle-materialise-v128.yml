@@ -1,0 +1,53 @@
+name: APG P0 Home bundle materialisation v128
+
+on:
+  push:
+    branches:
+      - release/p0-home-bundle-source-v1282
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apg-p0-home-bundle-materialise-v128
+  cancel-in-progress: false
+
+jobs:
+  materialise:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: release/p0-home-bundle-source-v1282
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Install exact runtime dependencies without lifecycle scripts
+        run: npm install --ignore-scripts --package-lock=false --no-audit --no-fund
+      - name: Generate and verify deterministic Home bundle
+        run: |
+          set -euo pipefail
+          node scripts/build-home-css-v128.js
+          test -f public/assets/home-v128-bundle.css
+          test "$(wc -c < public/assets/home-v128-bundle.css | tr -d ' ')" = "544660"
+          echo "a52ffd6e5cffd4eafdb9171d3be26fc9aebb5e21b598d1f37c8cd37c4e92ab55  public/assets/home-v128-bundle.css" | sha256sum -c -
+          grep -F 'APG_HOME_CSS_LINK_SIGNATURE:69378df1a5f50c8965113dbfc040eb32cc4ba692be83aa460ed7ad4ab3a8d63e' public/assets/home-v128-bundle.css >/dev/null
+          grep -F '.site-header' public/assets/home-v128-bundle.css >/dev/null
+          grep -F '.apg-home-hero-v9' public/assets/home-v128-bundle.css >/dev/null
+          grep -F '.apg-ebay-official-v121-card' public/assets/home-v128-bundle.css >/dev/null
+          grep -F '#apgAssistantLauncher' public/assets/home-v128-bundle.css >/dev/null
+      - name: Commit only the verified bundle and remove this temporary workflow
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/assets/home-v128-bundle.css
+          git rm .github/workflows/p0-home-bundle-materialise-v128.yml
+          changed=$(git diff --cached --name-only)
+          test "$changed" = "public/assets/home-v128-bundle.css"
+          git commit -m 'Source-control deterministic Home CSS bundle v128.2'
+          git push origin HEAD:release/p0-home-bundle-source-v1282
