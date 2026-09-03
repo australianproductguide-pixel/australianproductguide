@@ -33,6 +33,12 @@ function requestPath(req){
   pathname=pathname.replace(/(\.[a-z0-9]{1,12})\/$/i,'$1');
   return pathname;
 }
+function explicitlyVersionedAsset(req){
+  try{
+    const url=new URL(req&&req.url||'/','http://127.0.0.1');
+    return requestPath(req).startsWith('/assets/')&&Boolean(url.searchParams.get('v'));
+  }catch{return false}
+}
 
 function staticFileFor(pathname){
   if(!pathname.startsWith('/'))return null;
@@ -48,7 +54,12 @@ function serveStatic(req,res,filename){
   const type=mime[path.extname(filename).toLowerCase()]||'application/octet-stream';
   res.statusCode=200;
   res.setHeader('Content-Type',type);
-  res.setHeader('Cache-Control','public, max-age=0, must-revalidate');
+  // Mirror the Vercel edge rule used by the exact candidate: only an asset request carrying
+  // a non-empty explicit `v` query is immutable. Unversioned repository assets remain
+  // revalidated so ordinary source updates cannot be trapped behind a year-long browser cache.
+  res.setHeader('Cache-Control',explicitlyVersionedAsset(req)
+    ?'public, max-age=31536000, immutable'
+    :'public, max-age=0, must-revalidate');
   res.setHeader('X-Content-Type-Options','nosniff');
   if(req.method==='HEAD')return res.end();
   return fs.createReadStream(filename)
