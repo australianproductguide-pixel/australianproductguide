@@ -2,9 +2,9 @@
 
 // Read-only operational diagnostic for APG governed eBay product imagery.
 // Compares the actual public continuity/render policy with the independent second-pass worker
-// guard over the same RLS-protected image-state registry, and optionally probes the bounded
-// single-product Supabase lookup used by product pages. No eBay API call is made and no state
-// is mutated.
+// guard over the same RLS-protected image-state registry, probes the bounded single-product
+// Supabase lookup used by product pages, and runs the real continuity inject() function against a
+// minimal product-hero fixture. No eBay API call is made and no state is mutated.
 
 const {products}=require('../data');
 const supabase=require('../lib/apg-supabase-public-v1');
@@ -12,7 +12,7 @@ const continuity=require('../lib/ebay-product-image-continuity-v3-runtime');
 const legacyBaseGuard=require('../lib/ebay-product-hero-exact-guard-v2');
 const workerGuard=require('../lib/ebay-product-image-exact-guard-v23');
 
-const VERSION='1.1';
+const VERSION='1.2';
 const PRODUCT_MAP=new Map(products.filter(Boolean).map(product=>[product.slug,product]));
 const PRODUCT_SLUGS=[...PRODUCT_MAP.keys()];
 const DEFAULT_PROBE_SLUG='kodak-mini-2-retro';
@@ -41,6 +41,25 @@ async function probeSingleLookup(slug,timeoutMs){
       slug,timeoutMs,durationMs:Date.now()-started,found:false,status:null,guardEligible:false,
       error:clean(error&&error.code)||'APG_IMAGE_STATE_LOOKUP_ERROR'
     };
+  }
+}
+
+async function probeInject(slug){
+  const product=PRODUCT_MAP.get(slug);
+  const label=product?(product.brand?`${product.brand} ${product.name}`:product.name):slug;
+  const fixture=`<!doctype html><html lang="en-AU"><head><title>${label}</title></head><body><section class="product-hero"><div class="product-visual large" role="img"><div class="apg-product-brand-placeholder" aria-hidden="true"><span>Brand identity</span></div><div class="visual-copy"><strong>${label}</strong></div></div></section></body></html>`;
+  const started=Date.now();
+  try{
+    const result=await continuity.inject(fixture,`/products/${slug}/`);
+    return {
+      slug,durationMs:Date.now()-started,usedEbayImage:result&&result.usedEbayImage===true,
+      reason:clean(result&&result.reason)||null,
+      heroPresent:Boolean(result&&/data-apg-ebay-product-hero=/i.test(result.html||'')),
+      ebayImageOriginPresent:Boolean(result&&/https:\/\/i[.]ebayimg[.]com\//i.test(result.html||'')),
+      stylePresent:Boolean(result&&String(result.html||'').includes(continuity.STYLE_HREF)),error:null
+    };
+  }catch(error){
+    return {slug,durationMs:Date.now()-started,usedEbayImage:false,reason:null,heroPresent:false,ebayImageOriginPresent:false,stylePresent:false,error:clean(error&&error.code)||'APG_IMAGE_INJECT_ERROR'};
   }
 }
 
@@ -88,7 +107,7 @@ async function handler(req,res){
         workerRejected.push({slug,reason:worker.reason});
       }
       if(legacy.eligible===true)legacyEligible.push(slug);else bump(legacyReasons,legacy.reason);
-      if(worker.eligible===true!==rendererOk){
+      if((worker.eligible===true)!==rendererOk){
         const reason=rendererOk?'worker-rejected-renderer-eligible':(worker.reason||'renderer-worker-divergence');
         bump(gapReasons,reason);
         gaps.push({slug,rendererEligible:rendererOk,workerEligible:worker.eligible===true,workerReason:clean(worker.reason)||null});
@@ -99,7 +118,7 @@ async function handler(req,res){
     try{requestUrl=new URL(req.url,'https://australianproductguide.au');}catch{}
     const probeSlug=safeSlug(requestUrl&&requestUrl.searchParams.get('slug'));
     const probeTimeoutMs=safeTimeout(requestUrl&&requestUrl.searchParams.get('timeoutMs'));
-    const singleLookup=await probeSingleLookup(probeSlug,probeTimeoutMs);
+    const [singleLookup,injectProbe]=await Promise.all([probeSingleLookup(probeSlug,probeTimeoutMs),probeInject(probeSlug)]);
 
     return res.status(200).json({
       ok:true,
@@ -114,7 +133,8 @@ async function handler(req,res){
       rendererWorkerGap:{count:gaps.length,reasons:sortedCounts(gapReasons),rows:gaps.slice(0,100)},
       legacyBaseGuard:{guardVersion:legacyBaseGuard.VERSION,eligible:legacyEligible.length,rejected:verified.length-legacyEligible.length,reasons:sortedCounts(legacyReasons)},
       workerRejected:workerRejected.slice(0,100),
-      singleLookup
+      singleLookup,
+      injectProbe
     });
   }catch(error){
     return res.status(500).json({ok:false,status:'diagnostic-failed',code:clean(error&&error.code)||'EBAY_IMAGE_RENDER_DIAGNOSTIC_ERROR'});
