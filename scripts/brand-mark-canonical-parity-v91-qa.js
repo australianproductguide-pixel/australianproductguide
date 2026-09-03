@@ -74,10 +74,8 @@ async function invoke(url,userAgent){
   assert.equal(layer.VERSION,'52.0','Search v52 protected export must survive v91');
   assert.equal(layer.DECISION_VERSION,'50.6','Decision Lab v50.6 protected export must survive v91');
 
-  // Validate the direct, current wrapper chain. This replaces the superseded assertion that
-  // PageSpeed v113 directly wrapped Scout Navigator and was exported as finalHandler. The live
-  // source now has additional governed imagery, review, brand and desktop presentation layers,
-  // followed by the transport-only v128 delivery finaliser.
+  // Validate the direct current wrapper chain. The established v126/v127 visual modules are
+  // retained inside v131, which owns their pre-commit and streaming-safe response boundary.
   const api=read('api/index.js');
   const requiredModules=[
     "require('../lib/audit-integration-v124-runtime')",
@@ -89,11 +87,14 @@ async function invoke(url,userAgent){
     "require('../lib/pagespeed-agentic-certification-v113-runtime')",
     "require('../lib/review-profiles-v118-runtime')",
     "require('../lib/brand-logo-stability-v125-runtime')",
-    "require('../lib/desktop-home-header-v126-runtime')",
-    "require('../lib/desktop-about-trust-contrast-v127-runtime')",
+    "require('../lib/final-presentation-stability-v131-runtime')",
     "require('../lib/google-discoverability-performance-v128-runtime')"
   ];
   for(const marker of requiredModules)assert(api.includes(marker),`missing explicit wrapper module ${marker}`);
+  const finalPresentation=read('lib/final-presentation-stability-v131-runtime.js');
+  assert(finalPresentation.includes("require('./desktop-home-header-v126-runtime')"),'v131 must preserve the certified v126 Home/header visual layer');
+  assert(finalPresentation.includes("require('./desktop-about-trust-contrast-v127-runtime')"),'v131 must preserve the certified v127 trust contrast layer');
+  assert(finalPresentation.includes("const VERSION='131.0'"),'v131 streaming-safe boundary must be explicit');
 
   const chain=[
     'const auditedHandler=auditIntegration.wrap(handler)',
@@ -103,8 +104,8 @@ async function invoke(url,userAgent){
     'const pagespeedHandler=pagespeedAgenticCertification.wrap(categoryImageHandler)',
     'const reviewProfileHandler=reviewProfiles.wrap(pagespeedHandler)',
     'const finalHandler=brandLogoStability.wrap(reviewProfileHandler)',
-    'const desktopHomeHeaderHandler=desktopHomeHeader.wrap(finalHandler)',
-    'const desktopAboutTrustContrastHandler=desktopAboutTrustContrast.wrap(desktopHomeHeaderHandler)',
+    'const desktopHomeHeaderHandler=finalPresentationStability.wrapDesktopHome(finalHandler)',
+    'const desktopAboutTrustContrastHandler=finalPresentationStability.wrapDesktopTrust(desktopHomeHeaderHandler)',
     'const googleDiscoverabilityPerformanceHandler=googleDiscoverabilityPerformance.wrap(desktopAboutTrustContrastHandler)',
     'module.exports=googleDiscoverabilityPerformanceHandler'
   ];
@@ -114,7 +115,10 @@ async function invoke(url,userAgent){
     assert(index>previous,`wrapper chain out of order or missing: ${marker}`);
     previous=index;
   }
+  assert(api.includes('FINAL_PRESENTATION_STABILITY_VERSION=finalPresentationStability.VERSION'),'final presentation boundary must expose v131');
   assert(api.includes('GOOGLE_DISCOVERABILITY_PERFORMANCE_VERSION=googleDiscoverabilityPerformance.VERSION'),'final delivery wrapper must expose its source version');
+  assert(!api.includes('desktopHomeHeader.wrap(finalHandler)'),'unsafe legacy desktop Home response wrapper must be detached');
+  assert(!api.includes('desktopAboutTrustContrast.wrap(desktopHomeHeaderHandler)'),'unsafe legacy trust response wrapper must be detached');
 
   const pkg=JSON.parse(read('package.json'));
   assert(pkg.scripts['qa:brand-canonical-parity']==='node scripts/brand-mark-canonical-parity-v91-qa.js','package must expose v91 QA command');
@@ -122,5 +126,5 @@ async function invoke(url,userAgent){
   const full=String(pkg.scripts['qa:full']||'');
   assert(full==='npm run qa:deploy'||full.startsWith('node scripts/brand-mark-canonical-parity-v91-qa.js &&'),'full-source gate must delegate to, or preserve, the deploy gate');
 
-  console.log(`BRAND_MARK_CANONICAL_PARITY_V91=PASS targets=2 amazonDesktopMobileHash=${sha(desktop.body).slice(0,16)} breville=reviewed-vector cacheVersion=91.0 search=${layer.VERSION} decision=${layer.DECISION_VERSION} composition=current-direct-chain+v128-finaliser`);
+  console.log(`BRAND_MARK_CANONICAL_PARITY_V91=PASS targets=2 amazonDesktopMobileHash=${sha(desktop.body).slice(0,16)} breville=reviewed-vector cacheVersion=91.0 search=${layer.VERSION} decision=${layer.DECISION_VERSION} composition=current-direct-chain+v131-streaming-safety+v128-finaliser`);
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1);});
