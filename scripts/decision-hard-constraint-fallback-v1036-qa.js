@@ -96,9 +96,9 @@ function render(url){
   assert.doesNotMatch(decisionLab.body,/>Best fit</,'fallback must never be presented as a best fit');
 
   // Source-level lineage: v103.6 remains directly beneath v104, while the public entry point
-  // now correctly composes the governed v106 runtime, audit controls, presentation layers and
-  // the narrow v128 delivery finaliser. Do not mistake a later delivery wrapper for a new
-  // recommendation engine.
+  // composes the governed v106 runtime, audit controls, presentation layers, the narrow v128
+  // delivery finaliser and the Home-only v132 response-header budget. Do not mistake either
+  // delivery wrapper for a new recommendation engine.
   const apiSource=fs.readFileSync(require.resolve('../api/index'),'utf8');
   const v104Source=fs.readFileSync(require.resolve('../lib/search-opportunity-depth-v104-runtime'),'utf8');
   const auditSource=fs.readFileSync(require.resolve('../lib/audit-integration-v124-runtime'),'utf8');
@@ -107,12 +107,13 @@ function render(url){
   assert(apiSource.includes("const auditIntegration=require('../lib/audit-integration-v124-runtime')"),'audited integration boundary must remain explicit');
   assert(auditSource.includes("require('./decision-audit-constraint-guard-v118')"),'audited constraint guard must install through the maintained integration layer');
   assert(apiSource.includes("const googleDiscoverabilityPerformance=require('../lib/google-discoverability-performance-v128-runtime')"),'v128 must remain a narrow explicit delivery finaliser');
-  assert(apiSource.includes('module.exports=googleDiscoverabilityPerformanceHandler'),'current public entry point must export the completed v128-wrapped chain');
+  assert(apiSource.includes("const homeResponseHeaderBudget=require('../lib/home-response-header-budget-v132-runtime')"),'v132 must remain a narrow Home-only delivery control');
+  assert(apiSource.includes('module.exports=homeResponseHeaderBudgetHandler'),'current public entry point must export the completed v132-wrapped chain');
 
   const pkg=require('../package.json');
   assert(pkg.scripts['qa:deploy'].startsWith('node scripts/brand-mark-canonical-parity-v91-qa.js &&'),'v91 must remain first deploy gate');
   assert(pkg.scripts['qa:deploy'].includes('node scripts/decision-hard-constraint-fallback-v1036-qa.js'),'remediation must remain in deploy QA');
   assert.equal(pkg.scripts['qa:full'],'npm run qa:deploy','full source gate must delegate to the authoritative deploy gate');
 
-  console.log('DECISION_HARD_CONSTRAINT_FALLBACK_V1036=PASS exact75=eligible exact999=fallback-ineligible audit65=exact manualCoffee=excluded lineage=v106->v104->v103.6 outer=v128 commercialWeight=0');
+  console.log('DECISION_HARD_CONSTRAINT_FALLBACK_V1036=PASS exact75=eligible exact999=fallback-ineligible audit65=exact manualCoffee=excluded lineage=v106->v104->v103.6 outer=v128+v132 commercialWeight=0');
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1);});

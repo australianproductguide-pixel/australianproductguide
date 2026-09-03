@@ -57,7 +57,8 @@ const expectedModules={
   categoryFeaturedImagery:'../lib/category-featured-product-imagery-v1-runtime',
   brandLogoStability:'../lib/brand-logo-stability-v125-runtime',
   finalPresentationStability:'../lib/final-presentation-stability-v131-runtime',
-  googleDiscoverabilityPerformance:'../lib/google-discoverability-performance-v128-runtime'
+  googleDiscoverabilityPerformance:'../lib/google-discoverability-performance-v128-runtime',
+  homeResponseHeaderBudget:'../lib/home-response-header-budget-v132-runtime'
 };
 for(const [variable,expected] of Object.entries(expectedModules)){
   assert.equal(requiredPath(variable),expected,`unexpected module for ${variable}`);
@@ -85,7 +86,8 @@ assertOrdered([
 ]);
 
 // Validate the current direct runtime chain. The final two desktop transforms retain their
-// established visual modules, but their active response boundary is the streaming-safe v131 layer.
+// established visual modules, their active response boundary is the streaming-safe v131 layer,
+// and the Home-only v132 layer removes superseded diagnostics immediately before commit.
 assertOrdered([
   'const transportHandler=decisionTransportParity.wrap(runtime)',
   'const premiumHandler=premiumExperience.wrap(transportHandler)',
@@ -103,17 +105,20 @@ assertOrdered([
   'const desktopHomeHeaderHandler=finalPresentationStability.wrapDesktopHome(finalHandler)',
   'const desktopAboutTrustContrastHandler=finalPresentationStability.wrapDesktopTrust(desktopHomeHeaderHandler)',
   'const googleDiscoverabilityPerformanceHandler=googleDiscoverabilityPerformance.wrap(desktopAboutTrustContrastHandler)',
-  'module.exports=googleDiscoverabilityPerformanceHandler'
+  'const homeResponseHeaderBudgetHandler=homeResponseHeaderBudget.wrap(googleDiscoverabilityPerformanceHandler)',
+  'module.exports=homeResponseHeaderBudgetHandler'
 ]);
 
 for(const marker of [
   'desktopHome:desktopHomeHeaderHandler',
   'desktopTrust:desktopAboutTrustContrastHandler',
   'googleDelivery:googleDiscoverabilityPerformanceHandler',
+  'homeBudget:homeResponseHeaderBudgetHandler',
   'stageHandler.APG_P0_HOME_ASSEMBLY_HANDLERS=p0HomeAssemblyHandlers',
   'stageHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES=Object.freeze(Object.keys(p0HomeAssemblyHandlers))',
   'FINAL_PRESENTATION_STABILITY_VERSION=finalPresentationStability.VERSION',
-  'GOOGLE_DISCOVERABILITY_PERFORMANCE_VERSION=googleDiscoverabilityPerformance.VERSION'
+  'GOOGLE_DISCOVERABILITY_PERFORMANCE_VERSION=googleDiscoverabilityPerformance.VERSION',
+  'HOME_RESPONSE_HEADER_BUDGET_VERSION=homeResponseHeaderBudget.VERSION'
 ])assert(api.includes(marker),`missing propagated runtime contract ${marker}`);
 
 const responseSource=assertPresentationOnly('lib/scout-response-depth-v61.js');
@@ -137,7 +142,8 @@ for(const relative of [
   'lib/brand-logo-stability-v125-runtime.js',
   'lib/desktop-home-header-v126-runtime.js',
   'lib/desktop-about-trust-contrast-v127-runtime.js',
-  'lib/final-presentation-stability-v131-runtime.js'
+  'lib/final-presentation-stability-v131-runtime.js',
+  'lib/home-response-header-budget-v132-runtime.js'
 ])assertPresentationOnly(relative);
 
 const finalPresentationSource=read('lib/final-presentation-stability-v131-runtime.js');
@@ -180,6 +186,21 @@ assert(googleSource.includes('url.searchParams.get(\'v\')'),'versioned-asset cac
 assert(googleSource.includes('function validManifest('),'Home bundle metadata must remain fail-closed and structurally validated');
 assert(googleSource.includes('APG_DELIVERY_STABILITY_FALLBACK'),'presentation-only delivery failures must remain observable');
 
+const budgetSource=assertPresentationOnly('lib/home-response-header-budget-v132-runtime.js',['localStorage.setItem(','sessionStorage.setItem(']);
+for(const required of [
+  "const VERSION='132.0'",
+  "const HEADER_NAME='X-APG-Home-Header-Budget'",
+  'const MAX_ESTIMATED_HEADER_BYTES=8192',
+  "name.startsWith('x-apg-')",
+  "pathname!=='/'",
+  'res.write=(chunk,...args)=>',
+  'res.flushHeaders=(...args)=>',
+  'res.end=(body,...args)=>'
+])assert(budgetSource.includes(required),`v132 Home response-header budget missing ${required}`);
+for(const protectedHeader of ['content-security-policy','strict-transport-security','cache-control','content-type']){
+  assert(!budgetSource.includes(`safeRemoveHeader(res,'${protectedHeader}')`),`v132 must not remove ${protectedHeader}`);
+}
+
 const premiumStability=require(path.join(root,'lib','premium-client-stability-v1091-runtime.js'));
 assert.equal(premiumStability.VERSION,'109.1');
 assert(premiumStability.clientJs.includes("function setAria(el,name,value){const next=String(value);if(el.getAttribute(name)!==next)el.setAttribute(name,next)}"));
@@ -191,6 +212,7 @@ const sourceGate=read('.github/workflows/source-qa.yml');
 assert(sourceGate.includes('npm run qa:full'),'source workflow must call the full source gate');
 assert(sourceGate.includes('node scripts/home-function-stability-v1291-qa.js'),'source workflow must run the Home availability regression');
 assert(sourceGate.includes('node scripts/final-presentation-streaming-v131-qa.js'),'source workflow must run the final streaming response regression');
+assert(sourceGate.includes('node scripts/home-response-header-budget-v132-qa.js'),'source workflow must run the Home response-header budget regression');
 assert(sourceGate.includes('node scripts/premium-mobile-decision-commerce-v112-qa.js'));
 const deploy=String(pkg.scripts&&pkg.scripts['qa:deploy']||'');
 assert(deploy.startsWith('node scripts/brand-mark-canonical-parity-v91-qa.js'));
@@ -209,7 +231,7 @@ for(const framework of ['next','react','vue','@angular/core','svelte'])assert(!d
 console.log(JSON.stringify({
   ok:true,
   underlyingRuntime:expectedModules.runtime,
-  directWrapperCount:17,
+  directWrapperCount:18,
   preRuntimeSideEffectInstallerCount:sideEffects.length,
   brandParityFirstGate:true,
   recommendationAndRetailerControlsPreserved:true,
@@ -219,11 +241,14 @@ console.log(JSON.stringify({
   googleV128FinalDeliveryOnly:true,
   homeDeliveryStability:'v130.1',
   finalPresentationStability:'v131.0',
-  finalDiagnosticStages:['desktopHome','desktopTrust','googleDelivery'],
+  homeResponseHeaderBudget:'v132.0',
+  finalDiagnosticStages:['desktopHome','desktopTrust','googleDelivery','homeBudget'],
   unsafeDesktopResponseWrappersDetached:true,
   postCommitMutationBlocked:true,
   presentationFallbackFailClosed:true,
+  supersededHomeDiagnosticsCompacted:true,
+  standardAndSecurityHeadersPreserved:true,
   fullSourceGateRestored:true,
   prohibitedFrameworksAbsent:true,
-  policy:'v106 remains the governed recommendation runtime; audit and decision state remain explicit; visual and route-scoped imagery layers remain presentation-only; PageSpeed v113 safety remains fail-closed; v131.0 preserves the v126/v127 visual assets through pre-commit, streaming-safe final presentation before v128.2/v130.1 delivery.'
+  policy:'v106 remains the governed recommendation runtime; audit and decision state remain explicit; visual and route-scoped imagery layers remain presentation-only; PageSpeed v113 safety remains fail-closed; v131 preserves v126/v127 visuals through streaming-safe presentation; v132 is a Home-only outer response-header budget that removes redundant X-APG diagnostics before commit.'
 },null,2));

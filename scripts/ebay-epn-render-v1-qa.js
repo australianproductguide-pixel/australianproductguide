@@ -89,7 +89,13 @@ async function assertSuppressedRoute(slug,label){
   for(const route of ['/','/deals/']){
     const response=await render(route);
     assert.equal(response.status,200,`${route} must render`);
-    assert.equal(response.headers['x-apg-ebay-epn-surface'],'v1.2');
+    if(route==='/'){
+      assert.equal(response.headers['x-apg-ebay-epn-surface'],undefined,'Home v132 must compact superseded eBay diagnostic headers');
+      assert.equal(response.headers['x-apg-home-header-budget'],'v132.0','Home must expose the active v132 response-header budget');
+    }else{
+      assert.equal(response.headers['x-apg-ebay-epn-surface'],'v1.2','Non-Home eBay discovery routes must retain their surface marker');
+      assert.equal(response.headers['x-apg-home-header-budget'],undefined,'Home-only response-header budget must not affect Deals');
+    }
     assert.match(response.body,/data-ebay-epn-discovery="v1\.2"/,`${route} must expose visible eBay discovery`);
     assert.match(response.body,/eBay Australia shopping discovery/i);
     assert.match(response.body,/Refurbished options and current eBay promotions/i);
@@ -128,5 +134,5 @@ async function assertSuppressedRoute(slug,label){
   assert(!/user-agent|mobile\s*===|desktop\s*===/i.test(source),'eBay retailer truth must not fork by device/user agent');
   assert.doesNotMatch(source,/media-amazon|ebaystatic|i\.ebayimg/i,'eBay discovery must not use scraped or unauthorised retailer imagery');
 
-  console.log(`EBAY_EPN_RENDER_V12_GREEN productRoutes=${fixtures.length} categories=${new Set(fixtures.map(p=>p.category||p.categoryLabel)).size} discoveryRoutes=2 promoCardsPerRoute=6 identitySafetySuppression=PASS mergedRetailerOrder=PASS officialSourceIntegrity=PASS dealsNeutrality=PASS deviceNeutralSSR=true responsiveLayer=v112 disclosure=multi-retailer`);
+  console.log(`EBAY_EPN_RENDER_V12_GREEN productRoutes=${fixtures.length} categories=${new Set(fixtures.map(p=>p.category||p.categoryLabel)).size} discoveryRoutes=2 promoCardsPerRoute=6 identitySafetySuppression=PASS mergedRetailerOrder=PASS officialSourceIntegrity=PASS dealsNeutrality=PASS deviceNeutralSSR=true responsiveLayer=v112 disclosure=multi-retailer homeHeaderBudget=v132`);
 })().catch(error=>{console.error(error.stack||error);process.exit(1);});
