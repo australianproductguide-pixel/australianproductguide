@@ -147,7 +147,8 @@ for(const required of [
   "res.setHeader('Cache-Control','public, max-age=31536000, immutable')",
   "return res.end(req&&req.method==='HEAD'?'':'Permanent redirect')"
 ])assert(googleSource.includes(required),`v128 final delivery contract missing ${required}`);
-for(const prohibited of ['url.search','target+','Permanent redirect to'])assert(!googleSource.includes(prohibited),`v128 redirects must not reflect request data via ${prohibited}`);
+for(const prohibited of ['redirectTarget+url.search','target+url.search','Permanent redirect to'])assert(!googleSource.includes(prohibited),`v128 redirects must not reflect request data via ${prohibited}`);
+assert(googleSource.includes('url.searchParams.get(\'v\')'),'versioned-asset cache detection may inspect the query string without reflecting it');
 
 const premiumStability=require(path.join(root,'lib','premium-client-stability-v1091-runtime.js'));
 assert.equal(premiumStability.VERSION,'109.1');
