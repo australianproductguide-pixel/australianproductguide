@@ -7,20 +7,28 @@
 // cascade order, preserves link-level media conditions, resolves relative asset URLs and writes
 // one deterministic static CSS asset. It never recursively invokes the application from a live
 // response and it never changes recommendation, evidence, retailer or shopper state.
+//
+// The exact loopback release harness also receives deterministic Brotli and gzip sidecars. Those
+// files let Lighthouse exercise CDN-like precompressed delivery without spending page-load time
+// compressing a static 500+ KiB asset. Vercel continues to own compression in Production.
 
 const crypto=require('node:crypto');
 const fs=require('node:fs');
 const path=require('node:path');
+const zlib=require('node:zlib');
 const {spawn}=require('node:child_process');
 const pagespeed=require('../lib/pagespeed-agentic-certification-v113-runtime');
 
 const ROOT=path.resolve(__dirname,'..');
 const OUTPUT=path.join(ROOT,'public','assets','home-v128-bundle.css');
+const BROTLI_OUTPUT=OUTPUT+'.br';
+const GZIP_OUTPUT=OUTPUT+'.gz';
 const HOST='127.0.0.1';
 const PORT=Number(process.env.APG_HOME_CSS_BUILD_PORT||4387);
 const BASE=`http://${HOST}:${PORT}`;
 const MIN_STYLESHEETS=40;
 const MIN_BYTES=250000;
+const BROTLI_QUALITY=11;
 
 function attr(tag,name){
   const match=String(tag||'').match(new RegExp(`\\b${name}\\s*=\\s*(["'])(.*?)\\1`,'i'));
@@ -86,9 +94,28 @@ async function fetchCss(row){
   const resolved=pagespeed.absoluteCssUrls(raw,row.href);
   return `/* APG source: ${row.href}${row.media?` | media: ${row.media}`:''} */\n${wrapMedia(resolved,row.media)}`;
 }
+function removeOutputs(){
+  for(const filename of [OUTPUT,BROTLI_OUTPUT,GZIP_OUTPUT,OUTPUT+'.tmp',BROTLI_OUTPUT+'.tmp',GZIP_OUTPUT+'.tmp']){
+    try{fs.rmSync(filename,{force:true});}catch{}
+  }
+}
+function atomicWrite(filename,bytes){
+  const temporary=filename+'.tmp';
+  fs.writeFileSync(temporary,bytes);
+  fs.renameSync(temporary,filename);
+}
+function compressedSidecars(buffer){
+  const br=zlib.brotliCompressSync(buffer,{params:{
+    [zlib.constants.BROTLI_PARAM_QUALITY]:BROTLI_QUALITY,
+    [zlib.constants.BROTLI_PARAM_MODE]:zlib.constants.BROTLI_MODE_TEXT,
+    [zlib.constants.BROTLI_PARAM_SIZE_HINT]:buffer.length
+  }});
+  const gzip=zlib.gzipSync(buffer,{level:9});
+  return {br,gzip};
+}
 async function build(){
   fs.mkdirSync(path.dirname(OUTPUT),{recursive:true});
-  try{fs.rmSync(OUTPUT,{force:true});}catch{}
+  removeOutputs();
 
   const child=spawn(process.execPath,[path.join(ROOT,'scripts','pr-runtime-server-v109.js')],{
     cwd:ROOT,
@@ -106,22 +133,25 @@ async function build(){
     const signature=crypto.createHash('sha256').update(JSON.stringify(links)).digest('hex');
     const banner=`/* Australian Product Guide — deterministic build-time Home CSS bundle v128.2. Source order and media semantics preserved. */\n/* APG_HOME_CSS_LINK_SIGNATURE:${signature} */\n`;
     const body=banner+chunks.join('\n\n')+'\n';
-    if(Buffer.byteLength(body)<MIN_BYTES)throw new Error(`bundle unexpectedly small: ${Buffer.byteLength(body)} bytes`);
+    const buffer=Buffer.from(body,'utf8');
+    if(buffer.length<MIN_BYTES)throw new Error(`bundle unexpectedly small: ${buffer.length} bytes`);
     for(const token of ['.site-header','.apg-home-hero-v9','.apg-ebay-official-v121-card','#apgAssistantLauncher']){
       if(!body.includes(token))throw new Error(`bundle missing required presentation token ${token}`);
     }
-    const temporary=OUTPUT+'.tmp';
-    fs.writeFileSync(temporary,body,'utf8');
-    fs.renameSync(temporary,OUTPUT);
-    const hash=crypto.createHash('sha256').update(body).digest('hex');
-    console.log(`APG_HOME_CSS_BUNDLE_V128=PASS styles=${links.length} bytes=${Buffer.byteLength(body)} linkSignature=${signature} sha256=${hash}`);
+    const compressed=compressedSidecars(buffer);
+    if(compressed.br.length>=buffer.length||compressed.gzip.length>=buffer.length)throw new Error('compressed Home bundle sidecar is not smaller than source');
+    atomicWrite(OUTPUT,buffer);
+    atomicWrite(BROTLI_OUTPUT,compressed.br);
+    atomicWrite(GZIP_OUTPUT,compressed.gzip);
+    const hash=crypto.createHash('sha256').update(buffer).digest('hex');
+    console.log(`APG_HOME_CSS_BUNDLE_V128=PASS styles=${links.length} bytes=${buffer.length} br=${compressed.br.length} gzip=${compressed.gzip.length} linkSignature=${signature} sha256=${hash}`);
   }finally{
     if(child.exitCode==null)child.kill('SIGTERM');
   }
 }
 
 build().catch(error=>{
-  try{fs.rmSync(OUTPUT,{force:true});}catch{}
+  removeOutputs();
   console.error(error&&error.stack||error);
   process.exit(1);
 });
