@@ -30,8 +30,7 @@ const governedProductCardImagery=require('../lib/governed-product-card-imagery-v
 const searchProductImagery=require('../lib/search-product-imagery-v1-runtime');
 const categoryFeaturedImagery=require('../lib/category-featured-product-imagery-v1-runtime');
 const brandLogoStability=require('../lib/brand-logo-stability-v125-runtime');
-const desktopHomeHeader=require('../lib/desktop-home-header-v126-runtime');
-const desktopAboutTrustContrast=require('../lib/desktop-about-trust-contrast-v127-runtime');
+const finalPresentationStability=require('../lib/final-presentation-stability-v131-runtime');
 const googleDiscoverabilityPerformance=require('../lib/google-discoverability-performance-v128-runtime');
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
@@ -104,17 +103,38 @@ finalHandler.CATEGORY_FEATURED_IMAGERY_VERSION=categoryFeaturedImagery.VERSION;
 finalHandler.REVIEW_PROFILES_VERSION=reviewProfiles.VERSION;
 finalHandler.BRAND_LOGO_STABILITY_VERSION=brandLogoStability.VERSION;
 finalHandler.EBAY_PRODUCT_IMAGE_PRESENTATION_STATE='NON_BLOCKING_UNIVERSAL_PRODUCT_IMAGERY_V16';
-const p0HomeAssemblyHandlers=Object.freeze({runtime,transport:transportHandler,premium:premiumHandler,journey:journeyHandler,stable:stableJourneyHandler,mobile:premiumMobileHandler,whole:handler,audit:auditedHandler,presentation:routeScopedPresentationHandler,searchImages:searchImageHandler,categoryImages:categoryImageHandler,pagespeed:pagespeedHandler,reviewProfiles:reviewProfileHandler,final:finalHandler});
-finalHandler.APG_P0_HOME_ASSEMBLY_HANDLERS=p0HomeAssemblyHandlers;
-finalHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES=Object.freeze(Object.keys(p0HomeAssemblyHandlers));
-const desktopHomeHeaderHandler=desktopHomeHeader.wrap(finalHandler);
-desktopHomeHeaderHandler.APG_P0_HOME_ASSEMBLY_HANDLERS=p0HomeAssemblyHandlers;
-desktopHomeHeaderHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES=finalHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES;
-const desktopAboutTrustContrastHandler=desktopAboutTrustContrast.wrap(desktopHomeHeaderHandler);
-desktopAboutTrustContrastHandler.APG_P0_HOME_ASSEMBLY_HANDLERS=p0HomeAssemblyHandlers;
-desktopAboutTrustContrastHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES=finalHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES;
+
+// The two final desktop layers retain their existing visual assets and order, but now share a
+// pre-commit, streaming-safe response contract. The stage map deliberately exposes each boundary
+// so Production diagnostics can distinguish core Home rendering from final presentation delivery.
+const desktopHomeHeaderHandler=finalPresentationStability.wrapDesktopHome(finalHandler);
+const desktopAboutTrustContrastHandler=finalPresentationStability.wrapDesktopTrust(desktopHomeHeaderHandler);
 const googleDiscoverabilityPerformanceHandler=googleDiscoverabilityPerformance.wrap(desktopAboutTrustContrastHandler);
-googleDiscoverabilityPerformanceHandler.APG_P0_HOME_ASSEMBLY_HANDLERS=p0HomeAssemblyHandlers;
-googleDiscoverabilityPerformanceHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES=finalHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES;
+const p0HomeAssemblyHandlers=Object.freeze({
+  runtime,
+  transport:transportHandler,
+  premium:premiumHandler,
+  journey:journeyHandler,
+  stable:stableJourneyHandler,
+  mobile:premiumMobileHandler,
+  whole:handler,
+  audit:auditedHandler,
+  presentation:routeScopedPresentationHandler,
+  searchImages:searchImageHandler,
+  categoryImages:categoryImageHandler,
+  pagespeed:pagespeedHandler,
+  reviewProfiles:reviewProfileHandler,
+  final:finalHandler,
+  desktopHome:desktopHomeHeaderHandler,
+  desktopTrust:desktopAboutTrustContrastHandler,
+  googleDelivery:googleDiscoverabilityPerformanceHandler
+});
+for(const stageHandler of [finalHandler,desktopHomeHeaderHandler,desktopAboutTrustContrastHandler,googleDiscoverabilityPerformanceHandler]){
+  stageHandler.APG_P0_HOME_ASSEMBLY_HANDLERS=p0HomeAssemblyHandlers;
+  stageHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES=Object.freeze(Object.keys(p0HomeAssemblyHandlers));
+}
+desktopHomeHeaderHandler.FINAL_PRESENTATION_STABILITY_VERSION=finalPresentationStability.VERSION;
+desktopAboutTrustContrastHandler.FINAL_PRESENTATION_STABILITY_VERSION=finalPresentationStability.VERSION;
+googleDiscoverabilityPerformanceHandler.FINAL_PRESENTATION_STABILITY_VERSION=finalPresentationStability.VERSION;
 googleDiscoverabilityPerformanceHandler.GOOGLE_DISCOVERABILITY_PERFORMANCE_VERSION=googleDiscoverabilityPerformance.VERSION;
 module.exports=googleDiscoverabilityPerformanceHandler;
