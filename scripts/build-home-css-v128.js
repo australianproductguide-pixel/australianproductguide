@@ -5,9 +5,10 @@
 // This script runs outside every public request. It renders the exact local application handler
 // with a fixed, synthetic Production request, then reads each first-party stylesheet from the
 // repository or its deterministic local asset route. It performs no network requests, preserves
-// final cascade order and link-level media conditions, resolves relative asset URLs and writes one
-// static CSS asset plus deterministic Brotli/gzip sidecars. A stale or incomplete bundle fails the
-// runtime signature check and the public site falls back to the established stylesheet cascade.
+// final cascade order and link-level media conditions, resolves relative asset URLs, applies a
+// conservative syntax-aware compaction pass and writes one static CSS asset plus deterministic
+// Brotli/gzip sidecars. A stale or incomplete bundle fails the runtime signature check and the
+// public site falls back to the established stylesheet cascade.
 
 process.env.APG_HOME_CSS_BUILD='1';
 
@@ -16,6 +17,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const zlib=require('node:zlib');
 const pagespeed=require('../lib/pagespeed-agentic-certification-v113-runtime');
+const cssCompact=require('../lib/css-safe-compact-v128');
 const app=require('../api/index');
 
 const ROOT=path.resolve(__dirname,'..');
@@ -26,6 +28,7 @@ const GZIP_OUTPUT=OUTPUT+'.gz';
 const ORIGIN='https://australianproductguide.au';
 const MIN_STYLESHEETS=40;
 const MIN_BYTES=250000;
+const MAX_COMPACT_RATIO=0.99;
 const BROTLI_QUALITY=11;
 const RENDER_TIMEOUT_MS=20000;
 
@@ -169,10 +172,14 @@ async function build(){
   const chunks=[];
   for(const row of links)chunks.push(await cssSource(row));
   const signature=crypto.createHash('sha256').update(JSON.stringify(links)).digest('hex');
-  const banner=`/* Australian Product Guide — deterministic build-time Home CSS bundle v128.2. Source order and media semantics preserved. */\n/* APG_HOME_CSS_LINK_SIGNATURE:${signature} */\n`;
-  const body=banner+chunks.join('\n\n')+'\n';
+  const banner=`/* Australian Product Guide - deterministic build-time Home CSS bundle v128.2. Source order and media semantics preserved. */\n/* APG_HOME_CSS_LINK_SIGNATURE:${signature} */\n`;
+  const expandedCss=chunks.join('\n\n');
+  const compactedCss=cssCompact.compactCss(expandedCss);
+  const expandedBytes=Buffer.byteLength(banner+expandedCss+'\n','utf8');
+  const body=banner+compactedCss+'\n';
   const buffer=Buffer.from(body,'utf8');
   if(buffer.length<MIN_BYTES)throw new Error(`bundle unexpectedly small: ${buffer.length} bytes`);
+  if(buffer.length>=expandedBytes*MAX_COMPACT_RATIO)throw new Error(`bundle compaction below one percent: expanded=${expandedBytes} compact=${buffer.length}`);
   for(const token of ['.site-header','.apg-home-hero-v9','.apg-ebay-official-v121-card','#apgAssistantLauncher']){
     if(!body.includes(token))throw new Error(`bundle missing required presentation token ${token}`);
   }
@@ -182,7 +189,8 @@ async function build(){
   atomicWrite(BROTLI_OUTPUT,compressed.br);
   atomicWrite(GZIP_OUTPUT,compressed.gzip);
   const hash=crypto.createHash('sha256').update(buffer).digest('hex');
-  console.log(`APG_HOME_CSS_BUNDLE_V128=PASS styles=${links.length} bytes=${buffer.length} br=${compressed.br.length} gzip=${compressed.gzip.length} linkSignature=${signature} sha256=${hash}`);
+  const compactRatio=(buffer.length/expandedBytes).toFixed(4);
+  console.log(`APG_HOME_CSS_BUNDLE_V128=PASS styles=${links.length} expandedBytes=${expandedBytes} bytes=${buffer.length} compactRatio=${compactRatio} br=${compressed.br.length} gzip=${compressed.gzip.length} linkSignature=${signature} sha256=${hash}`);
 }
 
 build().catch(error=>{

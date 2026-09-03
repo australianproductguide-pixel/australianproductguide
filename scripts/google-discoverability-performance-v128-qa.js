@@ -4,6 +4,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const layer=require('../lib/google-discoverability-performance-v128-runtime');
+const cssCompact=require('../lib/css-safe-compact-v128');
 
 const root=path.resolve(__dirname,'..');
 const vercel=JSON.parse(fs.readFileSync(path.join(root,'vercel.json'),'utf8'));
@@ -29,8 +30,21 @@ function withoutNoscript(html){return String(html||'').replace(/<noscript\b[^>]*
 
 async function main(){
   assert.equal(layer.VERSION,'128.2');
+  assert.equal(cssCompact.VERSION,'128.2');
   assert.equal(layer.STYLE_REPLACEMENTS.length,4);
   assert.equal(layer.HOME_BUNDLE_PATH,'/assets/home-v128-bundle.css');
+
+  const cssSample='/*! licence */\n.alpha,  .beta {\n  color: red;\n  content: "a  b";\n  width: calc(100% - 2rem);\n  background-image: url("data:image/svg+xml;utf8,<svg><!--x--></svg>");\n}\n/* removable */';
+  const compactedSample=cssCompact.compactCss(cssSample);
+  assert(compactedSample.includes('/*! licence */'),'important CSS comments must remain');
+  assert(!compactedSample.includes('removable'),'ordinary CSS comments must be removed');
+  assert(compactedSample.includes('.alpha,.beta{'),'redundant selector whitespace must be removed');
+  assert(compactedSample.includes('content: "a  b"'),'quoted content spacing must remain exact');
+  assert(compactedSample.includes('calc(100% - 2rem)'),'calc operator spacing must remain exact');
+  assert(compactedSample.includes('data:image/svg+xml;utf8,<svg><!--x--></svg>'),'data URLs must remain exact');
+  assert(compactedSample.length<cssSample.length,'compaction must reduce the representative source');
+  assert.equal(cssCompact.compactCss(compactedSample),compactedSample,'CSS compaction must be idempotent');
+  assert(cssCompact.compactCss('@media screen/**/and (min-width: 1px) { .x { color: red; } }').includes('@media screen and'),'comments that separate CSS tokens must retain a safe boundary');
 
   const html='<!doctype html><html><head>'+
     '<link rel="canonical" href="https://australianproductguide.au/">'+
@@ -139,19 +153,26 @@ async function main(){
     "Vary"
   ])assert(prServerSource.includes(required),`exact PR runtime missing ${required}`);
   for(const required of [
-    'APG_HOME_CSS_BUILD',
+    "process.env.APG_HOME_CSS_BUILD='1'",
+    "require('../api/index')",
+    "require('../lib/css-safe-compact-v128')",
     'APG_HOME_CSS_LINK_SIGNATURE:',
     'pagespeed.absoluteCssUrls',
+    'cssCompact.compactCss',
+    'expandedBytes',
+    'MAX_COMPACT_RATIO=0.99',
     'MIN_STYLESHEETS=40',
     'Home contains an inline style block'
   ])assert(bundleBuildSource.includes(required),`build-time bundle control missing ${required}`);
-  assert(!bundleBuildSource.includes("require('../api/index')"),'build script must use an isolated exact HTTP process rather than recursively invoking the application');
+  assert(!bundleBuildSource.includes('fetch('),'build-time bundle must not perform network requests');
+  assert(!bundleBuildSource.includes('spawn('),'build-time bundle must not spawn a loopback HTTP process');
+  assert(!bundleBuildSource.includes('pr-runtime-server-v109.js'),'build-time bundle must not recursively invoke the release harness');
 
   console.log(JSON.stringify({
     status:'PASS',version:layer.VERSION,
-    safeBaseline:{viewportScopedStyles:4,versionedAssetCaching:true,edgeVersionedAssetCaching:true,legacyAliasRedirects:2,signatureVerifiedBuildTimeHomeCss:true,compressedExactHarnessAssets:true},
+    safeBaseline:{viewportScopedStyles:4,versionedAssetCaching:true,edgeVersionedAssetCaching:true,legacyAliasRedirects:2,signatureVerifiedBuildTimeHomeCss:true,buildTimeCssCompaction:true,compressedExactHarnessAssets:true},
     protected:{privacyCssInBundle:true,noscriptCssPreserved:true,canonical:true,structuredData:true,agenticSearchAffordance:true,governedImageUrlsUnchanged:true,unversionedAssetRevalidation:true,accessibleWordmarkNames:true},
-    security:{redirectQueryDiscarded:true,redirectBodyStatic:true,emptyVersionNotImmutable:true,staleBundleFailsClosed:true,noLiveRecursiveCssCapture:true}
+    security:{redirectQueryDiscarded:true,redirectBodyStatic:true,emptyVersionNotImmutable:true,staleBundleFailsClosed:true,noLiveRecursiveCssCapture:true,noBuildNetworkRequests:true,noBuildHarnessRecursion:true}
   },null,2));
 }
 
