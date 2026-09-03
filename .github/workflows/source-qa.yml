@@ -32,6 +32,7 @@ jobs:
           node scripts/ebay-official-creatives-v121-qa.js
           npm run qa:full
           node scripts/production-verification-closure-v129-qa.js
+          node scripts/home-runtime-manifest-v130-qa.js
           node scripts/pagespeed-agentic-certification-v113-qa.js
           node scripts/p0-home-bisect-v2-qa.js
           node scripts/p0-home-assembly-bisect-v3-qa.js
@@ -80,7 +81,8 @@ jobs:
           expect(JSON.stringify(config.regions)===JSON.stringify(['syd1']),`Expected Sydney function region, got ${JSON.stringify(config.regions)}`);
           expect(Array.isArray(config.routes)&&config.routes.length===6,'Expected four private MCP/OAuth routes, filesystem handling and the API fallback with native Home restored');
           expect(!config.routes.some(route=>route&&route.src==='/'&&('status' in route||route.headers?.Location)),'Native Home must not be hidden behind the temporary P0 Search redirect');
-          expect(config.functions?.['api/home-assembly-diagnostic.js']?.includeFiles==='public/assets/**/*.css','P0 Home assembly diagnostic must package the same governed CSS assets as public SSR during post-recovery watch');
+          expect(config.functions?.['api/home-assembly-diagnostic.js']?.includeFiles==='public/assets/**/*.css','P0 Home assembly diagnostic must package the governed CSS assets required for noindex inspection');
+          expect(config.functions?.['api/index.js']===undefined,'Public Home runtime must not package the full CSS asset tree; bundle metadata is source controlled and the CSS is served by the filesystem route');
           const protectedRoutes=[
             ['/mcp','/api/mcp'],
             ['/oauth/consent','/api/oauth-consent'],
@@ -105,7 +107,7 @@ jobs:
           expect(JSON.stringify(actual)===JSON.stringify(allowed),`Workflow allowlist mismatch: ${actual.join(', ')}`);
           const ops=fs.readFileSync('docs/APG-OPERATIONS.md','utf8');
           for(const token of ['Source-of-truth hierarchy','Affiliate relationships, retailer availability and commission contribute **zero recommendation points**','APG Release Gate','APG Production Verification','07 – QA, Releases & Production Evidence','Australian Tradie Software Matcher']) expect(ops.includes(token),`Operating control missing: ${token}`);
-          console.log('INFRASTRUCTURE_GOVERNANCE=PASS NATIVE_HOME_ROUTE=RESTORED P0_HOME_ASSEMBLY_DIAGNOSTIC=POST_RECOVERY_WATCH WORKFLOW_ALLOWLIST=EXACT');
+          console.log('INFRASTRUCTURE_GOVERNANCE=PASS NATIVE_HOME_ROUTE=RESTORED HOME_RUNTIME_BUNDLE_MANIFEST=STATIC PUBLIC_FUNCTION_CSS_TREE=EXCLUDED WORKFLOW_ALLOWLIST=EXACT');
           NODE
 
       - name: Upload release-control evidence
