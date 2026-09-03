@@ -7,7 +7,7 @@
 const app=require('./index');
 
 const ORIGIN='https://australianproductguide.au';
-const VERSION='3.0';
+const VERSION='3.1';
 const NATIVE_HOME_URL='/?__apg_home_diag=1';
 
 function safeSetHeader(res,name,value){
@@ -31,16 +31,25 @@ function log(kind,stage,detail){
   const suffix=detail===undefined?'':` ${detail&&detail.stack?detail.stack:String(detail)}`;
   console.log(`[APG_P0_HOME_ASSEMBLY_${kind}] ${stage}${suffix}`);
 }
+function resolveStage(stages,raw){
+  const requested=String(raw||'').trim().toLowerCase();
+  if(!requested)return null;
+  for(const [name,stageHandler] of Object.entries(stages||{})){
+    if(name.toLowerCase()===requested&&typeof stageHandler==='function')return Object.freeze({name,handler:stageHandler});
+  }
+  return null;
+}
 
 function handler(req,res){
   let url;
   try{url=new URL(req.url||'/',ORIGIN)}catch{return plain(res,400,'Bad request')}
   if(!['GET','HEAD'].includes(String(req.method||'GET').toUpperCase()))return plain(res,405,'Method not allowed');
 
-  const stage=String(url.searchParams.get('target')||'').trim().toLowerCase();
   const stages=app.APG_P0_HOME_ASSEMBLY_HANDLERS||{};
-  const stageHandler=stages[stage];
-  if(typeof stageHandler!=='function')return plain(res,404,'Not found');
+  const resolved=resolveStage(stages,url.searchParams.get('target'));
+  if(!resolved)return plain(res,404,'Not found');
+  const stage=resolved.name;
+  const stageHandler=resolved.handler;
 
   // Set diagnostic headers before the selected stage can stream or commit a large Home response.
   diagnosticHeaders(res,stage);
@@ -72,5 +81,5 @@ function handler(req,res){
   }
 }
 
-Object.assign(handler,{VERSION,NATIVE_HOME_URL,safeSetHeader});
+Object.assign(handler,{VERSION,NATIVE_HOME_URL,safeSetHeader,resolveStage});
 module.exports=handler;
