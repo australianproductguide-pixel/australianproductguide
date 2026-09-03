@@ -70,8 +70,9 @@ assert.strictEqual(mapping.recommendationWeight,0);
 assert.strictEqual(continuity.displayFresh(mapping),true,'verified state must retain an observed timestamp');
 assert.strictEqual(continuity.guardEligible(slug,mapping,observed+(5*60*60*1000)),true,'five-hour-old verified image must remain eligible');
 assert.strictEqual(continuity.guardEligible(slug,mapping,observed+(365*24*60*60*1000)),true,'eligibility must follow explicit governed state and exact identity rather than an arbitrary time cliff');
-assert.strictEqual(continuity.exactEbayImage('https://i.ebayimg.com/images/g/example/s-l1600.jpg'),true,'exact HTTPS eBay image origin must be accepted');
-assert.strictEqual(continuity.exactEbayImage('https://i.ebayimg.com.evil.example/images/g/example/s-l1600.jpg'),false,'lookalike hosts must be rejected');
+assert.strictEqual(continuity.completeMapping(mapping,slug),true,'exact HTTPS eBay image origin must be accepted');
+const lookalikeImageMapping={...mapping,imageUrl:'https://i.ebayimg.com.evil.example/images/g/example/s-l1600.jpg'};
+assert.strictEqual(continuity.completeMapping(lookalikeImageMapping,slug),false,'lookalike image hosts must be rejected');
 
 const canonical=`<link rel="canonical" href="https://australianproductguide.au/products/${slug}/">`;
 const jsonLd='<script type="application/ld+json">{"@type":"Product","name":"Breville Barista Express Impress BES876"}</script>';
