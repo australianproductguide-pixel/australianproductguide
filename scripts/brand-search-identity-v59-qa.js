@@ -16,6 +16,7 @@ const brandMarkQuality=read('lib/brand-mark-quality-v65.js');
 const brandMarkCurated=read('lib/brand-mark-curated-v66.js');
 const brandMarkDeviceParity=read('lib/brand-mark-device-parity-v66.js');
 const brandMarkComplete=read('lib/brand-mark-complete-v67.js');
+const brandLogoStability=read('lib/brand-logo-stability-v125-runtime.js');
 const productBrandPlaceholderCss=read('public/assets/product-brand-placeholder-v64.css');
 const entry=read('api/index.js');
 const favicon=read('public/favicon.svg');
@@ -31,7 +32,16 @@ assert.doesNotThrow(()=>new Function(brandMarkCurated),'brand-mark-curated-v66.j
 assert.doesNotThrow(()=>new Function(brandMarkDeviceParity),'brand-mark-device-parity-v66.js must parse');
 assert.doesNotThrow(()=>new Function(brandMarkComplete),'brand-mark-complete-v67.js must parse');
 assert(runtime.includes("require('./seo-optimisation-v58-runtime')"),'v59 must wrap SEO v58 rather than bypass it');
-assert(entry.includes("module.exports=require('../lib/brand-mark-complete-v67')"),'public entrypoint must use current complete brand identity v67.2');
+
+// The public entry point is now a composed runtime rather than a direct export of v67.2.
+// Brand Logo Stability v125 is the explicit current attachment point and must continue to
+// delegate to the complete v67.2 resolver before later desktop and v128 delivery wrappers.
+assert(entry.includes("const brandLogoStability=require('../lib/brand-logo-stability-v125-runtime')"),'public entrypoint must attach the governed brand-logo stability layer');
+assert(entry.includes('const finalHandler=brandLogoStability.wrap(reviewProfileHandler)'),'brand-logo stability must wrap the current public response after review-profile presentation');
+assert(brandLogoStability.includes("const complete=require('./brand-mark-complete-v67')"),'brand-logo stability must retain complete brand identity v67.2 as its governed resolver');
+assert(entry.includes("const googleDiscoverabilityPerformance=require('../lib/google-discoverability-performance-v128-runtime')"),'later v128 delivery must remain explicit and non-scoring');
+assert(entry.trim().endsWith('module.exports=googleDiscoverabilityPerformanceHandler;'),'public entrypoint must export the completed v128-wrapped handler without bypassing brand stability');
+
 assert(brandMarkComplete.includes("require('./brand-mark-device-parity-v66')"),'v67.2 must preserve v66.2 parity/integrity immediately underneath');
 assert(brandMarkComplete.includes("BRAND_MARK_COMPLETE_VERSION='67.2'"),'v67.2 must expose the current complete-brand generation');
 assert(brandMarkComplete.includes("BRAND_MARK_ASSET_VERSION='67.2'"),'v67.2 must use one cache-busted identity generation across desktop/mobile');
@@ -44,6 +54,11 @@ assert(brandMarkComplete.includes('contrastAdaptWhiteSvg'),'v67.2 must preserve 
 assert(brandMarkComplete.includes('canonicalFallbackImage'),'v67.2 unresolved known brands must terminate safely rather than leaking rejected older assets');
 assert(brandMarkComplete.includes('return canonicalFallbackImage(slug)'),'v67.2 must enforce terminal fallback for unresolved canonical brands');
 assert(brandMarkComplete.includes('X-APG-Brand-Mark-Presentation'),'v67.2 must expose contrast-safe presentation provenance');
+assert(brandLogoStability.includes('resolveStableBrandMark'),'v125 must retain a fail-closed stable brand resolver');
+assert(brandLogoStability.includes('canonicalFallbackImage'),'v125 must preserve the deterministic canonical-name fallback');
+assert(brandLogoStability.includes("X-APG-Brand-Logo-Stability"),'v125 must expose stable public brand-logo provenance');
+assert(brandLogoStability.includes('scoreProduct(')===false,'brand stability must not alter recommendation scoring');
+assert(brandLogoStability.includes('commissionWeight')===false,'brand stability must not alter commercial weighting');
 assert(brandMarkDeviceParity.includes("require('./brand-mark-curated-v66')"),'v66.2 parity/integrity must preserve curated v66 immediately underneath');
 assert(brandMarkDeviceParity.includes("BRAND_MARK_DEVICE_PARITY_VERSION='66.2'"),'v66.2 must expose the desktop/mobile parity generation');
 assert(brandMarkDeviceParity.includes("BRAND_MARK_INTEGRITY_VERSION='66.2'"),'v66.2 must expose the brand-integrity generation');
@@ -94,4 +109,4 @@ assert.deepEqual(manifest.icons.slice(1).map(({src,sizes,type,purpose})=>({src,s
   {src:'/icon-512.png',sizes:'512x512',type:'image/png',purpose:'any'}
 ],'v115 manifest must preserve conservative raster fallbacks without an unverified maskable claim');
 
-console.log('APG Search Brand Identity v59 source QA passed beneath v60-v67.2; historical v105 cache-busted identity remains intact while Favicon Parity v115 makes /favicon.svg plus 192/512 PNGs the stable non-maskable manifest identity');
+console.log('APG Search Brand Identity v59 source QA passed beneath v60-v67.2 and current v125 stability; historical v105 cache-busted identity remains intact while Favicon Parity v115 makes /favicon.svg plus 192/512 PNGs the stable non-maskable manifest identity');

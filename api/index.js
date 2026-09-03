@@ -32,6 +32,7 @@ const categoryFeaturedImagery=require('../lib/category-featured-product-imagery-
 const brandLogoStability=require('../lib/brand-logo-stability-v125-runtime');
 const desktopHomeHeader=require('../lib/desktop-home-header-v126-runtime');
 const desktopAboutTrustContrast=require('../lib/desktop-about-trust-contrast-v127-runtime');
+const googleDiscoverabilityPerformance=require('../lib/google-discoverability-performance-v128-runtime');
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
 scoutResponseDepth.install();
@@ -112,4 +113,8 @@ desktopHomeHeaderHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES=finalHandler.APG_P0_HO
 const desktopAboutTrustContrastHandler=desktopAboutTrustContrast.wrap(desktopHomeHeaderHandler);
 desktopAboutTrustContrastHandler.APG_P0_HOME_ASSEMBLY_HANDLERS=p0HomeAssemblyHandlers;
 desktopAboutTrustContrastHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES=finalHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES;
-module.exports=desktopAboutTrustContrastHandler;
+const googleDiscoverabilityPerformanceHandler=googleDiscoverabilityPerformance.wrap(desktopAboutTrustContrastHandler);
+googleDiscoverabilityPerformanceHandler.APG_P0_HOME_ASSEMBLY_HANDLERS=p0HomeAssemblyHandlers;
+googleDiscoverabilityPerformanceHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES=finalHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES;
+googleDiscoverabilityPerformanceHandler.GOOGLE_DISCOVERABILITY_PERFORMANCE_VERSION=googleDiscoverabilityPerformance.VERSION;
+module.exports=googleDiscoverabilityPerformanceHandler;

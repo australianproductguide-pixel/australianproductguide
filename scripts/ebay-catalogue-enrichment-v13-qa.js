@@ -32,7 +32,7 @@ const winixPro={brand:'Winix',name:'ZERO+ PRO 5-Stage Air Purifier',slug:'winix-
 const keychronK2Pro={brand:'Keychron',name:'K2 Pro',model:'K2 Pro',slug:'keychron-k2-pro',category:'mechanical-keyboards',price:189};
 const zojirushi={brand:'Zojirushi',name:'NS-ZCC10 Rice Cooker',model:'NS-ZCC10',slug:'zojirushi-ns-zcc10-rice-cooker',category:'rice-cookers',price:399};
 
-assert.strictEqual(matcher.VERSION,'1.4');
+assert.strictEqual(matcher.VERSION,'1.6');
 assert.strictEqual(familyGuard.VERSION,'1.3.2');
 assert.deepStrictEqual(matcher.modelTokens(s70d),['S70D']);
 assert.deepStrictEqual(matcher.modelTokens(x50),['X50']);
@@ -127,4 +127,4 @@ assert.strictEqual(exactSony.exactModel,true);
 assert.notStrictEqual(exactSony.status,'reject');
 assert.strictEqual(exactSony.status,'review');
 
-console.log('EBAY_CATALOGUE_ENRICHMENT_V14=PASS material-variants=screen-size|model-suffix|regional-voltage accessory-regressions=palm-rest|wrist-rest family-variants=X50-DSL|X50-Outdoor|X50-PoE|X50-5G required-family=SIHOO-C300-Pro-V2|Winix-ZERO360|Winix-ZERO-PRO compound-models=WF-1000XM6|S70D|X50 recommendationWeight=0');
+console.log('EBAY_CATALOGUE_ENRICHMENT_V16=PASS material-variants=screen-size|model-suffix|regional-voltage accessory-regressions=palm-rest|wrist-rest family-variants=X50-DSL|X50-Outdoor|X50-PoE|X50-5G required-family=SIHOO-C300-Pro-V2|Winix-ZERO360|Winix-ZERO-PRO compound-models=WF-1000XM6|S70D|X50 recommendationWeight=0');

@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "regions": ["syd1"],
+  "buildCommand": "node scripts/build-home-css-v128.js && npm run vercel-build",
   "functions": {
     "api/index.js": {
       "includeFiles": "public/assets/**/*.css"
@@ -9,6 +10,24 @@
       "includeFiles": "public/assets/**/*.css"
     }
   },
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "has": [
+        {
+          "type": "query",
+          "key": "v",
+          "value": ".+"
+        }
+      ],
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ],
   "git": {
     "deploymentEnabled": {
       "apg/*": false,

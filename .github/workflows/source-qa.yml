@@ -91,14 +91,20 @@ jobs:
           expect(config.routes[5].src==='/(.*)'&&config.routes[5].dest==='/api','Unexpected dynamic fallback route');
           const deploymentEnabled=config.git?.deploymentEnabled||{};
           expect(deploymentEnabled['apg/*']===false&&deploymentEnabled['apg-*']===false,'Routine APG feature branches must not auto-deploy');
-          const authoritativeWorkflowFiles=['amazon-shopping-assurance-v40.yml','catalogue-freshness-qa.yml','codeql.yml','indexnow.yml','production-smoke.yml','source-qa.yml'].sort();
-          const supportWorkflowFiles=['category-editorial-research-v41.yml'].sort();
-          const allowed=[...authoritativeWorkflowFiles,...supportWorkflowFiles].sort();
+          const allowed=[
+            'amazon-shopping-assurance-v40.yml',
+            'catalogue-freshness-qa.yml',
+            'category-editorial-research-v41.yml',
+            'codeql.yml',
+            'indexnow.yml',
+            'production-smoke.yml',
+            'source-qa.yml'
+          ].sort();
           const actual=fs.readdirSync('.github/workflows').filter(x=>/\.ya?ml$/.test(x)).sort();
           expect(JSON.stringify(actual)===JSON.stringify(allowed),`Workflow allowlist mismatch: ${actual.join(', ')}`);
           const ops=fs.readFileSync('docs/APG-OPERATIONS.md','utf8');
           for(const token of ['Source-of-truth hierarchy','Affiliate relationships, retailer availability and commission contribute **zero recommendation points**','APG Release Gate','APG Production Verification','07 – QA, Releases & Production Evidence','Australian Tradie Software Matcher']) expect(ops.includes(token),`Operating control missing: ${token}`);
-          console.log('INFRASTRUCTURE_GOVERNANCE=PASS NATIVE_HOME_ROUTE=RESTORED P0_HOME_ASSEMBLY_DIAGNOSTIC=POST_RECOVERY_WATCH');
+          console.log('INFRASTRUCTURE_GOVERNANCE=PASS NATIVE_HOME_ROUTE=RESTORED P0_HOME_ASSEMBLY_DIAGNOSTIC=POST_RECOVERY_WATCH WORKFLOW_ALLOWLIST=EXACT');
           NODE
 
       - name: Upload release-control evidence

@@ -1,0 +1,179 @@
+'use strict';
+
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const layer=require('../lib/google-discoverability-performance-v128-runtime');
+const cssCompact=require('../lib/css-safe-compact-v128');
+
+const root=path.resolve(__dirname,'..');
+const vercel=JSON.parse(fs.readFileSync(path.join(root,'vercel.json'),'utf8'));
+const prServerSource=fs.readFileSync(path.join(root,'scripts','pr-runtime-server-v109.js'),'utf8');
+const bundleBuildSource=fs.readFileSync(path.join(root,'scripts','build-home-css-v128.js'),'utf8');
+
+function response(resolve){
+  const headers=new Map();
+  return {
+    statusCode:200,
+    setHeader(name,value){headers.set(String(name).toLowerCase(),String(value));},
+    getHeader(name){return headers.get(String(name).toLowerCase());},
+    removeHeader(name){headers.delete(String(name).toLowerCase());},
+    end(body){resolve({statusCode:this.statusCode,headers,body:Buffer.isBuffer(body)?body.toString('utf8'):String(body||'')});}
+  };
+}
+function invoke(handler,url,method='GET'){
+  return new Promise((resolve,reject)=>{
+    try{handler({url,method},response(resolve));}catch(error){reject(error);}
+  });
+}
+function withoutNoscript(html){return String(html||'').replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi,'');}
+
+async function main(){
+  assert.equal(layer.VERSION,'128.2');
+  assert.equal(cssCompact.VERSION,'128.2');
+  assert.equal(layer.STYLE_REPLACEMENTS.length,4);
+  assert.equal(layer.HOME_BUNDLE_PATH,'/assets/home-v128-bundle.css');
+
+  const cssSample='/*! licence */\n.alpha,  .beta {\n  color: red;\n  content: "a  b";\n  width: calc(100% - 2rem);\n  background-image: url("data:image/svg+xml;utf8,<svg><!--x--></svg>");\n}\n/* removable */';
+  const compactedSample=cssCompact.compactCss(cssSample);
+  assert(compactedSample.includes('/*! licence */'),'important CSS comments must remain');
+  assert(!compactedSample.includes('removable'),'ordinary CSS comments must be removed');
+  assert(compactedSample.includes('.alpha,.beta{'),'redundant selector whitespace must be removed');
+  assert(compactedSample.includes('content: "a  b"'),'quoted content spacing must remain exact');
+  assert(compactedSample.includes('calc(100% - 2rem)'),'calc operator spacing must remain exact');
+  assert(compactedSample.includes('data:image/svg+xml;utf8,<svg><!--x--></svg>'),'data URLs must remain exact');
+  assert(compactedSample.length<cssSample.length,'compaction must reduce the representative source');
+  assert.equal(cssCompact.compactCss(compactedSample),compactedSample,'CSS compaction must be idempotent');
+  assert(cssCompact.compactCss('@media screen/**/and (min-width: 1px) { .x { color: red; } }').includes('@media screen and'),'comments that separate CSS tokens must retain a safe boundary');
+
+  const html='<!doctype html><html><head>'+
+    '<link rel="canonical" href="https://australianproductguide.au/">'+
+    '<script type="application/ld+json">{"@type":"WebSite"}</script>'+
+    '<link rel="preload" as="style" href="/assets/privacy-experience.css">'+
+    '<link rel="stylesheet" href="/assets/privacy-experience.css">'+
+    '<link rel="stylesheet" href="/assets/desktop-home-header-v126.css?v=126.2">'+
+    '<link rel="stylesheet" href="/assets/desktop-about-trust-contrast-v127.css?v=127.0">'+
+    '<link rel="stylesheet" href="/assets/mobile-header-wordmark-v75.css?v=75.0">'+
+    '<link rel="stylesheet" href="/assets/mobile-menu-polish-v21.css?v=21">'+
+    '<noscript><link rel="stylesheet" href="/assets/privacy-experience.css"></noscript>'+
+    '</head><body><header><a class="brand" href="/" aria-label="Australian Product Guide home">Australian Product Guide</a></header>'+
+    '<form role="search" aria-label="Search Australian products"></form>'+
+    '<img src="https://i.ebayimg.com/images/g/example/s-l1600.jpg" alt="Governed product" loading="lazy">'+
+    '<footer><a class="footer-v11-wordmark" href="/" aria-label="Australian Product Guide home">Australian Product Guide</a></footer>'+
+    '</body></html>';
+
+  const transformed=layer.transformHtml(html,'/search/');
+  assert.match(transformed,/desktop-home-header-v126\.css\?v=126\.2" media="\(min-width:981px\)"/);
+  assert.match(transformed,/desktop-about-trust-contrast-v127\.css\?v=127\.0" media="\(min-width:921px\)"/);
+  assert.match(transformed,/mobile-header-wordmark-v75\.css\?v=75\.0" media="\(max-width:920px\)"/);
+  assert.match(transformed,/mobile-menu-polish-v21\.css\?v=21" media="\(max-width:920px\)"/);
+  assert.match(transformed,/privacy-experience\.css">/);
+  assert.doesNotMatch(transformed,/privacy-experience\.css" media=/);
+  assert.doesNotMatch(transformed,/aria-label="Australian Product Guide home"/,'visible wordmarks must supply their own matching accessible name');
+  assert.match(transformed,/rel="canonical"/);
+  assert.match(transformed,/application\/ld\+json/);
+  assert.match(transformed,/role="search" aria-label="Search Australian products"/);
+  assert.match(transformed,/s-l1600\.jpg/,'governed image URLs must remain unchanged');
+  assert.equal((transformed.match(/apg-google-discoverability-performance/g)||[]).length,1);
+  assert.equal(layer.transformHtml(transformed,'/search/'),transformed,'HTML transform must be idempotent');
+
+  const prepared=layer.injectMarker(layer.repairAccessibleBrandNames(layer.scopeCertifiedViewportStyles(html)));
+  const signature=layer.stylesheetSignature(prepared);
+  const bundleHref='/assets/home-v128-bundle.css?v=qa123';
+  const bundled=layer.consolidateHomepageCss(prepared,{pathname:'/',info:{signature,href:bundleHref}});
+  assert.equal((withoutNoscript(bundled).match(/rel="stylesheet"/g)||[]).length,1,'Home must use one active stylesheet after exact-signature consolidation');
+  assert.match(bundled,/data-apg-home-css-bundle="v128\.2"/);
+  assert.match(bundled,/href="\/assets\/home-v128-bundle\.css\?v=qa123"/);
+  assert.doesNotMatch(withoutNoscript(bundled),/desktop-home-header-v126\.css/,'superseded active links must be removed after bundling');
+  assert.match(bundled,/<noscript><link rel="stylesheet" href="\/assets\/privacy-experience\.css"><\/noscript>/,'no-JavaScript fallback must remain intact');
+  assert.equal(layer.consolidateHomepageCss(prepared,{pathname:'/',info:{signature:'0'.repeat(64),href:bundleHref}}),prepared,'signature mismatch must fail closed to the established cascade');
+  assert.equal(layer.consolidateHomepageCss(prepared,{pathname:'/search/',info:{signature,href:bundleHref}}),prepared,'bundle must remain Home-only');
+  assert.equal(layer.consolidateHomepageCss(bundled,{pathname:'/',info:{signature,href:bundleHref}}),bundled,'bundle transform must be idempotent');
+
+  assert.equal(layer.redirectTarget(layer.LEGACY_PRODUCT),layer.CANONICAL_PRODUCT);
+  assert.equal(layer.redirectTarget(layer.LEGACY_COMPARISON),layer.CANONICAL_COMPARISON);
+  assert.equal(layer.redirectTarget('/products/unrelated/'),'');
+
+  let downstreamCalls=0;
+  const redirecting=layer.wrap((req,res)=>{downstreamCalls+=1;res.end('downstream');});
+  const product=await invoke(redirecting,layer.LEGACY_PRODUCT+'?source=gsc');
+  assert.equal(product.statusCode,308);
+  assert.equal(product.headers.get('location'),layer.CANONICAL_PRODUCT,'legacy query data must not enter Location');
+  assert.equal(product.headers.get('cache-control'),'public, max-age=86400, s-maxage=31536000');
+  assert.equal(product.headers.get('content-type'),'text/plain; charset=utf-8');
+  assert.equal(product.body,'Permanent redirect','redirect body must not reflect request data');
+  assert.equal(downstreamCalls,0);
+
+  const comparison=await invoke(redirecting,layer.LEGACY_COMPARISON+'?q=%3Cscript%3E','HEAD');
+  assert.equal(comparison.statusCode,308);
+  assert.equal(comparison.headers.get('location'),layer.CANONICAL_COMPARISON);
+  assert.equal(comparison.body,'');
+  assert.equal(downstreamCalls,0);
+
+  const rendering=layer.wrap((req,res)=>{
+    res.statusCode=200;
+    res.setHeader('Content-Type','text/html; charset=utf-8');
+    res.setHeader('Content-Length',String(Buffer.byteLength(html)));
+    res.end(html);
+  });
+  const rendered=await invoke(rendering,'/');
+  assert.match(rendered.body,/name="apg-google-discoverability-performance" content="v128\.2"/);
+  assert.equal(rendered.headers.get('content-length'),undefined);
+  assert.equal(rendered.headers.get('x-apg-google-discoverability-performance'),'v128.2');
+
+  // Dynamic/generated assets pass through the wrapper; repository assets are served by
+  // Vercel's filesystem layer. Both paths must apply the same non-empty explicit version rule.
+  const asset=layer.wrap((req,res)=>{
+    res.statusCode=200;
+    res.setHeader('Content-Type','text/css; charset=utf-8');
+    res.setHeader('Cache-Control','public, max-age=0, must-revalidate');
+    res.end('body{}');
+  });
+  const versioned=await invoke(asset,'/assets/desktop-about-trust-contrast-v127.css?v=127.0');
+  assert.equal(versioned.headers.get('cache-control'),'public, max-age=31536000, immutable');
+  const unversioned=await invoke(asset,'/assets/privacy-experience.css');
+  assert.equal(unversioned.headers.get('cache-control'),'public, max-age=0, must-revalidate');
+  const emptyVersion=await invoke(asset,'/assets/privacy-experience.css?v=');
+  assert.equal(emptyVersion.headers.get('cache-control'),'public, max-age=0, must-revalidate','empty version query must not create an immutable cache');
+
+  assert.equal(vercel.buildCommand,'node scripts/build-home-css-v128.js && npm run vercel-build','Vercel must generate the deterministic Home bundle before packaging');
+  assert.equal(Array.isArray(vercel.headers),true,'Vercel edge headers must be source controlled');
+  assert.equal(vercel.headers.length,1,'v128 must add one narrow edge-cache rule');
+  const edge=vercel.headers[0];
+  assert.equal(edge.source,'/assets/(.*)');
+  assert.deepEqual(edge.has,[{type:'query',key:'v',value:'.+'}],'edge cache must require a non-empty explicit asset version');
+  assert.deepEqual(edge.headers,[{key:'Cache-Control',value:'public, max-age=31536000, immutable'}]);
+
+  for(const required of [
+    "APG_HOME_CSS_BUILD!=='1'",
+    "build-home-css-v128.js",
+    "createBrotliCompress",
+    "createGzip",
+    "Content-Encoding",
+    "Vary"
+  ])assert(prServerSource.includes(required),`exact PR runtime missing ${required}`);
+  for(const required of [
+    "process.env.APG_HOME_CSS_BUILD='1'",
+    "require('../api/index')",
+    "require('../lib/css-safe-compact-v128')",
+    'APG_HOME_CSS_LINK_SIGNATURE:',
+    'pagespeed.absoluteCssUrls',
+    'cssCompact.compactCss',
+    'expandedBytes',
+    'MAX_COMPACT_RATIO=0.99',
+    'MIN_STYLESHEETS=40',
+    'Home contains an inline style block'
+  ])assert(bundleBuildSource.includes(required),`build-time bundle control missing ${required}`);
+  assert(!bundleBuildSource.includes('fetch('),'build-time bundle must not perform network requests');
+  assert(!bundleBuildSource.includes('spawn('),'build-time bundle must not spawn a loopback HTTP process');
+  assert(!bundleBuildSource.includes('pr-runtime-server-v109.js'),'build-time bundle must not recursively invoke the release harness');
+
+  console.log(JSON.stringify({
+    status:'PASS',version:layer.VERSION,
+    safeBaseline:{viewportScopedStyles:4,versionedAssetCaching:true,edgeVersionedAssetCaching:true,legacyAliasRedirects:2,signatureVerifiedBuildTimeHomeCss:true,buildTimeCssCompaction:true,compressedExactHarnessAssets:true},
+    protected:{privacyCssInBundle:true,noscriptCssPreserved:true,canonical:true,structuredData:true,agenticSearchAffordance:true,governedImageUrlsUnchanged:true,unversionedAssetRevalidation:true,accessibleWordmarkNames:true},
+    security:{redirectQueryDiscarded:true,redirectBodyStatic:true,emptyVersionNotImmutable:true,staleBundleFailsClosed:true,noLiveRecursiveCssCapture:true,noBuildNetworkRequests:true,noBuildHarnessRecursion:true}
+  },null,2));
+}
+
+main().catch(error=>{console.error(error);process.exitCode=1;});
