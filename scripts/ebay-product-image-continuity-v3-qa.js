@@ -18,7 +18,7 @@ assert.strictEqual(continuity.MAX_DISPLAY_AGE_MS,Infinity,'a currently verified 
 assert.strictEqual(continuity.STATE_CACHE_TTL_MS,30*1000,'governed image-state cache must propagate explicit revocations within about 30 seconds');
 assert.strictEqual(continuity.PRODUCT_LOOKUP_TIMEOUT_MS,1200,'SSR registry lookup must remain short and bounded');
 assert.strictEqual(worker.REFRESH_QUOTA_RESERVE,500,'automatic refresh must preserve a 500-call ordinary Browse reserve');
-assert.strictEqual(worker.CONCURRENCY,3,'background refresh concurrency must remain conservative');
+assert.strictEqual(worker.CONCURRENCY,2,'background refresh concurrency must remain conservative');
 assert.strictEqual(worker.MAX_RECOVERY_CALLS,10,'listing recovery must reserve at most ten ordinary calls');
 assert.strictEqual(worker.MAX_DISCOVERY_PRODUCTS_PER_RUN,2,'new-image discovery must stay tightly bounded per scheduled run');
 assert.strictEqual(worker.MAX_DISCOVERY_CALLS_PER_PRODUCT,10,'each discovery product must reserve the governed ten-call search and detail budget');
