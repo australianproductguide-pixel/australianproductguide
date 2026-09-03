@@ -31,6 +31,7 @@ const searchProductImagery=require('../lib/search-product-imagery-v1-runtime');
 const categoryFeaturedImagery=require('../lib/category-featured-product-imagery-v1-runtime');
 const brandLogoStability=require('../lib/brand-logo-stability-v125-runtime');
 const desktopHomeHeader=require('../lib/desktop-home-header-v126-runtime');
+const desktopAboutTrustContrast=require('../lib/desktop-about-trust-contrast-v127-runtime');
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
 scoutResponseDepth.install();
@@ -108,4 +109,7 @@ finalHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES=Object.freeze(Object.keys(p0HomeAs
 const desktopHomeHeaderHandler=desktopHomeHeader.wrap(finalHandler);
 desktopHomeHeaderHandler.APG_P0_HOME_ASSEMBLY_HANDLERS=p0HomeAssemblyHandlers;
 desktopHomeHeaderHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES=finalHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES;
-module.exports=desktopHomeHeaderHandler;
+const desktopAboutTrustContrastHandler=desktopAboutTrustContrast.wrap(desktopHomeHeaderHandler);
+desktopAboutTrustContrastHandler.APG_P0_HOME_ASSEMBLY_HANDLERS=p0HomeAssemblyHandlers;
+desktopAboutTrustContrastHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES=finalHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES;
+module.exports=desktopAboutTrustContrastHandler;
