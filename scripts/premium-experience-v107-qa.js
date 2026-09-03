@@ -83,7 +83,8 @@ function count(text,needle){return (String(text).match(new RegExp(needle.replace
     assert.equal(count(response.body,'id="apgAssistantLauncher"'),1,`${route} must contain exactly one global Scout launcher`);
     assert.equal(count(response.body,'id="apgAssistantPanel"'),1,`${route} must contain exactly one global Scout panel`);
     assert(response.body.includes('/assets/assistant.js'),`${route} must load Scout client behaviour`);
-    const premiumCssDelivered=response.body.includes(premium.CSS_PATH)||(route==='/'&&response.body.includes('/assets/pagespeed-home-v113.css'));
+    // Home v128 replaces direct stylesheet links only after exact signature validation.
+    const premiumCssDelivered=response.body.includes(premium.CSS_PATH)||(route==='/'&&response.body.includes('/assets/home-v128-bundle.css'));
     assert(premiumCssDelivered,`${route} must load premium responsive CSS directly or through the certified homepage bundle`);
     assert(response.body.includes(premium.JS_PATH),`${route} must load premium progressive enhancement JS`);
   }
