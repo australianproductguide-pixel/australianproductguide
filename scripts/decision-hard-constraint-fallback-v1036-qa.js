@@ -38,7 +38,7 @@ function render(url){
   assert.equal(layer.decisionHardConstraintFallbackState(exactState,0,true),false,'unsupported-category requests must not use maintained-category hard-constraint fallback');
   assert.equal(layer.decisionHardConstraintFallbackState(exactState,1,false),false,'a genuinely eligible product must suppress fallback');
 
-  // Full public API through the current outer runtime must preserve the remediation.
+  // Full public API through the current outer delivery chain must preserve the remediation.
   const exact75=await render('/api/decision?q=TV+must+be+exactly+75+inches&category=televisions');
   assert.equal(exact75.status,200,'exact 75-inch API status');
   assert.equal(exact75.headers['x-apg-decision-hard-constraint-fallback'],'v103.6','remediation header missing through outer runtime');
@@ -50,7 +50,7 @@ function render(url){
 
   const impossible=await render('/api/decision?q=TV+must+be+exactly+999+inches&category=televisions');
   assert.equal(impossible.status,200,'999-inch API status');
-  assert.equal(impossible.headers['x-apg-decision-hard-constraint-fallback'],'v103.6','999-inch response must retain remediation header through v104');
+  assert.equal(impossible.headers['x-apg-decision-hard-constraint-fallback'],'v103.6','999-inch response must retain remediation header through the current chain');
   const decision=JSON.parse(impossible.body);
   assert.equal(decision.commercialRecommendationWeight,0,'commercial neutrality must remain zero');
   assert.equal(decision.audit?.eligibleCount,0,'999-inch request must have zero eligible products');
@@ -80,8 +80,8 @@ function render(url){
     return !m||Number(m[1])===65;
   }),'Decision Lab must not rank a verified non-65-inch television as satisfying the exact 65-inch request');
 
-  // 29–30 August 2026 live-audit regression: explicit rejection of a complicated manual
-  // coffee workflow must never be reversed into a positive Hands On preference.
+  // Explicit rejection of a complicated manual coffee workflow must never be reversed
+  // into a positive Hands On preference.
   const coffee=JSON.parse((await render('/api/decision?q=I+want+a+coffee+machine+but+do+not+want+a+complicated+manual+coffee+workflow&category=coffee-machines')).body);
   assert((coffee.interpretation?.avoid||[]).includes('hands-on'),'manual workflow rejection must persist as an explicit exclusion');
   assert(!(coffee.interpretation?.priorities||[]).includes('hands-on'),'manual workflow rejection must not survive as a positive priority');
@@ -91,23 +91,28 @@ function render(url){
 
   const decisionLab=await render('/decision-lab/?q=TV+must+be+exactly+999+inches');
   assert.equal(decisionLab.status,200,'999-inch Decision Lab status');
-  assert.equal(decisionLab.headers['x-apg-decision-hard-constraint-fallback'],'v103.6','Decision Lab must retain remediation header through v104');
+  assert.equal(decisionLab.headers['x-apg-decision-hard-constraint-fallback'],'v103.6','Decision Lab must retain remediation header through the current chain');
   assert.match(decisionLab.body,/999/,'Decision Lab must retain the impossible requirement');
   assert.doesNotMatch(decisionLab.body,/>Best fit</,'fallback must never be presented as a best fit');
 
+  // Source-level lineage: v103.6 remains directly beneath v104, while the public entry point
+  // now correctly composes the governed v106 runtime, audit controls, presentation layers and
+  // the narrow v128 delivery finaliser. Do not mistake a later delivery wrapper for a new
+  // recommendation engine.
   const apiSource=fs.readFileSync(require.resolve('../api/index'),'utf8');
   const v104Source=fs.readFileSync(require.resolve('../lib/search-opportunity-depth-v104-runtime'),'utf8');
-  assert(apiSource.includes("module.exports=require('../lib/search-opportunity-depth-v104-runtime')"),'v104 must remain the public outer runtime');
-  assert(apiSource.includes("module.exports=require('../lib/decision-hard-constraint-fallback-v1036')"),'API compatibility lineage must explicitly retain v103.6');
-  assert(v104Source.includes("require('./decision-hard-constraint-fallback-v1036')"),'v104 runtime must directly delegate to v103.6');
-  assert(apiSource.includes("module.exports=require('../lib/apg-proof-rail-runtime-v103')"),'v103.5 compatibility lineage must remain explicit');
-  assert(apiSource.includes("decision-audit-constraint-guard-v118"),'audited constraint guard must install before shared decision runtimes');
+  const auditSource=fs.readFileSync(require.resolve('../lib/audit-integration-v124-runtime'),'utf8');
+  assert(v104Source.includes("const downstream=require('./decision-hard-constraint-fallback-v1036')"),'v104 runtime must directly delegate to v103.6');
+  assert(apiSource.includes("const runtime=require('../lib/action5-catalogue-certification-v106-runtime')"),'v106 must remain the governed recommendation runtime');
+  assert(apiSource.includes("const auditIntegration=require('../lib/audit-integration-v124-runtime')"),'audited integration boundary must remain explicit');
+  assert(auditSource.includes("require('./decision-audit-constraint-guard-v118')"),'audited constraint guard must install through the maintained integration layer');
+  assert(apiSource.includes("const googleDiscoverabilityPerformance=require('../lib/google-discoverability-performance-v128-runtime')"),'v128 must remain a narrow explicit delivery finaliser');
+  assert(apiSource.includes('module.exports=googleDiscoverabilityPerformanceHandler'),'current public entry point must export the completed v128-wrapped chain');
 
   const pkg=require('../package.json');
   assert(pkg.scripts['qa:deploy'].startsWith('node scripts/brand-mark-canonical-parity-v91-qa.js &&'),'v91 must remain first deploy gate');
-  assert(pkg.scripts['qa:full'].startsWith('node scripts/brand-mark-canonical-parity-v91-qa.js &&'),'v91 must remain first full gate');
-  assert(pkg.scripts['qa:deploy'].includes('node scripts/decision-hard-constraint-fallback-v1036-qa.js'),'remediation must be in deploy QA');
-  assert(pkg.scripts['qa:full'].includes('node scripts/decision-hard-constraint-fallback-v1036-qa.js'),'remediation must be in full QA');
+  assert(pkg.scripts['qa:deploy'].includes('node scripts/decision-hard-constraint-fallback-v1036-qa.js'),'remediation must remain in deploy QA');
+  assert.equal(pkg.scripts['qa:full'],'npm run qa:deploy','full source gate must delegate to the authoritative deploy gate');
 
-  console.log('DECISION_HARD_CONSTRAINT_FALLBACK_V1036=PASS exact75=eligible exact999=fallback-ineligible audit65=exact manualCoffee=excluded outer=v104 commercialWeight=0');
+  console.log('DECISION_HARD_CONSTRAINT_FALLBACK_V1036=PASS exact75=eligible exact999=fallback-ineligible audit65=exact manualCoffee=excluded lineage=v106->v104->v103.6 outer=v128 commercialWeight=0');
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1);});
