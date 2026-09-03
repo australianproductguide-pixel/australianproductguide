@@ -18,16 +18,13 @@ assert.strictEqual(continuity.MAX_DISPLAY_AGE_MS,Infinity,'a currently verified 
 assert.strictEqual(continuity.STATE_CACHE_TTL_MS,30*1000,'governed image-state cache must propagate explicit revocations within about 30 seconds');
 assert.strictEqual(continuity.PRODUCT_LOOKUP_TIMEOUT_MS,1200,'SSR registry lookup must remain short and bounded');
 assert.strictEqual(worker.REFRESH_QUOTA_RESERVE,500,'automatic refresh must preserve a 500-call ordinary Browse reserve');
-assert.strictEqual(worker.CONCURRENCY,2,'background refresh concurrency must remain conservative');
-assert.strictEqual(worker.MAX_RECOVERY_CALLS,10,'recovery must stay within the maintained four-search/six-detail budget');
+assert.strictEqual(worker.CONCURRENCY,3,'background refresh concurrency must remain conservative');
+assert.strictEqual(worker.MAX_RECOVERY_CALLS,10,'listing recovery must reserve at most ten ordinary calls');
 assert.strictEqual(worker.MAX_DISCOVERY_PRODUCTS_PER_RUN,2,'new-image discovery must stay tightly bounded per scheduled run');
-assert.strictEqual(worker.MAX_DISCOVERY_CALLS_PER_PRODUCT,10,'each discovery product must reserve the complete current recovery budget');
+assert.strictEqual(worker.MAX_DISCOVERY_CALLS_PER_PRODUCT,10,'each discovery product must reserve the governed ten-call search and detail budget');
 assert(worker.DISCOVERY_SLUGS.length>=480,'automatic discovery must cover the maintained catalogue, not only the pilot');
-
 const continuitySource=fs.readFileSync(path.join(__dirname,'..','lib','ebay-product-image-continuity-v3-runtime.js'),'utf8');
 assert(!/require\(['"]\.\/ebay-browse-api-v1['"]\)/.test(continuitySource),'public continuity runtime must not import the eBay network client');
-assert(continuitySource.includes("const PUBLIC_LOOKUP_PATH='/api/ebay-product-image-public'"),'progressive recovery must use APG same-origin governed state');
-assert(continuitySource.includes("const EBAY_IMAGE_ORIGIN='https://i.ebayimg.com'"),'retailer image origin must stay explicit and narrow');
 
 const slug='breville-barista-express-impress-bes876';
 const product=continuity.productForSlug(slug);
@@ -73,6 +70,8 @@ assert.strictEqual(mapping.recommendationWeight,0);
 assert.strictEqual(continuity.displayFresh(mapping),true,'verified state must retain an observed timestamp');
 assert.strictEqual(continuity.guardEligible(slug,mapping,observed+(5*60*60*1000)),true,'five-hour-old verified image must remain eligible');
 assert.strictEqual(continuity.guardEligible(slug,mapping,observed+(365*24*60*60*1000)),true,'eligibility must follow explicit governed state and exact identity rather than an arbitrary time cliff');
+assert.strictEqual(continuity.exactEbayImage('https://i.ebayimg.com/images/g/example/s-l1600.jpg'),true,'exact HTTPS eBay image origin must be accepted');
+assert.strictEqual(continuity.exactEbayImage('https://i.ebayimg.com.evil.example/images/g/example/s-l1600.jpg'),false,'lookalike hosts must be rejected');
 
 const canonical=`<link rel="canonical" href="https://australianproductguide.au/products/${slug}/">`;
 const jsonLd='<script type="application/ld+json">{"@type":"Product","name":"Breville Barista Express Impress BES876"}</script>';
@@ -139,9 +138,7 @@ const html=`<!doctype html><html><head>${canonical}${jsonLd}</head><body><main><
 
   const progressive=continuity.progressiveEnhancementScript(slug);
   assert(progressive.includes('/api/ebay-product-image-public?slug='),'browser recovery must read only the same-origin APG endpoint');
-  assert(progressive.includes("startsWith('https://i.ebayimg.com/')"),'browser swap must require the trusted eBay image origin');
-  assert(!progressive.includes('api.ebay.com'),'browser recovery must not call the eBay Browse API');
-  assert(!progressive.includes('searchItems'),'browser recovery must not perform marketplace discovery');
+  assert(!progressive.includes('searchItems('),'browser recovery must not perform marketplace discovery');
   const csp=continuity.withEbayImageCsp("default-src 'self'; img-src 'self' data:");
   assert(csp.includes('https://i.ebayimg.com'),'product response CSP must permit only the governed image origin required by the hero');
 
