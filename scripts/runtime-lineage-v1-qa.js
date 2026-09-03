@@ -140,15 +140,24 @@ for(const relative of [
 const googleSource=assertPresentationOnly('lib/google-discoverability-performance-v128-runtime.js',['localStorage.setItem(','sessionStorage.setItem(']);
 for(const required of [
   "const VERSION='128.2'",
+  "const DELIVERY_STABILITY_VERSION='130.1'",
+  "const HOME_BUNDLE_MANIFEST=require('../data/home-css-v128-manifest')",
   "const LEGACY_PRODUCT='/products/philips-5000-series-handheld-steamer-sth5030-80/'",
   "const CANONICAL_PRODUCT='/products/philips-5000-series-handheld-steamer-sth5030-20/'",
   "const LEGACY_COMPARISON='/compare/garment-steamers/philips-3000-series-handheld-steamer-sth3000-20-vs-philips-5000-series-handheld-steamer-sth5030-80/'",
   "const CANONICAL_COMPARISON='/compare/garment-steamers/philips-3000-series-handheld-steamer-sth3000-20-vs-philips-5000-series-handheld-steamer-sth5030-20/'",
-  "res.setHeader('Cache-Control','public, max-age=31536000, immutable')",
+  "const headersMutable=res.headersSent!==true;",
+  "safeSetHeader(res,'Cache-Control','public, max-age=31536000, immutable')",
+  "safeSetHeader(res,DELIVERY_FALLBACK_HEADER,'v'+DELIVERY_STABILITY_VERSION)",
   "return res.end(req&&req.method==='HEAD'?'':'Permanent redirect')"
-])assert(googleSource.includes(required),`v128 final delivery contract missing ${required}`);
-for(const prohibited of ['redirectTarget+url.search','target+url.search','Permanent redirect to'])assert(!googleSource.includes(prohibited),`v128 redirects must not reflect request data via ${prohibited}`);
+])assert(googleSource.includes(required),`v130.1 final delivery contract missing ${required}`);
+for(const prohibited of [
+  'redirectTarget+url.search','target+url.search','Permanent redirect to',
+  "require('node:fs')","require('fs')","require('node:path')",'readFileSync'
+])assert(!googleSource.includes(prohibited),`v130.1 final delivery must not contain ${prohibited}`);
 assert(googleSource.includes('url.searchParams.get(\'v\')'),'versioned-asset cache detection may inspect the query string without reflecting it');
+assert(googleSource.includes('function validManifest('),'Home bundle metadata must remain fail-closed and structurally validated');
+assert(googleSource.includes('APG_DELIVERY_STABILITY_FALLBACK'),'presentation-only delivery failures must remain observable');
 
 const premiumStability=require(path.join(root,'lib','premium-client-stability-v1091-runtime.js'));
 assert.equal(premiumStability.VERSION,'109.1');
@@ -159,6 +168,7 @@ assert(!premiumStability.clientJs.includes(premiumStability.UNSAFE));
 
 const sourceGate=read('.github/workflows/source-qa.yml');
 assert(sourceGate.includes('npm run qa:full'),'source workflow must call the full source gate');
+assert(sourceGate.includes('node scripts/home-function-stability-v1291-qa.js'),'source workflow must run the final Home availability regression');
 assert(sourceGate.includes('node scripts/premium-mobile-decision-commerce-v112-qa.js'));
 const deploy=String(pkg.scripts&&pkg.scripts['qa:deploy']||'');
 assert(deploy.startsWith('node scripts/brand-mark-canonical-parity-v91-qa.js'));
@@ -185,7 +195,12 @@ console.log(JSON.stringify({
   routeScopedImageryExplicit:true,
   recursiveRuntimeCssCaptureDisabled:true,
   googleV128FinalDeliveryOnly:true,
+  homeDeliveryStability:'v130.1',
+  runtimeCssFileReads:0,
+  publicFunctionCssTreePackaging:false,
+  postCommitMutationBlocked:true,
+  presentationFallbackFailClosed:true,
   fullSourceGateRestored:true,
   prohibitedFrameworksAbsent:true,
-  policy:'v106 remains the governed recommendation runtime; audit and decision state remain explicit; visual and route-scoped imagery layers remain presentation-only; PageSpeed v113 safety remains fail-closed; v128.2 is the final narrow canonicalisation/cache/viewport-delivery layer.'
+  policy:'v106 remains the governed recommendation runtime; audit and decision state remain explicit; visual and route-scoped imagery layers remain presentation-only; PageSpeed v113 safety remains fail-closed; v128.2/v130.1 is the final narrow canonicalisation, static-manifest, cache, viewport-delivery and fail-safe availability layer.'
 },null,2));
