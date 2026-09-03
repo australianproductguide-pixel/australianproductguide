@@ -11,6 +11,7 @@ const app=require('../api/index');
 const root=path.resolve(__dirname,'..');
 const apiSource=fs.readFileSync(path.join(root,'api','index.js'),'utf8');
 const budgetSource=fs.readFileSync(path.join(root,'lib','home-response-header-budget-v132-runtime.js'),'utf8');
+const diagnosticSource=fs.readFileSync(path.join(root,'api','home-assembly-diagnostic.js'),'utf8');
 
 function responseHarness(){
   const headers=new Map();
@@ -61,7 +62,8 @@ function responseHarness(){
 }
 async function invoke(handler,url='/',method='GET'){
   const harness=responseHarness();
-  const result=handler({url,method},harness.response);
+  const req={url,method,headers:{host:'australianproductguide.au'},on(){},destroy(){}};
+  const result=handler(req,harness.response);
   if(result&&typeof result.then==='function')await result;
   return harness.completed;
 }
@@ -90,12 +92,15 @@ async function main(){
   assert.equal(budget.MAX_ESTIMATED_HEADER_BYTES,8192);
   assert(budget.PRESERVED_HOME_HEADERS.has('x-apg-google-discoverability-performance'));
   assert(budget.PRESERVED_HOME_HEADERS.has('x-apg-final-presentation-stability'));
+  assert(budget.PRESERVED_HOME_HEADERS.has('x-apg-p0-home-assembly-bisect'));
+  assert(budget.PRESERVED_HOME_HEADERS.has('x-apg-p0-home-assembly-stage'));
   assert(!budget.PRESERVED_HOME_HEADERS.has('x-apg-legacy-layer-001'));
   for(const token of ['content-security-policy','strict-transport-security','cache-control','content-type']){
     assert(!budget.PRESERVED_HOME_HEADERS.has(token),'budget allowlist must apply only to X-APG diagnostics');
   }
   for(const prohibited of ['scoreProduct(','rankDecision(','commissionWeight','commercialRecommendationWeight:1']){
     assert(!budgetSource.includes(prohibited),`header budget must not contain ${prohibited}`);
+    assert(!diagnosticSource.includes(prohibited),`diagnostic transport must not contain ${prohibited}`);
   }
 
   const buffered=budget.wrap((req,res)=>{
@@ -151,13 +156,30 @@ async function main(){
   assert.equal(nonHomeResult.body,'search');
 
   const diagnosticStages=app.APG_P0_HOME_ASSEMBLY_HANDLERS||{};
-  assert.equal(diagnostic.VERSION,'3.1');
+  assert.equal(diagnostic.VERSION,'3.2');
   assert.equal(diagnostic.resolveStage(diagnosticStages,'desktopHome').name,'desktopHome');
   assert.equal(diagnostic.resolveStage(diagnosticStages,'DESKTOPHOME').name,'desktopHome');
   assert.equal(diagnostic.resolveStage(diagnosticStages,'desktoptrust').name,'desktopTrust');
   assert.equal(diagnostic.resolveStage(diagnosticStages,'googleDelivery').name,'googleDelivery');
   assert.equal(diagnostic.resolveStage(diagnosticStages,'HOMEBUDGET').name,'homeBudget');
   assert.equal(diagnostic.resolveStage(diagnosticStages,'not-a-stage'),null);
+  assert(diagnosticSource.includes('compactDiagnosticHeaders(res,stage)'),'diagnostic must compact obsolete X-APG headers before commit');
+  assert(diagnosticSource.includes("if(stage==='homeBudget')"),'exact public Home budget stage must not be double-compacted');
+  assert(diagnosticSource.includes("const nativeWrite=typeof res.write==='function'?res.write.bind(res):null"),'diagnostic must compact before first streamed write');
+  assert(diagnosticSource.includes("const nativeFlushHeaders=typeof res.flushHeaders==='function'?res.flushHeaders.bind(res):null"),'diagnostic must compact before explicit header flush');
+
+  for(const stage of ['final','desktopHome','desktopTrust','googleDelivery','homeBudget']){
+    const result=await invoke(diagnostic,`/api/home-assembly-diagnostic?target=${stage}`);
+    assert.equal(result.statusCode,200,`${stage}: diagnostic must render`);
+    assert.equal(result.headers.get('x-apg-p0-home-assembly-bisect'),'v3.2',`${stage}: diagnostic version marker missing`);
+    assert.equal(result.headers.get('x-apg-p0-home-assembly-stage'),stage,`${stage}: exact stage marker missing`);
+    assert.equal(result.headers.get('x-apg-home-header-budget'),'v132.0',`${stage}: transport budget missing`);
+    assert(Number(result.headers.get('x-apg-home-header-bytes'))<=budget.MAX_ESTIMATED_HEADER_BYTES,`${stage}: diagnostic headers exceed budget`);
+    assert.equal(result.headers.get('x-apg-home-header-over-budget'),undefined,`${stage}: diagnostic must not declare over-budget`);
+    assert.match(String(result.headers.get('cache-control')||''),/no-store/,`${stage}: diagnostic must remain no-store`);
+    assert.match(String(result.headers.get('x-robots-tag')||''),/noindex/,`${stage}: diagnostic must remain noindex`);
+    assert.match(result.body,/Make a better product decision\./,`${stage}: Home body must remain intact`);
+  }
 
   for(const required of [
     "const homeResponseHeaderBudget=require('../lib/home-response-header-budget-v132-runtime')",
@@ -171,11 +193,11 @@ async function main(){
 
   console.log(JSON.stringify({
     status:'PASS',version:budget.VERSION,
-    scope:'canonical-home-only',
-    preserved:{standardHttp:true,security:true,content:true,cache:true,currentReleaseMarkers:true},
+    scope:'canonical-home-plus-private-diagnostic-transport',
+    preserved:{standardHttp:true,security:true,content:true,cache:true,currentReleaseMarkers:true,diagnosticIdentity:true},
     removed:{supersededXapgDiagnostics:true,minimumRegressionCount:120},
     streaming:{writeBeforeCommit:true,flushBeforeCommit:true,endBeforeCommit:true},
-    diagnostics:{caseInsensitive:true,stages:['desktopHome','desktopTrust','googleDelivery','homeBudget']},
+    diagnostics:{version:'3.2',caseInsensitive:true,stages:['final','desktopHome','desktopTrust','googleDelivery','homeBudget'],allWithinBudget:true},
     recommendationLogicTouched:false,
     commercialWeightTouched:false
   },null,2));
