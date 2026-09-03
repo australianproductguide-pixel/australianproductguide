@@ -3,6 +3,7 @@
 const fs=require('node:fs');
 const http=require('node:http');
 const path=require('node:path');
+const zlib=require('node:zlib');
 const app=require('../api/index');
 
 const host=process.env.HOST||'127.0.0.1';
@@ -61,6 +62,22 @@ function staticFileFor(pathname){
     return stat.isFile()?candidate:null;
   }catch{return null}
 }
+function compressible(type){
+  return /^(?:text\/|application\/(?:javascript|json|xml|manifest\+json))/i.test(String(type||''));
+}
+function staticCompression(req,type){
+  if(!compressible(type))return null;
+  const accepted=String(req&&req.headers&&req.headers['accept-encoding']||'').toLowerCase();
+  if(/(?:^|[,\s])br(?:[,\s]|$)/.test(accepted))return 'br';
+  if(/(?:^|[,\s])gzip(?:[,\s]|$)/.test(accepted))return 'gzip';
+  return null;
+}
+function staticStream(filename,encoding){
+  const input=fs.createReadStream(filename);
+  if(encoding==='br')return input.pipe(zlib.createBrotliCompress({params:{[zlib.constants.BROTLI_PARAM_QUALITY]:6}}));
+  if(encoding==='gzip')return input.pipe(zlib.createGzip({level:9}));
+  return input;
+}
 
 function serveStatic(req,res,filename){
   const type=mime[path.extname(filename).toLowerCase()]||'application/octet-stream';
@@ -73,8 +90,14 @@ function serveStatic(req,res,filename){
     ?'public, max-age=31536000, immutable'
     :'public, max-age=0, must-revalidate');
   res.setHeader('X-Content-Type-Options','nosniff');
+  const encoding=staticCompression(req,type);
+  if(encoding){
+    res.setHeader('Content-Encoding',encoding);
+    res.setHeader('Vary','Accept-Encoding');
+  }
   if(req.method==='HEAD')return res.end();
-  return fs.createReadStream(filename)
+  const stream=staticStream(filename,encoding);
+  return stream
     .on('error',error=>{
       console.error('APG_PR_STATIC_ERROR',filename,error&&error.stack||error);
       if(!res.headersSent)res.statusCode=500;
@@ -151,3 +174,5 @@ function shutdown(signal){
 }
 process.on('SIGTERM',()=>shutdown('SIGTERM'));
 process.on('SIGINT',()=>shutdown('SIGINT'));
+
+module.exports={requestPath,explicitlyVersionedAsset,staticFileFor,compressible,staticCompression,staticStream,serveStatic};
