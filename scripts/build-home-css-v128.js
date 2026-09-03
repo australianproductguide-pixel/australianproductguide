@@ -2,33 +2,32 @@
 
 // Build-time homepage CSS consolidation for APG v128.2.
 //
-// This script runs outside the public request path. It starts the exact source runtime with the
-// bundle disabled, renders Home once, retrieves each applied first-party stylesheet in final
-// cascade order, preserves link-level media conditions, resolves relative asset URLs and writes
-// one deterministic static CSS asset. It never recursively invokes the application from a live
-// response and it never changes recommendation, evidence, retailer or shopper state.
-//
-// The exact loopback release harness also receives deterministic Brotli and gzip sidecars. Those
-// files let Lighthouse exercise CDN-like precompressed delivery without spending page-load time
-// compressing a static 500+ KiB asset. Vercel continues to own compression in Production.
+// This script runs outside every public request. It renders the exact local application handler
+// with a fixed, synthetic Production request, then reads each first-party stylesheet from the
+// repository or its deterministic local asset route. It performs no network requests, preserves
+// final cascade order and link-level media conditions, resolves relative asset URLs and writes one
+// static CSS asset plus deterministic Brotli/gzip sidecars. A stale or incomplete bundle fails the
+// runtime signature check and the public site falls back to the established stylesheet cascade.
+
+process.env.APG_HOME_CSS_BUILD='1';
 
 const crypto=require('node:crypto');
 const fs=require('node:fs');
 const path=require('node:path');
 const zlib=require('node:zlib');
-const {spawn}=require('node:child_process');
 const pagespeed=require('../lib/pagespeed-agentic-certification-v113-runtime');
+const app=require('../api/index');
 
 const ROOT=path.resolve(__dirname,'..');
-const OUTPUT=path.join(ROOT,'public','assets','home-v128-bundle.css');
+const PUBLIC_ROOT=path.join(ROOT,'public');
+const OUTPUT=path.join(PUBLIC_ROOT,'assets','home-v128-bundle.css');
 const BROTLI_OUTPUT=OUTPUT+'.br';
 const GZIP_OUTPUT=OUTPUT+'.gz';
-const HOST='127.0.0.1';
-const PORT=Number(process.env.APG_HOME_CSS_BUILD_PORT||4387);
-const BASE=`http://${HOST}:${PORT}`;
+const ORIGIN='https://australianproductguide.au';
 const MIN_STYLESHEETS=40;
 const MIN_BYTES=250000;
 const BROTLI_QUALITY=11;
+const RENDER_TIMEOUT_MS=20000;
 
 function attr(tag,name){
   const match=String(tag||'').match(new RegExp(`\\b${name}\\s*=\\s*(["'])(.*?)\\1`,'i'));
@@ -36,8 +35,8 @@ function attr(tag,name){
 }
 function internalCss(href){
   try{
-    const url=new URL(href,'https://australianproductguide.au');
-    return url.origin==='https://australianproductguide.au'&&url.pathname.startsWith('/assets/')&&url.pathname.endsWith('.css');
+    const url=new URL(href,ORIGIN);
+    return url.origin===ORIGIN&&url.pathname.startsWith('/assets/')&&url.pathname.endsWith('.css');
   }catch{return false;}
 }
 function stylesheetLinks(html){
@@ -68,30 +67,76 @@ function wrapMedia(css,media){
   if(!value||/^(?:all|screen)$/i.test(value))return css;
   return `@media ${value}{\n${css}\n}`;
 }
-function wait(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
-async function waitForRuntime(child){
-  let output='';
-  child.stdout.on('data',chunk=>{output+=String(chunk);});
-  child.stderr.on('data',chunk=>{output+=String(chunk);});
-  for(let attempt=0;attempt<80;attempt+=1){
-    if(child.exitCode!=null)throw new Error(`bundle source runtime exited early (${child.exitCode})\n${output}`);
-    try{
-      const response=await fetch(BASE+'/',{headers:{'accept-encoding':'identity'},signal:AbortSignal.timeout(2500)});
-      if(response.ok)return {response,html:await response.text(),output};
-    }catch{}
-    await wait(250);
-  }
-  throw new Error(`bundle source runtime did not become ready\n${output}`);
+function publicFileFor(href){
+  let url;
+  try{url=new URL(String(href||''),ORIGIN);}catch{return null;}
+  if(url.origin!==ORIGIN||!url.pathname.startsWith('/assets/')||!url.pathname.endsWith('.css'))return null;
+  let pathname;
+  try{pathname=decodeURIComponent(url.pathname).replace(/(\.[a-z0-9]{1,12})\/$/i,'$1');}catch{return null;}
+  const candidate=path.resolve(PUBLIC_ROOT,'.'+pathname);
+  if(candidate!==PUBLIC_ROOT&&!candidate.startsWith(PUBLIC_ROOT+path.sep))return null;
+  try{return fs.statSync(candidate).isFile()?candidate:null;}catch{return null;}
 }
-async function fetchCss(row){
-  const response=await fetch(BASE+row.href,{headers:{'accept-encoding':'identity'},signal:AbortSignal.timeout(15000)});
-  if(response.status!==200)throw new Error(`${row.href} returned HTTP ${response.status}`);
-  const type=String(response.headers.get('content-type')||'').toLowerCase();
-  if(!type.includes('text/css'))throw new Error(`${row.href} returned ${type||'unknown content type'}`);
-  const raw=stripUnsafePreamble(await response.text());
-  if(!raw.trim())throw new Error(`${row.href} returned empty CSS`);
-  if(/@import\s/i.test(raw))throw new Error(`${row.href} contains @import and cannot be safely consolidated`);
-  const resolved=pagespeed.absoluteCssUrls(raw,row.href);
+function localResponse(resolve,reject,timer){
+  const headers=new Map();
+  const chunks=[];
+  let ended=false;
+  return {
+    statusCode:200,
+    setHeader(name,value){headers.set(String(name).toLowerCase(),value);},
+    getHeader(name){return headers.get(String(name).toLowerCase());},
+    removeHeader(name){headers.delete(String(name).toLowerCase());},
+    write(chunk='',encoding,callback){
+      if(chunk)chunks.push(Buffer.isBuffer(chunk)?chunk:Buffer.from(String(chunk),typeof encoding==='string'?encoding:'utf8'));
+      if(typeof encoding==='function')encoding();
+      else if(typeof callback==='function')callback();
+      return true;
+    },
+    end(chunk='',encoding,callback){
+      if(ended)return this;
+      ended=true;
+      if(chunk)chunks.push(Buffer.isBuffer(chunk)?chunk:Buffer.from(String(chunk),typeof encoding==='string'?encoding:'utf8'));
+      clearTimeout(timer);
+      if(typeof encoding==='function')encoding();
+      else if(typeof callback==='function')callback();
+      resolve({status:this.statusCode,headers,body:Buffer.concat(chunks).toString('utf8')});
+      return this;
+    },
+    status(code){this.statusCode=Number(code)||500;return this;},
+    json(value){this.setHeader('Content-Type','application/json; charset=utf-8');return this.end(JSON.stringify(value));}
+  };
+}
+function renderLocal(url){
+  return new Promise((resolve,reject)=>{
+    const timer=setTimeout(()=>reject(new Error(`local render timed out for ${url}`)),RENDER_TIMEOUT_MS);
+    const req={
+      method:'GET',url:String(url||'/'),
+      headers:{host:'australianproductguide.au','x-forwarded-host':'australianproductguide.au','x-forwarded-proto':'https'},
+      on(){return this;},destroy(){}
+    };
+    const res=localResponse(resolve,reject,timer);
+    try{
+      const result=app(req,res);
+      if(result&&typeof result.then==='function')result.catch(error=>{clearTimeout(timer);reject(error);});
+    }catch(error){clearTimeout(timer);reject(error);}
+  });
+}
+async function cssSource(row){
+  const filename=publicFileFor(row.href);
+  let raw;
+  if(filename){
+    raw=fs.readFileSync(filename,'utf8');
+  }else{
+    const rendered=await renderLocal(row.href);
+    if(rendered.status!==200)throw new Error(`${row.href} returned HTTP ${rendered.status}`);
+    const type=String(rendered.headers.get('content-type')||'').toLowerCase();
+    if(!type.includes('text/css'))throw new Error(`${row.href} returned ${type||'unknown content type'}`);
+    raw=rendered.body;
+  }
+  const clean=stripUnsafePreamble(raw);
+  if(!clean.trim())throw new Error(`${row.href} returned empty CSS`);
+  if(/@import\s/i.test(clean))throw new Error(`${row.href} contains @import and cannot be safely consolidated`);
+  const resolved=pagespeed.absoluteCssUrls(clean,row.href);
   return `/* APG source: ${row.href}${row.media?` | media: ${row.media}`:''} */\n${wrapMedia(resolved,row.media)}`;
 }
 function removeOutputs(){
@@ -116,38 +161,28 @@ function compressedSidecars(buffer){
 async function build(){
   fs.mkdirSync(path.dirname(OUTPUT),{recursive:true});
   removeOutputs();
+  const home=await renderLocal('/');
+  if(home.status!==200)throw new Error(`Home returned HTTP ${home.status}`);
+  const links=stylesheetLinks(home.body);
+  if(links.length<MIN_STYLESHEETS)throw new Error(`expected at least ${MIN_STYLESHEETS} applied Home stylesheets, found ${links.length}`);
 
-  const child=spawn(process.execPath,[path.join(ROOT,'scripts','pr-runtime-server-v109.js')],{
-    cwd:ROOT,
-    env:{...process.env,HOST,PORT:String(PORT),APG_HOME_CSS_BUILD:'1'},
-    stdio:['ignore','pipe','pipe']
-  });
-
-  try{
-    const ready=await waitForRuntime(child);
-    const links=stylesheetLinks(ready.html);
-    if(links.length<MIN_STYLESHEETS)throw new Error(`expected at least ${MIN_STYLESHEETS} applied Home stylesheets, found ${links.length}`);
-
-    const chunks=[];
-    for(const row of links)chunks.push(await fetchCss(row));
-    const signature=crypto.createHash('sha256').update(JSON.stringify(links)).digest('hex');
-    const banner=`/* Australian Product Guide — deterministic build-time Home CSS bundle v128.2. Source order and media semantics preserved. */\n/* APG_HOME_CSS_LINK_SIGNATURE:${signature} */\n`;
-    const body=banner+chunks.join('\n\n')+'\n';
-    const buffer=Buffer.from(body,'utf8');
-    if(buffer.length<MIN_BYTES)throw new Error(`bundle unexpectedly small: ${buffer.length} bytes`);
-    for(const token of ['.site-header','.apg-home-hero-v9','.apg-ebay-official-v121-card','#apgAssistantLauncher']){
-      if(!body.includes(token))throw new Error(`bundle missing required presentation token ${token}`);
-    }
-    const compressed=compressedSidecars(buffer);
-    if(compressed.br.length>=buffer.length||compressed.gzip.length>=buffer.length)throw new Error('compressed Home bundle sidecar is not smaller than source');
-    atomicWrite(OUTPUT,buffer);
-    atomicWrite(BROTLI_OUTPUT,compressed.br);
-    atomicWrite(GZIP_OUTPUT,compressed.gzip);
-    const hash=crypto.createHash('sha256').update(buffer).digest('hex');
-    console.log(`APG_HOME_CSS_BUNDLE_V128=PASS styles=${links.length} bytes=${buffer.length} br=${compressed.br.length} gzip=${compressed.gzip.length} linkSignature=${signature} sha256=${hash}`);
-  }finally{
-    if(child.exitCode==null)child.kill('SIGTERM');
+  const chunks=[];
+  for(const row of links)chunks.push(await cssSource(row));
+  const signature=crypto.createHash('sha256').update(JSON.stringify(links)).digest('hex');
+  const banner=`/* Australian Product Guide — deterministic build-time Home CSS bundle v128.2. Source order and media semantics preserved. */\n/* APG_HOME_CSS_LINK_SIGNATURE:${signature} */\n`;
+  const body=banner+chunks.join('\n\n')+'\n';
+  const buffer=Buffer.from(body,'utf8');
+  if(buffer.length<MIN_BYTES)throw new Error(`bundle unexpectedly small: ${buffer.length} bytes`);
+  for(const token of ['.site-header','.apg-home-hero-v9','.apg-ebay-official-v121-card','#apgAssistantLauncher']){
+    if(!body.includes(token))throw new Error(`bundle missing required presentation token ${token}`);
   }
+  const compressed=compressedSidecars(buffer);
+  if(compressed.br.length>=buffer.length||compressed.gzip.length>=buffer.length)throw new Error('compressed Home bundle sidecar is not smaller than source');
+  atomicWrite(OUTPUT,buffer);
+  atomicWrite(BROTLI_OUTPUT,compressed.br);
+  atomicWrite(GZIP_OUTPUT,compressed.gzip);
+  const hash=crypto.createHash('sha256').update(buffer).digest('hex');
+  console.log(`APG_HOME_CSS_BUNDLE_V128=PASS styles=${links.length} bytes=${buffer.length} br=${compressed.br.length} gzip=${compressed.gzip.length} linkSignature=${signature} sha256=${hash}`);
 }
 
 build().catch(error=>{
