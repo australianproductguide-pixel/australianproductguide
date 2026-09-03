@@ -91,9 +91,15 @@ jobs:
           expect(config.routes[5].src==='/(.*)'&&config.routes[5].dest==='/api','Unexpected dynamic fallback route');
           const deploymentEnabled=config.git?.deploymentEnabled||{};
           expect(deploymentEnabled['apg/*']===false&&deploymentEnabled['apg-*']===false,'Routine APG feature branches must not auto-deploy');
-          const authoritativeWorkflowFiles=['amazon-shopping-assurance-v40.yml','catalogue-freshness-qa.yml','codeql.yml','indexnow.yml','production-smoke.yml','source-qa.yml'].sort();
-          const supportWorkflowFiles=['backfill-product-images.yml','category-editorial-research-v41.yml','ebay-image-refresh.yml'].sort();
-          const allowed=[...authoritativeWorkflowFiles,...supportWorkflowFiles].sort();
+          const allowed=[
+            'amazon-shopping-assurance-v40.yml',
+            'catalogue-freshness-qa.yml',
+            'category-editorial-research-v41.yml',
+            'codeql.yml',
+            'indexnow.yml',
+            'production-smoke.yml',
+            'source-qa.yml'
+          ].sort();
           const actual=fs.readdirSync('.github/workflows').filter(x=>/\.ya?ml$/.test(x)).sort();
           expect(JSON.stringify(actual)===JSON.stringify(allowed),`Workflow allowlist mismatch: ${actual.join(', ')}`);
           const ops=fs.readFileSync('docs/APG-OPERATIONS.md','utf8');
