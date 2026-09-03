@@ -9,6 +9,7 @@ const app=require('../api/index');
 const diagnostic=require('../api/home-assembly-diagnostic');
 const apiSource=fs.readFileSync(path.join(root,'api','index.js'),'utf8');
 const diagnosticSource=fs.readFileSync(path.join(root,'api','home-assembly-diagnostic.js'),'utf8');
+const budgetSource=fs.readFileSync(path.join(root,'lib','home-response-header-budget-v132-runtime.js'),'utf8');
 const config=JSON.parse(fs.readFileSync(path.join(root,'vercel.json'),'utf8'));
 
 // Each already-built boundary is exposed for private noindex diagnostics. The final four stages
@@ -38,12 +39,19 @@ assert.equal(app.APG_P0_HOME_ASSEMBLY_HANDLERS.desktopHome.DESKTOP_HOME_HEADER_V
 assert.equal(app.APG_P0_HOME_ASSEMBLY_HANDLERS.desktopTrust.DESKTOP_ABOUT_TRUST_CONTRAST_VERSION,'127.0','desktop trust checkpoint must preserve its certified contrast generation');
 assert.equal(app.APG_P0_HOME_ASSEMBLY_HANDLERS.pagespeed.PAGESPEED_AGENTIC_CERTIFICATION_VERSION,'113.5','diagnostic PageSpeed checkpoint must retain P0-safe transport certification');
 assert.equal(app.APG_P0_HOME_ASSEMBLY_HANDLERS.homeBudget.HOME_RESPONSE_HEADER_BUDGET_VERSION,'132.0','diagnostic Home budget stage must retain v132');
-assert.equal(diagnostic.VERSION,'3.1');
+assert.equal(diagnostic.VERSION,'3.2');
 assert.equal(diagnostic.NATIVE_HOME_URL,'/?__apg_home_diag=1');
 
 assert(diagnosticSource.includes("req.url=`${NATIVE_HOME_URL}&__apg_home_assembly_stage=${encodeURIComponent(stage)}`"),'diagnostic must enter native Home behind the diagnostic bypass marker');
 assert(diagnosticSource.includes("safeSetHeader(res,'Cache-Control','no-store, max-age=0')"),'diagnostic must remain no-store');
 assert(diagnosticSource.includes("safeSetHeader(res,'X-Robots-Tag','noindex, nofollow, noarchive')"),'diagnostic must remain noindex');
+assert(diagnosticSource.includes("const headerBudget=require('../lib/home-response-header-budget-v132-runtime')"),'diagnostic transport must reuse the governed v132 header budget');
+assert(diagnosticSource.includes('function compactDiagnosticHeaders(res,stage)'),'diagnostic transport must compact historical X-APG headers before commit');
+assert(diagnosticSource.includes("if(stage==='homeBudget')"),'the exact public budget stage must not be double-compacted');
+assert(diagnosticSource.includes("const nativeWrite=typeof res.write==='function'?res.write.bind(res):null"),'diagnostic must compact before streamed writes');
+assert(diagnosticSource.includes("const nativeFlushHeaders=typeof res.flushHeaders==='function'?res.flushHeaders.bind(res):null"),'diagnostic must compact before explicit flush');
+assert(budgetSource.includes("'x-apg-p0-home-assembly-bisect'"),'v132 must preserve the private diagnostic identity marker');
+assert(budgetSource.includes("'x-apg-p0-home-assembly-stage'"),'v132 must preserve the exact requested stage marker');
 assert(diagnosticSource.includes('throw error'),'diagnostic must preserve real failure semantics');
 assert(diagnosticSource.includes('function resolveStage'),'diagnostic stage resolution must remain explicit');
 assert(!diagnosticSource.includes('ebay-browse-api'),'diagnostic must not import eBay Browse');
@@ -78,5 +86,5 @@ function invokeUnknown(){
   assert.equal(unknown.body,'Not found','unknown stages must not disclose valid stage names');
   assert.match(String(unknown.headers['cache-control']||''),/no-store/);
   assert.match(String(unknown.headers['x-robots-tag']||''),/noindex/);
-  console.log(`P0_HOME_ASSEMBLY_BISECT_V31=PASS stages=${EXPECTED.length} publicExport=v128.2+v131.0+v132.0 diagnosticFinal=homeBudget publicHome=native-restored diagnostic=post-recovery-watch publicEbayNetwork=0 commercialWeight=unchanged`);
+  console.log(`P0_HOME_ASSEMBLY_BISECT_V32=PASS stages=${EXPECTED.length} publicExport=v128.2+v131.0+v132.0 diagnosticFinal=homeBudget transportBudget=all-stages publicHome=native-restored diagnostic=post-recovery-watch publicEbayNetwork=0 commercialWeight=unchanged`);
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
