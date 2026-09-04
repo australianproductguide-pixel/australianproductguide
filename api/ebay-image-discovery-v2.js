@@ -1,13 +1,12 @@
 'use strict';
 
-// APG eBay image discovery worker v2.5
+// APG eBay image discovery worker v2.6
 // Broader exact-product recall for the 482-product image-completion programme.
 // Search breadth is expanded through model/name/category/alias/GTIN/ePID plans and 50-result
-// NEW-condition searches. v2.5 also permits a tiny evidence-backed direct-item retrieval register
-// for exact eBay AU listings that text/product-code search does not reliably return. Direct-item
-// retrieval is retrieval only: every item still passes detail, whole-product, family/variant,
-// exact-identity, condition, AUD-price, active-listing and independent second-pass controls.
-// Public browsing still makes no eBay Browse calls.
+// NEW-condition searches. v2.6 keeps the tiny evidence-backed direct-item retrieval register and
+// allows only the exact guard's product-scoped host-compatibility exception to survive the early
+// accessory-language screen. The full exact-product guard still runs afterwards, followed by the
+// independent second pass. Public browsing still makes no eBay Browse calls.
 const {products}=require('../data');
 const supabase=require('../lib/apg-supabase-public-v1');
 const ebay=require('../lib/ebay-browse-api-v1');
@@ -16,7 +15,7 @@ const searchPlan=require('../lib/ebay-image-search-plan-v1');
 const familyGuard=require('../lib/ebay-family-variant-guard-v131');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 
-const VERSION='2.5';
+const VERSION='2.6';
 const QUOTA_RESERVE=500;
 const MAX_PRODUCTS_PER_RUN=3;
 const MAX_SEARCH_QUERIES_PER_PRODUCT=searchPlan.MAX_QUERIES;
@@ -163,13 +162,17 @@ function stagedAccepted(candidate){
 async function verifyImageCandidate(product,candidate){
   let detail;
   try{
-    detail=await ebay.getItem(candidate.itemId,{referenceId:`apg:${product.slug}:image-discovery-v25`,timeoutMs:10000});
+    detail=await ebay.getItem(candidate.itemId,{referenceId:`apg:${product.slug}:image-discovery-v26`,timeoutMs:10000});
   }catch(error){return {ok:false,reason:clean(error&&error.code)||'EBAY_DETAIL_ERROR'};}
   if(!detail||typeof detail!=='object')return {ok:false,reason:'detail-missing'};
   const title=clean(detail.title)||candidate.title,condition=clean(detail.condition)||candidate.condition;
-  if(!title||enrichment.listingLooksAccessory(title,product)||enrichment.listingLooksUsed(title,condition)||enrichment.detailedCategoryRisk(detail)){
-    return {ok:false,reason:'detail-product-safety-reject'};
-  }
+  if(!title)return {ok:false,reason:'detail-title-missing'};
+  if(enrichment.listingLooksUsed(title,condition))return {ok:false,reason:'detail-used-or-refurbished'};
+  const categoryPath=clean(detail&&detail.categoryPath)||null;
+  const preliminary={...candidate,title,verificationEvidence:{...(candidate&&candidate.verificationEvidence||{}),categoryPath}};
+  const hostCompatibilitySafe=candidate.searchKind==='verified-direct-item'&&exactGuard.hostCompatibilityWholeProductOverride(product,preliminary).ok;
+  if(enrichment.listingLooksAccessory(title,product)&&!hostCompatibilitySafe)return {ok:false,reason:'detail-accessory-or-part-language'};
+  if(enrichment.detailedCategoryRisk(detail))return {ok:false,reason:'detail-parts-category'};
   const conflict=enrichment.materialIdentityConflict(product,detailVariantText(detail));
   if(conflict.conflict)return {ok:false,reason:conflict.reason};
   const brands=enrichment.detailedBrandEvidence(detail);
@@ -182,7 +185,7 @@ async function verifyImageCandidate(product,candidate){
   const price=detail&&detail.price&&typeof detail.price==='object'?{value:clean(detail.price.value),currency:clean(detail.price.currency)}:candidate.price;
   if(!imageUrl||!itemWebUrl||!itemId||!legacyItemId)return {ok:false,reason:'detail-image-or-item-identity-missing'};
   if(!price||!price.value||price.currency!=='AUD')return {ok:false,reason:'detail-price-missing-or-non-aud'};
-  const modelEvidence=enrichment.detailedModelEvidence(detail),categoryPath=clean(detail&&detail.categoryPath)||null;
+  const modelEvidence=enrichment.detailedModelEvidence(detail);
   const verified={
     ...candidate,itemId,legacyItemId,title,condition,price,imageUrl,
     imageSource:detail&&detail.product&&detail.product.image&&detail.product.image.imageUrl?'ebay-product-catalog':'ebay-listing',
@@ -228,7 +231,7 @@ async function discoverProduct(product,budget){
     let result;
     try{
       result=await ebay.searchItems(searchRequest(plan),{
-        referenceId:`apg:${product.slug}:image-search-v25:${index+1}`,
+        referenceId:`apg:${product.slug}:image-search-v26:${index+1}`,
         timeoutMs:10000
       });
     }catch(error){
@@ -287,14 +290,14 @@ module.exports=async function handler(req,res){
         continue;
       }
       let found;
-      try{found=await discoverProduct(product,budget);}catch(error){found={ok:false,error:clean(error&&error.code)||'DISCOVERY_V25_ERROR',calls:0,plans:[]};}
+      try{found=await discoverProduct(product,budget);}catch(error){found={ok:false,error:clean(error&&error.code)||'DISCOVERY_V26_ERROR',calls:0,plans:[]};}
       if(found.ok){
         await insertDiscoveredState(workerToken,product,found.candidate);
         await recordDiscoveryResult(workerToken,slug,'accepted');
         results.push({slug,status:'accepted',itemId:found.candidate.itemId,verificationLevel:found.candidate.verificationLevel,retrieval:found.directItemId&&found.candidate.itemId===found.directItemId?'verified-direct-item':'search',calls:found.calls,plans:found.plans,searchErrors:found.searchErrors});
       }else{
         const status=found.candidateCount?'review':'no-match';
-        await recordDiscoveryResult(workerToken,slug,status,found.error||'DISCOVERY_V25_NOT_ACCEPTED');
+        await recordDiscoveryResult(workerToken,slug,status,found.error||'DISCOVERY_V26_NOT_ACCEPTED');
         results.push({slug,status,calls:found.calls||0,plans:found.plans||[],candidateCount:found.candidateCount||0,rejects:found.rejects||[],searchErrors:found.searchErrors||[]});
       }
     }
@@ -304,7 +307,7 @@ module.exports=async function handler(req,res){
       quota:quotaPublic(summary),budgetRemaining:budget.remaining,results
     });
   }catch(error){
-    return json(res,500,{ok:false,status:'worker-error',version:VERSION,searchPlanVersion:searchPlan.VERSION,code:clean(error&&error.code)||'EBAY_DISCOVERY_V25_ERROR'});
+    return json(res,500,{ok:false,status:'worker-error',version:VERSION,searchPlanVersion:searchPlan.VERSION,code:clean(error&&error.code)||'EBAY_DISCOVERY_V26_ERROR'});
   }finally{if(consumed)await finishCapability(workerToken);}
 };
 
