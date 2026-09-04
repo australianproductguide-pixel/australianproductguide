@@ -194,7 +194,10 @@ async function build(){
   const buffer=Buffer.from(body,'utf8');
   if(buffer.length<MIN_BYTES)throw new Error(`bundle unexpectedly small: ${buffer.length} bytes`);
   if(buffer.length>=expandedBytes*MAX_COMPACT_RATIO)throw new Error(`bundle compaction below one percent: expanded=${expandedBytes} compact=${buffer.length}`);
-  for(const token of ['.site-header','.apg-home-hero-v9','.apg-ebay-official-v121-card','#apgAssistantLauncher']){
+  // These tokens are release gates for customer-critical Home presentation surfaces. The eBay
+  // token deliberately tracks Category Shopping v133, which superseded the fragile v121 image
+  // gallery while retaining the same governed EPN category destinations.
+  for(const token of ['.site-header','.apg-home-hero-v9','.apg-ebay-category-v133-card','#apgAssistantLauncher']){
     if(!body.includes(token))throw new Error(`bundle missing required presentation token ${token}`);
   }
   const compressed=compressedSidecars(buffer);
