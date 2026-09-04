@@ -9,7 +9,7 @@ const worker=require('../api/ebay-image-refresh');
 const stateClient=require('../lib/apg-supabase-public-v1');
 
 assert.strictEqual(continuity.VERSION,'3.8');
-assert.strictEqual(worker.VERSION,'1.4');
+assert.strictEqual(worker.VERSION,'1.5');
 assert.strictEqual(stateClient.VERSION,'1.2');
 assert.strictEqual(stateClient.STATE_FUNCTION,'/functions/v1/apg-ebay-image-state','material image-state operations must use the protected Edge Function');
 assert(!stateClient.rpc.toString().includes('/rest/v1/rpc'),'material image-state writes must not call anonymous PostgREST RPC directly');
