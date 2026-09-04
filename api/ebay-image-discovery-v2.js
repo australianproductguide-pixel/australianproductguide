@@ -1,12 +1,12 @@
 'use strict';
 
-// APG eBay image discovery worker v2.6
+// APG eBay image discovery worker v2.7
 // Broader exact-product recall for the 482-product image-completion programme.
 // Search breadth is expanded through model/name/category/alias/GTIN/ePID plans and 50-result
-// NEW-condition searches. v2.6 keeps the tiny evidence-backed direct-item retrieval register and
-// allows only the exact guard's product-scoped host-compatibility exception to survive the early
-// accessory-language screen. The full exact-product guard still runs afterwards, followed by the
-// independent second pass. Public browsing still makes no eBay Browse calls.
+// NEW-condition searches. v2.7 replaces an ended Anker 547 direct item with a current exact eBay AU
+// listing independently matched to Anker's A8371 product identity. The direct item remains retrieval
+// only: the full exact-product guard runs afterwards, followed by the independent second pass.
+// Public browsing still makes no eBay Browse calls.
 const {products}=require('../data');
 const supabase=require('../lib/apg-supabase-public-v1');
 const ebay=require('../lib/ebay-browse-api-v1');
@@ -15,7 +15,7 @@ const searchPlan=require('../lib/ebay-image-search-plan-v1');
 const familyGuard=require('../lib/ebay-family-variant-guard-v131');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 
-const VERSION='2.6';
+const VERSION='2.7';
 const QUOTA_RESERVE=500;
 const MAX_PRODUCTS_PER_RUN=3;
 const MAX_SEARCH_QUERIES_PER_PRODUCT=searchPlan.MAX_QUERIES;
@@ -23,10 +23,12 @@ const MAX_DETAIL_CHECKS_PER_PRODUCT=6;
 const MAX_DIRECT_DETAIL_CHECKS_PER_PRODUCT=1;
 const MAX_CALLS_PER_PRODUCT=MAX_SEARCH_QUERIES_PER_PRODUCT+MAX_DETAIL_CHECKS_PER_PRODUCT+MAX_DIRECT_DETAIL_CHECKS_PER_PRODUCT;
 // Evidence-bound eBay AU Browse item IDs. Keep deliberately tiny: do not infer or guess IDs.
-// Anker 547 item 405185320395 is the Anker Official Store AU listing independently checked
-// on 4 Sep 2026 (exact marketed product, Brand New, Anker brand, AU seller, UPC 194644118723).
+// Anker 547 item 398051289895 was visible as a current Brand New eBay AU listing on 4 Sep 2026
+// with the exact marketed identity "Anker 547 USB-C Hub (7-In-2)". It is independently reconciled
+// to Anker AU / Anker Support model A8371. The prior direct item 405185320395 is superseded because
+// the Browse API now reports that listing ended.
 const VERIFIED_DIRECT_ITEM_IDS=Object.freeze({
-  'anker-547-usb-c-hub-7-in-2':'v1|405185320395|0'
+  'anker-547-usb-c-hub-7-in-2':'v1|398051289895|0'
 });
 const PRODUCT_MAP=new Map(products.filter(Boolean).map(product=>[product.slug,product]));
 const DISCOVERY_SLUGS=[...PRODUCT_MAP.keys()];
@@ -162,7 +164,7 @@ function stagedAccepted(candidate){
 async function verifyImageCandidate(product,candidate){
   let detail;
   try{
-    detail=await ebay.getItem(candidate.itemId,{referenceId:`apg:${product.slug}:image-discovery-v26`,timeoutMs:10000});
+    detail=await ebay.getItem(candidate.itemId,{referenceId:`apg:${product.slug}:image-discovery-v27`,timeoutMs:10000});
   }catch(error){return {ok:false,reason:clean(error&&error.code)||'EBAY_DETAIL_ERROR'};}
   if(!detail||typeof detail!=='object')return {ok:false,reason:'detail-missing'};
   const title=clean(detail.title)||candidate.title,condition=clean(detail.condition)||candidate.condition;
@@ -231,7 +233,7 @@ async function discoverProduct(product,budget){
     let result;
     try{
       result=await ebay.searchItems(searchRequest(plan),{
-        referenceId:`apg:${product.slug}:image-search-v26:${index+1}`,
+        referenceId:`apg:${product.slug}:image-search-v27:${index+1}`,
         timeoutMs:10000
       });
     }catch(error){
@@ -290,14 +292,14 @@ module.exports=async function handler(req,res){
         continue;
       }
       let found;
-      try{found=await discoverProduct(product,budget);}catch(error){found={ok:false,error:clean(error&&error.code)||'DISCOVERY_V26_ERROR',calls:0,plans:[]};}
+      try{found=await discoverProduct(product,budget);}catch(error){found={ok:false,error:clean(error&&error.code)||'DISCOVERY_V27_ERROR',calls:0,plans:[]};}
       if(found.ok){
         await insertDiscoveredState(workerToken,product,found.candidate);
         await recordDiscoveryResult(workerToken,slug,'accepted');
         results.push({slug,status:'accepted',itemId:found.candidate.itemId,verificationLevel:found.candidate.verificationLevel,retrieval:found.directItemId&&found.candidate.itemId===found.directItemId?'verified-direct-item':'search',calls:found.calls,plans:found.plans,searchErrors:found.searchErrors});
       }else{
         const status=found.candidateCount?'review':'no-match';
-        await recordDiscoveryResult(workerToken,slug,status,found.error||'DISCOVERY_V26_NOT_ACCEPTED');
+        await recordDiscoveryResult(workerToken,slug,status,found.error||'DISCOVERY_V27_NOT_ACCEPTED');
         results.push({slug,status,calls:found.calls||0,plans:found.plans||[],candidateCount:found.candidateCount||0,rejects:found.rejects||[],searchErrors:found.searchErrors||[]});
       }
     }
@@ -307,7 +309,7 @@ module.exports=async function handler(req,res){
       quota:quotaPublic(summary),budgetRemaining:budget.remaining,results
     });
   }catch(error){
-    return json(res,500,{ok:false,status:'worker-error',version:VERSION,searchPlanVersion:searchPlan.VERSION,code:clean(error&&error.code)||'EBAY_DISCOVERY_V26_ERROR'});
+    return json(res,500,{ok:false,status:'worker-error',version:VERSION,searchPlanVersion:searchPlan.VERSION,code:clean(error&&error.code)||'EBAY_DISCOVERY_V27_ERROR'});
   }finally{if(consumed)await finishCapability(workerToken);}
 };
 
