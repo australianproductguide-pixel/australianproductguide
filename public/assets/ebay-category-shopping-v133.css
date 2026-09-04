@@ -1,0 +1,57 @@
+/* APG eBay Australia category shopping presentation v133.0
+ * Stable, retailer-neutral category artwork for governed eBay Australia EPN pathways.
+ * No external creative image dependency; retailer participation remains zero recommendation weight.
+ */
+.apg-ebay-category-v133{margin:28px 0 0;padding:28px;border:1px solid #dbe5f1;border-radius:24px;background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);box-shadow:0 14px 38px rgba(15,23,42,.055)}
+.apg-ebay-category-v133-head{display:flex;align-items:flex-end;justify-content:space-between;gap:28px;margin-bottom:20px}
+.apg-ebay-category-v133-head h3{margin:0;color:#0f172a;font-size:clamp(1.35rem,2.2vw,1.8rem);line-height:1.16;letter-spacing:-.025em}
+.apg-ebay-category-v133-head p{margin:.55rem 0 0;max-width:760px;color:#536177;font-size:.98rem;line-height:1.58}
+.apg-ebay-category-v133-link{display:inline-flex;align-items:center;min-height:44px;white-space:nowrap;color:#2563eb;font-size:.9rem;font-weight:800;text-decoration:none}
+.apg-ebay-category-v133-link:hover,.apg-ebay-category-v133-link:focus-visible{text-decoration:underline;text-underline-offset:4px}
+.apg-ebay-category-v133-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
+.apg-ebay-category-v133-card{min-width:0;display:flex;flex-direction:column;overflow:hidden;border:1px solid #d8e2ef;border-radius:18px;background:#fff;color:#0f172a;text-decoration:none!important;box-shadow:0 8px 24px rgba(15,23,42,.055);transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+.apg-ebay-category-v133-card:visited{color:#0f172a}
+.apg-ebay-category-v133-card:hover{transform:translateY(-2px);border-color:#adc2e2;box-shadow:0 14px 30px rgba(15,23,42,.095);text-decoration:none!important}
+.apg-ebay-category-v133-card:focus-visible{outline:3px solid rgba(37,99,235,.28);outline-offset:3px;border-color:#2563eb;text-decoration:none!important}
+.apg-ebay-category-v133-art{position:relative;min-height:142px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:linear-gradient(145deg,#eff6ff,#e8f2ff);color:#1d4ed8}
+.apg-ebay-category-v133-art:before,.apg-ebay-category-v133-art:after{content:"";position:absolute;border-radius:999px;background:rgba(255,255,255,.62);pointer-events:none}
+.apg-ebay-category-v133-art:before{width:118px;height:118px;right:-46px;top:-42px}
+.apg-ebay-category-v133-art:after{width:72px;height:72px;left:-28px;bottom:-28px}
+.apg-ebay-category-v133-art.is-certifiedRefurbished{background:linear-gradient(145deg,#eefbf5,#e5f6ee);color:#087f5b}
+.apg-ebay-category-v133-art.is-tech{background:linear-gradient(145deg,#eef4ff,#e6edff);color:#315fd8}
+.apg-ebay-category-v133-art.is-homeGarden{background:linear-gradient(145deg,#f5fbec,#eaf6df);color:#4d7c0f}
+.apg-ebay-category-v133-art.is-motors{background:linear-gradient(145deg,#f2f5f9,#e7edf5);color:#334155}
+.apg-ebay-category-v133-art.is-sportingGoods{background:linear-gradient(145deg,#ecfbff,#e3f6fb);color:#0f7490}
+.apg-ebay-category-v133-market{position:absolute;left:14px;top:12px;z-index:1;padding:5px 8px;border:1px solid rgba(15,23,42,.08);border-radius:999px;background:rgba(255,255,255,.86);color:#334155;font-size:.67rem;line-height:1;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.apg-ebay-category-v133-icon{position:relative;z-index:1;width:68px;height:68px;display:grid;place-items:center;border-radius:20px;background:rgba(255,255,255,.82);box-shadow:0 10px 24px rgba(15,23,42,.08)}
+.apg-ebay-category-v133-icon svg{width:42px;height:42px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.apg-ebay-category-v133-copy{min-height:118px;display:flex;flex-direction:column;gap:9px;padding:16px 16px 17px}
+.apg-ebay-category-v133-copy strong{font-size:1rem;line-height:1.28;font-weight:820;letter-spacing:-.012em;color:#0f172a}
+.apg-ebay-category-v133-cta{display:inline-flex;align-items:center;gap:5px;margin-top:auto;color:#2563eb;font-size:.84rem;line-height:1.3;font-weight:800}
+.apg-ebay-category-v133-fine{display:flex;flex-wrap:wrap;gap:6px 16px;margin:18px 0 0;padding-top:16px;border-top:1px solid #e2e8f0;color:#56657a;font-size:.78rem;line-height:1.5}
+.apg-ebay-category-v133-fine strong{color:#334155}
+.apg-ebay-category-v133-compact{margin-top:22px;padding:22px}
+.apg-ebay-category-v133-compact .apg-ebay-category-v133-grid{grid-template-columns:repeat(auto-fit,minmax(170px,210px));justify-content:start}
+.apg-ebay-category-v133-compact .apg-ebay-category-v133-card{max-width:210px}
+.apg-ebay-category-v133-compact .apg-ebay-category-v133-art{min-height:118px}
+@media(max-width:1000px){.apg-ebay-category-v133-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:640px){
+  .apg-ebay-category-v133{margin-top:22px;padding:22px 0 20px;border-left:0;border-right:0;border-radius:0;box-shadow:none;background:linear-gradient(180deg,#fff 0%,#f8fbff 100%)}
+  .apg-ebay-category-v133-head,.apg-ebay-category-v133-fine{margin-left:0;margin-right:0;padding-left:0;padding-right:0}
+  .apg-ebay-category-v133-head{align-items:flex-start;flex-direction:column;gap:8px;margin-bottom:18px}
+  .apg-ebay-category-v133-head h3{font-size:1.5rem}
+  .apg-ebay-category-v133-head p{font-size:.94rem;line-height:1.55}
+  .apg-ebay-category-v133-link{min-height:38px}
+  .apg-ebay-category-v133-grid{display:flex;overflow-x:auto;overscroll-behavior-inline:contain;scroll-snap-type:x mandatory;scroll-padding-inline:0;gap:12px;padding:2px 2px 12px;scrollbar-width:none}
+  .apg-ebay-category-v133-grid::-webkit-scrollbar{display:none}
+  .apg-ebay-category-v133-card{flex:0 0 min(72vw,250px);max-width:250px;scroll-snap-align:start}
+  .apg-ebay-category-v133-art{min-height:142px}
+  .apg-ebay-category-v133-copy{min-height:106px;padding:15px 16px 16px}
+  .apg-ebay-category-v133-copy strong{font-size:1.04rem}
+  .apg-ebay-category-v133-fine{display:block;margin-top:14px;padding-top:14px;font-size:.76rem}
+  .apg-ebay-category-v133-fine span{display:block;margin-top:5px}
+  .apg-ebay-category-v133-compact{padding:18px 0}
+  .apg-ebay-category-v133-compact .apg-ebay-category-v133-grid{display:flex;justify-content:initial}
+  .apg-ebay-category-v133-compact .apg-ebay-category-v133-card{max-width:250px}
+}
+@media(prefers-reduced-motion:reduce){.apg-ebay-category-v133-card{transition:none}.apg-ebay-category-v133-card:hover{transform:none}}
