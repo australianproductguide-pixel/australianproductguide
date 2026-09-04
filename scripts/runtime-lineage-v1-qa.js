@@ -171,7 +171,7 @@ assert(!api.includes('desktopHomeHeader.wrap(finalHandler)'),'unsafe desktop Hom
 assert(!api.includes('desktopAboutTrustContrast.wrap(desktopHomeHeaderHandler)'),'unsafe desktop trust response wrapper must be detached');
 
 const homeNationalCardsSource=assertPresentationOnly('lib/home-national-cards-repair-v131-runtime.js',['localStorage.setItem(','sessionStorage.setItem(']);
-assert(homeNationalCardsSource.includes("const VERSION='131.1'"),'Home national-card repair version must remain explicit');
+assert(homeNationalCardsSource.includes("const VERSION='131.0'"),'Home national-card repair version must remain explicit');
 
 const googleSource=assertPresentationOnly('lib/google-discoverability-performance-v128-runtime.js',['localStorage.setItem(','sessionStorage.setItem(']);
 for(const required of [
@@ -250,7 +250,7 @@ console.log(JSON.stringify({
   googleV128FinalDeliveryOnly:true,
   homeDeliveryStability:'v130.1',
   finalPresentationStability:'v131.0',
-  homeNationalCardsRepair:'v131.1',
+  homeNationalCardsRepair:'v131.0',
   homeResponseHeaderBudget:'v132.0',
   finalDiagnosticStages:['desktopHome','desktopTrust','homeNationalCards','googleDelivery','homeBudget'],
   unsafeDesktopResponseWrappersDetached:true,
@@ -260,5 +260,5 @@ console.log(JSON.stringify({
   standardAndSecurityHeadersPreserved:true,
   fullSourceGateRestored:true,
   prohibitedFrameworksAbsent:true,
-  policy:'v106 remains the governed recommendation runtime; audit and decision state remain explicit; visual and route-scoped imagery layers remain presentation-only; PageSpeed v113 safety remains fail-closed; v131 preserves v126/v127 visuals through streaming-safe presentation; Home national-card repair v131.1 is presentation-only and remains inside Google CSS consolidation; v132 is a Home-only outer response-header budget that removes redundant X-APG diagnostics before commit.'
+  policy:'v106 remains the governed recommendation runtime; audit and decision state remain explicit; visual and route-scoped imagery layers remain presentation-only; PageSpeed v113 safety remains fail-closed; v131 preserves v126/v127 visuals through streaming-safe presentation; Home national-card repair v131.0 is presentation-only and remains inside Google CSS consolidation; v132 is a Home-only outer response-header budget that removes redundant X-APG diagnostics before commit.'
 },null,2));
