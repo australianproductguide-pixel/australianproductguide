@@ -1,11 +1,13 @@
 'use strict';
 
-// APG eBay image discovery worker v2.4
+// APG eBay image discovery worker v2.5
 // Broader exact-product recall for the 482-product image-completion programme.
 // Search breadth is expanded through model/name/category/alias/GTIN/ePID plans and 50-result
-// NEW-condition searches, but acceptance remains unchanged and fail-closed: exact AU identity,
-// AUD price, whole-product status, condition, family/variant safety and independent second-pass
-// verification remain mandatory. Public browsing still makes no eBay Browse calls.
+// NEW-condition searches. v2.5 also permits a tiny evidence-backed direct-item retrieval register
+// for exact eBay AU listings that text/product-code search does not reliably return. Direct-item
+// retrieval is retrieval only: every item still passes detail, whole-product, family/variant,
+// exact-identity, condition, AUD-price, active-listing and independent second-pass controls.
+// Public browsing still makes no eBay Browse calls.
 const {products}=require('../data');
 const supabase=require('../lib/apg-supabase-public-v1');
 const ebay=require('../lib/ebay-browse-api-v1');
@@ -14,12 +16,19 @@ const searchPlan=require('../lib/ebay-image-search-plan-v1');
 const familyGuard=require('../lib/ebay-family-variant-guard-v131');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 
-const VERSION='2.4';
+const VERSION='2.5';
 const QUOTA_RESERVE=500;
 const MAX_PRODUCTS_PER_RUN=3;
 const MAX_SEARCH_QUERIES_PER_PRODUCT=searchPlan.MAX_QUERIES;
 const MAX_DETAIL_CHECKS_PER_PRODUCT=6;
-const MAX_CALLS_PER_PRODUCT=MAX_SEARCH_QUERIES_PER_PRODUCT+MAX_DETAIL_CHECKS_PER_PRODUCT;
+const MAX_DIRECT_DETAIL_CHECKS_PER_PRODUCT=1;
+const MAX_CALLS_PER_PRODUCT=MAX_SEARCH_QUERIES_PER_PRODUCT+MAX_DETAIL_CHECKS_PER_PRODUCT+MAX_DIRECT_DETAIL_CHECKS_PER_PRODUCT;
+// Evidence-bound eBay AU Browse item IDs. Keep deliberately tiny: do not infer or guess IDs.
+// Anker 547 item 405185320395 is the Anker Official Store AU listing independently checked
+// on 4 Sep 2026 (exact marketed product, Brand New, Anker brand, AU seller, UPC 194644118723).
+const VERIFIED_DIRECT_ITEM_IDS=Object.freeze({
+  'anker-547-usb-c-hub-7-in-2':'v1|405185320395|0'
+});
 const PRODUCT_MAP=new Map(products.filter(Boolean).map(product=>[product.slug,product]));
 const DISCOVERY_SLUGS=[...PRODUCT_MAP.keys()];
 
@@ -118,6 +127,16 @@ function projectSummary(product,item,queryIndex,searchKind){
     queryIndex,searchKind:clean(searchKind)||'unknown'
   };
 }
+function directCandidate(product,itemId){
+  const id=clean(itemId),parts=id.split('|');
+  return {
+    itemId:id,legacyItemId:parts.length>1?clean(parts[1])||null:null,
+    title:[product&&product.brand,product&&product.name].filter(Boolean).join(' '),
+    condition:null,price:null,imageUrl:null,imageSource:'ebay-listing',itemWebUrl:null,itemAffiliateWebUrl:null,
+    score:null,status:'review',reasons:['verified-direct-item-retrieval'],flags:[],modelCoverage:0,nameCoverage:0,
+    queryIndex:-1,searchKind:'verified-direct-item'
+  };
+}
 function strongSummaryCandidate(product,candidate){
   if(!candidate||!candidate.itemId||!candidate.title)return false;
   if(enrichment.listingLooksAccessory(candidate.title,product)||enrichment.listingLooksUsed(candidate.title,candidate.condition))return false;
@@ -144,7 +163,7 @@ function stagedAccepted(candidate){
 async function verifyImageCandidate(product,candidate){
   let detail;
   try{
-    detail=await ebay.getItem(candidate.itemId,{referenceId:`apg:${product.slug}:image-discovery-v24`,timeoutMs:10000});
+    detail=await ebay.getItem(candidate.itemId,{referenceId:`apg:${product.slug}:image-discovery-v25`,timeoutMs:10000});
   }catch(error){return {ok:false,reason:clean(error&&error.code)||'EBAY_DETAIL_ERROR'};}
   if(!detail||typeof detail!=='object')return {ok:false,reason:'detail-missing'};
   const title=clean(detail.title)||candidate.title,condition=clean(detail.condition)||candidate.condition;
@@ -191,8 +210,17 @@ function publicPlan(plan){
 }
 async function discoverProduct(product,budget){
   const plans=searchPlan.plansFor(product,{maxQueries:MAX_SEARCH_QUERIES_PER_PRODUCT});
-  const seen=new Map(),searchErrors=[];
+  const seen=new Map(),searchErrors=[],rejects=[];
   let calls=0;
+  const directItemId=clean(VERIFIED_DIRECT_ITEM_IDS[product&&product.slug]);
+  if(directItemId&&budget.remaining>0){
+    budget.remaining-=1;calls+=1;
+    const verified=await verifyImageCandidate(product,directCandidate(product,directItemId));
+    if(verified.ok){
+      return {ok:true,candidate:verified.candidate,plans:plans.map(publicPlan),calls,candidateCount:1,searchErrors,directItemId};
+    }
+    rejects.push({itemId:directItemId,score:null,searchKind:'verified-direct-item',reason:verified.reason});
+  }
   for(let index=0;index<plans.length;index+=1){
     if(budget.remaining<1)break;
     const plan=plans[index];
@@ -200,7 +228,7 @@ async function discoverProduct(product,budget){
     let result;
     try{
       result=await ebay.searchItems(searchRequest(plan),{
-        referenceId:`apg:${product.slug}:image-search-v24:${index+1}`,
+        referenceId:`apg:${product.slug}:image-search-v25:${index+1}`,
         timeoutMs:10000
       });
     }catch(error){
@@ -217,17 +245,16 @@ async function discoverProduct(product,budget){
   const candidates=[...seen.values()]
     .sort((a,b)=>(b.score-a.score)||(b.modelCoverage-a.modelCoverage)||(b.nameCoverage-a.nameCoverage)||(a.queryIndex-b.queryIndex))
     .slice(0,MAX_DETAIL_CHECKS_PER_PRODUCT);
-  const rejects=[];
   for(const candidate of candidates){
     if(budget.remaining<1)break;
     budget.remaining-=1;calls+=1;
     const verified=await verifyImageCandidate(product,candidate);
     if(verified.ok){
-      return {ok:true,candidate:verified.candidate,plans:plans.map(publicPlan),calls,candidateCount:candidates.length,searchErrors};
+      return {ok:true,candidate:verified.candidate,plans:plans.map(publicPlan),calls,candidateCount:candidates.length+(directItemId?1:0),searchErrors,directItemId:directItemId||null};
     }
     rejects.push({itemId:candidate.itemId,score:candidate.score,searchKind:candidate.searchKind,reason:verified.reason});
   }
-  return {ok:false,plans:plans.map(publicPlan),calls,candidateCount:candidates.length,rejects:rejects.slice(0,6),searchErrors};
+  return {ok:false,plans:plans.map(publicPlan),calls,candidateCount:candidates.length+(directItemId?1:0),rejects:rejects.slice(0,7),searchErrors,directItemId:directItemId||null};
 }
 
 module.exports=async function handler(req,res){
@@ -260,24 +287,24 @@ module.exports=async function handler(req,res){
         continue;
       }
       let found;
-      try{found=await discoverProduct(product,budget);}catch(error){found={ok:false,error:clean(error&&error.code)||'DISCOVERY_V24_ERROR',calls:0,plans:[]};}
+      try{found=await discoverProduct(product,budget);}catch(error){found={ok:false,error:clean(error&&error.code)||'DISCOVERY_V25_ERROR',calls:0,plans:[]};}
       if(found.ok){
         await insertDiscoveredState(workerToken,product,found.candidate);
         await recordDiscoveryResult(workerToken,slug,'accepted');
-        results.push({slug,status:'accepted',itemId:found.candidate.itemId,verificationLevel:found.candidate.verificationLevel,calls:found.calls,plans:found.plans,searchErrors:found.searchErrors});
+        results.push({slug,status:'accepted',itemId:found.candidate.itemId,verificationLevel:found.candidate.verificationLevel,retrieval:found.directItemId&&found.candidate.itemId===found.directItemId?'verified-direct-item':'search',calls:found.calls,plans:found.plans,searchErrors:found.searchErrors});
       }else{
         const status=found.candidateCount?'review':'no-match';
-        await recordDiscoveryResult(workerToken,slug,status,found.error||'DISCOVERY_V24_NOT_ACCEPTED');
+        await recordDiscoveryResult(workerToken,slug,status,found.error||'DISCOVERY_V25_NOT_ACCEPTED');
         results.push({slug,status,calls:found.calls||0,plans:found.plans||[],candidateCount:found.candidateCount||0,rejects:found.rejects||[],searchErrors:found.searchErrors||[]});
       }
     }
     return json(res,200,{
-      ok:true,status:'completed',version:VERSION,searchPlanVersion:searchPlan.VERSION,
+      ok:true,status:'completed',version:VERSION,searchPlanVersion:searchPlan.VERSION,guardVersion:exactGuard.VERSION,
       processed:results.length,accepted:results.filter(row=>row.status==='accepted').length,
       quota:quotaPublic(summary),budgetRemaining:budget.remaining,results
     });
   }catch(error){
-    return json(res,500,{ok:false,status:'worker-error',version:VERSION,searchPlanVersion:searchPlan.VERSION,code:clean(error&&error.code)||'EBAY_DISCOVERY_V24_ERROR'});
+    return json(res,500,{ok:false,status:'worker-error',version:VERSION,searchPlanVersion:searchPlan.VERSION,code:clean(error&&error.code)||'EBAY_DISCOVERY_V25_ERROR'});
   }finally{if(consumed)await finishCapability(workerToken);}
 };
 
@@ -287,4 +314,6 @@ module.exports.QUOTA_RESERVE=QUOTA_RESERVE;
 module.exports.MAX_PRODUCTS_PER_RUN=MAX_PRODUCTS_PER_RUN;
 module.exports.MAX_SEARCH_QUERIES_PER_PRODUCT=MAX_SEARCH_QUERIES_PER_PRODUCT;
 module.exports.MAX_DETAIL_CHECKS_PER_PRODUCT=MAX_DETAIL_CHECKS_PER_PRODUCT;
+module.exports.MAX_DIRECT_DETAIL_CHECKS_PER_PRODUCT=MAX_DIRECT_DETAIL_CHECKS_PER_PRODUCT;
 module.exports.MAX_CALLS_PER_PRODUCT=MAX_CALLS_PER_PRODUCT;
+module.exports.VERIFIED_DIRECT_ITEM_IDS=VERIFIED_DIRECT_ITEM_IDS;
