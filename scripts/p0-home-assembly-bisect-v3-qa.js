@@ -12,31 +12,35 @@ const diagnosticSource=fs.readFileSync(path.join(root,'api','home-assembly-diagn
 const budgetSource=fs.readFileSync(path.join(root,'lib','home-response-header-budget-v132-runtime.js'),'utf8');
 const config=JSON.parse(fs.readFileSync(path.join(root,'vercel.json'),'utf8'));
 
-// Each already-built boundary is exposed for private noindex diagnostics. The final four stages
-// make the exact Home-only presentation, delivery and response-header budget independently
-// observable without bypassing the governed public export.
-const EXPECTED=['runtime','transport','premium','journey','stable','mobile','whole','audit','presentation','searchImages','categoryImages','pagespeed','reviewProfiles','final','desktopHome','desktopTrust','googleDelivery','homeBudget'];
+// Each already-built boundary is exposed for private noindex diagnostics. The final five stages
+// make the exact Home-only presentation, national-card repair, delivery and response-header
+// budget independently observable without bypassing the governed public export.
+const EXPECTED=['runtime','transport','premium','journey','stable','mobile','whole','audit','presentation','searchImages','categoryImages','pagespeed','reviewProfiles','final','desktopHome','desktopTrust','homeNationalCards','googleDelivery','homeBudget'];
 assert.equal(typeof app,'function');
 assert(apiSource.includes('const desktopHomeHeaderHandler=finalPresentationStability.wrapDesktopHome(finalHandler);'),'public export must route the desktop Home layer through v131 streaming safety');
 assert(apiSource.includes('const desktopAboutTrustContrastHandler=finalPresentationStability.wrapDesktopTrust(desktopHomeHeaderHandler);'),'public export must route the desktop trust layer through v131 streaming safety');
-assert(apiSource.includes('const googleDiscoverabilityPerformanceHandler=googleDiscoverabilityPerformance.wrap(desktopAboutTrustContrastHandler);'),'public export must retain the narrow v128 delivery wrapper');
+assert(apiSource.includes('const homeNationalCardsRepairHandler=homeNationalCardsRepair.wrap(desktopAboutTrustContrastHandler);'),'public export must retain the Home national-card repair inside Google delivery');
+assert(apiSource.includes('const googleDiscoverabilityPerformanceHandler=googleDiscoverabilityPerformance.wrap(homeNationalCardsRepairHandler);'),'public export must retain the narrow v128 delivery wrapper outside the Home national-card repair');
 assert(apiSource.includes('const homeResponseHeaderBudgetHandler=homeResponseHeaderBudget.wrap(googleDiscoverabilityPerformanceHandler);'),'public export must retain the Home-only v132 response-header budget outside v128');
 assert(apiSource.trim().endsWith('module.exports=homeResponseHeaderBudgetHandler;'),'governed public export must be the completed v132-wrapped handler');
 assert.equal(app.GOOGLE_DISCOVERABILITY_PERFORMANCE_VERSION,'128.2','public export must expose the current v128 delivery generation');
 assert.equal(app.FINAL_PRESENTATION_STABILITY_VERSION,'131.0','public export must expose the streaming-safe final presentation generation');
+assert.equal(app.HOME_NATIONAL_CARDS_REPAIR_VERSION,'131.0','public export must expose the Home national-card repair generation');
 assert.equal(app.HOME_RESPONSE_HEADER_BUDGET_VERSION,'132.0','public export must expose the current Home response-header budget');
 assert.deepEqual(Array.from(app.APG_P0_HOME_ASSEMBLY_STAGE_NAMES||[]),EXPECTED,'assembly stage order must be explicit');
 assert.deepEqual(Object.keys(app.APG_P0_HOME_ASSEMBLY_HANDLERS||{}),EXPECTED,'only intended diagnostic assembly boundaries may be exposed');
 for(const stage of EXPECTED)assert.equal(typeof app.APG_P0_HOME_ASSEMBLY_HANDLERS[stage],'function',`${stage}: stage must be a function`);
-assert.notEqual(app.APG_P0_HOME_ASSEMBLY_HANDLERS.final,app,'diagnostic final checkpoint must remain below final presentation, v128 delivery and v132 budgeting');
-assert.notEqual(app.APG_P0_HOME_ASSEMBLY_HANDLERS.desktopHome,app,'desktop Home checkpoint must remain below trust, Google delivery and Home budgeting');
-assert.notEqual(app.APG_P0_HOME_ASSEMBLY_HANDLERS.desktopTrust,app,'desktop trust checkpoint must remain below Google delivery and Home budgeting');
+assert.notEqual(app.APG_P0_HOME_ASSEMBLY_HANDLERS.final,app,'diagnostic final checkpoint must remain below final presentation, national cards, v128 delivery and v132 budgeting');
+assert.notEqual(app.APG_P0_HOME_ASSEMBLY_HANDLERS.desktopHome,app,'desktop Home checkpoint must remain below trust, national cards, Google delivery and Home budgeting');
+assert.notEqual(app.APG_P0_HOME_ASSEMBLY_HANDLERS.desktopTrust,app,'desktop trust checkpoint must remain below national cards, Google delivery and Home budgeting');
+assert.notEqual(app.APG_P0_HOME_ASSEMBLY_HANDLERS.homeNationalCards,app,'Home national-card checkpoint must remain below Google delivery and Home budgeting');
 assert.notEqual(app.APG_P0_HOME_ASSEMBLY_HANDLERS.googleDelivery,app,'Google delivery checkpoint must remain below the Home-only budget');
 assert.equal(app.APG_P0_HOME_ASSEMBLY_HANDLERS.homeBudget,app,'final diagnostic checkpoint must be the exact public export');
 assert.notEqual(app.APG_P0_HOME_ASSEMBLY_HANDLERS.runtime,app,'runtime checkpoint must remain below outer assembly');
 assert.equal(app.APG_P0_HOME_ASSEMBLY_HANDLERS.final.BRAND_LOGO_STABILITY_VERSION,'125.0','diagnostic final checkpoint must retain governed brand stability');
 assert.equal(app.APG_P0_HOME_ASSEMBLY_HANDLERS.desktopHome.DESKTOP_HOME_HEADER_VERSION,'126.2','desktop Home checkpoint must preserve its certified visual generation');
 assert.equal(app.APG_P0_HOME_ASSEMBLY_HANDLERS.desktopTrust.DESKTOP_ABOUT_TRUST_CONTRAST_VERSION,'127.0','desktop trust checkpoint must preserve its certified contrast generation');
+assert.equal(app.APG_P0_HOME_ASSEMBLY_HANDLERS.homeNationalCards.HOME_NATIONAL_CARDS_REPAIR_VERSION,'131.0','Home national-card checkpoint must retain its presentation-only repair generation');
 assert.equal(app.APG_P0_HOME_ASSEMBLY_HANDLERS.pagespeed.PAGESPEED_AGENTIC_CERTIFICATION_VERSION,'113.5','diagnostic PageSpeed checkpoint must retain P0-safe transport certification');
 assert.equal(app.APG_P0_HOME_ASSEMBLY_HANDLERS.homeBudget.HOME_RESPONSE_HEADER_BUDGET_VERSION,'132.0','diagnostic Home budget stage must retain v132');
 assert.equal(diagnostic.VERSION,'3.2');
@@ -86,5 +90,5 @@ function invokeUnknown(){
   assert.equal(unknown.body,'Not found','unknown stages must not disclose valid stage names');
   assert.match(String(unknown.headers['cache-control']||''),/no-store/);
   assert.match(String(unknown.headers['x-robots-tag']||''),/noindex/);
-  console.log(`P0_HOME_ASSEMBLY_BISECT_V32=PASS stages=${EXPECTED.length} publicExport=v128.2+v131.0+v132.0 diagnosticFinal=homeBudget transportBudget=all-stages publicHome=native-restored diagnostic=post-recovery-watch publicEbayNetwork=0 commercialWeight=unchanged`);
+  console.log(`P0_HOME_ASSEMBLY_BISECT_V32=PASS stages=${EXPECTED.length} publicExport=v128.2+v131.0+national-cards-v131.0+v132.0 diagnosticFinal=homeBudget transportBudget=all-stages publicHome=native-restored diagnostic=post-recovery-watch publicEbayNetwork=0 commercialWeight=unchanged`);
 })().catch(error=>{console.error(error&&error.stack||error);process.exit(1)});
