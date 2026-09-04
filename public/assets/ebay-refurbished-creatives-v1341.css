@@ -1,0 +1,9 @@
+/* APG eBay refurbished/promotion tile creatives v134.1.
+ * Exact owner-supplied creatives are presentation-only retailer discovery imagery.
+ * Crop only the surplus solid-colour side background so the supplied product group reads larger;
+ * do not generate, distort or substitute the creative itself.
+ */
+.apg-ebay-v11 .apg-ebay-refurb-v134-art{position:relative!important;inset:auto!important;display:block!important;width:100%!important;max-width:none!important;height:auto!important;min-height:0!important;aspect-ratio:780/212!important;padding:0!important;border:0!important;border-radius:16px!important;overflow:hidden!important;background:transparent!important;box-shadow:none!important;line-height:0!important}
+.apg-ebay-v11 .apg-ebay-refurb-v134-image{display:block!important;width:100%!important;height:100%!important;aspect-ratio:auto!important;object-fit:cover!important;object-position:center center!important;border-radius:0!important}
+.apg-ebay-v11 .apg-amz-v41-stack .apg-amz-v41-card:has(.apg-ebay-refurb-v134-art){grid-template-columns:minmax(160px,180px) minmax(0,1fr)!important;column-gap:16px!important;align-items:center!important}
+@media(max-width:620px){.apg-ebay-v11 .apg-amz-v41-stack .apg-amz-v41-card:has(.apg-ebay-refurb-v134-art){grid-template-columns:1fr!important}.apg-ebay-v11 .apg-ebay-refurb-v134-art{width:100%!important}}
