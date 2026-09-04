@@ -31,6 +31,7 @@ const searchProductImagery=require('../lib/search-product-imagery-v1-runtime');
 const categoryFeaturedImagery=require('../lib/category-featured-product-imagery-v1-runtime');
 const brandLogoStability=require('../lib/brand-logo-stability-v125-runtime');
 const finalPresentationStability=require('../lib/final-presentation-stability-v131-runtime');
+const homeNationalCardsRepair=require('../lib/home-national-cards-repair-v131-runtime');
 const googleDiscoverabilityPerformance=require('../lib/google-discoverability-performance-v128-runtime');
 const homeResponseHeaderBudget=require('../lib/home-response-header-budget-v132-runtime');
 hardConstraintParity.install();
@@ -106,12 +107,15 @@ finalHandler.BRAND_LOGO_STABILITY_VERSION=brandLogoStability.VERSION;
 finalHandler.EBAY_PRODUCT_IMAGE_PRESENTATION_STATE='NON_BLOCKING_UNIVERSAL_PRODUCT_IMAGERY_V16';
 
 // The two final desktop layers retain their existing visual assets and order, but share a
-// pre-commit, streaming-safe response contract. The final Home-only header budget then removes
-// superseded diagnostic X-APG headers immediately before commit, without touching standard HTTP,
-// security, SEO, privacy, content or cache headers.
+// pre-commit, streaming-safe response contract. The Home-only national-card repair is deliberately
+// inside Google CSS consolidation so both build-time and runtime signatures include the same
+// stylesheet, preserving the one-bundle delivery contract while restoring the broken card grid.
+// The final Home-only header budget then removes superseded diagnostic X-APG headers immediately
+// before commit, without touching standard HTTP, security, SEO, privacy, content or cache headers.
 const desktopHomeHeaderHandler=finalPresentationStability.wrapDesktopHome(finalHandler);
 const desktopAboutTrustContrastHandler=finalPresentationStability.wrapDesktopTrust(desktopHomeHeaderHandler);
-const googleDiscoverabilityPerformanceHandler=googleDiscoverabilityPerformance.wrap(desktopAboutTrustContrastHandler);
+const homeNationalCardsRepairHandler=homeNationalCardsRepair.wrap(desktopAboutTrustContrastHandler);
+const googleDiscoverabilityPerformanceHandler=googleDiscoverabilityPerformance.wrap(homeNationalCardsRepairHandler);
 const homeResponseHeaderBudgetHandler=homeResponseHeaderBudget.wrap(googleDiscoverabilityPerformanceHandler);
 const p0HomeAssemblyHandlers=Object.freeze({
   runtime,
@@ -130,18 +134,23 @@ const p0HomeAssemblyHandlers=Object.freeze({
   final:finalHandler,
   desktopHome:desktopHomeHeaderHandler,
   desktopTrust:desktopAboutTrustContrastHandler,
+  homeNationalCards:homeNationalCardsRepairHandler,
   googleDelivery:googleDiscoverabilityPerformanceHandler,
   homeBudget:homeResponseHeaderBudgetHandler
 });
-for(const stageHandler of [finalHandler,desktopHomeHeaderHandler,desktopAboutTrustContrastHandler,googleDiscoverabilityPerformanceHandler,homeResponseHeaderBudgetHandler]){
+for(const stageHandler of [finalHandler,desktopHomeHeaderHandler,desktopAboutTrustContrastHandler,homeNationalCardsRepairHandler,googleDiscoverabilityPerformanceHandler,homeResponseHeaderBudgetHandler]){
   stageHandler.APG_P0_HOME_ASSEMBLY_HANDLERS=p0HomeAssemblyHandlers;
   stageHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES=Object.freeze(Object.keys(p0HomeAssemblyHandlers));
 }
 desktopHomeHeaderHandler.FINAL_PRESENTATION_STABILITY_VERSION=finalPresentationStability.VERSION;
 desktopAboutTrustContrastHandler.FINAL_PRESENTATION_STABILITY_VERSION=finalPresentationStability.VERSION;
+homeNationalCardsRepairHandler.FINAL_PRESENTATION_STABILITY_VERSION=finalPresentationStability.VERSION;
+homeNationalCardsRepairHandler.HOME_NATIONAL_CARDS_REPAIR_VERSION=homeNationalCardsRepair.VERSION;
 googleDiscoverabilityPerformanceHandler.FINAL_PRESENTATION_STABILITY_VERSION=finalPresentationStability.VERSION;
+googleDiscoverabilityPerformanceHandler.HOME_NATIONAL_CARDS_REPAIR_VERSION=homeNationalCardsRepair.VERSION;
 googleDiscoverabilityPerformanceHandler.GOOGLE_DISCOVERABILITY_PERFORMANCE_VERSION=googleDiscoverabilityPerformance.VERSION;
 homeResponseHeaderBudgetHandler.FINAL_PRESENTATION_STABILITY_VERSION=finalPresentationStability.VERSION;
+homeResponseHeaderBudgetHandler.HOME_NATIONAL_CARDS_REPAIR_VERSION=homeNationalCardsRepair.VERSION;
 homeResponseHeaderBudgetHandler.GOOGLE_DISCOVERABILITY_PERFORMANCE_VERSION=googleDiscoverabilityPerformance.VERSION;
 homeResponseHeaderBudgetHandler.HOME_RESPONSE_HEADER_BUDGET_VERSION=homeResponseHeaderBudget.VERSION;
 module.exports=homeResponseHeaderBudgetHandler;
