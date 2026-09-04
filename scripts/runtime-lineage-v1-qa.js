@@ -57,6 +57,7 @@ const expectedModules={
   categoryFeaturedImagery:'../lib/category-featured-product-imagery-v1-runtime',
   brandLogoStability:'../lib/brand-logo-stability-v125-runtime',
   finalPresentationStability:'../lib/final-presentation-stability-v131-runtime',
+  homeNationalCardsRepair:'../lib/home-national-cards-repair-v131-runtime',
   googleDiscoverabilityPerformance:'../lib/google-discoverability-performance-v128-runtime',
   homeResponseHeaderBudget:'../lib/home-response-header-budget-v132-runtime'
 };
@@ -87,7 +88,8 @@ assertOrdered([
 
 // Validate the current direct runtime chain. The final two desktop transforms retain their
 // established visual modules, their active response boundary is the streaming-safe v131 layer,
-// and the Home-only v132 layer removes superseded diagnostics immediately before commit.
+// the Home national-card repair is composed immediately inside Google delivery, and the
+// Home-only v132 layer removes superseded diagnostics immediately before commit.
 assertOrdered([
   'const transportHandler=decisionTransportParity.wrap(runtime)',
   'const premiumHandler=premiumExperience.wrap(transportHandler)',
@@ -104,7 +106,8 @@ assertOrdered([
   'const finalHandler=brandLogoStability.wrap(reviewProfileHandler)',
   'const desktopHomeHeaderHandler=finalPresentationStability.wrapDesktopHome(finalHandler)',
   'const desktopAboutTrustContrastHandler=finalPresentationStability.wrapDesktopTrust(desktopHomeHeaderHandler)',
-  'const googleDiscoverabilityPerformanceHandler=googleDiscoverabilityPerformance.wrap(desktopAboutTrustContrastHandler)',
+  'const homeNationalCardsRepairHandler=homeNationalCardsRepair.wrap(desktopAboutTrustContrastHandler)',
+  'const googleDiscoverabilityPerformanceHandler=googleDiscoverabilityPerformance.wrap(homeNationalCardsRepairHandler)',
   'const homeResponseHeaderBudgetHandler=homeResponseHeaderBudget.wrap(googleDiscoverabilityPerformanceHandler)',
   'module.exports=homeResponseHeaderBudgetHandler'
 ]);
@@ -112,11 +115,13 @@ assertOrdered([
 for(const marker of [
   'desktopHome:desktopHomeHeaderHandler',
   'desktopTrust:desktopAboutTrustContrastHandler',
+  'homeNationalCards:homeNationalCardsRepairHandler',
   'googleDelivery:googleDiscoverabilityPerformanceHandler',
   'homeBudget:homeResponseHeaderBudgetHandler',
   'stageHandler.APG_P0_HOME_ASSEMBLY_HANDLERS=p0HomeAssemblyHandlers',
   'stageHandler.APG_P0_HOME_ASSEMBLY_STAGE_NAMES=Object.freeze(Object.keys(p0HomeAssemblyHandlers))',
   'FINAL_PRESENTATION_STABILITY_VERSION=finalPresentationStability.VERSION',
+  'HOME_NATIONAL_CARDS_REPAIR_VERSION=homeNationalCardsRepair.VERSION',
   'GOOGLE_DISCOVERABILITY_PERFORMANCE_VERSION=googleDiscoverabilityPerformance.VERSION',
   'HOME_RESPONSE_HEADER_BUDGET_VERSION=homeResponseHeaderBudget.VERSION'
 ])assert(api.includes(marker),`missing propagated runtime contract ${marker}`);
@@ -143,6 +148,7 @@ for(const relative of [
   'lib/desktop-home-header-v126-runtime.js',
   'lib/desktop-about-trust-contrast-v127-runtime.js',
   'lib/final-presentation-stability-v131-runtime.js',
+  'lib/home-national-cards-repair-v131-runtime.js',
   'lib/home-response-header-budget-v132-runtime.js'
 ])assertPresentationOnly(relative);
 
@@ -163,6 +169,9 @@ for(const prohibited of [
 ])assert(!finalPresentationSource.includes(prohibited),`v131 final presentation must not contain ${prohibited}`);
 assert(!api.includes('desktopHomeHeader.wrap(finalHandler)'),'unsafe desktop Home response wrapper must be detached');
 assert(!api.includes('desktopAboutTrustContrast.wrap(desktopHomeHeaderHandler)'),'unsafe desktop trust response wrapper must be detached');
+
+const homeNationalCardsSource=assertPresentationOnly('lib/home-national-cards-repair-v131-runtime.js',['localStorage.setItem(','sessionStorage.setItem(']);
+assert(homeNationalCardsSource.includes("const VERSION='131.0'"),'Home national-card repair version must remain explicit');
 
 const googleSource=assertPresentationOnly('lib/google-discoverability-performance-v128-runtime.js',['localStorage.setItem(','sessionStorage.setItem(']);
 for(const required of [
@@ -231,7 +240,7 @@ for(const framework of ['next','react','vue','@angular/core','svelte'])assert(!d
 console.log(JSON.stringify({
   ok:true,
   underlyingRuntime:expectedModules.runtime,
-  directWrapperCount:18,
+  directWrapperCount:19,
   preRuntimeSideEffectInstallerCount:sideEffects.length,
   brandParityFirstGate:true,
   recommendationAndRetailerControlsPreserved:true,
@@ -241,8 +250,9 @@ console.log(JSON.stringify({
   googleV128FinalDeliveryOnly:true,
   homeDeliveryStability:'v130.1',
   finalPresentationStability:'v131.0',
+  homeNationalCardsRepair:'v131.0',
   homeResponseHeaderBudget:'v132.0',
-  finalDiagnosticStages:['desktopHome','desktopTrust','googleDelivery','homeBudget'],
+  finalDiagnosticStages:['desktopHome','desktopTrust','homeNationalCards','googleDelivery','homeBudget'],
   unsafeDesktopResponseWrappersDetached:true,
   postCommitMutationBlocked:true,
   presentationFallbackFailClosed:true,
@@ -250,5 +260,5 @@ console.log(JSON.stringify({
   standardAndSecurityHeadersPreserved:true,
   fullSourceGateRestored:true,
   prohibitedFrameworksAbsent:true,
-  policy:'v106 remains the governed recommendation runtime; audit and decision state remain explicit; visual and route-scoped imagery layers remain presentation-only; PageSpeed v113 safety remains fail-closed; v131 preserves v126/v127 visuals through streaming-safe presentation; v132 is a Home-only outer response-header budget that removes redundant X-APG diagnostics before commit.'
+  policy:'v106 remains the governed recommendation runtime; audit and decision state remain explicit; visual and route-scoped imagery layers remain presentation-only; PageSpeed v113 safety remains fail-closed; v131 preserves v126/v127 visuals through streaming-safe presentation; Home national-card repair v131.0 is presentation-only and remains inside Google CSS consolidation; v132 is a Home-only outer response-header budget that removes redundant X-APG diagnostics before commit.'
 },null,2));
