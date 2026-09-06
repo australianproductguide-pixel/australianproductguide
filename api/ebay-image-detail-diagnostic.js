@@ -1,11 +1,11 @@
 'use strict';
 
-// Read-only APG eBay image identity diagnostic v3.1.
+// Read-only APG eBay image identity diagnostic v3.2.
 // Re-fetches a bounded current recovery candidate from eBay and explains the exact product-identity checks.
 // It accepts only maintained APG slugs, exposes no credentials, mutates no state, is noindex/no-store
 // and is intended for operational diagnosis of review/recovery rows. Public RLS intentionally hides
 // review/retired rows, so the allowlist below is deliberately item-bound; arbitrary item IDs cannot be
-// supplied by callers. v3.1 adds the current Miofive S1 4K whole-dash-cam listing for read-only diagnosis.
+// supplied by callers. v3.2 switches Marshall Monitor III ANC to a current Brand New eBay AU listing.
 const {products}=require('../data');
 const supabase=require('../lib/apg-supabase-public-v1');
 const ebay=require('../lib/ebay-browse-api-v1');
@@ -13,7 +13,7 @@ const enrichment=require('../lib/ebay-catalogue-enrichment-v1');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 const continuity=require('../lib/ebay-product-image-continuity-v3-runtime');
 
-const VERSION='3.1';
+const VERSION='3.2';
 const PRODUCT_MAP=new Map(products.filter(Boolean).map(product=>[product.slug,product]));
 const REVIEW_ITEM_ALLOWLIST=Object.freeze({
   '8bitdo-ultimate-bluetooth-controller':'v1|306572868674|0',
@@ -47,7 +47,7 @@ const REVIEW_ITEM_ALLOWLIST=Object.freeze({
   'insta360-x4':'v1|198452008292|0',
   'insta360-x5':'v1|198449654446|0',
   'kuvings-evo820-whole-slow-juicer':'v1|205026851618|0',
-  'marshall-monitor-iii-anc':'v1|146829501633|0',
+  'marshall-monitor-iii-anc':'v1|236589531774|0',
   'microsoft-surface-laptop-7-copilot-pc-138-inch-16gb512gb':'v1|287133106059|0',
   'miofive-s1':'v1|267234025630|0',
   'nanoleaf-essentials-matter-smart-bulb-a60-e27':'v1|407177671136|0',
@@ -110,7 +110,7 @@ async function handler(req,res){
     const product=PRODUCT_MAP.get(slug);
     const state=diagnosticState(slug,await supabase.imageState(slug,{timeoutMs:3000}));
     if(!state||!state.item_id)return res.status(404).json({ok:false,status:'no-image-state',version:VERSION,slug});
-    const detail=await ebay.getItem(clean(state.item_id),{referenceId:`apg:${slug}:image-diagnostic-v31`,timeoutMs:10000});
+    const detail=await ebay.getItem(clean(state.item_id),{referenceId:`apg:${slug}:image-diagnostic-v32`,timeoutMs:10000});
     const text=detailsText(detail);
     const candidate=candidateFrom(state,detail);
     const staged={status:'accept',accepted:candidate,review:null,candidates:[candidate],recommendationWeight:0};
