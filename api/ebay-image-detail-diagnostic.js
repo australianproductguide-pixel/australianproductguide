@@ -1,11 +1,11 @@
 'use strict';
 
-// Read-only APG eBay image identity diagnostic v2.0.
+// Read-only APG eBay image identity diagnostic v2.1.
 // Re-fetches a bounded current recovery candidate from eBay and explains the exact product-identity checks.
 // It accepts only maintained APG slugs, exposes no credentials, mutates no state, is noindex/no-store
 // and is intended for operational diagnosis of review/recovery rows. Public RLS intentionally hides
 // review/retired rows, so the allowlist below is deliberately item-bound; arbitrary item IDs cannot be
-// supplied by callers. v2.0 adds four high-confidence structured-model residual candidates for review.
+// supplied by callers. v2.1 adds four brand-equivalence candidates for bounded diagnosis.
 const {products}=require('../data');
 const supabase=require('../lib/apg-supabase-public-v1');
 const ebay=require('../lib/ebay-browse-api-v1');
@@ -13,12 +13,15 @@ const enrichment=require('../lib/ebay-catalogue-enrichment-v1');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 const continuity=require('../lib/ebay-product-image-continuity-v3-runtime');
 
-const VERSION='2.0';
+const VERSION='2.1';
 const PRODUCT_MAP=new Map(products.filter(Boolean).map(product=>[product.slug,product]));
 const REVIEW_ITEM_ALLOWLIST=Object.freeze({
   '8bitdo-ultimate-bluetooth-controller':'v1|306572868674|0',
   'amazon-echo-show-5-3rd-gen':'v1|147441885504|0',
+  'amazon-eero-max-7':'v1|186261946765|0',
   'amazon-fire-tv-stick-4k-max':'v1|227490139598|0',
+  'amazon-kindle-2024':'v1|178370430943|0',
+  'anker-nebula-capsule-3':'v1|358478873587|0',
   'apple-ipad-a16-128gb':'v1|198078800527|0',
   'asus-tuf-gaming-vg27aql3a':'v1|198472406133|0',
   'belkin-boostcharge-pro-qi2-15w-wireless-charging-pad':'v1|357409305623|0',
@@ -37,6 +40,7 @@ const REVIEW_ITEM_ALLOWLIST=Object.freeze({
   'reolink-argus-3-ultra':'v1|267311852224|0',
   'samsung-galaxy-smarttag2':'v1|296082302198|594211313158',
   'samsung-s90h-55-inch-oled-qa55s90hawxxy':'v1|157833306462|0',
+  'scansnap-ix1600-document-scanner':'v1|317091016301|0',
   'schwinn-ic4-indoor-cycling-bike':'v1|325276699162|514160083369',
   'shure-mv7':'v1|278033991168|0',
   'tp-link-tapo-p110':'v1|377252921299|0',
@@ -84,7 +88,7 @@ async function handler(req,res){
     const product=PRODUCT_MAP.get(slug);
     const state=diagnosticState(slug,await supabase.imageState(slug,{timeoutMs:3000}));
     if(!state||!state.item_id)return res.status(404).json({ok:false,status:'no-image-state',version:VERSION,slug});
-    const detail=await ebay.getItem(clean(state.item_id),{referenceId:`apg:${slug}:image-diagnostic-v20`,timeoutMs:10000});
+    const detail=await ebay.getItem(clean(state.item_id),{referenceId:`apg:${slug}:image-diagnostic-v21`,timeoutMs:10000});
     const text=detailsText(detail);
     const candidate=candidateFrom(state,detail);
     const staged={status:'accept',accepted:candidate,review:null,candidates:[candidate],recommendationWeight:0};
