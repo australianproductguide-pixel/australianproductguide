@@ -1,10 +1,10 @@
 'use strict';
 
-// Read-only APG eBay image identity diagnostic v1.1.
+// Read-only APG eBay image identity diagnostic v1.2.
 // Re-fetches the current governed item from eBay and explains the exact product-identity checks.
 // It accepts only maintained APG slugs, exposes no credentials, mutates no state, is noindex/no-store
 // and is intended for bounded operational diagnosis of review/recovery rows. Public RLS intentionally
-// hides review rows, so v1.1 includes a narrowly bounded allowlist of the current review item IDs;
+// hides review rows, so v1.2 includes a narrowly bounded allowlist of current review item IDs;
 // arbitrary item IDs cannot be supplied by callers.
 const {products}=require('../data');
 const supabase=require('../lib/apg-supabase-public-v1');
@@ -13,15 +13,23 @@ const enrichment=require('../lib/ebay-catalogue-enrichment-v1');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 const continuity=require('../lib/ebay-product-image-continuity-v3-runtime');
 
-const VERSION='1.1';
+const VERSION='1.2';
 const PRODUCT_MAP=new Map(products.filter(Boolean).map(product=>[product.slug,product]));
 const REVIEW_ITEM_ALLOWLIST=Object.freeze({
+  'apple-ipad-a16-128gb':'v1|198078800527|0',
+  'asus-tuf-gaming-vg27aql3a':'v1|198472406133|0',
+  'corsair-k70-core-tkl':'v1|237000834483|0',
   'dyson-v11-advanced':'v1|206499671442|0',
   'ecovacs-deebot-x11-pro-omni':'v1|800585642324|0',
+  'elgato-facecam-mk-2':'v1|176622504786|0',
   'kuvings-evo820-whole-slow-juicer':'v1|205026851618|0',
+  'nanoleaf-essentials-matter-smart-bulb-a60-e27':'v1|407177671136|0',
   'reolink-argus-3-ultra':'v1|267311852224|0',
+  'samsung-galaxy-smarttag2':'v1|296082302198|594211313158',
   'samsung-s90h-55-inch-oled-qa55s90hawxxy':'v1|157833306462|0',
-  'shure-mv7':'v1|278033991168|0'
+  'schwinn-ic4-indoor-cycling-bike':'v1|325276699162|514160083369',
+  'shure-mv7':'v1|278033991168|0',
+  'tp-link-tapo-p110':'v1|377252921299|0'
 });
 function clean(value){return String(value==null?'':value).trim();}
 function safeSlug(req){try{const slug=clean(new URL(req.url,'https://australianproductguide.au').searchParams.get('slug'));return PRODUCT_MAP.has(slug)?slug:'';}catch{return '';}}
@@ -63,7 +71,7 @@ async function handler(req,res){
     const product=PRODUCT_MAP.get(slug);
     const state=diagnosticState(slug,await supabase.imageState(slug,{timeoutMs:3000}));
     if(!state||!state.item_id)return res.status(404).json({ok:false,status:'no-image-state',version:VERSION,slug});
-    const detail=await ebay.getItem(clean(state.item_id),{referenceId:`apg:${slug}:image-diagnostic-v11`,timeoutMs:10000});
+    const detail=await ebay.getItem(clean(state.item_id),{referenceId:`apg:${slug}:image-diagnostic-v12`,timeoutMs:10000});
     const text=detailsText(detail);
     const candidate=candidateFrom(state,detail);
     const staged={status:'accept',accepted:candidate,review:null,candidates:[candidate],recommendationWeight:0};
