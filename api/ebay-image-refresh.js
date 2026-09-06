@@ -1,11 +1,12 @@
 'use strict';
 
-// APG eBay image continuity worker v1.7.
+// APG eBay image continuity worker v1.8.
 // Independent second-pass detail verification for governed eBay product imagery.
 // A review/recovery row is always re-fetched and tested against the current guard before a
-// replacement search is attempted. v1.7 adds one evidence-bound direct replacement for the
-// Amazon Echo Show 5 (3rd Gen), whose prior verified listing ended and whose current exact AU
-// listing was independently identified but was not resurfaced by normal Browse search.
+// replacement search is attempted. v1.8 allows a registered direct-recovery item to pass an eBay
+// parts/accessory-category precheck only when the exact guard independently proves that specific
+// item as an evidence-bound whole product. This closes the Echo Show 5 recovery gap without
+// weakening category checks for search results or unregistered items.
 // Direct recovery is retrieval only: it still passes the same detail, accessory, model, family,
 // variant, AUD-price, image-host, item-URL and active-listing guards before replacement.
 // Public browsing remains registry-only and makes no eBay Browse calls. Affiliate availability
@@ -19,7 +20,7 @@ const searchPlan=require('../lib/ebay-image-search-plan-v1');
 const familyGuard=require('../lib/ebay-family-variant-guard-v131');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 
-const VERSION='1.7';
+const VERSION='1.8';
 const REFRESH_QUOTA_RESERVE=500;
 const MAX_BATCH=8;
 const CONCURRENCY=2;
@@ -148,8 +149,9 @@ function exactDetailCandidate(row,product,detail){
   const categoryPath=clean(detail.categoryPath)||null;
   const preliminary={...prior,itemId,legacyItemId,title,condition,verificationEvidence:{...(prior.verificationEvidence||{}),categoryPath}};
   const hostCompatibilitySafe=prior.searchKind==='verified-direct-item'&&exactGuard.hostCompatibilityWholeProductOverride(product,preliminary).ok;
+  const evidenceBoundWholeProductSafe=prior.searchKind==='verified-direct-item'&&exactGuard.evidenceBoundWholeProductLeaf(product,preliminary);
   if(enrichment.listingLooksAccessory(title,product)&&!hostCompatibilitySafe)return {ok:false,reason:'detail-accessory-or-part-language',code:'EBAY_DETAIL_ACCESSORY'};
-  if(enrichment.detailedCategoryRisk(detail))return {ok:false,reason:'detail-parts-category',code:'EBAY_DETAIL_PARTS_CATEGORY'};
+  if(enrichment.detailedCategoryRisk(detail)&&!evidenceBoundWholeProductSafe)return {ok:false,reason:'detail-parts-category',code:'EBAY_DETAIL_PARTS_CATEGORY'};
   const identityConflict=enrichment.materialIdentityConflict(product,detailVariantText(detail));
   if(identityConflict.conflict)return {ok:false,reason:`detail-${identityConflict.reason}`,code:'EBAY_DETAIL_VARIANT_MISMATCH'};
   const brands=enrichment.detailedBrandEvidence(detail);
@@ -173,7 +175,7 @@ function exactDetailCandidate(row,product,detail){
 }
 async function verifyExisting(row,product){
   let detail;
-  try{detail=await ebay.getItem(clean(row&&row.item_id),{referenceId:`apg:${product.slug}:image-refresh-v17`,timeoutMs:10000});}
+  try{detail=await ebay.getItem(clean(row&&row.item_id),{referenceId:`apg:${product.slug}:image-refresh-v18`,timeoutMs:10000});}
   catch(error){const failure={ok:false,reason:'detail-verification-error',code:clean(error&&error.code)||'EBAY_DETAIL_ERROR',errorStatus:Number(error&&error.status)||null};failure.transient=transientVerificationFailure(failure);return failure;}
   return exactDetailCandidate(row,product,detail);
 }
@@ -201,7 +203,7 @@ async function searchExact(product,budget,{reference='recovery',maxQueries=MAX_R
   const plans=searchPlan.plansFor(product,{maxQueries}),seen=new Map(),searchErrors=[];let calls=0;
   for(let index=0;index<plans.length&&budget.remaining>0;index+=1){
     const plan=plans[index];budget.remaining-=1;calls+=1;let result;
-    try{result=await ebay.searchItems(searchRequest(plan),{referenceId:`apg:${product.slug}:image-${reference}-v17:${index+1}`,timeoutMs:10000});}
+    try{result=await ebay.searchItems(searchRequest(plan),{referenceId:`apg:${product.slug}:image-${reference}-v18:${index+1}`,timeoutMs:10000});}
     catch(error){searchErrors.push({kind:plan.kind,code:clean(error&&error.code)||'EBAY_SEARCH_ERROR'});continue;}
     for(const item of Array.isArray(result&&result.itemSummaries)?result.itemSummaries:[]){
       const candidate=projectSummary(product,item,plan.kind);if(!strongSummaryCandidate(product,candidate))continue;
@@ -228,7 +230,7 @@ async function recoverExact(row,product,budget){
   if(directItemId&&budget.remaining>0){
     budget.remaining-=1;directCalls+=1;
     try{
-      const detail=await ebay.getItem(directItemId,{referenceId:`apg:${product.slug}:image-direct-recovery-v17`,timeoutMs:10000});
+      const detail=await ebay.getItem(directItemId,{referenceId:`apg:${product.slug}:image-direct-recovery-v18`,timeoutMs:10000});
       const verified=exactDetailCandidate(directRecoveryRow(row,directItemId),product,detail);
       if(verified.ok)return {ok:true,candidate:verified.candidate,guard:verified.guard,calls:directCalls,plans:[],rejects:[],searchErrors:[],retrieval:'verified-direct-recovery'};
       directReject={itemId:directItemId,reason:verified.reason||'direct-recovery-rejected'};
