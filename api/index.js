@@ -34,6 +34,7 @@ const finalPresentationStability=require('../lib/final-presentation-stability-v1
 const homeNationalCardsRepair=require('../lib/home-national-cards-repair-v131-runtime');
 const googleDiscoverabilityPerformance=require('../lib/google-discoverability-performance-v128-runtime');
 const homeResponseHeaderBudget=require('../lib/home-response-header-budget-v132-runtime');
+const vercelSpeedInsights=require('../lib/vercel-speed-insights-v1-runtime');
 hardConstraintParity.install();
 scoutCustomerIntelligence.install();
 scoutResponseDepth.install();
@@ -153,4 +154,6 @@ homeResponseHeaderBudgetHandler.FINAL_PRESENTATION_STABILITY_VERSION=finalPresen
 homeResponseHeaderBudgetHandler.HOME_NATIONAL_CARDS_REPAIR_VERSION=homeNationalCardsRepair.VERSION;
 homeResponseHeaderBudgetHandler.GOOGLE_DISCOVERABILITY_PERFORMANCE_VERSION=googleDiscoverabilityPerformance.VERSION;
 homeResponseHeaderBudgetHandler.HOME_RESPONSE_HEADER_BUDGET_VERSION=homeResponseHeaderBudget.VERSION;
-module.exports=homeResponseHeaderBudgetHandler;
+const speedInsightsHandler=vercelSpeedInsights.wrap(homeResponseHeaderBudgetHandler);
+speedInsightsHandler.VERCEL_SPEED_INSIGHTS_VERSION=vercelSpeedInsights.VERSION;
+module.exports=speedInsightsHandler;
