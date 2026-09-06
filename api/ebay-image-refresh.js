@@ -1,12 +1,11 @@
 'use strict';
 
-// APG eBay image continuity worker v1.5.
+// APG eBay image continuity worker v1.6.
 // Independent second-pass detail verification for governed eBay product imagery.
 // A review/recovery row is always re-fetched and tested against the current guard before a
-// replacement search is attempted. v1.5 aligns the second pass with the evidence-bound direct
-// item path used by primary discovery: an exact registered item may survive generic host-
-// compatibility wording only when the product-scoped exact guard also recognises the same title
-// and safe marketplace leaf. All other accessory/part checks remain fail-closed.
+// replacement search is attempted. v1.6 carries the evidence-bound Withings Body Comp direct-item
+// identity into the second pass, just like Anker 547. All accessory, model, family, variant,
+// condition, price and active-listing checks remain fail-closed.
 // Public browsing remains registry-only and makes no eBay Browse calls. Affiliate availability
 // never affects identity or recommendation weight.
 
@@ -18,7 +17,7 @@ const searchPlan=require('../lib/ebay-image-search-plan-v1');
 const familyGuard=require('../lib/ebay-family-variant-guard-v131');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 
-const VERSION='1.5';
+const VERSION='1.6';
 const REFRESH_QUOTA_RESERVE=500;
 const MAX_BATCH=8;
 const CONCURRENCY=2;
@@ -28,7 +27,8 @@ const MAX_RECOVERY_CALLS=MAX_RECOVERY_SEARCH_QUERIES+MAX_RECOVERY_DETAIL_CHECKS;
 const MAX_DISCOVERY_PRODUCTS_PER_RUN=2;
 const MAX_DISCOVERY_CALLS_PER_PRODUCT=MAX_RECOVERY_CALLS;
 const VERIFIED_DIRECT_REFRESH_ITEMS=Object.freeze({
-  'anker-547-usb-c-hub-7-in-2':'v1|398051289895|0'
+  'anker-547-usb-c-hub-7-in-2':'v1|398051289895|0',
+  'withings-body-comp':'v1|287344476885|0'
 });
 const PRODUCT_MAP=new Map(products.filter(Boolean).map(product=>[product.slug,product]));
 const DISCOVERY_SLUGS=[...PRODUCT_MAP.keys()];
@@ -160,7 +160,7 @@ function exactDetailCandidate(row,product,detail){
 }
 async function verifyExisting(row,product){
   let detail;
-  try{detail=await ebay.getItem(clean(row&&row.item_id),{referenceId:`apg:${product.slug}:image-refresh-v15`,timeoutMs:10000});}
+  try{detail=await ebay.getItem(clean(row&&row.item_id),{referenceId:`apg:${product.slug}:image-refresh-v16`,timeoutMs:10000});}
   catch(error){const failure={ok:false,reason:'detail-verification-error',code:clean(error&&error.code)||'EBAY_DETAIL_ERROR',errorStatus:Number(error&&error.status)||null};failure.transient=transientVerificationFailure(failure);return failure;}
   return exactDetailCandidate(row,product,detail);
 }
@@ -188,7 +188,7 @@ async function searchExact(product,budget,{reference='recovery',maxQueries=MAX_R
   const plans=searchPlan.plansFor(product,{maxQueries}),seen=new Map(),searchErrors=[];let calls=0;
   for(let index=0;index<plans.length&&budget.remaining>0;index+=1){
     const plan=plans[index];budget.remaining-=1;calls+=1;let result;
-    try{result=await ebay.searchItems(searchRequest(plan),{referenceId:`apg:${product.slug}:image-${reference}-v15:${index+1}`,timeoutMs:10000});}
+    try{result=await ebay.searchItems(searchRequest(plan),{referenceId:`apg:${product.slug}:image-${reference}-v16:${index+1}`,timeoutMs:10000});}
     catch(error){searchErrors.push({kind:plan.kind,code:clean(error&&error.code)||'EBAY_SEARCH_ERROR'});continue;}
     for(const item of Array.isArray(result&&result.itemSummaries)?result.itemSummaries:[]){
       const candidate=projectSummary(product,item,plan.kind);if(!strongSummaryCandidate(product,candidate))continue;
