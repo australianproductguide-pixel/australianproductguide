@@ -1,14 +1,16 @@
 'use strict';
 
-// APG eBay image continuity worker v2.0.
+// APG eBay image continuity worker v2.1.
 // Independent second-pass detail verification for governed eBay product imagery.
 // A review/recovery row is always re-fetched and tested against the current guard before a
-// replacement search is attempted. v2.0 adds the independently verified Dyson Purifier Cool PC1
-// 544929-01 as an item-bound direct recovery because eBay currently misclassifies that whole appliance
-// under a fan-parts category. The direct item must still pass v3.11's evidence-bound whole-product
-// proof plus condition, brand, sibling/variant, voltage, AUD-price, eBay-image-host, eBay AU URL and
-// active-listing checks. Public browsing remains registry-only. Affiliate availability never affects
-// identity or recommendation weight.
+// replacement search is attempted. v2.1 adds the current Brand New Kindle Paperwhite Signature
+// Edition 32GB item as an item-bound direct recovery. eBay labels this exact listing Brand KINDLE
+// rather than Amazon, so the brand exception is accepted only for that item and only when its title
+// states Kindle Paperwhite, 12th Gen, Signature Edition and 32GB. No general Kindle/Amazon alias is
+// introduced. Dyson PC1 and prior direct recoveries remain unchanged. All condition, accessory,
+// sibling/variant, voltage, AUD-price, eBay-image-host, eBay AU URL and active-listing checks remain
+// fail-closed. Public browsing remains registry-only. Affiliate availability never affects identity
+// or recommendation weight.
 
 const {products}=require('../data');
 const supabase=require('../lib/apg-supabase-public-v1');
@@ -18,7 +20,7 @@ const searchPlan=require('../lib/ebay-image-search-plan-v1');
 const familyGuard=require('../lib/ebay-family-variant-guard-v131');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 
-const VERSION='2.0';
+const VERSION='2.1';
 const REFRESH_QUOTA_RESERVE=500;
 const MAX_BATCH=8;
 const CONCURRENCY=2;
@@ -34,7 +36,15 @@ const VERIFIED_DIRECT_REFRESH_ITEMS=Object.freeze({
 });
 const VERIFIED_DIRECT_RECOVERY_ITEMS=Object.freeze({
   'amazon-echo-show-5-3rd-gen':'v1|147441885504|0',
+  'amazon-kindle-paperwhite-signature-edition-32gb':'v1|376528574253|0',
   'dyson-purifier-cool-pc1':'v1|157410032476|0'
+});
+const VERIFIED_STRUCTURED_BRAND_ALIASES=Object.freeze({
+  'amazon-kindle-paperwhite-signature-edition-32gb':Object.freeze({
+    itemId:'v1|376528574253|0',
+    brands:Object.freeze(['KINDLE']),
+    titlePhrases:Object.freeze(['kindle paperwhite','12th gen','signature edition','32gb'])
+  })
 });
 const PRODUCT_MAP=new Map(products.filter(Boolean).map(product=>[product.slug,product]));
 const DISCOVERY_SLUGS=[...PRODUCT_MAP.keys()];
@@ -132,11 +142,17 @@ function detailVariantText(detail){
   const aspects=Array.isArray(detail&&detail.localizedAspects)?detail.localizedAspects.map(row=>`${clean(row&&row.name)} ${clean(row&&row.value)}`).join(' '):'';
   return `${clean(detail&&detail.title)} ${aspects}`.trim();
 }
-function structuredBrandMatches(product,brands,title){
+function structuredBrandMatches(product,brands,title,itemId=''){
   const expected=enrichment.norm(product&&product.brand);
-  if(!expected||!enrichment.brandMatch(title,product&&product.brand))return false;
-  if(!brands.length)return true;
-  return brands.some(value=>enrichment.brandMatch(value,product&&product.brand));
+  if(expected&&enrichment.brandMatch(title,product&&product.brand)&&(!brands.length||brands.some(value=>enrichment.brandMatch(value,product&&product.brand))))return true;
+  const rule=VERIFIED_STRUCTURED_BRAND_ALIASES[clean(product&&product.slug)];
+  if(!rule||clean(itemId)!==rule.itemId)return false;
+  const allowedBrands=Array.isArray(rule.brands)?rule.brands:[];
+  if(!brands.some(value=>allowedBrands.some(alias=>enrichment.norm(value)===enrichment.norm(alias))))return false;
+  const hay=` ${enrichment.norm(title)} `;
+  return (Array.isArray(rule.titlePhrases)?rule.titlePhrases:[]).every(phrase=>{
+    const needle=enrichment.norm(phrase);return Boolean(needle)&&hay.includes(` ${needle} `);
+  });
 }
 function exactDetailCandidate(row,product,detail){
   if(!detail||typeof detail!=='object')return {ok:false,reason:'missing-detail',code:'EBAY_DETAIL_MISSING'};
@@ -154,7 +170,7 @@ function exactDetailCandidate(row,product,detail){
   const identityConflict=enrichment.materialIdentityConflict(product,detailVariantText(detail));
   if(identityConflict.conflict)return {ok:false,reason:`detail-${identityConflict.reason}`,code:'EBAY_DETAIL_VARIANT_MISMATCH'};
   const brands=enrichment.detailedBrandEvidence(detail);
-  if(!structuredBrandMatches(product,brands,title))return {ok:false,reason:'detail-brand-mismatch',code:'EBAY_DETAIL_BRAND_MISMATCH'};
+  if(!structuredBrandMatches(product,brands,title,itemId))return {ok:false,reason:'detail-brand-mismatch',code:'EBAY_DETAIL_BRAND_MISMATCH'};
   const modelEvidence=enrichment.detailedModelEvidence(detail);
   const imageUrl=clean(detail&&detail.product&&detail.product.image&&detail.product.image.imageUrl)||clean(detail&&detail.image&&detail.image.imageUrl);
   const itemWebUrl=clean(detail.itemWebUrl),itemAffiliateWebUrl=clean(detail.itemAffiliateWebUrl)||null;
@@ -174,7 +190,7 @@ function exactDetailCandidate(row,product,detail){
 }
 async function verifyExisting(row,product){
   let detail;
-  try{detail=await ebay.getItem(clean(row&&row.item_id),{referenceId:`apg:${product.slug}:image-refresh-v20`,timeoutMs:10000});}
+  try{detail=await ebay.getItem(clean(row&&row.item_id),{referenceId:`apg:${product.slug}:image-refresh-v21`,timeoutMs:10000});}
   catch(error){const failure={ok:false,reason:'detail-verification-error',code:clean(error&&error.code)||'EBAY_DETAIL_ERROR',errorStatus:Number(error&&error.status)||null};failure.transient=transientVerificationFailure(failure);return failure;}
   return exactDetailCandidate(row,product,detail);
 }
@@ -202,7 +218,7 @@ async function searchExact(product,budget,{reference='recovery',maxQueries=MAX_R
   const plans=searchPlan.plansFor(product,{maxQueries}),seen=new Map(),searchErrors=[];let calls=0;
   for(let index=0;index<plans.length&&budget.remaining>0;index+=1){
     const plan=plans[index];budget.remaining-=1;calls+=1;let result;
-    try{result=await ebay.searchItems(searchRequest(plan),{referenceId:`apg:${product.slug}:image-${reference}-v20:${index+1}`,timeoutMs:10000});}
+    try{result=await ebay.searchItems(searchRequest(plan),{referenceId:`apg:${product.slug}:image-${reference}-v21:${index+1}`,timeoutMs:10000});}
     catch(error){searchErrors.push({kind:plan.kind,code:clean(error&&error.code)||'EBAY_SEARCH_ERROR'});continue;}
     for(const item of Array.isArray(result&&result.itemSummaries)?result.itemSummaries:[]){
       const candidate=projectSummary(product,item,plan.kind);if(!strongSummaryCandidate(product,candidate))continue;
@@ -229,7 +245,7 @@ async function recoverExact(row,product,budget){
   if(directItemId&&budget.remaining>0){
     budget.remaining-=1;directCalls+=1;
     try{
-      const detail=await ebay.getItem(directItemId,{referenceId:`apg:${product.slug}:image-direct-recovery-v20`,timeoutMs:10000});
+      const detail=await ebay.getItem(directItemId,{referenceId:`apg:${product.slug}:image-direct-recovery-v21`,timeoutMs:10000});
       const verified=exactDetailCandidate(directRecoveryRow(row,directItemId),product,detail);
       if(verified.ok)return {ok:true,candidate:verified.candidate,guard:verified.guard,calls:directCalls,plans:[],rejects:[],searchErrors:[],retrieval:'verified-direct-recovery'};
       directReject={itemId:directItemId,reason:verified.reason||'direct-recovery-rejected'};
@@ -315,6 +331,7 @@ handler.MAX_DISCOVERY_CALLS_PER_PRODUCT=MAX_DISCOVERY_CALLS_PER_PRODUCT;
 handler.DISCOVERY_SLUGS=DISCOVERY_SLUGS;
 handler.VERIFIED_DIRECT_REFRESH_ITEMS=VERIFIED_DIRECT_REFRESH_ITEMS;
 handler.VERIFIED_DIRECT_RECOVERY_ITEMS=VERIFIED_DIRECT_RECOVERY_ITEMS;
+handler.VERIFIED_STRUCTURED_BRAND_ALIASES=VERIFIED_STRUCTURED_BRAND_ALIASES;
 handler.ordinaryBrowseRows=ordinaryBrowseRows;
 handler.ordinaryBrowseRemaining=ordinaryBrowseRemaining;
 handler.transientVerificationFailure=transientVerificationFailure;
