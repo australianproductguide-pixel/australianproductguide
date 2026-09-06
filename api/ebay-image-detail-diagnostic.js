@@ -1,11 +1,12 @@
 'use strict';
 
-// Read-only APG eBay image identity diagnostic v1.3.
+// Read-only APG eBay image identity diagnostic v1.4.
 // Re-fetches the current governed item from eBay and explains the exact product-identity checks.
 // It accepts only maintained APG slugs, exposes no credentials, mutates no state, is noindex/no-store
 // and is intended for bounded operational diagnosis of review/recovery rows. Public RLS intentionally
-// hides review rows, so v1.3 includes a narrowly bounded allowlist of current review/recovery item IDs;
-// arbitrary item IDs cannot be supplied by callers.
+// hides review rows, so v1.4 includes a narrowly bounded allowlist of current review/recovery item IDs;
+// arbitrary item IDs cannot be supplied by callers. v1.4 also exposes the resolved media host for
+// diagnosing host-policy rejections without weakening the production guard.
 const {products}=require('../data');
 const supabase=require('../lib/apg-supabase-public-v1');
 const ebay=require('../lib/ebay-browse-api-v1');
@@ -13,7 +14,7 @@ const enrichment=require('../lib/ebay-catalogue-enrichment-v1');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 const continuity=require('../lib/ebay-product-image-continuity-v3-runtime');
 
-const VERSION='1.3';
+const VERSION='1.4';
 const PRODUCT_MAP=new Map(products.filter(Boolean).map(product=>[product.slug,product]));
 const REVIEW_ITEM_ALLOWLIST=Object.freeze({
   'amazon-echo-show-5-3rd-gen':'v1|168543930962|0',
@@ -33,6 +34,7 @@ const REVIEW_ITEM_ALLOWLIST=Object.freeze({
   'tp-link-tapo-p110':'v1|377252921299|0'
 });
 function clean(value){return String(value==null?'':value).trim();}
+function host(value){try{return new URL(clean(value)).hostname;}catch{return '';}}
 function safeSlug(req){try{const slug=clean(new URL(req.url,'https://australianproductguide.au').searchParams.get('slug'));return PRODUCT_MAP.has(slug)?slug:'';}catch{return '';}}
 function detailsText(detail){const aspects=Array.isArray(detail&&detail.localizedAspects)?detail.localizedAspects:[];return `${clean(detail&&detail.title)} ${aspects.map(row=>`${clean(row&&row.name)} ${clean(row&&row.value)}`).join(' ')}`.trim();}
 function publicAspects(detail){return (Array.isArray(detail&&detail.localizedAspects)?detail.localizedAspects:[]).slice(0,120).map(row=>({name:clean(row&&row.name),value:clean(row&&row.value)})).filter(row=>row.name||row.value);}
@@ -73,7 +75,7 @@ async function handler(req,res){
     const product=PRODUCT_MAP.get(slug);
     const state=diagnosticState(slug,await supabase.imageState(slug,{timeoutMs:3000}));
     if(!state||!state.item_id)return res.status(404).json({ok:false,status:'no-image-state',version:VERSION,slug});
-    const detail=await ebay.getItem(clean(state.item_id),{referenceId:`apg:${slug}:image-diagnostic-v13`,timeoutMs:10000});
+    const detail=await ebay.getItem(clean(state.item_id),{referenceId:`apg:${slug}:image-diagnostic-v14`,timeoutMs:10000});
     const text=detailsText(detail);
     const candidate=candidateFrom(state,detail);
     const staged={status:'accept',accepted:candidate,review:null,candidates:[candidate],recommendationWeight:0};
@@ -83,6 +85,7 @@ async function handler(req,res){
       product:{brand:product.brand||null,name:product.name||null,model:product.model||null,category:product.category||null,modelTokens:enrichment.modelTokens(product),specModelValues:enrichment.specModelValues(product)},
       state:{status:clean(state.status),recoveryRequired:state.recovery_required===true,lastErrorCode:clean(state.last_error_code)||null,itemId:clean(state.item_id),legacyItemId:clean(state.legacy_item_id),storedTitle:clean(state.title)},
       detail:{title:clean(detail&&detail.title),condition:clean(detail&&detail.condition),categoryPath:clean(detail&&detail.categoryPath)||null,brands:enrichment.detailedBrandEvidence(detail),models:enrichment.detailedModelEvidence(detail),aspects:publicAspects(detail)},
+      media:{imageUrl:candidate.imageUrl||null,imageHost:host(candidate.imageUrl)||null,imageSource:candidate.imageSource||null,itemWebUrl:candidate.itemWebUrl||null,itemWebHost:host(candidate.itemWebUrl)||null},
       checks:{
         listingAccessory:enrichment.listingLooksAccessory(candidate.title,product),
         listingUsed:enrichment.listingLooksUsed(candidate.title,candidate.condition),
