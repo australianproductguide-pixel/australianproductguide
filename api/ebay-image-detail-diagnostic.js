@@ -1,12 +1,11 @@
 'use strict';
 
-// Read-only APG eBay image identity diagnostic v2.8.
+// Read-only APG eBay image identity diagnostic v2.9.
 // Re-fetches a bounded current recovery candidate from eBay and explains the exact product-identity checks.
 // It accepts only maintained APG slugs, exposes no credentials, mutates no state, is noindex/no-store
 // and is intended for operational diagnosis of review/recovery rows. Public RLS intentionally hides
 // review/retired rows, so the allowlist below is deliberately item-bound; arbitrary item IDs cannot be
-// supplied by callers. v2.8 switches Paperwhite Signature Edition to Mobileciti's current Metallic Black
-// 12th-gen 32GB listing, which publishes the independently verified B0CFPHTMDX model code.
+// supplied by callers. v2.9 adds a small evidence-led residual set for read-only diagnosis only.
 const {products}=require('../data');
 const supabase=require('../lib/apg-supabase-public-v1');
 const ebay=require('../lib/ebay-browse-api-v1');
@@ -14,7 +13,7 @@ const enrichment=require('../lib/ebay-catalogue-enrichment-v1');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 const continuity=require('../lib/ebay-product-image-continuity-v3-runtime');
 
-const VERSION='2.8';
+const VERSION='2.9';
 const PRODUCT_MAP=new Map(products.filter(Boolean).map(product=>[product.slug,product]));
 const REVIEW_ITEM_ALLOWLIST=Object.freeze({
   '8bitdo-ultimate-bluetooth-controller':'v1|306572868674|0',
@@ -24,10 +23,12 @@ const REVIEW_ITEM_ALLOWLIST=Object.freeze({
   'amazon-kindle-2024':'v1|406559263567|676848287658',
   'amazon-kindle-paperwhite-signature-edition-32gb':'v1|405405953301|0',
   'anker-nebula-capsule-3':'v1|358478873587|0',
+  'apple-airtag-4-pack':'v1|225878033228|0',
   'apple-ipad-a16-128gb':'v1|198078800527|0',
   'asus-tuf-gaming-vg27aql3a':'v1|198472406133|0',
   'belkin-boostcharge-pro-qi2-15w-wireless-charging-pad':'v1|357409305623|0',
   'bluetti-ac70':'v1|197052524484|0',
+  'brita-style-xl-water-filter-jug':'v1|167417675280|0',
   'brother-mfc-j4440dw':'v1|304362314780|0',
   'corsair-k70-core-tkl':'v1|237000834483|0',
   'delonghi-pinguino-pac-el112-cst-wifi':'v1|186095657655|0',
@@ -40,9 +41,12 @@ const REVIEW_ITEM_ALLOWLIST=Object.freeze({
   'elgato-facecam-mk-2':'v1|176622504786|0',
   'esr-qi2-3-in-1-travel-wireless-charging-set':'v1|187982851827|0',
   'eufy-baby-monitor-e210-spaceview-pro':'v1|137001120210|0',
+  'insta360-x4':'v1|198452008292|0',
+  'insta360-x5':'v1|198449654446|0',
   'kuvings-evo820-whole-slow-juicer':'v1|205026851618|0',
   'nanoleaf-essentials-matter-smart-bulb-a60-e27':'v1|407177671136|0',
   'panasonic-sd-r2530-bread-maker':'v1|306811553407|0',
+  'petlibro-air-smart-feeder':'v1|178305267841|0',
   'reolink-argus-3-ultra':'v1|267311852224|0',
   'samsung-galaxy-smarttag2':'v1|296082302198|594211313158',
   'samsung-s90h-55-inch-oled-qa55s90hawxxy':'v1|157833306462|0',
@@ -50,7 +54,10 @@ const REVIEW_ITEM_ALLOWLIST=Object.freeze({
   'schwinn-ic4-indoor-cycling-bike':'v1|325276699162|514160083369',
   'shure-mv7':'v1|278033991168|0',
   'tp-link-tapo-p110':'v1|377252921299|0',
-  'ugreen-revodok-107-usb-c-hub':'v1|155156040414|0'
+  'ugreen-revodok-107-usb-c-hub':'v1|155156040414|0',
+  'ugreen-revodok-1071-usb-c-hub':'v1|206420487515|0',
+  'ugreen-revodok-pro-106-usb-c-hub':'v1|257508731976|0',
+  'zerowater-12-cup-ready-pour-water-filter-jug':'v1|327253623318|0'
 });
 function clean(value){return String(value==null?'':value).trim();}
 function host(value){try{return new URL(clean(value)).hostname;}catch{return '';}}
@@ -95,7 +102,7 @@ async function handler(req,res){
     const product=PRODUCT_MAP.get(slug);
     const state=diagnosticState(slug,await supabase.imageState(slug,{timeoutMs:3000}));
     if(!state||!state.item_id)return res.status(404).json({ok:false,status:'no-image-state',version:VERSION,slug});
-    const detail=await ebay.getItem(clean(state.item_id),{referenceId:`apg:${slug}:image-diagnostic-v28`,timeoutMs:10000});
+    const detail=await ebay.getItem(clean(state.item_id),{referenceId:`apg:${slug}:image-diagnostic-v29`,timeoutMs:10000});
     const text=detailsText(detail);
     const candidate=candidateFrom(state,detail);
     const staged={status:'accept',accepted:candidate,review:null,candidates:[candidate],recommendationWeight:0};
