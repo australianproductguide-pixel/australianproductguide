@@ -1,11 +1,11 @@
 'use strict';
 
-// Read-only APG eBay image identity diagnostic v1.7.
+// Read-only APG eBay image identity diagnostic v1.8.
 // Re-fetches a bounded current recovery candidate from eBay and explains the exact product-identity checks.
 // It accepts only maintained APG slugs, exposes no credentials, mutates no state, is noindex/no-store
 // and is intended for operational diagnosis of review/recovery rows. Public RLS intentionally hides
 // review/retired rows, so the allowlist below is deliberately item-bound; arbitrary item IDs cannot be
-// supplied by callers. v1.7 switches Revodok 107 to the second current candidate surfaced by discovery.
+// supplied by callers. v1.8 adds the strongest current 8BitDo and Dometic residual candidates.
 const {products}=require('../data');
 const supabase=require('../lib/apg-supabase-public-v1');
 const ebay=require('../lib/ebay-browse-api-v1');
@@ -13,13 +13,15 @@ const enrichment=require('../lib/ebay-catalogue-enrichment-v1');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 const continuity=require('../lib/ebay-product-image-continuity-v3-runtime');
 
-const VERSION='1.7';
+const VERSION='1.8';
 const PRODUCT_MAP=new Map(products.filter(Boolean).map(product=>[product.slug,product]));
 const REVIEW_ITEM_ALLOWLIST=Object.freeze({
+  '8bitdo-ultimate-bluetooth-controller':'v1|306572868674|0',
   'amazon-echo-show-5-3rd-gen':'v1|147441885504|0',
   'apple-ipad-a16-128gb':'v1|198078800527|0',
   'asus-tuf-gaming-vg27aql3a':'v1|198472406133|0',
   'corsair-k70-core-tkl':'v1|237000834483|0',
+  'dometic-cfx3-35-portable-fridge-freezer':'v1|133927138348|0',
   'dyson-purifier-cool-pc1':'v1|157410032476|0',
   'dyson-v11-advanced':'v1|206499671442|0',
   'ecovacs-deebot-x11-pro-omni':'v1|800585642324|0',
@@ -76,7 +78,7 @@ async function handler(req,res){
     const product=PRODUCT_MAP.get(slug);
     const state=diagnosticState(slug,await supabase.imageState(slug,{timeoutMs:3000}));
     if(!state||!state.item_id)return res.status(404).json({ok:false,status:'no-image-state',version:VERSION,slug});
-    const detail=await ebay.getItem(clean(state.item_id),{referenceId:`apg:${slug}:image-diagnostic-v17`,timeoutMs:10000});
+    const detail=await ebay.getItem(clean(state.item_id),{referenceId:`apg:${slug}:image-diagnostic-v18`,timeoutMs:10000});
     const text=detailsText(detail);
     const candidate=candidateFrom(state,detail);
     const staged={status:'accept',accepted:candidate,review:null,candidates:[candidate],recommendationWeight:0};
