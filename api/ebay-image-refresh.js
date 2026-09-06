@@ -1,16 +1,15 @@
 'use strict';
 
-// APG eBay image continuity worker v2.1.
+// APG eBay image continuity worker v2.2.
 // Independent second-pass detail verification for governed eBay product imagery.
 // A review/recovery row is always re-fetched and tested against the current guard before a
-// replacement search is attempted. v2.1 adds the current Brand New Kindle Paperwhite Signature
-// Edition 32GB item as an item-bound direct recovery. eBay labels this exact listing Brand KINDLE
-// rather than Amazon, so the brand exception is accepted only for that item and only when its title
-// states Kindle Paperwhite, 12th Gen, Signature Edition and 32GB. No general Kindle/Amazon alias is
-// introduced. Dyson PC1 and prior direct recoveries remain unchanged. All condition, accessory,
-// sibling/variant, voltage, AUD-price, eBay-image-host, eBay AU URL and active-listing checks remain
-// fail-closed. Public browsing remains registry-only. Affiliate availability never affects identity
-// or recommendation weight.
+// replacement search is attempted. v2.2 switches Paperwhite Signature recovery to the cleaner
+// current Metallic Black listing, which publishes manufacturer model B0CFPHTMDX. eBay labels this
+// exact listing Brand KINDLE rather than Amazon, so the brand exception is accepted only for that
+// item and only when its title states Kindle Paperwhite, 12th Gen, Signature Edition and 32GB.
+// No general Kindle/Amazon alias is introduced. Dyson PC1 and prior direct recoveries remain
+// unchanged. All condition, accessory, sibling/variant, voltage, AUD-price, eBay-image-host, eBay AU
+// URL and active-listing checks remain fail-closed. Public browsing remains registry-only.
 
 const {products}=require('../data');
 const supabase=require('../lib/apg-supabase-public-v1');
@@ -20,7 +19,7 @@ const searchPlan=require('../lib/ebay-image-search-plan-v1');
 const familyGuard=require('../lib/ebay-family-variant-guard-v131');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 
-const VERSION='2.1';
+const VERSION='2.2';
 const REFRESH_QUOTA_RESERVE=500;
 const MAX_BATCH=8;
 const CONCURRENCY=2;
@@ -36,12 +35,12 @@ const VERIFIED_DIRECT_REFRESH_ITEMS=Object.freeze({
 });
 const VERIFIED_DIRECT_RECOVERY_ITEMS=Object.freeze({
   'amazon-echo-show-5-3rd-gen':'v1|147441885504|0',
-  'amazon-kindle-paperwhite-signature-edition-32gb':'v1|376528574253|0',
+  'amazon-kindle-paperwhite-signature-edition-32gb':'v1|405405953301|0',
   'dyson-purifier-cool-pc1':'v1|157410032476|0'
 });
 const VERIFIED_STRUCTURED_BRAND_ALIASES=Object.freeze({
   'amazon-kindle-paperwhite-signature-edition-32gb':Object.freeze({
-    itemId:'v1|376528574253|0',
+    itemId:'v1|405405953301|0',
     brands:Object.freeze(['KINDLE']),
     titlePhrases:Object.freeze(['kindle paperwhite','12th gen','signature edition','32gb'])
   })
@@ -190,7 +189,7 @@ function exactDetailCandidate(row,product,detail){
 }
 async function verifyExisting(row,product){
   let detail;
-  try{detail=await ebay.getItem(clean(row&&row.item_id),{referenceId:`apg:${product.slug}:image-refresh-v21`,timeoutMs:10000});}
+  try{detail=await ebay.getItem(clean(row&&row.item_id),{referenceId:`apg:${product.slug}:image-refresh-v22`,timeoutMs:10000});}
   catch(error){const failure={ok:false,reason:'detail-verification-error',code:clean(error&&error.code)||'EBAY_DETAIL_ERROR',errorStatus:Number(error&&error.status)||null};failure.transient=transientVerificationFailure(failure);return failure;}
   return exactDetailCandidate(row,product,detail);
 }
@@ -218,7 +217,7 @@ async function searchExact(product,budget,{reference='recovery',maxQueries=MAX_R
   const plans=searchPlan.plansFor(product,{maxQueries}),seen=new Map(),searchErrors=[];let calls=0;
   for(let index=0;index<plans.length&&budget.remaining>0;index+=1){
     const plan=plans[index];budget.remaining-=1;calls+=1;let result;
-    try{result=await ebay.searchItems(searchRequest(plan),{referenceId:`apg:${product.slug}:image-${reference}-v21:${index+1}`,timeoutMs:10000});}
+    try{result=await ebay.searchItems(searchRequest(plan),{referenceId:`apg:${product.slug}:image-${reference}-v22:${index+1}`,timeoutMs:10000});}
     catch(error){searchErrors.push({kind:plan.kind,code:clean(error&&error.code)||'EBAY_SEARCH_ERROR'});continue;}
     for(const item of Array.isArray(result&&result.itemSummaries)?result.itemSummaries:[]){
       const candidate=projectSummary(product,item,plan.kind);if(!strongSummaryCandidate(product,candidate))continue;
@@ -245,7 +244,7 @@ async function recoverExact(row,product,budget){
   if(directItemId&&budget.remaining>0){
     budget.remaining-=1;directCalls+=1;
     try{
-      const detail=await ebay.getItem(directItemId,{referenceId:`apg:${product.slug}:image-direct-recovery-v21`,timeoutMs:10000});
+      const detail=await ebay.getItem(directItemId,{referenceId:`apg:${product.slug}:image-direct-recovery-v22`,timeoutMs:10000});
       const verified=exactDetailCandidate(directRecoveryRow(row,directItemId),product,detail);
       if(verified.ok)return {ok:true,candidate:verified.candidate,guard:verified.guard,calls:directCalls,plans:[],rejects:[],searchErrors:[],retrieval:'verified-direct-recovery'};
       directReject={itemId:directItemId,reason:verified.reason||'direct-recovery-rejected'};
