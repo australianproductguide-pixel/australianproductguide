@@ -1,15 +1,14 @@
 'use strict';
 
-// APG eBay image continuity worker v1.9.
+// APG eBay image continuity worker v2.0.
 // Independent second-pass detail verification for governed eBay product imagery.
 // A review/recovery row is always re-fetched and tested against the current guard before a
-// replacement search is attempted. v1.9 switches the Echo Show 5 direct-recovery target to the
-// independently verified current white 3rd-gen listing whose image is served from i.ebayimg.com.
-// The previously tested charcoal listing remains rejected because its resolved image was hosted by
-// a third-party seller site. Direct recovery is retrieval only: all detail, accessory, model, family,
-// variant, AUD-price, image-host, item-URL and active-listing guards remain fail-closed.
-// Public browsing remains registry-only and makes no eBay Browse calls. Affiliate availability
-// never affects identity or recommendation weight.
+// replacement search is attempted. v2.0 adds the independently verified Dyson Purifier Cool PC1
+// 544929-01 as an item-bound direct recovery because eBay currently misclassifies that whole appliance
+// under a fan-parts category. The direct item must still pass v3.11's evidence-bound whole-product
+// proof plus condition, brand, sibling/variant, voltage, AUD-price, eBay-image-host, eBay AU URL and
+// active-listing checks. Public browsing remains registry-only. Affiliate availability never affects
+// identity or recommendation weight.
 
 const {products}=require('../data');
 const supabase=require('../lib/apg-supabase-public-v1');
@@ -19,7 +18,7 @@ const searchPlan=require('../lib/ebay-image-search-plan-v1');
 const familyGuard=require('../lib/ebay-family-variant-guard-v131');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 
-const VERSION='1.9';
+const VERSION='2.0';
 const REFRESH_QUOTA_RESERVE=500;
 const MAX_BATCH=8;
 const CONCURRENCY=2;
@@ -34,7 +33,8 @@ const VERIFIED_DIRECT_REFRESH_ITEMS=Object.freeze({
   'withings-body-comp':'v1|287344476885|0'
 });
 const VERIFIED_DIRECT_RECOVERY_ITEMS=Object.freeze({
-  'amazon-echo-show-5-3rd-gen':'v1|147441885504|0'
+  'amazon-echo-show-5-3rd-gen':'v1|147441885504|0',
+  'dyson-purifier-cool-pc1':'v1|157410032476|0'
 });
 const PRODUCT_MAP=new Map(products.filter(Boolean).map(product=>[product.slug,product]));
 const DISCOVERY_SLUGS=[...PRODUCT_MAP.keys()];
@@ -174,7 +174,7 @@ function exactDetailCandidate(row,product,detail){
 }
 async function verifyExisting(row,product){
   let detail;
-  try{detail=await ebay.getItem(clean(row&&row.item_id),{referenceId:`apg:${product.slug}:image-refresh-v19`,timeoutMs:10000});}
+  try{detail=await ebay.getItem(clean(row&&row.item_id),{referenceId:`apg:${product.slug}:image-refresh-v20`,timeoutMs:10000});}
   catch(error){const failure={ok:false,reason:'detail-verification-error',code:clean(error&&error.code)||'EBAY_DETAIL_ERROR',errorStatus:Number(error&&error.status)||null};failure.transient=transientVerificationFailure(failure);return failure;}
   return exactDetailCandidate(row,product,detail);
 }
@@ -202,7 +202,7 @@ async function searchExact(product,budget,{reference='recovery',maxQueries=MAX_R
   const plans=searchPlan.plansFor(product,{maxQueries}),seen=new Map(),searchErrors=[];let calls=0;
   for(let index=0;index<plans.length&&budget.remaining>0;index+=1){
     const plan=plans[index];budget.remaining-=1;calls+=1;let result;
-    try{result=await ebay.searchItems(searchRequest(plan),{referenceId:`apg:${product.slug}:image-${reference}-v19:${index+1}`,timeoutMs:10000});}
+    try{result=await ebay.searchItems(searchRequest(plan),{referenceId:`apg:${product.slug}:image-${reference}-v20:${index+1}`,timeoutMs:10000});}
     catch(error){searchErrors.push({kind:plan.kind,code:clean(error&&error.code)||'EBAY_SEARCH_ERROR'});continue;}
     for(const item of Array.isArray(result&&result.itemSummaries)?result.itemSummaries:[]){
       const candidate=projectSummary(product,item,plan.kind);if(!strongSummaryCandidate(product,candidate))continue;
@@ -229,7 +229,7 @@ async function recoverExact(row,product,budget){
   if(directItemId&&budget.remaining>0){
     budget.remaining-=1;directCalls+=1;
     try{
-      const detail=await ebay.getItem(directItemId,{referenceId:`apg:${product.slug}:image-direct-recovery-v19`,timeoutMs:10000});
+      const detail=await ebay.getItem(directItemId,{referenceId:`apg:${product.slug}:image-direct-recovery-v20`,timeoutMs:10000});
       const verified=exactDetailCandidate(directRecoveryRow(row,directItemId),product,detail);
       if(verified.ok)return {ok:true,candidate:verified.candidate,guard:verified.guard,calls:directCalls,plans:[],rejects:[],searchErrors:[],retrieval:'verified-direct-recovery'};
       directReject={itemId:directItemId,reason:verified.reason||'direct-recovery-rejected'};
