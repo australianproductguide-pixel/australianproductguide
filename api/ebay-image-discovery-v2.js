@@ -1,11 +1,12 @@
 'use strict';
 
-// APG eBay image discovery worker v2.8
+// APG eBay image discovery worker v2.9
 // Broader exact-product recall for the 482-product image-completion programme.
 // Search breadth is expanded through model/name/category/alias/GTIN/ePID plans and 50-result
-// NEW-condition searches. v2.8 adds a current exact Withings Body Comp item to the deliberately
-// tiny direct-retrieval register. Direct items remain retrieval only: the full exact-product guard
-// runs afterwards, followed by the independent second pass. Public browsing makes no Browse calls.
+// NEW-condition searches. v2.9 adds the current exact Brother MFC-J4440DW printer listing to the
+// deliberately tiny direct-retrieval register so refill-ink listings cannot dominate discovery.
+// Direct items remain retrieval only: the full exact-product guard runs afterwards, followed by
+// the independent second pass. Public browsing makes no Browse calls.
 const {products}=require('../data');
 const supabase=require('../lib/apg-supabase-public-v1');
 const ebay=require('../lib/ebay-browse-api-v1');
@@ -14,7 +15,7 @@ const searchPlan=require('../lib/ebay-image-search-plan-v1');
 const familyGuard=require('../lib/ebay-family-variant-guard-v131');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 
-const VERSION='2.8';
+const VERSION='2.9';
 const QUOTA_RESERVE=500;
 const MAX_PRODUCTS_PER_RUN=3;
 const MAX_SEARCH_QUERIES_PER_PRODUCT=searchPlan.MAX_QUERIES;
@@ -22,13 +23,12 @@ const MAX_DETAIL_CHECKS_PER_PRODUCT=6;
 const MAX_DIRECT_DETAIL_CHECKS_PER_PRODUCT=1;
 const MAX_CALLS_PER_PRODUCT=MAX_SEARCH_QUERIES_PER_PRODUCT+MAX_DETAIL_CHECKS_PER_PRODUCT+MAX_DIRECT_DETAIL_CHECKS_PER_PRODUCT;
 // Evidence-bound eBay Browse item IDs. Keep deliberately tiny: do not infer or guess IDs.
-// Anker 547 item 398051289895 is independently reconciled to Anker model A8371.
-// Withings item 287344476885 was current Brand New on 6 Sep 2026 and explicitly identifies
-// Withings Body Comp / WBS12. The normal detail, family, exact-identity, AUD-price and active-listing
-// gates still apply before either item can enter review.
+// Every direct item is independently reconciled to an exact APG product identity and must still
+// pass the normal detail, family, exact-identity, AUD-price and active-listing gates.
 const VERIFIED_DIRECT_ITEM_IDS=Object.freeze({
   'anker-547-usb-c-hub-7-in-2':'v1|398051289895|0',
-  'withings-body-comp':'v1|287344476885|0'
+  'withings-body-comp':'v1|287344476885|0',
+  'brother-mfc-j4440dw':'v1|276421648366|0'
 });
 const PRODUCT_MAP=new Map(products.filter(Boolean).map(product=>[product.slug,product]));
 const DISCOVERY_SLUGS=[...PRODUCT_MAP.keys()];
@@ -164,7 +164,7 @@ function stagedAccepted(candidate){
 async function verifyImageCandidate(product,candidate){
   let detail;
   try{
-    detail=await ebay.getItem(candidate.itemId,{referenceId:`apg:${product.slug}:image-discovery-v28`,timeoutMs:10000});
+    detail=await ebay.getItem(candidate.itemId,{referenceId:`apg:${product.slug}:image-discovery-v29`,timeoutMs:10000});
   }catch(error){return {ok:false,reason:clean(error&&error.code)||'EBAY_DETAIL_ERROR'};}
   if(!detail||typeof detail!=='object')return {ok:false,reason:'detail-missing'};
   const title=clean(detail.title)||candidate.title,condition=clean(detail.condition)||candidate.condition;
@@ -233,7 +233,7 @@ async function discoverProduct(product,budget){
     let result;
     try{
       result=await ebay.searchItems(searchRequest(plan),{
-        referenceId:`apg:${product.slug}:image-search-v28:${index+1}`,
+        referenceId:`apg:${product.slug}:image-search-v29:${index+1}`,
         timeoutMs:10000
       });
     }catch(error){
@@ -292,14 +292,14 @@ module.exports=async function handler(req,res){
         continue;
       }
       let found;
-      try{found=await discoverProduct(product,budget);}catch(error){found={ok:false,error:clean(error&&error.code)||'DISCOVERY_V28_ERROR',calls:0,plans:[]};}
+      try{found=await discoverProduct(product,budget);}catch(error){found={ok:false,error:clean(error&&error.code)||'DISCOVERY_V29_ERROR',calls:0,plans:[]};}
       if(found.ok){
         await insertDiscoveredState(workerToken,product,found.candidate);
         await recordDiscoveryResult(workerToken,slug,'accepted');
         results.push({slug,status:'accepted',itemId:found.candidate.itemId,verificationLevel:found.candidate.verificationLevel,retrieval:found.directItemId&&found.candidate.itemId===found.directItemId?'verified-direct-item':'search',calls:found.calls,plans:found.plans,searchErrors:found.searchErrors});
       }else{
         const status=found.candidateCount?'review':'no-match';
-        await recordDiscoveryResult(workerToken,slug,status,found.error||'DISCOVERY_V28_NOT_ACCEPTED');
+        await recordDiscoveryResult(workerToken,slug,status,found.error||'DISCOVERY_V29_NOT_ACCEPTED');
         results.push({slug,status,calls:found.calls||0,plans:found.plans||[],candidateCount:found.candidateCount||0,rejects:found.rejects||[],searchErrors:found.searchErrors||[]});
       }
     }
@@ -309,7 +309,7 @@ module.exports=async function handler(req,res){
       quota:quotaPublic(summary),budgetRemaining:budget.remaining,results
     });
   }catch(error){
-    return json(res,500,{ok:false,status:'worker-error',version:VERSION,searchPlanVersion:searchPlan.VERSION,code:clean(error&&error.code)||'EBAY_DISCOVERY_V28_ERROR'});
+    return json(res,500,{ok:false,status:'worker-error',version:VERSION,searchPlanVersion:searchPlan.VERSION,code:clean(error&&error.code)||'EBAY_DISCOVERY_V29_ERROR'});
   }finally{if(consumed)await finishCapability(workerToken);}
 };
 
