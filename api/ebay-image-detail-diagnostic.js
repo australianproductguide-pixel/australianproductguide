@@ -1,11 +1,12 @@
 'use strict';
 
-// Read-only APG eBay image identity diagnostic v2.5.
+// Read-only APG eBay image identity diagnostic v2.6.
 // Re-fetches a bounded current recovery candidate from eBay and explains the exact product-identity checks.
 // It accepts only maintained APG slugs, exposes no credentials, mutates no state, is noindex/no-store
 // and is intended for operational diagnosis of review/recovery rows. Public RLS intentionally hides
 // review/retired rows, so the allowlist below is deliberately item-bound; arbitrary item IDs cannot be
-// supplied by callers. v2.5 adds a small set of current residual candidates for evidence-led recovery.
+// supplied by callers. v2.6 carries itemEndDate into the same exact guard used by the worker, so an ended
+// listing cannot look eligible merely because the read-only diagnostic omitted its end date.
 const {products}=require('../data');
 const supabase=require('../lib/apg-supabase-public-v1');
 const ebay=require('../lib/ebay-browse-api-v1');
@@ -13,7 +14,7 @@ const enrichment=require('../lib/ebay-catalogue-enrichment-v1');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 const continuity=require('../lib/ebay-product-image-continuity-v3-runtime');
 
-const VERSION='2.5';
+const VERSION='2.6';
 const PRODUCT_MAP=new Map(products.filter(Boolean).map(product=>[product.slug,product]));
 const REVIEW_ITEM_ALLOWLIST=Object.freeze({
   '8bitdo-ultimate-bluetooth-controller':'v1|306572868674|0',
@@ -74,6 +75,7 @@ function candidateFrom(state,detail){
     imageSource:detail&&detail.product&&detail.product.image&&detail.product.image.imageUrl?'ebay-product-catalog':'ebay-listing',
     itemWebUrl:clean(detail&&detail.itemWebUrl)||mapping.itemWebUrl,
     itemAffiliateWebUrl:clean(detail&&detail.itemAffiliateWebUrl)||mapping.itemAffiliateWebUrl||null,
+    itemEndDate:clean(detail&&detail.itemEndDate)||clean(mapping.itemEndDate)||null,
     score:mapping.matchScore,
     reasons:mapping.matchReasons||[],
     flags:mapping.matchFlags||[],
@@ -93,7 +95,7 @@ async function handler(req,res){
     const product=PRODUCT_MAP.get(slug);
     const state=diagnosticState(slug,await supabase.imageState(slug,{timeoutMs:3000}));
     if(!state||!state.item_id)return res.status(404).json({ok:false,status:'no-image-state',version:VERSION,slug});
-    const detail=await ebay.getItem(clean(state.item_id),{referenceId:`apg:${slug}:image-diagnostic-v25`,timeoutMs:10000});
+    const detail=await ebay.getItem(clean(state.item_id),{referenceId:`apg:${slug}:image-diagnostic-v26`,timeoutMs:10000});
     const text=detailsText(detail);
     const candidate=candidateFrom(state,detail);
     const staged={status:'accept',accepted:candidate,review:null,candidates:[candidate],recommendationWeight:0};
@@ -103,7 +105,7 @@ async function handler(req,res){
       product:{brand:product.brand||null,name:product.name||null,model:product.model||null,category:product.category||null,modelTokens:enrichment.modelTokens(product),specModelValues:enrichment.specModelValues(product)},
       state:{status:clean(state.status),recoveryRequired:state.recovery_required===true,lastErrorCode:clean(state.last_error_code)||null,itemId:clean(state.item_id),legacyItemId:clean(state.legacy_item_id),storedTitle:clean(state.title)},
       detail:{title:clean(detail&&detail.title),condition:clean(detail&&detail.condition),categoryPath:clean(detail&&detail.categoryPath)||null,brands:enrichment.detailedBrandEvidence(detail),models:enrichment.detailedModelEvidence(detail),aspects:publicAspects(detail)},
-      media:{imageUrl:candidate.imageUrl||null,imageHost:host(candidate.imageUrl)||null,imageSource:candidate.imageSource||null,itemWebUrl:candidate.itemWebUrl||null,itemWebHost:host(candidate.itemWebUrl)||null},
+      media:{imageUrl:candidate.imageUrl||null,imageHost:host(candidate.imageUrl)||null,imageSource:candidate.imageSource||null,itemWebUrl:candidate.itemWebUrl||null,itemWebHost:host(candidate.itemWebUrl)||null,itemEndDate:candidate.itemEndDate||null,price:candidate.price||null},
       checks:{
         listingAccessory:enrichment.listingLooksAccessory(candidate.title,product),
         listingUsed:enrichment.listingLooksUsed(candidate.title,candidate.condition),
