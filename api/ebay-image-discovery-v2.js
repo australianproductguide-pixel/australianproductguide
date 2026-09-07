@@ -1,13 +1,12 @@
 'use strict';
 
-// APG eBay image discovery worker v2.16
+// APG eBay image discovery worker v2.17
 // Broader exact-product recall for the 482-product image-completion programme.
 // Search breadth is expanded through model/name/category/alias/GTIN/ePID plans and 50-result
-// NEW-condition searches. v2.16 adds one bounded direct retrieval for the exact Nintendo Switch Pro
-// Controller item already proven by the read-only diagnostic and exact guard v3.27. The item still
-// must pass live eBay detail, family, exact-identity, condition, AUD-price, active-listing and media
-// gates before any state can be accepted. Existing Brother and Nebula handling is unchanged. Public
-// browsing makes no Browse calls.
+// NEW-condition searches. v2.17 adds one bounded retrieval for Crucial X9 Pro 1TB item 306003180824,
+// independently identified by exact CT1000X9PROSSD9 model, 1TB capacity and Brand New eBay AU evidence.
+// The item remains retrieval only: live eBay detail, family, exact identity, AUD-price, active-listing
+// and media gates all run before state can be accepted. Existing bounded retrievals are unchanged.
 const {products}=require('../data');
 const supabase=require('../lib/apg-supabase-public-v1');
 const ebay=require('../lib/ebay-browse-api-v1');
@@ -16,7 +15,7 @@ const searchPlan=require('../lib/ebay-image-search-plan-v1');
 const familyGuard=require('../lib/ebay-family-variant-guard-v131');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 
-const VERSION='2.16';
+const VERSION='2.17';
 const QUOTA_RESERVE=500;
 const MAX_PRODUCTS_PER_RUN=3;
 const MAX_SEARCH_QUERIES_PER_PRODUCT=searchPlan.MAX_QUERIES;
@@ -35,7 +34,8 @@ const VERIFIED_DIRECT_ITEM_IDS=Object.freeze({
   'samsung-galaxy-smarttag2':'v1|296082302198|594211313158',
   'dyson-v15s-detect-submarine-complete':'v1|375684597812|0',
   'miofive-s1':'v1|267234025630|0',
-  'nintendo-switch-pro-controller':'v1|365575159568|0'
+  'nintendo-switch-pro-controller':'v1|365575159568|0',
+  'crucial-x9-pro-portable-ssd-1tb':'v1|306003180824|0'
 });
 const VERIFIED_STRUCTURED_BRAND_RELATIONS=Object.freeze({
   'anker-nebula-capsule-3':Object.freeze({
@@ -182,7 +182,7 @@ function stagedAccepted(candidate){
 async function verifyImageCandidate(product,candidate){
   let detail;
   try{
-    detail=await ebay.getItem(candidate.itemId,{referenceId:`apg:${product.slug}:image-discovery-v216`,timeoutMs:10000});
+    detail=await ebay.getItem(candidate.itemId,{referenceId:`apg:${product.slug}:image-discovery-v217`,timeoutMs:10000});
   }catch(error){return {ok:false,reason:clean(error&&error.code)||'EBAY_DETAIL_ERROR'};}
   if(!detail||typeof detail!=='object')return {ok:false,reason:'detail-missing'};
   const title=clean(detail.title)||candidate.title,condition=clean(detail.condition)||candidate.condition;
@@ -251,7 +251,7 @@ async function discoverProduct(product,budget){
     let result;
     try{
       result=await ebay.searchItems(searchRequest(plan),{
-        referenceId:`apg:${product.slug}:image-search-v216:${index+1}`,
+        referenceId:`apg:${product.slug}:image-search-v217:${index+1}`,
         timeoutMs:10000
       });
     }catch(error){
@@ -310,14 +310,14 @@ module.exports=async function handler(req,res){
         continue;
       }
       let found;
-      try{found=await discoverProduct(product,budget);}catch(error){found={ok:false,error:clean(error&&error.code)||'DISCOVERY_V216_ERROR',calls:0,plans:[]};}
+      try{found=await discoverProduct(product,budget);}catch(error){found={ok:false,error:clean(error&&error.code)||'DISCOVERY_V217_ERROR',calls:0,plans:[]};}
       if(found.ok){
         await insertDiscoveredState(workerToken,product,found.candidate);
         await recordDiscoveryResult(workerToken,slug,'accepted');
         results.push({slug,status:'accepted',itemId:found.candidate.itemId,verificationLevel:found.candidate.verificationLevel,retrieval:found.directItemId&&found.candidate.itemId===found.directItemId?'verified-direct-item':'search',calls:found.calls,plans:found.plans,searchErrors:found.searchErrors});
       }else{
         const status=found.candidateCount?'review':'no-match';
-        await recordDiscoveryResult(workerToken,slug,status,found.error||'DISCOVERY_V216_NOT_ACCEPTED');
+        await recordDiscoveryResult(workerToken,slug,status,found.error||'DISCOVERY_V217_NOT_ACCEPTED');
         results.push({slug,status,calls:found.calls||0,plans:found.plans||[],candidateCount:found.candidateCount||0,rejects:found.rejects||[],searchErrors:found.searchErrors||[]});
       }
     }
@@ -327,7 +327,7 @@ module.exports=async function handler(req,res){
       quota:quotaPublic(summary),budgetRemaining:budget.remaining,results
     });
   }catch(error){
-    return json(res,500,{ok:false,status:'worker-error',version:VERSION,searchPlanVersion:searchPlan.VERSION,code:clean(error&&error.code)||'EBAY_DISCOVERY_V216_ERROR'});
+    return json(res,500,{ok:false,status:'worker-error',version:VERSION,searchPlanVersion:searchPlan.VERSION,code:clean(error&&error.code)||'EBAY_DISCOVERY_V217_ERROR'});
   }finally{if(consumed)await finishCapability(workerToken);}
 };
 
