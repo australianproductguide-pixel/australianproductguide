@@ -1,19 +1,21 @@
 'use strict';
 
-// Read-only APG eBay image identity diagnostic v3.2.
-// Re-fetches a bounded current recovery candidate from eBay and explains the exact product-identity checks.
+// Read-only APG eBay image identity diagnostic v3.3.
+// Re-fetches a bounded current recovery candidate from eBay and explains the product-identity checks.
 // It accepts only maintained APG slugs, exposes no credentials, mutates no state, is noindex/no-store
 // and is intended for operational diagnosis of review/recovery rows. Public RLS intentionally hides
 // review/retired rows, so the allowlist below is deliberately item-bound; arbitrary item IDs cannot be
-// supplied by callers. v3.2 switches Marshall Monitor III ANC to a current Brand New eBay AU listing.
+// supplied by callers. v3.3 switches Capsule 3 from the Laser D2426 sibling to a D2425 candidate and
+// reports the same family-variant guard used by discovery before the exact-product guard.
 const {products}=require('../data');
 const supabase=require('../lib/apg-supabase-public-v1');
 const ebay=require('../lib/ebay-browse-api-v1');
 const enrichment=require('../lib/ebay-catalogue-enrichment-v1');
+const familyGuard=require('../lib/ebay-family-variant-guard-v131');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 const continuity=require('../lib/ebay-product-image-continuity-v3-runtime');
 
-const VERSION='3.2';
+const VERSION='3.3';
 const PRODUCT_MAP=new Map(products.filter(Boolean).map(product=>[product.slug,product]));
 const REVIEW_ITEM_ALLOWLIST=Object.freeze({
   '8bitdo-ultimate-bluetooth-controller':'v1|306572868674|0',
@@ -22,7 +24,7 @@ const REVIEW_ITEM_ALLOWLIST=Object.freeze({
   'amazon-fire-tv-stick-4k-max':'v1|227490139598|0',
   'amazon-kindle-2024':'v1|406559263567|676848287658',
   'amazon-kindle-paperwhite-signature-edition-32gb':'v1|405405953301|0',
-  'anker-nebula-capsule-3':'v1|358478873587|0',
+  'anker-nebula-capsule-3':'v1|405135099297|0',
   'apple-airtag-4-pack':'v1|225878033228|0',
   'apple-ipad-a16-128gb':'v1|198078800527|0',
   'asus-tuf-gaming-vg27aql3a':'v1|198472406133|0',
@@ -110,11 +112,15 @@ async function handler(req,res){
     const product=PRODUCT_MAP.get(slug);
     const state=diagnosticState(slug,await supabase.imageState(slug,{timeoutMs:3000}));
     if(!state||!state.item_id)return res.status(404).json({ok:false,status:'no-image-state',version:VERSION,slug});
-    const detail=await ebay.getItem(clean(state.item_id),{referenceId:`apg:${slug}:image-diagnostic-v32`,timeoutMs:10000});
+    const detail=await ebay.getItem(clean(state.item_id),{referenceId:`apg:${slug}:image-diagnostic-v33`,timeoutMs:10000});
     const text=detailsText(detail);
     const candidate=candidateFrom(state,detail);
     const staged={status:'accept',accepted:candidate,review:null,candidates:[candidate],recommendationWeight:0};
-    const guard=exactGuard.evaluate(product,staged,products,{now:Date.now()});
+    const familyChecked=familyGuard.applyToEnrichment(product,staged);
+    const familyResult=familyChecked&&familyChecked.familyGuard?familyChecked.familyGuard:{version:familyGuard.VERSION,rejectedItemId:null,reason:null,suffix:null,marker:null};
+    const guard=familyChecked&&familyChecked.status==='accept'&&familyChecked.accepted
+      ?exactGuard.evaluate(product,familyChecked,products,{now:Date.now()})
+      :{eligible:false,reason:familyResult.reason||'family-variant-guard'};
     return res.status(200).json({
       ok:true,version:VERSION,slug,zeroMutation:true,
       product:{brand:product.brand||null,name:product.name||null,model:product.model||null,category:product.category||null,modelTokens:enrichment.modelTokens(product),specModelValues:enrichment.specModelValues(product)},
@@ -129,6 +135,7 @@ async function handler(req,res){
         materialVariant:enrichment.materialVariantConflict(product,text),
         materialSuffix:enrichment.materialSuffixConflict(product,candidate.title),
         materialIdentity:enrichment.materialIdentityConflict(product,text),
+        familyGuard:familyResult,
         exactGuard:guard
       }
     });
