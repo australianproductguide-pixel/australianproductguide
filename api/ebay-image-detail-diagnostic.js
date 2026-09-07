@@ -1,12 +1,12 @@
 'use strict';
 
-// Read-only APG eBay image identity diagnostic v3.3.
+// Read-only APG eBay image identity diagnostic v3.4.
 // Re-fetches a bounded current recovery candidate from eBay and explains the product-identity checks.
 // It accepts only maintained APG slugs, exposes no credentials, mutates no state, is noindex/no-store
 // and is intended for operational diagnosis of review/recovery rows. Public RLS intentionally hides
 // review/retired rows, so the allowlist below is deliberately item-bound; arbitrary item IDs cannot be
-// supplied by callers. v3.3 switches Capsule 3 from the Laser D2426 sibling to a D2425 candidate and
-// reports the same family-variant guard used by discovery before the exact-product guard.
+// supplied by callers. v3.4 adds three bounded recovery inspections: AirPods 4 ANC MXP93ZA/A,
+// Brother MFC-J4440DW and Sonicare 3100 HX3671/14. The same family and exact-product guards still run.
 const {products}=require('../data');
 const supabase=require('../lib/apg-supabase-public-v1');
 const ebay=require('../lib/ebay-browse-api-v1');
@@ -15,7 +15,7 @@ const familyGuard=require('../lib/ebay-family-variant-guard-v131');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 const continuity=require('../lib/ebay-product-image-continuity-v3-runtime');
 
-const VERSION='3.3';
+const VERSION='3.4';
 const PRODUCT_MAP=new Map(products.filter(Boolean).map(product=>[product.slug,product]));
 const REVIEW_ITEM_ALLOWLIST=Object.freeze({
   '8bitdo-ultimate-bluetooth-controller':'v1|306572868674|0',
@@ -25,6 +25,7 @@ const REVIEW_ITEM_ALLOWLIST=Object.freeze({
   'amazon-kindle-2024':'v1|406559263567|676848287658',
   'amazon-kindle-paperwhite-signature-edition-32gb':'v1|405405953301|0',
   'anker-nebula-capsule-3':'v1|405135099297|0',
+  'apple-airpods-4-with-active-noise-cancellation':'v1|335947902149|0',
   'apple-airtag-4-pack':'v1|225878033228|0',
   'apple-ipad-a16-128gb':'v1|198078800527|0',
   'asus-tuf-gaming-vg27aql3a':'v1|198472406133|0',
@@ -32,7 +33,7 @@ const REVIEW_ITEM_ALLOWLIST=Object.freeze({
   'bluetti-ac70':'v1|197052524484|0',
   'bluetti-b300k-expansion-battery':'v1|197285491272|0',
   'brita-style-xl-water-filter-jug':'v1|167417675280|0',
-  'brother-mfc-j4440dw':'v1|304362314780|0',
+  'brother-mfc-j4440dw':'v1|276421648366|0',
   'corsair-k70-core-tkl':'v1|237000834483|0',
   'delonghi-pinguino-pac-el112-cst-wifi':'v1|186095657655|0',
   'delonghi-pinguino-pac-em82k':'v1|176564089771|0',
@@ -55,6 +56,7 @@ const REVIEW_ITEM_ALLOWLIST=Object.freeze({
   'nanoleaf-essentials-matter-smart-bulb-a60-e27':'v1|407177671136|0',
   'panasonic-sd-r2530-bread-maker':'v1|306811553407|0',
   'petlibro-air-smart-feeder':'v1|178305267841|0',
+  'philips-sonicare-3100-series':'v1|115967159328|0',
   'razer-barracuda-x-chroma':'v1|158081024110|0',
   'reolink-argus-3-ultra':'v1|267311852224|0',
   'samsung-galaxy-smarttag2':'v1|296082302198|594211313158',
@@ -112,7 +114,7 @@ async function handler(req,res){
     const product=PRODUCT_MAP.get(slug);
     const state=diagnosticState(slug,await supabase.imageState(slug,{timeoutMs:3000}));
     if(!state||!state.item_id)return res.status(404).json({ok:false,status:'no-image-state',version:VERSION,slug});
-    const detail=await ebay.getItem(clean(state.item_id),{referenceId:`apg:${slug}:image-diagnostic-v33`,timeoutMs:10000});
+    const detail=await ebay.getItem(clean(state.item_id),{referenceId:`apg:${slug}:image-diagnostic-v34`,timeoutMs:10000});
     const text=detailsText(detail);
     const candidate=candidateFrom(state,detail);
     const staged={status:'accept',accepted:candidate,review:null,candidates:[candidate],recommendationWeight:0};
