@@ -1,12 +1,13 @@
 'use strict';
 
-// Read-only APG eBay image identity diagnostic v3.4.
+// Read-only APG eBay image identity diagnostic v3.5.
 // Re-fetches a bounded current recovery candidate from eBay and explains the product-identity checks.
 // It accepts only maintained APG slugs, exposes no credentials, mutates no state, is noindex/no-store
 // and is intended for operational diagnosis of review/recovery rows. Public RLS intentionally hides
 // review/retired rows, so the allowlist below is deliberately item-bound; arbitrary item IDs cannot be
-// supplied by callers. v3.4 adds three bounded recovery inspections: AirPods 4 ANC MXP93ZA/A,
-// Brother MFC-J4440DW and Sonicare 3100 HX3671/14. The same family and exact-product guards still run.
+// supplied by callers. v3.5 adds one bounded Nintendo Switch Pro Controller inspection using a
+// current Brand New AU listing with Nintendo, product-model and barcode evidence. The same family and
+// exact-product guards still run. Prior AirPods, Brother and Sonicare inspections remain unchanged.
 const {products}=require('../data');
 const supabase=require('../lib/apg-supabase-public-v1');
 const ebay=require('../lib/ebay-browse-api-v1');
@@ -15,7 +16,7 @@ const familyGuard=require('../lib/ebay-family-variant-guard-v131');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 const continuity=require('../lib/ebay-product-image-continuity-v3-runtime');
 
-const VERSION='3.4';
+const VERSION='3.5';
 const PRODUCT_MAP=new Map(products.filter(Boolean).map(product=>[product.slug,product]));
 const REVIEW_ITEM_ALLOWLIST=Object.freeze({
   '8bitdo-ultimate-bluetooth-controller':'v1|306572868674|0',
@@ -54,6 +55,7 @@ const REVIEW_ITEM_ALLOWLIST=Object.freeze({
   'microsoft-surface-laptop-7-copilot-pc-138-inch-16gb512gb':'v1|287133106059|0',
   'miofive-s1':'v1|267234025630|0',
   'nanoleaf-essentials-matter-smart-bulb-a60-e27':'v1|407177671136|0',
+  'nintendo-switch-pro-controller':'v1|365575159568|0',
   'panasonic-sd-r2530-bread-maker':'v1|306811553407|0',
   'petlibro-air-smart-feeder':'v1|178305267841|0',
   'philips-sonicare-3100-series':'v1|115967159328|0',
@@ -114,7 +116,7 @@ async function handler(req,res){
     const product=PRODUCT_MAP.get(slug);
     const state=diagnosticState(slug,await supabase.imageState(slug,{timeoutMs:3000}));
     if(!state||!state.item_id)return res.status(404).json({ok:false,status:'no-image-state',version:VERSION,slug});
-    const detail=await ebay.getItem(clean(state.item_id),{referenceId:`apg:${slug}:image-diagnostic-v34`,timeoutMs:10000});
+    const detail=await ebay.getItem(clean(state.item_id),{referenceId:`apg:${slug}:image-diagnostic-v35`,timeoutMs:10000});
     const text=detailsText(detail);
     const candidate=candidateFrom(state,detail);
     const staged={status:'accept',accepted:candidate,review:null,candidates:[candidate],recommendationWeight:0};
