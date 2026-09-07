@@ -1,13 +1,13 @@
 'use strict';
 
-// APG eBay image discovery worker v2.14
+// APG eBay image discovery worker v2.15
 // Broader exact-product recall for the 482-product image-completion programme.
 // Search breadth is expanded through model/name/category/alias/GTIN/ePID plans and 50-result
-// NEW-condition searches. v2.14 replaces the rejected Capsule 3 Laser / D2426 retrieval with the
-// exact plain Capsule 3 / D2425 eBay AU item. Its structured brand is NEBULA while APG retains Anker
-// as the canonical brand, so that relationship is explicitly product-bound rather than made global.
-// Direct items remain retrieval only: the full exact-product guard runs afterwards, followed by the
-// independent second pass. Public browsing makes no Browse calls.
+// NEW-condition searches. v2.15 replaces the stale Brother MFC-J4440DW direct item with the current
+// Brand New Australian whole-printer listing 136768624557 after ordinary Browse search failed to
+// surface it. Direct items remain retrieval only: eBay detail, family, exact-identity, condition,
+// AUD-price, active-listing and media gates all run before any state can be accepted. Existing
+// product-bound Nebula brand handling is unchanged. Public browsing makes no Browse calls.
 const {products}=require('../data');
 const supabase=require('../lib/apg-supabase-public-v1');
 const ebay=require('../lib/ebay-browse-api-v1');
@@ -16,7 +16,7 @@ const searchPlan=require('../lib/ebay-image-search-plan-v1');
 const familyGuard=require('../lib/ebay-family-variant-guard-v131');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 
-const VERSION='2.14';
+const VERSION='2.15';
 const QUOTA_RESERVE=500;
 const MAX_PRODUCTS_PER_RUN=3;
 const MAX_SEARCH_QUERIES_PER_PRODUCT=searchPlan.MAX_QUERIES;
@@ -30,7 +30,7 @@ const VERIFIED_DIRECT_ITEM_IDS=Object.freeze({
   'anker-547-usb-c-hub-7-in-2':'v1|398051289895|0',
   'anker-nebula-capsule-3':'v1|405135099297|0',
   'withings-body-comp':'v1|287344476885|0',
-  'brother-mfc-j4440dw':'v1|276421648366|0',
+  'brother-mfc-j4440dw':'v1|136768624557|0',
   'apple-ipad-a16-128gb':'v1|198078800527|0',
   'samsung-galaxy-smarttag2':'v1|296082302198|594211313158',
   'dyson-v15s-detect-submarine-complete':'v1|375684597812|0',
@@ -181,7 +181,7 @@ function stagedAccepted(candidate){
 async function verifyImageCandidate(product,candidate){
   let detail;
   try{
-    detail=await ebay.getItem(candidate.itemId,{referenceId:`apg:${product.slug}:image-discovery-v214`,timeoutMs:10000});
+    detail=await ebay.getItem(candidate.itemId,{referenceId:`apg:${product.slug}:image-discovery-v215`,timeoutMs:10000});
   }catch(error){return {ok:false,reason:clean(error&&error.code)||'EBAY_DETAIL_ERROR'};}
   if(!detail||typeof detail!=='object')return {ok:false,reason:'detail-missing'};
   const title=clean(detail.title)||candidate.title,condition=clean(detail.condition)||candidate.condition;
@@ -250,7 +250,7 @@ async function discoverProduct(product,budget){
     let result;
     try{
       result=await ebay.searchItems(searchRequest(plan),{
-        referenceId:`apg:${product.slug}:image-search-v214:${index+1}`,
+        referenceId:`apg:${product.slug}:image-search-v215:${index+1}`,
         timeoutMs:10000
       });
     }catch(error){
@@ -309,14 +309,14 @@ module.exports=async function handler(req,res){
         continue;
       }
       let found;
-      try{found=await discoverProduct(product,budget);}catch(error){found={ok:false,error:clean(error&&error.code)||'DISCOVERY_V214_ERROR',calls:0,plans:[]};}
+      try{found=await discoverProduct(product,budget);}catch(error){found={ok:false,error:clean(error&&error.code)||'DISCOVERY_V215_ERROR',calls:0,plans:[]};}
       if(found.ok){
         await insertDiscoveredState(workerToken,product,found.candidate);
         await recordDiscoveryResult(workerToken,slug,'accepted');
         results.push({slug,status:'accepted',itemId:found.candidate.itemId,verificationLevel:found.candidate.verificationLevel,retrieval:found.directItemId&&found.candidate.itemId===found.directItemId?'verified-direct-item':'search',calls:found.calls,plans:found.plans,searchErrors:found.searchErrors});
       }else{
         const status=found.candidateCount?'review':'no-match';
-        await recordDiscoveryResult(workerToken,slug,status,found.error||'DISCOVERY_V214_NOT_ACCEPTED');
+        await recordDiscoveryResult(workerToken,slug,status,found.error||'DISCOVERY_V215_NOT_ACCEPTED');
         results.push({slug,status,calls:found.calls||0,plans:found.plans||[],candidateCount:found.candidateCount||0,rejects:found.rejects||[],searchErrors:found.searchErrors||[]});
       }
     }
@@ -326,7 +326,7 @@ module.exports=async function handler(req,res){
       quota:quotaPublic(summary),budgetRemaining:budget.remaining,results
     });
   }catch(error){
-    return json(res,500,{ok:false,status:'worker-error',version:VERSION,searchPlanVersion:searchPlan.VERSION,code:clean(error&&error.code)||'EBAY_DISCOVERY_V214_ERROR'});
+    return json(res,500,{ok:false,status:'worker-error',version:VERSION,searchPlanVersion:searchPlan.VERSION,code:clean(error&&error.code)||'EBAY_DISCOVERY_V215_ERROR'});
   }finally{if(consumed)await finishCapability(workerToken);}
 };
 
