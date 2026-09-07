@@ -1,15 +1,13 @@
 'use strict';
 
-// APG eBay image continuity worker v2.3.
+// APG eBay image continuity worker v2.4.
 // Independent second-pass detail verification for governed eBay product imagery.
 // A review/recovery row is always re-fetched and tested against the current guard before a
-// replacement search is attempted. v2.3 adds one exact item-bound Anker/NEBULA relationship for
-// the plain Nebula Capsule 3 D2425. APG retains Anker as the canonical parent brand while eBay
-// structures this exact item as NEBULA; title identity is required here and exactGuard v3.26 still
-// requires structured D2425 evidence and blocks Capsule 3 Laser / D2426. The existing Kindle
-// Paperwhite item-bound alias remains unchanged. No general brand alias is introduced. All
-// condition, accessory, sibling/variant, voltage, AUD-price, eBay-image-host, eBay AU URL and
-// active-listing checks remain fail-closed. Public browsing remains registry-only.
+// replacement search is attempted. v2.4 adds one exact current AirPods 4 ANC recovery item whose
+// eBay structured evidence identifies Australian model MXP93ZA/A and UPC 195949689659. The item must
+// still pass the ordinary Apple brand, full product-name, condition, AUD-price, active-listing and
+// exact eBay URL/image gates. Existing Nebula and Kindle item-bound brand handling is unchanged.
+// Recommendation/commercial weighting remains zero and public browsing remains registry-only.
 
 const {products}=require('../data');
 const supabase=require('../lib/apg-supabase-public-v1');
@@ -19,7 +17,7 @@ const searchPlan=require('../lib/ebay-image-search-plan-v1');
 const familyGuard=require('../lib/ebay-family-variant-guard-v131');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 
-const VERSION='2.3';
+const VERSION='2.4';
 const REFRESH_QUOTA_RESERVE=500;
 const MAX_BATCH=8;
 const CONCURRENCY=2;
@@ -37,6 +35,7 @@ const VERIFIED_DIRECT_RECOVERY_ITEMS=Object.freeze({
   'amazon-echo-show-5-3rd-gen':'v1|147441885504|0',
   'amazon-kindle-paperwhite-signature-edition-32gb':'v1|405405953301|0',
   'anker-nebula-capsule-3':'v1|405135099297|0',
+  'apple-airpods-4-with-active-noise-cancellation':'v1|335947902149|0',
   'dyson-purifier-cool-pc1':'v1|157410032476|0'
 });
 const VERIFIED_STRUCTURED_BRAND_ALIASES=Object.freeze({
@@ -195,7 +194,7 @@ function exactDetailCandidate(row,product,detail){
 }
 async function verifyExisting(row,product){
   let detail;
-  try{detail=await ebay.getItem(clean(row&&row.item_id),{referenceId:`apg:${product.slug}:image-refresh-v23`,timeoutMs:10000});}
+  try{detail=await ebay.getItem(clean(row&&row.item_id),{referenceId:`apg:${product.slug}:image-refresh-v24`,timeoutMs:10000});}
   catch(error){const failure={ok:false,reason:'detail-verification-error',code:clean(error&&error.code)||'EBAY_DETAIL_ERROR',errorStatus:Number(error&&error.status)||null};failure.transient=transientVerificationFailure(failure);return failure;}
   return exactDetailCandidate(row,product,detail);
 }
@@ -223,7 +222,7 @@ async function searchExact(product,budget,{reference='recovery',maxQueries=MAX_R
   const plans=searchPlan.plansFor(product,{maxQueries}),seen=new Map(),searchErrors=[];let calls=0;
   for(let index=0;index<plans.length&&budget.remaining>0;index+=1){
     const plan=plans[index];budget.remaining-=1;calls+=1;let result;
-    try{result=await ebay.searchItems(searchRequest(plan),{referenceId:`apg:${product.slug}:image-${reference}-v23:${index+1}`,timeoutMs:10000});}
+    try{result=await ebay.searchItems(searchRequest(plan),{referenceId:`apg:${product.slug}:image-${reference}-v24:${index+1}`,timeoutMs:10000});}
     catch(error){searchErrors.push({kind:plan.kind,code:clean(error&&error.code)||'EBAY_SEARCH_ERROR'});continue;}
     for(const item of Array.isArray(result&&result.itemSummaries)?result.itemSummaries:[]){
       const candidate=projectSummary(product,item,plan.kind);if(!strongSummaryCandidate(product,candidate))continue;
@@ -250,7 +249,7 @@ async function recoverExact(row,product,budget){
   if(directItemId&&budget.remaining>0){
     budget.remaining-=1;directCalls+=1;
     try{
-      const detail=await ebay.getItem(directItemId,{referenceId:`apg:${product.slug}:image-direct-recovery-v23`,timeoutMs:10000});
+      const detail=await ebay.getItem(directItemId,{referenceId:`apg:${product.slug}:image-direct-recovery-v24`,timeoutMs:10000});
       const verified=exactDetailCandidate(directRecoveryRow(row,directItemId),product,detail);
       if(verified.ok)return {ok:true,candidate:verified.candidate,guard:verified.guard,calls:directCalls,plans:[],rejects:[],searchErrors:[],retrieval:'verified-direct-recovery'};
       directReject={itemId:directItemId,reason:verified.reason||'direct-recovery-rejected'};
