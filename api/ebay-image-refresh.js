@@ -1,13 +1,15 @@
 'use strict';
 
-// APG eBay image continuity worker v2.4.
+// APG eBay image continuity worker v2.5.
 // Independent second-pass detail verification for governed eBay product imagery.
 // A review/recovery row is always re-fetched and tested against the current guard before a
-// replacement search is attempted. v2.4 adds one exact current AirPods 4 ANC recovery item whose
-// eBay structured evidence identifies Australian model MXP93ZA/A and UPC 195949689659. The item must
-// still pass the ordinary Apple brand, full product-name, condition, AUD-price, active-listing and
-// exact eBay URL/image gates. Existing Nebula and Kindle item-bound brand handling is unchanged.
-// Recommendation/commercial weighting remains zero and public browsing remains registry-only.
+// replacement search is attempted. v2.5 also lets the residual-discovery path use the same tiny,
+// item-bound direct recovery register before ordinary search. This closes a dispatcher race where
+// the combined worker could claim a known exact product before the dedicated discovery worker.
+// Nintendo Switch Pro Controller item 365575159568 is added only after guard v3.27 independently
+// proved its whole-product identity inside eBay's mixed Controllers & Attachments leaf. Existing
+// AirPods, Nebula, Kindle and Dyson item-bound handling is unchanged. Recommendation/commercial
+// weighting remains zero and public browsing remains registry-only.
 
 const {products}=require('../data');
 const supabase=require('../lib/apg-supabase-public-v1');
@@ -17,7 +19,7 @@ const searchPlan=require('../lib/ebay-image-search-plan-v1');
 const familyGuard=require('../lib/ebay-family-variant-guard-v131');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 
-const VERSION='2.4';
+const VERSION='2.5';
 const REFRESH_QUOTA_RESERVE=500;
 const MAX_BATCH=8;
 const CONCURRENCY=2;
@@ -36,7 +38,8 @@ const VERIFIED_DIRECT_RECOVERY_ITEMS=Object.freeze({
   'amazon-kindle-paperwhite-signature-edition-32gb':'v1|405405953301|0',
   'anker-nebula-capsule-3':'v1|405135099297|0',
   'apple-airpods-4-with-active-noise-cancellation':'v1|335947902149|0',
-  'dyson-purifier-cool-pc1':'v1|157410032476|0'
+  'dyson-purifier-cool-pc1':'v1|157410032476|0',
+  'nintendo-switch-pro-controller':'v1|365575159568|0'
 });
 const VERIFIED_STRUCTURED_BRAND_ALIASES=Object.freeze({
   'amazon-kindle-paperwhite-signature-edition-32gb':Object.freeze({
@@ -194,7 +197,7 @@ function exactDetailCandidate(row,product,detail){
 }
 async function verifyExisting(row,product){
   let detail;
-  try{detail=await ebay.getItem(clean(row&&row.item_id),{referenceId:`apg:${product.slug}:image-refresh-v24`,timeoutMs:10000});}
+  try{detail=await ebay.getItem(clean(row&&row.item_id),{referenceId:`apg:${product.slug}:image-refresh-v25`,timeoutMs:10000});}
   catch(error){const failure={ok:false,reason:'detail-verification-error',code:clean(error&&error.code)||'EBAY_DETAIL_ERROR',errorStatus:Number(error&&error.status)||null};failure.transient=transientVerificationFailure(failure);return failure;}
   return exactDetailCandidate(row,product,detail);
 }
@@ -222,7 +225,7 @@ async function searchExact(product,budget,{reference='recovery',maxQueries=MAX_R
   const plans=searchPlan.plansFor(product,{maxQueries}),seen=new Map(),searchErrors=[];let calls=0;
   for(let index=0;index<plans.length&&budget.remaining>0;index+=1){
     const plan=plans[index];budget.remaining-=1;calls+=1;let result;
-    try{result=await ebay.searchItems(searchRequest(plan),{referenceId:`apg:${product.slug}:image-${reference}-v24:${index+1}`,timeoutMs:10000});}
+    try{result=await ebay.searchItems(searchRequest(plan),{referenceId:`apg:${product.slug}:image-${reference}-v25:${index+1}`,timeoutMs:10000});}
     catch(error){searchErrors.push({kind:plan.kind,code:clean(error&&error.code)||'EBAY_SEARCH_ERROR'});continue;}
     for(const item of Array.isArray(result&&result.itemSummaries)?result.itemSummaries:[]){
       const candidate=projectSummary(product,item,plan.kind);if(!strongSummaryCandidate(product,candidate))continue;
@@ -249,7 +252,7 @@ async function recoverExact(row,product,budget){
   if(directItemId&&budget.remaining>0){
     budget.remaining-=1;directCalls+=1;
     try{
-      const detail=await ebay.getItem(directItemId,{referenceId:`apg:${product.slug}:image-direct-recovery-v24`,timeoutMs:10000});
+      const detail=await ebay.getItem(directItemId,{referenceId:`apg:${product.slug}:image-direct-recovery-v25`,timeoutMs:10000});
       const verified=exactDetailCandidate(directRecoveryRow(row,directItemId),product,detail);
       if(verified.ok)return {ok:true,candidate:verified.candidate,guard:verified.guard,calls:directCalls,plans:[],rejects:[],searchErrors:[],retrieval:'verified-direct-recovery'};
       directReject={itemId:directItemId,reason:verified.reason||'direct-recovery-rejected'};
@@ -283,9 +286,9 @@ async function pooled(rows,workerToken,budget){
 async function discoverOne(row,workerToken,budget){
   const slug=clean(row&&row.slug),product=PRODUCT_MAP.get(slug);
   if(!product){await recordDiscoveryResult(workerToken,slug,'error','UNKNOWN_APG_PRODUCT');return {slug,status:'error',reason:'unknown-product',calls:0};}
-  const found=await searchExact(product,budget,{reference:'residual-discovery'});
+  const found=await recoverExact({...row,recovery_required:true},product,budget);
   if(found.ok){
-    try{await insertDiscoveredState(workerToken,product,found.candidate);await recordDiscoveryResult(workerToken,slug,'accepted',null);return {slug,status:'accepted',calls:found.calls||0};}
+    try{await insertDiscoveredState(workerToken,product,found.candidate);await recordDiscoveryResult(workerToken,slug,'accepted',null);return {slug,status:'accepted',calls:found.calls||0,retrieval:found.retrieval||'search'};}
     catch(error){const code=clean(error&&error.code)||'EBAY_DISCOVERY_STATE_WRITE_FAILED';await recordDiscoveryResult(workerToken,slug,'error',code).catch(()=>{});return {slug,status:'error',reason:code,calls:found.calls||0};}
   }
   const status=found.rejects&&found.rejects.length?'review':'no-match';await recordDiscoveryResult(workerToken,slug,status,found.reason||'NO_EXACT_MATCH');return {slug,status,reason:found.reason,calls:found.calls||0};
