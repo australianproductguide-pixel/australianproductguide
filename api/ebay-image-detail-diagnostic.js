@@ -1,13 +1,12 @@
 'use strict';
 
-// Read-only APG eBay image identity diagnostic v3.6.
+// Read-only APG eBay image identity diagnostic v3.7.
 // Re-fetches a bounded current recovery candidate from eBay and explains the product-identity checks.
 // It accepts only maintained APG slugs, exposes no credentials, mutates no state, is noindex/no-store
 // and is intended for operational diagnosis of review/recovery rows. Public RLS intentionally hides
 // review/retired rows, so the allowlist below is deliberately item-bound; arbitrary item IDs cannot be
-// supplied by callers. v3.6 adds one bounded Microsoft Xbox Wireless Controller Carbon Black
-// inspection using current Australian EP2-29931 / 196388518173 evidence and eBay AU item 278181980555.
-// No acceptance rule is changed by this diagnostic.
+// supplied by callers. v3.7 adds one bounded Alpicool C20 inspection after normal discovery surfaced
+// item 298647500934 as a 106-score whole-product candidate. No acceptance rule is changed here.
 const {products}=require('../data');
 const supabase=require('../lib/apg-supabase-public-v1');
 const ebay=require('../lib/ebay-browse-api-v1');
@@ -16,10 +15,11 @@ const familyGuard=require('../lib/ebay-family-variant-guard-v131');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 const continuity=require('../lib/ebay-product-image-continuity-v3-runtime');
 
-const VERSION='3.6';
+const VERSION='3.7';
 const PRODUCT_MAP=new Map(products.filter(Boolean).map(product=>[product.slug,product]));
 const REVIEW_ITEM_ALLOWLIST=Object.freeze({
   '8bitdo-ultimate-bluetooth-controller':'v1|306572868674|0',
+  'alpicool-c20-portable-fridge':'v1|298647500934|0',
   'amazon-echo-show-5-3rd-gen':'v1|147441885504|0',
   'amazon-eero-max-7':'v1|186261946765|0',
   'amazon-fire-tv-stick-4k-max':'v1|227490139598|0',
@@ -121,7 +121,7 @@ async function handler(req,res){
     const product=PRODUCT_MAP.get(slug);
     const state=diagnosticState(slug,await supabase.imageState(slug,{timeoutMs:3000}));
     if(!state||!state.item_id)return res.status(404).json({ok:false,status:'no-image-state',version:VERSION,slug});
-    const detail=await ebay.getItem(clean(state.item_id),{referenceId:`apg:${slug}:image-diagnostic-v36`,timeoutMs:10000});
+    const detail=await ebay.getItem(clean(state.item_id),{referenceId:`apg:${slug}:image-diagnostic-v37`,timeoutMs:10000});
     const text=detailsText(detail);
     const candidate=candidateFrom(state,detail);
     const staged={status:'accept',accepted:candidate,review:null,candidates:[candidate],recommendationWeight:0};
