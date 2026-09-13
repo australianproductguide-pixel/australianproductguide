@@ -1,12 +1,13 @@
 'use strict';
 
-// APG eBay image discovery worker v2.19
+// APG eBay image discovery worker v2.20
 // Broader exact-product recall for the 482-product image-completion programme.
-// v2.19 adds one bounded direct retrieval for Microsoft Xbox Wireless Controller Carbon Black item
-// 278181980555 after the read-only diagnostic proved Brand New condition, EP2-29931 structured model,
-// UPC 196388518173, AUD pricing, exact Carbon Black identity and an eBay-hosted product image.
-// eBay exposes structured Brand as Xbox rather than parent brand Microsoft, so that relation is allowed
-// for this APG product only. All category, condition, voltage, variant, active-listing and media gates remain.
+// v2.20 adds an item-bound identity relation for Brother MFC-J4440DW item 136768624557 after
+// read-only detail verification proved the exact MFC-J4440DW Item Model Number, whole-printer
+// category, Brand New condition, 240V Australian compatibility, AUD pricing and eBay-hosted image.
+// That listing omits Brother from its title/structured Brand, so the fallback is restricted to this
+// exact item and exact model phrase. Existing Nebula/Xbox product-bound brand relations remain.
+// All category, condition, voltage, variant, active-listing and media gates remain fail-closed.
 const {products}=require('../data');
 const supabase=require('../lib/apg-supabase-public-v1');
 const ebay=require('../lib/ebay-browse-api-v1');
@@ -15,7 +16,7 @@ const searchPlan=require('../lib/ebay-image-search-plan-v1');
 const familyGuard=require('../lib/ebay-family-variant-guard-v131');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 
-const VERSION='2.19';
+const VERSION='2.20';
 const QUOTA_RESERVE=500;
 const MAX_PRODUCTS_PER_RUN=3;
 const MAX_SEARCH_QUERIES_PER_PRODUCT=searchPlan.MAX_QUERIES;
@@ -42,6 +43,11 @@ const VERIFIED_STRUCTURED_BRAND_RELATIONS=Object.freeze({
   'microsoft-xbox-wireless-controller':Object.freeze({
     titleBrands:Object.freeze(['microsoft','xbox']),
     structuredBrands:Object.freeze(['microsoft','xbox'])
+  }),
+  'brother-mfc-j4440dw':Object.freeze({
+    itemId:'v1|136768624557|0',
+    titleBrands:Object.freeze(['brother','mfc-j4440dw']),
+    structuredBrands:Object.freeze(['brother'])
   })
 });
 const PRODUCT_MAP=new Map(products.filter(Boolean).map(product=>[product.slug,product]));
@@ -164,11 +170,15 @@ function detailVariantText(detail){
   const aspects=Array.isArray(detail&&detail.localizedAspects)?detail.localizedAspects.map(row=>`${clean(row&&row.name)} ${clean(row&&row.value)}`).join(' '):'';
   return `${clean(detail&&detail.title)} ${aspects}`.trim();
 }
-function structuredBrandMatches(product,brands,title){
-  const expected=norm(product&&product.brand),relation=VERIFIED_STRUCTURED_BRAND_RELATIONS[clean(product&&product.slug)];
-  const titleBrands=relation?relation.titleBrands.map(norm):[expected];
-  const structuredBrands=relation?relation.structuredBrands.map(norm):[expected];
-  if(!expected||!titleBrands.some(value=>value&&norm(title).includes(value)))return false;
+function structuredBrandMatches(product,brands,title,itemId=''){
+  const expected=norm(product&&product.brand),normalTitle=Boolean(expected&&norm(title).includes(expected));
+  if(normalTitle&&(!brands.length||brands.some(value=>enrichment.brandMatch(value,product&&product.brand))))return true;
+  const relation=VERIFIED_STRUCTURED_BRAND_RELATIONS[clean(product&&product.slug)];
+  if(!relation)return false;
+  if(relation.itemId&&clean(itemId)!==relation.itemId)return false;
+  const titleBrands=(Array.isArray(relation.titleBrands)?relation.titleBrands:[]).map(norm);
+  const structuredBrands=(Array.isArray(relation.structuredBrands)?relation.structuredBrands:[]).map(norm);
+  if(!titleBrands.some(value=>value&&norm(title).includes(value)))return false;
   if(!brands.length)return true;
   return brands.some(value=>{
     const candidate=norm(value);
@@ -178,7 +188,7 @@ function structuredBrandMatches(product,brands,title){
 function stagedAccepted(candidate){return {status:'accept',accepted:{...candidate,detailVerified:true,exactModel:true,recommendationWeight:0},review:null,candidates:[candidate],recommendationWeight:0};}
 async function verifyImageCandidate(product,candidate){
   let detail;
-  try{detail=await ebay.getItem(candidate.itemId,{referenceId:`apg:${product.slug}:image-discovery-v219`,timeoutMs:10000});}
+  try{detail=await ebay.getItem(candidate.itemId,{referenceId:`apg:${product.slug}:image-discovery-v220`,timeoutMs:10000});}
   catch(error){return {ok:false,reason:clean(error&&error.code)||'EBAY_DETAIL_ERROR'};}
   if(!detail||typeof detail!=='object')return {ok:false,reason:'detail-missing'};
   const title=clean(detail.title)||candidate.title,condition=clean(detail.condition)||candidate.condition;
@@ -191,14 +201,15 @@ async function verifyImageCandidate(product,candidate){
   if(enrichment.detailedCategoryRisk(detail))return {ok:false,reason:'detail-parts-category'};
   const conflict=enrichment.materialIdentityConflict(product,detailVariantText(detail));
   if(conflict.conflict)return {ok:false,reason:conflict.reason};
+  const detailItemId=clean(detail&&detail.itemId)||candidate.itemId;
   const brands=enrichment.detailedBrandEvidence(detail);
-  if(!structuredBrandMatches(product,brands,title))return {ok:false,reason:'detail-brand-mismatch'};
+  if(!structuredBrandMatches(product,brands,title,detailItemId))return {ok:false,reason:'detail-brand-mismatch'};
   const catalogImage=clean(detail&&detail.product&&detail.product.image&&detail.product.image.imageUrl);
   const listingImage=clean(detail&&detail.image&&detail.image.imageUrl);
   const imageUrl=enrichment.preferredEbayImage(catalogImage,listingImage,candidate.imageUrl);
   const itemWebUrl=clean(detail&&detail.itemWebUrl)||candidate.itemWebUrl;
   const itemAffiliateWebUrl=clean(detail&&detail.itemAffiliateWebUrl)||candidate.itemAffiliateWebUrl||null;
-  const itemId=clean(detail&&detail.itemId)||candidate.itemId;
+  const itemId=detailItemId;
   const legacyItemId=clean(detail&&detail.legacyItemId)||candidate.legacyItemId;
   const price=detail&&detail.price&&typeof detail.price==='object'?{value:clean(detail.price.value),currency:clean(detail.price.currency)}:candidate.price;
   if(!imageUrl||!itemWebUrl||!itemId||!legacyItemId)return {ok:false,reason:'detail-image-or-item-identity-missing'};
@@ -233,7 +244,7 @@ async function discoverProduct(product,budget){
   for(let index=0;index<plans.length;index+=1){
     if(budget.remaining<1)break;
     const plan=plans[index];budget.remaining-=1;calls+=1;let result;
-    try{result=await ebay.searchItems(searchRequest(plan),{referenceId:`apg:${product.slug}:image-search-v219:${index+1}`,timeoutMs:10000});}
+    try{result=await ebay.searchItems(searchRequest(plan),{referenceId:`apg:${product.slug}:image-search-v220:${index+1}`,timeoutMs:10000});}
     catch(error){searchErrors.push({kind:plan.kind,code:clean(error&&error.code)||'EBAY_SEARCH_ERROR'});continue;}
     for(const item of Array.isArray(result&&result.itemSummaries)?result.itemSummaries:[]){
       const candidate=projectSummary(product,item,index,plan.kind);
@@ -271,17 +282,17 @@ module.exports=async function handler(req,res){
     for(const row of rows){
       const slug=clean(row&&row.slug),product=PRODUCT_MAP.get(slug);
       if(!product){await recordDiscoveryResult(workerToken,slug,'error','UNKNOWN_APG_PRODUCT');results.push({slug,status:'error'});continue;}
-      let found;try{found=await discoverProduct(product,budget);}catch(error){found={ok:false,error:clean(error&&error.code)||'DISCOVERY_V219_ERROR',calls:0,plans:[]};}
+      let found;try{found=await discoverProduct(product,budget);}catch(error){found={ok:false,error:clean(error&&error.code)||'DISCOVERY_V220_ERROR',calls:0,plans:[]};}
       if(found.ok){
         await insertDiscoveredState(workerToken,product,found.candidate);await recordDiscoveryResult(workerToken,slug,'accepted');
         results.push({slug,status:'accepted',itemId:found.candidate.itemId,verificationLevel:found.candidate.verificationLevel,retrieval:found.directItemId&&found.candidate.itemId===found.directItemId?'verified-direct-item':'search',calls:found.calls,plans:found.plans,searchErrors:found.searchErrors});
       }else{
-        const status=found.candidateCount?'review':'no-match';await recordDiscoveryResult(workerToken,slug,status,found.error||'DISCOVERY_V219_NOT_ACCEPTED');
+        const status=found.candidateCount?'review':'no-match';await recordDiscoveryResult(workerToken,slug,status,found.error||'DISCOVERY_V220_NOT_ACCEPTED');
         results.push({slug,status,calls:found.calls||0,plans:found.plans||[],candidateCount:found.candidateCount||0,rejects:found.rejects||[],searchErrors:found.searchErrors||[]});
       }
     }
     return json(res,200,{ok:true,status:'completed',version:VERSION,searchPlanVersion:searchPlan.VERSION,guardVersion:exactGuard.VERSION,processed:results.length,accepted:results.filter(row=>row.status==='accepted').length,quota:quotaPublic(summary),budgetRemaining:budget.remaining,results});
-  }catch(error){return json(res,500,{ok:false,status:'worker-error',version:VERSION,searchPlanVersion:searchPlan.VERSION,code:clean(error&&error.code)||'EBAY_DISCOVERY_V219_ERROR'});}
+  }catch(error){return json(res,500,{ok:false,status:'worker-error',version:VERSION,searchPlanVersion:searchPlan.VERSION,code:clean(error&&error.code)||'EBAY_DISCOVERY_V220_ERROR'});}
   finally{if(consumed)await finishCapability(workerToken);}
 };
 
