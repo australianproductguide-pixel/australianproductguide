@@ -1,16 +1,17 @@
 'use strict';
 
-// APG residual eBay image diagnostic v1.0.
-// Read-only, no-store and noindex. This endpoint can inspect only a tiny maintained allowlist of
-// exact item IDs surfaced by governed discovery for unresolved product-image rows. It performs no
-// database mutation and does not change product recommendation weighting or image eligibility.
+// APG residual eBay image diagnostic v1.1.
+// Read-only, no-store and noindex. This endpoint can inspect only a maintained allowlist of exact
+// item IDs surfaced by governed discovery for unresolved product-image rows. It performs no database
+// mutation and does not change product recommendation weighting or image eligibility. v1.1 expands
+// the bounded inspection set for the September residual-coverage programme; no acceptance rule changes.
 const {products}=require('../data');
 const ebay=require('../lib/ebay-browse-api-v1');
 const enrichment=require('../lib/ebay-catalogue-enrichment-v1');
 const familyGuard=require('../lib/ebay-family-variant-guard-v131');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 
-const VERSION='1.0';
+const VERSION='1.1';
 const PRODUCT_MAP=new Map(products.filter(Boolean).map(product=>[product.slug,product]));
 const TARGETS=Object.freeze({
   'samsung-qn90f-65-inch-neo-qled-4k-vision-ai-tv':'v1|147562462120|0',
@@ -18,7 +19,24 @@ const TARGETS=Object.freeze({
   'esr-qi2-3-in-1-travel-wireless-charging-set':'v1|256916528863|0',
   'bluetti-ac70':'v1|137517295327|0',
   'catlink-scooper-pro-x':'v1|226533198599|0',
-  'marshall-monitor-iii-anc':'v1|800633315542|0'
+  'marshall-monitor-iii-anc':'v1|800633315542|0',
+  'delonghi-pinguino-pac-em82k':'v1|176564089771|0',
+  'honor-magic8-pro':'v1|188479780546|695946250782',
+  'scansnap-ix1600-document-scanner':'v1|306396201743|0',
+  'sihoo-doro-c300-pro-v2':'v1|318466896282|0',
+  'westinghouse-619l-french-door-fridge':'v1|275318365547|0',
+  'amazon-eero-max-7':'v1|186261946765|0',
+  'anker-power-bank-20000mah-22-5w':'v1|404694881374|0',
+  'brita-style-xl-water-filter-jug':'v1|204366451719|0',
+  'chipolo-one-point':'v1|126538884179|0',
+  'concept2-rowerg':'v1|316520905403|0',
+  'meross-mini-smart-wi-fi-plug':'v1|257502647102|0',
+  'meross-smart-wi-fi-plug-4-pack':'v1|318833457137|0',
+  'secretlab-magnus-pro':'v1|398356707985|666610103624',
+  'samsonite-c-lite-spinner-55cm':'v1|325743907402|0',
+  'braun-series-7':'v1|198634307272|0',
+  'steelcase-series-2':'v1|398386409465|0',
+  'brother-mfc-j4440dw':'v1|136768624557|0'
 });
 function clean(value){return String(value==null?'':value).trim();}
 function host(value){try{return new URL(clean(value)).hostname;}catch{return '';}}
@@ -52,7 +70,7 @@ module.exports=async function handler(req,res){
   const slug=safeSlug(req);if(!slug)return res.status(400).json({ok:false,status:'invalid-slug',version:VERSION});
   const product=PRODUCT_MAP.get(slug),itemId=TARGETS[slug];
   try{
-    const detail=await ebay.getItem(itemId,{referenceId:`apg:${slug}:residual-diagnostic-v10`,timeoutMs:10000});
+    const detail=await ebay.getItem(itemId,{referenceId:`apg:${slug}:residual-diagnostic-v11`,timeoutMs:10000});
     const accepted=candidate(product,itemId,detail);
     const staged={status:'accept',accepted,review:null,candidates:[accepted],recommendationWeight:0};
     const family=familyGuard.applyToEnrichment(product,staged);
