@@ -1,17 +1,18 @@
 'use strict';
 
-// APG residual eBay image diagnostic v1.1.
+// APG residual eBay image diagnostic v1.2.
 // Read-only, no-store and noindex. This endpoint can inspect only a maintained allowlist of exact
-// item IDs surfaced by governed discovery for unresolved product-image rows. It performs no database
-// mutation and does not change product recommendation weighting or image eligibility. v1.1 expands
-// the bounded inspection set for the September residual-coverage programme; no acceptance rule changes.
+// item IDs surfaced by governed discovery or independent exact-item research for unresolved
+// product-image rows. It performs no database mutation and does not change recommendation weighting
+// or image eligibility. v1.2 replaces the keyword-mixed ScanSnap candidate with a cleaner exact
+// Australian eBay iX1600 listing after independent GTIN evidence confirmed 4939761311758 = iX1600.
 const {products}=require('../data');
 const ebay=require('../lib/ebay-browse-api-v1');
 const enrichment=require('../lib/ebay-catalogue-enrichment-v1');
 const familyGuard=require('../lib/ebay-family-variant-guard-v131');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 
-const VERSION='1.1';
+const VERSION='1.2';
 const PRODUCT_MAP=new Map(products.filter(Boolean).map(product=>[product.slug,product]));
 const TARGETS=Object.freeze({
   'samsung-qn90f-65-inch-neo-qled-4k-vision-ai-tv':'v1|147562462120|0',
@@ -22,7 +23,7 @@ const TARGETS=Object.freeze({
   'marshall-monitor-iii-anc':'v1|800633315542|0',
   'delonghi-pinguino-pac-em82k':'v1|176564089771|0',
   'honor-magic8-pro':'v1|188479780546|695946250782',
-  'scansnap-ix1600-document-scanner':'v1|306396201743|0',
+  'scansnap-ix1600-document-scanner':'v1|362541917972|0',
   'sihoo-doro-c300-pro-v2':'v1|318466896282|0',
   'westinghouse-619l-french-door-fridge':'v1|275318365547|0',
   'amazon-eero-max-7':'v1|186261946765|0',
@@ -70,7 +71,7 @@ module.exports=async function handler(req,res){
   const slug=safeSlug(req);if(!slug)return res.status(400).json({ok:false,status:'invalid-slug',version:VERSION});
   const product=PRODUCT_MAP.get(slug),itemId=TARGETS[slug];
   try{
-    const detail=await ebay.getItem(itemId,{referenceId:`apg:${slug}:residual-diagnostic-v11`,timeoutMs:10000});
+    const detail=await ebay.getItem(itemId,{referenceId:`apg:${slug}:residual-diagnostic-v12`,timeoutMs:10000});
     const accepted=candidate(product,itemId,detail);
     const staged={status:'accept',accepted,review:null,candidates:[accepted],recommendationWeight:0};
     const family=familyGuard.applyToEnrichment(product,staged);
