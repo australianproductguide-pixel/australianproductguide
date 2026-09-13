@@ -1,20 +1,20 @@
 'use strict';
 
-// APG residual eBay image diagnostic v1.3.
+// APG residual eBay image diagnostic v1.4.
 // Read-only, no-store and noindex. This endpoint can inspect only a maintained allowlist of exact
 // item IDs surfaced by governed discovery or independent exact-item research for unresolved
 // product-image rows. It performs no database mutation and does not change recommendation weighting
-// or image eligibility. v1.3 allows a bounded candidate index for slugs with several pre-approved
-// exact item IDs, avoiding repeated deployments while still preventing arbitrary item inspection.
+// or image eligibility. v1.4 adds the fresh Australian Anker Official Store 547 replacement item.
 const {products}=require('../data');
 const ebay=require('../lib/ebay-browse-api-v1');
 const enrichment=require('../lib/ebay-catalogue-enrichment-v1');
 const familyGuard=require('../lib/ebay-family-variant-guard-v131');
 const exactGuard=require('../lib/ebay-product-image-exact-guard-v23');
 
-const VERSION='1.3';
+const VERSION='1.4';
 const PRODUCT_MAP=new Map(products.filter(Boolean).map(product=>[product.slug,product]));
 const TARGETS=Object.freeze({
+  'anker-547-usb-c-hub-7-in-2':'v1|405185320395|0',
   'samsung-qn90f-65-inch-neo-qled-4k-vision-ai-tv':'v1|147562462120|0',
   'delonghi-rivelia-auto-milk-exam44055b':'v1|137580667717|0',
   'esr-qi2-3-in-1-travel-wireless-charging-set':'v1|256916528863|0',
@@ -86,7 +86,7 @@ module.exports=async function handler(req,res){
   const target=requestTarget(req);if(!target)return res.status(400).json({ok:false,status:'invalid-target',version:VERSION});
   const {slug,itemId,candidate:targetIndex,candidateCount}=target,product=PRODUCT_MAP.get(slug);
   try{
-    const detail=await ebay.getItem(itemId,{referenceId:`apg:${slug}:residual-diagnostic-v13-${targetIndex}`,timeoutMs:10000});
+    const detail=await ebay.getItem(itemId,{referenceId:`apg:${slug}:residual-diagnostic-v14-${targetIndex}`,timeoutMs:10000});
     const accepted=candidate(product,itemId,detail);
     const staged={status:'accept',accepted,review:null,candidates:[accepted],recommendationWeight:0};
     const family=familyGuard.applyToEnrichment(product,staged);
