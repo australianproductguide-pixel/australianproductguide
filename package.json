@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "@modelcontextprotocol/node": "2.0.0",
-    "@modelcontextprotocol/server": "2.0.0",
+    "@modelcontextprotocol/server": "2.2.0",
     "@vercel/oidc": "3.8.4",
     "zod": "4.1.5"
   },
