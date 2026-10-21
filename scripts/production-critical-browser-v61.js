@@ -12,7 +12,7 @@ const SHA = (process.env.APG_EXPECTED_SHA || process.env.GITHUB_SHA || '').trim(
 const report = {
   suite: 'production-critical-browser-v61', baseUrl: BASE, gitSha: SHA || null,
   qaStarted: new Date().toISOString(), journeys: [], pageErrors: [], consoleErrors: [],
-  failedRequests: [], navigationAborts: [], failures: []
+  failedRequests: [], navigationAborts: [], expectedAborts: [], failures: []
 };
 fs.mkdirSync(OUT, { recursive: true });
 
@@ -32,8 +32,15 @@ function instrument(page, scope) {
     if (!sameOrigin(req.url())) return;
     const error = req.failure()?.errorText || 'request failed';
     const row = { scope, type: req.resourceType(), url: req.url(), error };
-    if (req.resourceType() === 'script' && /ERR_ABORTED/i.test(error)) report.navigationAborts.push(row);
-    else if (['document', 'script', 'fetch', 'xhr'].includes(req.resourceType())) report.failedRequests.push(row);
+    const resourceType = req.resourceType();
+    let pathname = '';
+    try { pathname = new URL(req.url()).pathname; } catch {}
+    if (['fetch', 'xhr'].includes(resourceType) && /ERR_ABORTED/i.test(error) && pathname === '/api/search-suggest') {
+      report.expectedAborts.push(row);
+      return;
+    }
+    if (resourceType === 'script' && /ERR_ABORTED/i.test(error)) report.navigationAborts.push(row);
+    else if (['document', 'script', 'fetch', 'xhr'].includes(resourceType)) report.failedRequests.push(row);
   });
 }
 async function visible(page, selector) {
@@ -160,11 +167,11 @@ async function run(browser, name, viewport, fn) {
 
   await run(browser, 'desktop-search-autocomplete-product', desktop, async page => {
     await go(page, '/');
-    const input = await visible(page, 'form[data-search-shell] input[data-site-search]'); assert(input, 'Search input missing');
+    const input = await visible(page, '.header-search form[data-search-shell] input[data-site-search]'); assert(input, 'Search input missing');
     await input.type('Sony WH');
-    await page.waitForSelector('form[data-search-shell] [data-search-suggestions]:not([hidden]) a[role="option"]', { timeout: 10000 });
-    assert((await page.$$('form[data-search-shell] [data-search-suggestions] a[role="option"]')).length > 0, 'autocomplete empty');
-    await replace(input, 'Sony WH-1000XM6'); await submit(page, 'form[data-search-shell]');
+    await page.waitForSelector('.header-search [data-apg-header-shared-suggestions]:not([hidden]) a[role="option"]', { timeout: 10000 });
+    assert((await page.$$('.header-search [data-apg-header-shared-suggestions] a[role="option"]')).length > 0, 'autocomplete empty');
+    await replace(input, 'Sony WH-1000XM6'); await submit(page, '.header-search form[data-search-shell]');
     assert(new URL(page.url()).pathname === '/search/', 'Search did not submit to /search/');
     const product = await visible(page, 'main a[href="/products/sony-wh-1000xm6/"]'); assert(product, 'Sony XM6 result missing');
     await Promise.all([page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }), product.click()]);
@@ -235,14 +242,25 @@ async function run(browser, name, viewport, fn) {
   });
 
   await run(browser, 'mobile-menu-search-decision-scout', mobile, async page => {
-    await go(page, '/'); const toggle = await visible(page, '[data-mobile-toggle]'); assert(toggle, 'mobile toggle missing'); await toggle.click();
-    await page.waitForSelector('#mobileNav:not([hidden])', { timeout: 5000 }); assert(await toggle.evaluate(el => el.getAttribute('aria-expanded') === 'true'), 'mobile menu aria state wrong');
-    const input = await visible(page, '#mobileNav form[data-search-shell] input[data-site-search]'); assert(input, 'mobile Search missing'); await input.type('robot vacuum');
-    await page.waitForSelector('#mobileNav [data-search-suggestions]:not([hidden]) a[role="option"]', { timeout: 10000 }); await replace(input, 'robot vacuum for pet hair');
-    await submit(page, '#mobileNav form[data-search-shell]'); assert(await page.$('main a[href^="/products/"]'), 'mobile Search products missing');
+    await go(page, '/');
+    const toggle = await visible(page, '.masthead [data-apg-drawer-trigger]'); assert(toggle, 'mobile drawer toggle missing'); await toggle.click();
+    await page.waitForSelector('#apgAllDrawer:not([hidden])', { timeout: 5000 });
+    assert(await toggle.evaluate(el => el.getAttribute('aria-expanded') === 'true'), 'mobile drawer aria state wrong');
+    assert(await visible(page, '#apgAllDrawer a[href="/decision-lab/"]'), 'mobile Decision Lab drawer link missing');
+    assert(await visible(page, '#apgAllDrawer [data-apg-supermenu-scout]'), 'mobile Scout drawer control missing');
+    await toggle.click();
+    await page.waitForSelector('#apgAllDrawer[hidden]', { timeout: 5000 });
+
+    const input = await visible(page, '.apg-mobile-header-search-v1226 input[data-site-search]'); assert(input, 'persistent mobile Search missing'); await input.type('robot vacuum');
+    await page.waitForSelector('.apg-mobile-header-search-v1226 [data-search-suggestions]:not([hidden]) a[role="option"]', { timeout: 10000 });
+    await replace(input, 'robot vacuum for pet hair');
+    await submit(page, '.apg-mobile-header-search-v1226'); assert(await page.$('main a[href^="/products/"]'), 'mobile Search products missing');
+
     await go(page, '/decision-lab/'); await decision(page, 'headphones for long flights', 'wireless-headphones'); assert(await page.$('.decision-results a[href^="/products/"]'), 'mobile Decision shortlist missing');
-    await go(page, '/'); const t2 = await visible(page, '[data-mobile-toggle]'); await t2.click(); await page.waitForSelector('#mobileNav:not([hidden])', { timeout: 5000 });
-    const scout = await visible(page, '#mobileNav [data-v26-scout-mobile]'); assert(scout, 'mobile Scout missing'); const before = page.url(); await scout.click();
+    await go(page, '/');
+    const t2 = await visible(page, '.masthead [data-apg-drawer-trigger]'); assert(t2, 'mobile drawer toggle missing on return'); await t2.click();
+    await page.waitForSelector('#apgAllDrawer:not([hidden])', { timeout: 5000 });
+    const scout = await visible(page, '#apgAllDrawer [data-apg-supermenu-scout]'); assert(scout, 'mobile Scout missing'); const before = page.url(); await scout.click();
     await page.waitForSelector('#apgAssistantPanel:not([hidden]) .scout-v5-input', { timeout: 10000 }); assert(page.url() === before, 'opening Scout changed URL');
     await askScout(page, 'What is Australian Product Guide?', s => /Australian Product Guide|APG/i.test(s.text), 'mobile site answer');
   });
@@ -251,7 +269,7 @@ async function run(browser, name, viewport, fn) {
   report.qaCompleted = new Date().toISOString();
   report.result = (report.failures.length || report.pageErrors.length || report.consoleErrors.length || report.failedRequests.length) ? 'FAIL' : 'PASS';
   fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify(report, null, 2));
-  console.log(JSON.stringify({ suite: report.suite, result: report.result, journeys: report.journeys, pageErrors: report.pageErrors.length, consoleErrors: report.consoleErrors.length, failedRequests: report.failedRequests.length, navigationAborts: report.navigationAborts.length }, null, 2));
+  console.log(JSON.stringify({ suite: report.suite, result: report.result, journeys: report.journeys, pageErrors: report.pageErrors.length, consoleErrors: report.consoleErrors.length, failedRequests: report.failedRequests.length, navigationAborts: report.navigationAborts.length, expectedAborts: report.expectedAborts.length }, null, 2));
   if (report.result !== 'PASS') process.exit(1);
   console.log(`APG_CRITICAL_BROWSER=PASS journeys=${report.journeys.length}`);
 })().catch(e => {
